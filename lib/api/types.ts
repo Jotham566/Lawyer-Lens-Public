@@ -17,12 +17,22 @@ export type DocumentStatus =
   | "rejected"
   | "published";
 
+// Table structure in hierarchical nodes
+export interface HierarchicalTable {
+  rows: string[][];
+  header_rows?: number[];
+  identifier?: string;
+  page?: number;
+}
+
 // Hierarchical structure for document content
 export interface HierarchicalNode {
   type: string;
   identifier?: string;
   title?: string;
+  label?: string;
   text?: string[];
+  tables?: HierarchicalTable[];
   children?: HierarchicalNode[];
 }
 
@@ -62,8 +72,8 @@ export interface PaginatedResponse<T> {
   items: T[];
   total: number;
   page: number;
-  size: number;
-  pages: number;
+  page_size: number;
+  total_pages: number;
 }
 
 // Document list filters
@@ -169,34 +179,45 @@ export interface ChatMessage {
 export interface ChatSource {
   document_id: string;
   title: string;
-  section?: string;
+  human_readable_id: string;
+  document_type: DocumentType;
+  excerpt: string;
   relevance_score: number;
-  snippet: string;
+  section?: string;
 }
 
 export interface ChatRequest {
   message: string;
   conversation_id?: string;
-  context?: {
-    document_filters?: DocumentType[];
-    year_range?: [number, number];
-  };
+  conversation_history?: Array<{ role: string; content: string }>;
+  search_mode?: "keyword" | "semantic" | "hybrid";
+  max_context_chunks?: number;
+  temperature?: number;
 }
 
 export interface ChatResponse {
-  response: string;
-  sources: ChatSource[];
-  suggested_followups: string[];
-  conversation_id: string;
+  message_id: string;
+  content: string;
+  citations: ChatSource[];
+  confidence: number;
+  provider: string;
+  tokens_used: number;
+  processing_time_ms: number;
+  timestamp: string;
 }
 
 // Statistics types
+export interface DocumentTypeCount {
+  document_type: DocumentType;
+  count: number;
+}
+
 export interface RepositoryStats {
   total_documents: number;
-  acts_count: number;
-  judgments_count: number;
-  regulations_count: number;
-  last_updated: string;
+  by_type: DocumentTypeCount[];
+  by_jurisdiction: Record<string, number>;
+  by_year: Record<number, number>;
+  recent_documents: Document[];
 }
 
 // Facets for search filtering

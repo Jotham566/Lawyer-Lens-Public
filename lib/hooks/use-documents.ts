@@ -7,6 +7,7 @@ import {
   getRecentDocuments,
   getRepositoryStats,
   getDocumentsByType,
+  getDocumentAknXml,
 } from "@/lib/api";
 import type { DocumentFilters, DocumentType } from "@/lib/api/types";
 
@@ -67,5 +68,18 @@ export function useDocumentsByType(
     queryKey: ["documents", "type", type, page, size],
     queryFn: () => getDocumentsByType(type, page, size),
     staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch AKN XML content for a document
+ */
+export function useDocumentAknXml(id: string | null, enabled: boolean = true) {
+  return useQuery({
+    queryKey: ["document", "akn", id],
+    queryFn: () => getDocumentAknXml(id!),
+    enabled: !!id && enabled,
+    staleTime: 30 * 60 * 1000, // 30 minutes - AKN content rarely changes
+    retry: 1, // Only retry once if it fails
   });
 }

@@ -185,7 +185,7 @@ function ActsContent() {
         )}
 
         {/* Pagination */}
-        {data && data.pages > 1 && (
+        {data && data.total_pages > 1 && (
           <div className="mt-6 flex items-center justify-center gap-2">
             <Button
               variant="outline"
@@ -197,12 +197,12 @@ function ActsContent() {
               Previous
             </Button>
             <span className="text-sm text-muted-foreground">
-              Page {page} of {data.pages}
+              Page {page} of {data.total_pages}
             </span>
             <Button
               variant="outline"
               size="sm"
-              disabled={page >= data.pages}
+              disabled={page >= data.total_pages}
               onClick={() => updateParams({ page: (page + 1).toString() })}
             >
               Next

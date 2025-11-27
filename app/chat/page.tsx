@@ -32,6 +32,7 @@ import {
   useChatStore,
   useCurrentConversation,
 } from "@/lib/stores";
+import { sendChatMessage, getSuggestedQuestions } from "@/lib/api";
 import type { ChatMessage, ChatSource } from "@/lib/api/types";
 
 const suggestedQuestions = [
@@ -104,36 +105,44 @@ function ChatContent() {
     setLoading(true);
     setError(null);
 
-    // Simulate AI response (replace with actual API call)
+    // Get conversation history for context
+    const currentMessages = currentConversation?.messages || [];
+    const conversationHistory = currentMessages.map((msg) => ({
+      role: msg.role,
+      content: msg.content,
+    }));
+
+    // Call actual API
     try {
-      // TODO: Replace with actual API call
-      // const response = await sendChatMessage({ message: text, conversation_id: activeConvId });
+      const response = await sendChatMessage({
+        message: text,
+        conversation_id: activeConvId,
+        conversation_history: conversationHistory,
+        search_mode: "hybrid",
+        max_context_chunks: 5,
+        temperature: 0.3,
+      });
 
-      // Simulated response for demo
-      await new Promise((resolve) => setTimeout(resolve, 1500));
-
+      // Map API response to ChatMessage format
       const aiMessage: ChatMessage = {
         role: "assistant",
-        content: `Based on my analysis of Uganda's legal documents, here's what I found regarding "${text}":\n\nThis is a simulated response. When the backend is connected, I will provide accurate legal information from the document repository with proper citations.\n\nPlease note: This is not legal advice. Always consult a qualified legal professional for specific legal matters.`,
-        sources: [
-          {
-            document_id: "sample-act-1",
-            title: "Sample Act 2023",
-            section: "Section 12",
-            relevance_score: 0.92,
-            snippet: "Relevant excerpt from the document...",
-          },
-        ],
-        suggested_followups: [
-          "Can you explain this in more detail?",
-          "What are the exceptions to this rule?",
-          "Are there any recent amendments?",
-        ],
-        timestamp: new Date().toISOString(),
+        content: response.content,
+        sources: response.citations.map((citation) => ({
+          document_id: citation.document_id,
+          title: citation.title,
+          human_readable_id: citation.human_readable_id,
+          document_type: citation.document_type,
+          excerpt: citation.excerpt,
+          relevance_score: citation.relevance_score,
+          section: citation.section,
+        })),
+        suggested_followups: getSuggestedQuestions(),
+        timestamp: response.timestamp,
       };
 
       addMessage(activeConvId, aiMessage);
     } catch (err) {
+      console.error("Chat error:", err);
       setError(err instanceof Error ? err.message : "Failed to get response");
     } finally {
       setLoading(false);
@@ -444,16 +453,34 @@ interface SourceBadgeProps {
 }
 
 function SourceBadge({ source }: SourceBadgeProps) {
+  // Get badge color based on document type
+  const getBadgeClass = () => {
+    switch (source.document_type) {
+      case "act":
+        return "border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950";
+      case "judgment":
+        return "border-purple-200 bg-purple-50 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950";
+      case "regulation":
+        return "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950";
+      case "constitution":
+        return "border-amber-200 bg-amber-50 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950";
+      default:
+        return "";
+    }
+  };
+
   return (
     <Link href={`/document/${source.document_id}`}>
       <Badge
         variant="outline"
-        className="gap-1 transition-colors hover:bg-muted"
+        className={cn("gap-1 transition-colors", getBadgeClass())}
       >
         <FileText className="h-3 w-3" />
         <span className="max-w-[150px] truncate">{source.title}</span>
-        {source.section && (
-          <span className="text-muted-foreground">({source.section})</span>
+        {source.human_readable_id && (
+          <span className="text-muted-foreground text-xs">
+            [{source.human_readable_id}]
+          </span>
         )}
       </Badge>
     </Link>

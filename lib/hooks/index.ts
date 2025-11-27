@@ -9,4 +9,5 @@ export {
   useRecentDocuments,
   useRepositoryStats,
   useDocumentsByType,
+  useDocumentAknXml,
 } from "./use-documents";

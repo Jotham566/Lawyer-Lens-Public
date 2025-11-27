@@ -189,6 +189,196 @@
   mark {
     @apply bg-yellow-200 dark:bg-yellow-800/50 px-0.5 rounded;
   }
+
+  /* ===== AKN (Akoma Ntoso) Document Styles ===== */
+
+  /* Document container */
+  .akn-document {
+    @apply text-foreground leading-relaxed;
+  }
+
+  /* Parts - Major divisions */
+  .akn-part {
+    @apply mb-8;
+  }
+
+  .akn-part > .akn-num {
+    @apply text-xl font-bold text-primary block mb-1;
+  }
+
+  .akn-part > .akn-heading {
+    @apply text-xl font-bold text-primary block mb-4;
+  }
+
+  /* Chapters */
+  .akn-chapter {
+    @apply mb-6;
+  }
+
+  .akn-chapter > .akn-num {
+    @apply text-lg font-bold block mb-1;
+  }
+
+  .akn-chapter > .akn-heading {
+    @apply text-lg font-bold block mb-3;
+  }
+
+  /* Sections - Main structural units */
+  .akn-section {
+    @apply mb-4 pl-0;
+  }
+
+  .akn-section > .akn-num {
+    @apply font-semibold text-primary;
+  }
+
+  .akn-section > .akn-heading {
+    @apply font-semibold;
+  }
+
+  /* Subsections */
+  .akn-subsection {
+    @apply pl-6 my-2;
+  }
+
+  .akn-subsection > .akn-num {
+    @apply font-medium text-muted-foreground;
+  }
+
+  /* Paragraphs (legal paragraphs with letters) */
+  .akn-paragraph {
+    @apply pl-8 my-2;
+  }
+
+  .akn-paragraph > .akn-num {
+    @apply font-medium text-muted-foreground mr-2;
+  }
+
+  /* Subparagraphs */
+  .akn-subparagraph {
+    @apply pl-10 my-1;
+  }
+
+  .akn-subparagraph > .akn-num {
+    @apply text-muted-foreground mr-2;
+  }
+
+  /* Points (roman numerals) */
+  .akn-point {
+    @apply pl-12 my-1;
+  }
+
+  .akn-point > .akn-num {
+    @apply text-muted-foreground mr-2;
+  }
+
+  /* Content areas */
+  .akn-content {
+    @apply mt-1;
+  }
+
+  .akn-content > .akn-p {
+    @apply my-2;
+  }
+
+  /* Intro text before lists */
+  .akn-intro {
+    @apply mb-2;
+  }
+
+  /* Block lists */
+  .akn-blocklist {
+    @apply my-2;
+  }
+
+  .akn-item {
+    @apply my-1 flex;
+  }
+
+  .akn-item > .akn-num {
+    @apply flex-shrink-0 mr-2 text-muted-foreground min-w-[2rem];
+  }
+
+  /* Tables */
+  .akn-table-wrapper {
+    @apply my-4 overflow-x-auto rounded-lg border border-border;
+  }
+
+  .akn-table {
+    @apply w-full border-collapse;
+  }
+
+  .akn-table .akn-tr {
+    @apply border-b border-border last:border-b-0;
+  }
+
+  .akn-table .akn-th {
+    @apply p-3 text-left font-semibold bg-muted border-r border-border last:border-r-0;
+  }
+
+  .akn-table .akn-td {
+    @apply p-3 border-r border-border last:border-r-0 align-top;
+  }
+
+  .akn-table .akn-tr:nth-child(even) .akn-td {
+    @apply bg-muted/30;
+  }
+
+  /* Definitions */
+  .akn-def {
+    @apply font-semibold;
+  }
+
+  .akn-term {
+    @apply italic text-primary;
+  }
+
+  /* References */
+  .akn-ref {
+    @apply text-primary hover:underline cursor-pointer;
+  }
+
+  /* Schedules/Attachments */
+  .akn-attachment {
+    @apply mt-8 pt-6 border-t-2 border-primary/20;
+  }
+
+  /* Preamble */
+  .akn-preamble {
+    @apply mb-6 pl-4 border-l-4 border-primary/30 italic text-muted-foreground;
+  }
+
+  /* Long title */
+  .akn-longtitle {
+    @apply text-2xl font-bold mb-6 text-center;
+  }
+
+  /* Proviso */
+  .akn-proviso {
+    @apply ml-4 mt-2 pl-4 border-l-2 border-amber-500/50 italic;
+  }
+
+  /* Formula */
+  .akn-formula {
+    @apply my-4 p-4 font-mono text-sm bg-muted rounded-lg overflow-x-auto;
+  }
+
+  /* Print styles for AKN documents */
+  @media print {
+    .akn-document {
+      @apply text-black;
+    }
+
+    .akn-table-wrapper {
+      @apply overflow-visible;
+    }
+
+    .akn-part,
+    .akn-chapter,
+    .akn-section {
+      page-break-inside: avoid;
+    }
+  }
 }
 
 @layer utilities {

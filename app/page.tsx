@@ -1,3 +1,6 @@
+"use client";
+
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   Search,
@@ -12,6 +15,8 @@ import {
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { getRepositoryStats } from "@/lib/api";
+import type { RepositoryStats } from "@/lib/api/types";
 
 const documentTypes = [
   {
@@ -56,6 +61,21 @@ const suggestedQueries = [
 ];
 
 export default function HomePage() {
+  const [stats, setStats] = useState<RepositoryStats | null>(null);
+
+  useEffect(() => {
+    getRepositoryStats()
+      .then(setStats)
+      .catch(console.error);
+  }, []);
+
+  // Helper to get count by type
+  const getTypeCount = (type: string): number => {
+    if (!stats) return 0;
+    const found = stats.by_type.find((t) => t.document_type === type);
+    return found?.count || 0;
+  };
+
   return (
     <div className="flex flex-col">
       {/* Hero Section */}
@@ -93,20 +113,26 @@ export default function HomePage() {
             </form>
           </div>
 
-          {/* Quick Stats */}
+          {/* Quick Stats - Now from API */}
           <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">5,000+</span>
+              <span className="text-2xl font-bold text-foreground">
+                {stats ? stats.total_documents.toLocaleString() : "—"}
+              </span>
               <span>Documents</span>
             </div>
             <div className="hidden h-6 w-px bg-border sm:block" />
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">1,200+</span>
+              <span className="text-2xl font-bold text-foreground">
+                {stats ? getTypeCount("act").toLocaleString() : "—"}
+              </span>
               <span>Acts</span>
             </div>
             <div className="hidden h-6 w-px bg-border sm:block" />
             <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">3,500+</span>
+              <span className="text-2xl font-bold text-foreground">
+                {stats ? getTypeCount("judgment").toLocaleString() : "—"}
+              </span>
               <span>Judgments</span>
             </div>
           </div>

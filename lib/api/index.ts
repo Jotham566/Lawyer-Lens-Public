@@ -16,6 +16,11 @@ export {
   getRecentDocuments,
   getRepositoryStats,
   getDocumentsByType,
+  getDocumentTypes,
+  getAvailableYears,
+  getCourtLevels,
+  getDocumentAknXml,
+  type AknXmlResponse,
 } from "./documents";
 
 // Search API
@@ -30,11 +35,10 @@ export {
 // Chat API
 export {
   sendChatMessage,
-  getChatHistory,
-  createConversation,
-  deleteConversation,
+  getChatHealth,
   streamChatMessage,
   getSuggestedQuestions,
+  mapCitationsToSources,
 } from "./chat";
 
 // Types
@@ -65,4 +69,5 @@ export type {
   ChatResponse,
   // Statistics
   RepositoryStats,
+  DocumentTypeCount,
 } from "./types";

@@ -8,7 +8,6 @@ import {
   Share2,
   Printer,
   ChevronRight,
-  Copy,
   Check,
   ExternalLink,
   ZoomIn,
@@ -21,7 +20,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Tooltip,
   TooltipContent,
@@ -37,7 +35,8 @@ import {
 import { cn } from "@/lib/utils";
 import { useDocument } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
-import type { DocumentType, HierarchicalNode } from "@/lib/api/types";
+import { HierarchyRenderer } from "@/components/hierarchy-renderer";
+import type { DocumentType } from "@/lib/api/types";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -178,34 +177,41 @@ export default function DocumentPage({ params }: PageProps) {
 
             {/* Actions */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
+              {/* Judgments: PDF download only */}
+              {document.document_type === "judgment" && (
+                <Button variant="outline" size="sm" asChild>
+                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
                     <Download className="mr-2 h-4 w-4" />
-                    Download
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent>
-                  <DropdownMenuItem asChild>
-                    <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                    Download PDF
+                  </a>
+                </Button>
+              )}
+
+              {/* Acts/Regulations/Constitution: Multiple format downloads */}
+              {(document.document_type === "act" ||
+                document.document_type === "regulation" ||
+                document.document_type === "constitution") && (
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button variant="outline" size="sm">
+                      <Download className="mr-2 h-4 w-4" />
+                      Download
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent>
+                    <DropdownMenuItem asChild>
+                      <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                        <FileText className="mr-2 h-4 w-4" />
+                        PDF
+                      </a>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem disabled>
                       <FileText className="mr-2 h-4 w-4" />
-                      PDF
-                    </a>
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FileText className="mr-2 h-4 w-4" />
-                    AKN XML
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FileText className="mr-2 h-4 w-4" />
-                    JSON
-                  </DropdownMenuItem>
-                  <DropdownMenuItem>
-                    <FileText className="mr-2 h-4 w-4" />
-                    Markdown
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
+                      AKN XML (coming soon)
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
 
               <Button variant="outline" size="sm" onClick={copyLink}>
                 {copied ? (
@@ -229,37 +235,64 @@ export default function DocumentPage({ params }: PageProps) {
           </div>
         </div>
 
-        {/* Content Tabs */}
+        {/* Content - Format based on document type */}
         <div className="flex-1 px-4 py-6 md:px-6">
           <div className="mx-auto max-w-5xl">
-            <Tabs defaultValue="read" className="space-y-4">
-              <div className="flex items-center justify-between">
-                <TabsList>
-                  <TabsTrigger value="read">Read</TabsTrigger>
-                  <TabsTrigger value="pdf">PDF</TabsTrigger>
-                  <TabsTrigger value="json">JSON</TabsTrigger>
-                  <TabsTrigger value="xml">XML</TabsTrigger>
-                  <TabsTrigger value="markdown">Markdown</TabsTrigger>
-                </TabsList>
+            {/* Judgments: Show only PDF */}
+            {document.document_type === "judgment" && (
+              <Card>
+                <CardContent className="p-0">
+                  <div className="flex items-center justify-between border-b px-4 py-2">
+                    <div className="flex items-center gap-2">
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ZoomOut className="h-4 w-4" />
+                      </Button>
+                      <span className="text-sm text-muted-foreground">
+                        100%
+                      </span>
+                      <Button variant="ghost" size="icon" className="h-8 w-8">
+                        <ZoomIn className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    <Button variant="outline" size="sm" asChild>
+                      <a
+                        href={pdfUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        <ExternalLink className="mr-2 h-4 w-4" />
+                        Open in new tab
+                      </a>
+                    </Button>
+                  </div>
+                  <iframe
+                    src={pdfUrl}
+                    className="h-[700px] w-full"
+                    title={`PDF: ${document.title}`}
+                  />
+                </CardContent>
+              </Card>
+            )}
 
+            {/* Acts, Regulations, Constitution: Show rendered AKN content */}
+            {(document.document_type === "act" ||
+              document.document_type === "regulation" ||
+              document.document_type === "constitution") && (
+              <>
                 {/* Font Size Controls */}
-                <div className="hidden items-center gap-1 md:flex">
+                <div className="mb-4 flex items-center justify-end gap-1">
+                  <span className="mr-2 text-sm text-muted-foreground">
+                    Text size:
+                  </span>
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant={fontSize === "small" ? "secondary" : "ghost"}
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => setFontSize("small")}
                       >
-                        <span
-                          className={cn(
-                            "text-xs",
-                            fontSize === "small" && "font-bold"
-                          )}
-                        >
-                          A
-                        </span>
+                        <span className="text-xs">A</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Small text</TooltipContent>
@@ -267,19 +300,12 @@ export default function DocumentPage({ params }: PageProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant={fontSize === "medium" ? "secondary" : "ghost"}
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => setFontSize("medium")}
                       >
-                        <span
-                          className={cn(
-                            "text-sm",
-                            fontSize === "medium" && "font-bold"
-                          )}
-                        >
-                          A
-                        </span>
+                        <span className="text-sm">A</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Medium text</TooltipContent>
@@ -287,145 +313,57 @@ export default function DocumentPage({ params }: PageProps) {
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <Button
-                        variant="ghost"
+                        variant={fontSize === "large" ? "secondary" : "ghost"}
                         size="icon"
                         className="h-8 w-8"
                         onClick={() => setFontSize("large")}
                       >
-                        <span
-                          className={cn(
-                            "text-base",
-                            fontSize === "large" && "font-bold"
-                          )}
-                        >
-                          A
-                        </span>
+                        <span className="text-base">A</span>
                       </Button>
                     </TooltipTrigger>
                     <TooltipContent>Large text</TooltipContent>
                   </Tooltip>
                 </div>
-              </div>
 
-              {/* Read View */}
-              <TabsContent value="read" className="mt-0">
                 <Card>
-                  <CardContent
-                    className={cn(
-                      "document-content py-6",
-                      fontSize === "small" && "text-sm",
-                      fontSize === "medium" && "text-base",
-                      fontSize === "large" && "text-lg"
-                    )}
-                  >
+                  <CardContent className="py-6">
+                    {/* Render hierarchical structure if available */}
                     {document.hierarchical_structure ? (
                       <HierarchyRenderer
                         node={document.hierarchical_structure}
+                        document={{
+                          title: document.title,
+                          short_title: document.short_title,
+                          jurisdiction: document.jurisdiction,
+                          act_year: document.act_year,
+                          chapter: document.chapter,
+                          publication_date: document.publication_date,
+                          commencement_date: document.commencement_date,
+                        }}
+                        fontSize={fontSize}
                       />
                     ) : (
-                      <p className="text-muted-foreground">
-                        Document content is not available in structured format.
-                        Please view the PDF version.
-                      </p>
+                      <div className="text-center py-8">
+                        <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                        <p className="mt-4 text-muted-foreground">
+                          Document content is not available in structured format.
+                        </p>
+                        <Button className="mt-4" asChild>
+                          <a
+                            href={pdfUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                          >
+                            <ExternalLink className="mr-2 h-4 w-4" />
+                            View PDF instead
+                          </a>
+                        </Button>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
-              </TabsContent>
-
-              {/* PDF View */}
-              <TabsContent value="pdf" className="mt-0">
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between border-b px-4 py-2">
-                      <div className="flex items-center gap-2">
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ZoomOut className="h-4 w-4" />
-                        </Button>
-                        <span className="text-sm text-muted-foreground">
-                          100%
-                        </span>
-                        <Button variant="ghost" size="icon" className="h-8 w-8">
-                          <ZoomIn className="h-4 w-4" />
-                        </Button>
-                      </div>
-                      <Button variant="outline" size="sm" asChild>
-                        <a
-                          href={pdfUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          <ExternalLink className="mr-2 h-4 w-4" />
-                          Open in new tab
-                        </a>
-                      </Button>
-                    </div>
-                    <iframe
-                      src={pdfUrl}
-                      className="h-[700px] w-full"
-                      title={`PDF: ${document.title}`}
-                    />
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* JSON View */}
-              <TabsContent value="json" className="mt-0">
-                <Card>
-                  <CardContent className="p-0">
-                    <div className="flex items-center justify-between border-b px-4 py-2">
-                      <span className="text-sm text-muted-foreground">
-                        JSON Structure
-                      </span>
-                      <Button
-                        variant="outline"
-                        size="sm"
-                        onClick={() =>
-                          navigator.clipboard.writeText(
-                            JSON.stringify(document, null, 2)
-                          )
-                        }
-                      >
-                        <Copy className="mr-2 h-4 w-4" />
-                        Copy
-                      </Button>
-                    </div>
-                    <pre className="max-h-[700px] overflow-auto p-4 font-mono text-sm">
-                      {JSON.stringify(document, null, 2)}
-                    </pre>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* XML View */}
-              <TabsContent value="xml" className="mt-0">
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 text-lg font-medium">
-                      AKN XML View Coming Soon
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      The Akoma Ntoso XML format will be available soon.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-
-              {/* Markdown View */}
-              <TabsContent value="markdown" className="mt-0">
-                <Card>
-                  <CardContent className="py-12 text-center">
-                    <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                    <h3 className="mt-4 text-lg font-medium">
-                      Markdown View Coming Soon
-                    </h3>
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      The Markdown format will be available soon.
-                    </p>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
+              </>
+            )}
 
             {/* Metadata */}
             <Card className="mt-6">
@@ -488,19 +426,30 @@ export default function DocumentPage({ params }: PageProps) {
                       <dd>{document.gazette_number}</dd>
                     </div>
                   )}
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Version:</dt>
-                    <dd>
-                      {document.version_number}
-                      {document.is_latest_version && " (Latest)"}
-                    </dd>
-                  </div>
-                  <div className="flex justify-between">
-                    <dt className="text-muted-foreground">Status:</dt>
-                    <dd className="capitalize">
-                      {document.status.replace(/_/g, " ")}
-                    </dd>
-                  </div>
+                  {document.version_number && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Version:</dt>
+                      <dd>
+                        {document.version_number}
+                        {document.is_latest_version && " (Latest)"}
+                      </dd>
+                    </div>
+                  )}
+                  {document.status && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Status:</dt>
+                      <dd className="capitalize">
+                        {document.status.replace(/_/g, " ")}
+                      </dd>
+                    </div>
+                  )}
+                  {/* Public documents are always published */}
+                  {!document.status && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Status:</dt>
+                      <dd className="capitalize text-green-600">Published</dd>
+                    </div>
+                  )}
                 </dl>
               </CardContent>
             </Card>
@@ -511,64 +460,3 @@ export default function DocumentPage({ params }: PageProps) {
   );
 }
 
-interface HierarchyRendererProps {
-  node: HierarchicalNode;
-  depth?: number;
-}
-
-function HierarchyRenderer({ node, depth = 0 }: HierarchyRendererProps) {
-  const getHeadingComponent = (nodeType: string, currentDepth: number) => {
-    const type = nodeType.toLowerCase();
-
-    if (type === "act" || type === "judgment" || type === "document") {
-      return "div";
-    }
-    if (type === "preamble" || type === "part") {
-      return currentDepth === 0 ? "h1" : "h2";
-    }
-    if (type === "chapter") {
-      return "h2";
-    }
-    if (type === "section" || type === "article") {
-      return "h3";
-    }
-    if (type === "subsection" || type === "paragraph") {
-      return "h4";
-    }
-    return "div";
-  };
-
-  const Heading = getHeadingComponent(node.type, depth);
-
-  return (
-    <div className={cn("space-y-4", depth > 0 && "mt-4")}>
-      {(node.title || node.identifier) && (
-        <Heading
-          id={node.identifier?.toLowerCase().replace(/\s+/g, "-")}
-          className={cn(
-            "scroll-mt-20",
-            Heading === "h1" && "text-2xl font-bold mt-8 mb-4",
-            Heading === "h2" && "text-xl font-semibold mt-6 mb-3",
-            Heading === "h3" && "text-lg font-semibold mt-4 mb-2",
-            Heading === "h4" && "text-base font-medium mt-3 mb-2"
-          )}
-        >
-          {node.identifier && (
-            <span className="text-muted-foreground">{node.identifier}. </span>
-          )}
-          {node.title}
-        </Heading>
-      )}
-
-      {node.text?.map((paragraph, index) => (
-        <p key={index} className="leading-7">
-          {paragraph}
-        </p>
-      ))}
-
-      {node.children?.map((child, index) => (
-        <HierarchyRenderer key={index} node={child} depth={depth + 1} />
-      ))}
-    </div>
-  );
-}
