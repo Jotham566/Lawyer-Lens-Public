@@ -193,11 +193,19 @@ function ChatContent() {
               ) : (
                 <div className="space-y-1">
                   {conversations.map((conv) => (
-                    <button
+                    <div
                       key={conv.id}
+                      role="button"
+                      tabIndex={0}
                       onClick={() => setCurrentConversation(conv.id)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          setCurrentConversation(conv.id);
+                        }
+                      }}
                       className={cn(
-                        "flex w-full items-start gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+                        "group flex w-full cursor-pointer items-start gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
                         currentConversationId === conv.id
                           ? "bg-accent"
                           : "hover:bg-muted"
@@ -221,7 +229,7 @@ function ChatContent() {
                       >
                         <Trash2 className="h-3 w-3" />
                       </Button>
-                    </button>
+                    </div>
                   ))}
                 </div>
               )}
