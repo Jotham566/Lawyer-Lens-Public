@@ -28,7 +28,7 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useSearch, type SearchMode } from "@/lib/hooks";
-import type { DocumentType, SearchResult, SemanticResult } from "@/lib/api/types";
+import type { DocumentType, SearchResult, SemanticResult, HybridResult } from "@/lib/api/types";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -109,15 +109,15 @@ function SearchContent() {
 
   // Get results based on mode
   const results = data
-    ? "results" in data
-      ? (data.results as (SearchResult | SemanticResult)[])
+    ? "hits" in data
+      ? (data.hits as (SearchResult | SemanticResult | HybridResult)[])
       : []
     : [];
 
   const total = data ? ("total" in data ? data.total : 0) : 0;
   const totalPages = data
-    ? "pages" in data
-      ? data.pages
+    ? "total_pages" in data
+      ? data.total_pages
       : Math.ceil(total / 20)
     : 0;
 
@@ -356,9 +356,9 @@ function SearchContent() {
           {/* Results List */}
           {results.length > 0 && (
             <div className="space-y-3">
-              {results.map((result) => (
+              {results.map((result, index) => (
                 <SearchResultCard
-                  key={"id" in result ? result.id : result.document_id}
+                  key={`${result.document_id}-${index}`}
                   result={result}
                   mode={mode}
                 />
@@ -403,34 +403,38 @@ function SearchContent() {
 }
 
 interface SearchResultCardProps {
-  result: SearchResult | SemanticResult;
+  result: SearchResult | SemanticResult | HybridResult;
   mode: SearchMode;
 }
 
 function SearchResultCard({ result, mode }: SearchResultCardProps) {
-  // Handle both SearchResult and SemanticResult types
-  const id = "id" in result ? result.id : result.document_id;
-  const title = result.title;
   const documentType = result.document_type;
   const config = documentTypeConfig[documentType];
 
-  // Get highlight or snippet content
+  // Get highlight or snippet content based on result type
   const content =
     "highlights" in result
-      ? result.highlights.content?.[0] || result.highlights.title?.[0]
+      ? result.highlights?.full_text?.[0] || result.highlights?.content?.[0] || result.highlights?.title?.[0]
       : "chunk_text" in result
       ? result.chunk_text
       : null;
 
-  // Get relevance indicator
-  const score = "score" in result ? result.score : result.similarity;
+  // Get relevance score based on result type
+  const getScore = (): number => {
+    if ("score" in result) return result.score;
+    if ("similarity_score" in result) return result.similarity_score;
+    if ("combined_score" in result) return result.combined_score;
+    return 0;
+  };
+
+  const score = getScore();
 
   return (
-    <Link href={`/document/${id}`}>
+    <Link href={`/document/${result.document_id}`}>
       <Card className="transition-all hover:border-primary/50 hover:shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
-            <h3 className="font-medium leading-tight">{title}</h3>
+            <h3 className="font-medium leading-tight">{result.title}</h3>
             <Badge className={cn("shrink-0", config?.className)}>
               {config?.label || documentType}
             </Badge>
@@ -449,16 +453,20 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
             />
           )}
           <div className="mt-2 flex items-center gap-3 text-xs text-muted-foreground">
-            {"year" in result && result.year && <span>{result.year}</span>}
-            {"chapter" in result && result.chapter && (
-              <span>Chapter {result.chapter}</span>
+            {"act_year" in result && result.act_year && (
+              <span>{result.act_year}</span>
             )}
             {"case_number" in result && result.case_number && (
               <span>{result.case_number}</span>
             )}
-            {mode !== "keyword" && (
+            {"court_level" in result && result.court_level && (
+              <span>{result.court_level}</span>
+            )}
+            {score > 0 && (
               <span className="ml-auto">
-                {(score * 100).toFixed(0)}% match
+                {mode === "keyword"
+                  ? `Score: ${score.toFixed(1)}`
+                  : `${(score * 100).toFixed(0)}% match`}
               </span>
             )}
           </div>

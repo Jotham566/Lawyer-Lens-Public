@@ -103,27 +103,40 @@ export interface SearchParams {
 export interface SearchHighlight {
   title?: string[];
   content?: string[];
+  full_text?: string[];
 }
 
 export interface SearchResult {
-  id: string;
+  document_id: string;
   human_readable_id: string;
   title: string;
   document_type: DocumentType;
-  year?: number;
-  court_level?: string;
-  chapter?: string;
-  case_number?: string;
-  highlights: SearchHighlight;
   score: number;
+  highlights: SearchHighlight;
+  short_title?: string;
+  act_year?: number;
+  case_number?: string;
+  court_level?: string;
+  court_name?: string;
+  status?: string;
+  publication_date?: string;
+  judgment_date?: string;
 }
 
 export interface SearchResponse {
-  results: SearchResult[];
+  query: string;
   total: number;
   page: number;
-  pages: number;
-  query: string;
+  page_size: number;
+  total_pages: number;
+  took_ms: number;
+  hits: SearchResult[];
+  facets?: {
+    document_types: Record<string, number>;
+    years: Record<string, number>;
+    courts: Record<string, number>;
+    statuses: Record<string, number>;
+  };
 }
 
 // Semantic search types
@@ -136,19 +149,24 @@ export interface SemanticSearchParams {
 
 export interface SemanticResult {
   document_id: string;
+  human_readable_id: string;
   title: string;
   document_type: DocumentType;
+  similarity_score: number;
   chunk_text: string;
-  similarity: number;
-  section_path?: string;
-  metadata?: Record<string, unknown>;
+  chunk_id: string;
+  section_heading?: string;
+  act_year?: number;
+  case_number?: string;
+  court_level?: string;
+  status?: string;
 }
 
 export interface SemanticSearchResponse {
   query: string;
-  results: SemanticResult[];
   total: number;
-  search_type: "semantic";
+  took_ms: number;
+  hits: SemanticResult[];
 }
 
 // Hybrid search types
@@ -160,11 +178,29 @@ export interface HybridSearchParams {
   document_type?: DocumentType;
 }
 
+export interface HybridResult {
+  document_id: string;
+  human_readable_id: string;
+  title: string;
+  document_type: DocumentType;
+  combined_score: number;
+  semantic_score: number;
+  keyword_score: number;
+  chunk_text?: string;
+  section_heading?: string;
+  act_year?: number;
+  case_number?: string;
+  court_level?: string;
+  status?: string;
+}
+
 export interface HybridSearchResponse {
   query: string;
-  results: SemanticResult[];
   total: number;
-  search_type: "hybrid";
+  took_ms: number;
+  semantic_weight: number;
+  keyword_weight: number;
+  hits: HybridResult[];
 }
 
 // Chat types

@@ -41,20 +41,55 @@ export async function searchDocuments(
 
 /**
  * Semantic search with vector embeddings
+ * Note: Backend uses POST with query params (not body)
  */
 export async function semanticSearch(
   params: SemanticSearchParams
 ): Promise<SemanticSearchResponse> {
-  return apiPost<SemanticSearchResponse>("/search/semantic", params);
+  const queryParams: Record<string, string | number | undefined> = {
+    q: params.query,
+    top_k: params.top_k,
+    min_similarity: params.min_similarity,
+    document_type: params.document_type,
+  };
+
+  // Build query string
+  const searchParams = new URLSearchParams();
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.append(key, String(value));
+    }
+  });
+
+  const url = `/search/semantic?${searchParams.toString()}`;
+  return apiPost<SemanticSearchResponse>(url);
 }
 
 /**
  * Hybrid search combining keyword and semantic
+ * Note: Backend uses POST with query params (not body)
  */
 export async function hybridSearch(
   params: HybridSearchParams
 ): Promise<HybridSearchResponse> {
-  return apiPost<HybridSearchResponse>("/search/hybrid", params);
+  const queryParams: Record<string, string | number | undefined> = {
+    q: params.query,
+    top_k: params.top_k,
+    semantic_weight: params.semantic_weight,
+    keyword_weight: params.keyword_weight,
+    document_type: params.document_type,
+  };
+
+  // Build query string
+  const searchParams = new URLSearchParams();
+  Object.entries(queryParams).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.append(key, String(value));
+    }
+  });
+
+  const url = `/search/hybrid?${searchParams.toString()}`;
+  return apiPost<HybridSearchResponse>(url);
 }
 
 /**
