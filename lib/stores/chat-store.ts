@@ -27,6 +27,7 @@ interface ChatState {
   setCurrentConversation: (id: string | null) => void;
   createConversation: () => string;
   deleteConversation: (id: string) => void;
+  renameConversation: (id: string, title: string) => void;
   addMessage: (conversationId: string, message: ChatMessage) => void;
   updateLastMessage: (
     conversationId: string,
@@ -34,6 +35,12 @@ interface ChatState {
     sources?: ChatSource[],
     suggestedFollowups?: string[]
   ) => void;
+  editMessageAndTruncate: (
+    conversationId: string,
+    messageIndex: number,
+    newContent: string
+  ) => void;
+  removeMessagesFrom: (conversationId: string, fromIndex: number) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearConversations: () => void;
@@ -89,6 +96,16 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
+      renameConversation: (id, title) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) =>
+            conv.id === id
+              ? { ...conv, title, updatedAt: new Date().toISOString() }
+              : conv
+          ),
+        }));
+      },
+
       addMessage: (conversationId, message) => {
         set((state) => {
           const conversations = state.conversations.map((conv) => {
@@ -133,6 +150,53 @@ export const useChatStore = create<ChatState>()(
             return {
               ...conv,
               messages,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+
+          return { conversations };
+        });
+      },
+
+      editMessageAndTruncate: (conversationId, messageIndex, newContent) => {
+        set((state) => {
+          const conversations = state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+
+            // Keep messages up to and including the edited message, truncate the rest
+            const messages = conv.messages.slice(0, messageIndex);
+            messages.push({
+              ...conv.messages[messageIndex],
+              content: newContent,
+              timestamp: new Date().toISOString(),
+            });
+
+            // Update title if editing the first user message
+            const title =
+              messageIndex === 0
+                ? generateTitle(newContent)
+                : conv.title;
+
+            return {
+              ...conv,
+              title,
+              messages,
+              updatedAt: new Date().toISOString(),
+            };
+          });
+
+          return { conversations };
+        });
+      },
+
+      removeMessagesFrom: (conversationId, fromIndex) => {
+        set((state) => {
+          const conversations = state.conversations.map((conv) => {
+            if (conv.id !== conversationId) return conv;
+
+            return {
+              ...conv,
+              messages: conv.messages.slice(0, fromIndex),
               updatedAt: new Date().toISOString(),
             };
           });

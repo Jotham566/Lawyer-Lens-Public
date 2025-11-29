@@ -1,8 +1,10 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Send,
   Plus,
@@ -16,6 +18,8 @@ import {
   Copy,
   Check,
   AlertCircle,
+  Pencil,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -27,6 +31,16 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { cn } from "@/lib/utils";
 import {
   useChatStore,
@@ -56,6 +70,8 @@ function ChatContent() {
     createConversation,
     deleteConversation,
     addMessage,
+    editMessageAndTruncate,
+    removeMessagesFrom,
     setLoading,
     setError,
   } = useChatStore();
@@ -63,13 +79,29 @@ function ChatContent() {
   const currentConversation = useCurrentConversation();
   const [input, setInput] = useState(initialQuery || "");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editContent, setEditContent] = useState("");
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const editInputRef = useRef<HTMLTextAreaElement>(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [currentConversation?.messages]);
+
+  // Focus edit input when editing
+  useEffect(() => {
+    if (editingIndex !== null && editInputRef.current) {
+      editInputRef.current.focus();
+      editInputRef.current.setSelectionRange(
+        editContent.length,
+        editContent.length
+      );
+    }
+  }, [editingIndex, editContent]);
 
   // Create conversation and send initial query
   useEffect(() => {
@@ -82,7 +114,7 @@ function ChatContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
-  const handleSend = async (message?: string, conversationId?: string) => {
+  const handleSend = useCallback(async (message?: string, conversationId?: string, messagesForHistory?: ChatMessage[]) => {
     const text = message || input.trim();
     const convId = conversationId || currentConversationId;
 
@@ -106,11 +138,14 @@ function ChatContent() {
     setError(null);
 
     // Get conversation history for context
-    const currentMessages = currentConversation?.messages || [];
-    const conversationHistory = currentMessages.map((msg) => ({
-      role: msg.role,
-      content: msg.content,
-    }));
+    const historyMessages = messagesForHistory || currentConversation?.messages || [];
+    const conversationHistory = [
+      ...historyMessages.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      })),
+      { role: "user", content: text },
+    ];
 
     // Call actual API
     try {
@@ -147,12 +182,22 @@ function ChatContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [input, currentConversationId, currentConversation?.messages, createConversation, addMessage, setLoading, setError]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, index: number) => {
+    if (e.key === "Enter" && !e.shiftKey) {
+      e.preventDefault();
+      handleEditSubmit(index);
+    } else if (e.key === "Escape") {
+      setEditingIndex(null);
+      setEditContent("");
     }
   };
 
@@ -167,25 +212,101 @@ function ChatContent() {
     setInput("");
   };
 
+  const handleDeleteClick = (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setConversationToDelete(id);
+    setDeleteDialogOpen(true);
+  };
+
+  const handleConfirmDelete = () => {
+    if (conversationToDelete) {
+      deleteConversation(conversationToDelete);
+    }
+    setDeleteDialogOpen(false);
+    setConversationToDelete(null);
+  };
+
+  const handleStartEdit = (index: number, content: string) => {
+    setEditingIndex(index);
+    setEditContent(content);
+  };
+
+  const handleCancelEdit = () => {
+    setEditingIndex(null);
+    setEditContent("");
+  };
+
+  const handleEditSubmit = (index: number) => {
+    if (!currentConversationId || !editContent.trim()) return;
+
+    const trimmedContent = editContent.trim();
+    const originalMessage = currentConversation?.messages[index];
+
+    // If content hasn't changed, just cancel
+    if (originalMessage?.content === trimmedContent) {
+      handleCancelEdit();
+      return;
+    }
+
+    // Get messages up to the edited message for history context
+    const messagesBeforeEdit = currentConversation?.messages.slice(0, index) || [];
+
+    // Edit and truncate (removes all messages after this one)
+    editMessageAndTruncate(currentConversationId, index, trimmedContent);
+
+    handleCancelEdit();
+
+    // Re-run the query with the new content
+    setTimeout(() => {
+      handleSend(trimmedContent, currentConversationId, messagesBeforeEdit);
+    }, 50);
+  };
+
+  const handleRegenerate = (messageIndex: number) => {
+    if (!currentConversationId || !currentConversation) return;
+
+    // Find the user message before this assistant message
+    const userMessageIndex = messageIndex - 1;
+    if (userMessageIndex < 0) return;
+
+    const userMessage = currentConversation.messages[userMessageIndex];
+    if (userMessage.role !== "user") return;
+
+    // Get messages up to (but not including) the user message for history
+    const messagesBeforeUser = currentConversation.messages.slice(0, userMessageIndex);
+
+    // Remove the assistant message
+    removeMessagesFrom(currentConversationId, messageIndex);
+
+    // Re-send the user message
+    setTimeout(() => {
+      handleSend(userMessage.content, currentConversationId, messagesBeforeUser);
+    }, 50);
+  };
+
   return (
     <TooltipProvider>
       <div className="flex h-[calc(100vh-3.5rem)] flex-col md:flex-row">
         {/* Conversation Sidebar */}
-        <div className="hidden w-64 flex-col border-r md:flex">
+        <div className="hidden min-w-[280px] max-w-[280px] flex-col border-r bg-muted/30 md:flex">
           <div className="flex items-center justify-between border-b p-3">
             <h2 className="text-sm font-medium">Conversations</h2>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={handleNewConversation}
-            >
-              <Plus className="h-4 w-4" />
-            </Button>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleNewConversation}
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>New conversation</TooltipContent>
+            </Tooltip>
           </div>
 
-          <ScrollArea className="flex-1">
-            <div className="p-2">
+          <div className="flex-1 overflow-y-auto p-2">
               {conversations.length === 0 ? (
                 <p className="px-2 py-4 text-center text-sm text-muted-foreground">
                   No conversations yet
@@ -205,36 +326,40 @@ function ChatContent() {
                         }
                       }}
                       className={cn(
-                        "group flex w-full cursor-pointer items-start gap-2 rounded-lg px-2 py-2 text-left text-sm transition-colors",
+                        "group relative cursor-pointer rounded-lg px-2 py-2 pr-9 text-left text-sm transition-colors",
                         currentConversationId === conv.id
                           ? "bg-accent"
                           : "hover:bg-muted"
                       )}
                     >
-                      <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate font-medium">{conv.title}</p>
-                        <p className="text-xs text-muted-foreground">
-                          {conv.messages.length} messages
-                        </p>
+                      <div className="flex items-start gap-2">
+                        <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="truncate text-sm font-medium" title={conv.title}>
+                            {conv.title}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {conv.messages.length} messages
+                          </p>
+                        </div>
                       </div>
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 shrink-0 opacity-0 transition-opacity group-hover:opacity-100 hover:text-destructive"
+                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
                         onClick={(e) => {
                           e.stopPropagation();
-                          deleteConversation(conv.id);
+                          handleDeleteClick(conv.id, e);
                         }}
+                        title="Delete conversation"
                       >
-                        <Trash2 className="h-3 w-3" />
+                        <Trash2 className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}
                 </div>
               )}
-            </div>
-          </ScrollArea>
+          </div>
         </div>
 
         {/* Chat Area */}
@@ -278,43 +403,78 @@ function ChatContent() {
                 </div>
               ) : (
                 // Messages List
-                <div className="space-y-6">
+                <div className="space-y-8">
                   {currentConversation.messages.map((message, index) => (
                     <div
                       key={`${message.timestamp}-${index}`}
                       className={cn(
-                        "flex gap-3",
+                        "flex gap-4",
                         message.role === "user" ? "justify-end" : "justify-start"
                       )}
                     >
                       {message.role === "assistant" && (
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                          <Bot className="h-4 w-4 text-primary" />
+                          <Bot className="h-5 w-5 text-primary" />
                         </div>
                       )}
 
                       <div
                         className={cn(
-                          "group max-w-[80%] space-y-2",
-                          message.role === "user" && "text-right"
+                          "group space-y-3",
+                          message.role === "user"
+                            ? "max-w-[75%] text-right"
+                            : "max-w-[90%]"
                         )}
                       >
-                        <div
-                          className={cn(
-                            "inline-block rounded-2xl px-4 py-2 text-sm",
-                            message.role === "user"
-                              ? "bg-primary text-primary-foreground"
-                              : "bg-muted"
-                          )}
-                        >
-                          <p className="whitespace-pre-wrap">{message.content}</p>
-                        </div>
+                        {/* User message - editable */}
+                        {message.role === "user" && editingIndex === index ? (
+                          <div className="space-y-2">
+                            <textarea
+                              ref={editInputRef}
+                              value={editContent}
+                              onChange={(e) => setEditContent(e.target.value)}
+                              onKeyDown={(e) => handleEditKeyDown(e, index)}
+                              className="w-full min-w-[300px] resize-none rounded-xl border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              rows={Math.min(editContent.split("\n").length + 1, 6)}
+                            />
+                            <div className="flex justify-end gap-2">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={handleCancelEdit}
+                              >
+                                <X className="mr-1 h-3 w-3" />
+                                Cancel
+                              </Button>
+                              <Button
+                                size="sm"
+                                onClick={() => handleEditSubmit(index)}
+                                disabled={!editContent.trim()}
+                              >
+                                <Send className="mr-1 h-3 w-3" />
+                                Send
+                              </Button>
+                            </div>
+                          </div>
+                        ) : message.role === "user" ? (
+                          <div className="inline-block rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+                            <p className="whitespace-pre-wrap">{message.content}</p>
+                          </div>
+                        ) : (
+                          <div className="max-w-none">
+                            <div className="prose prose-slate dark:prose-invert prose-p:text-[15px] prose-p:leading-7 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:text-[15px] prose-li:leading-7 prose-li:my-2 prose-headings:mt-6 prose-headings:mb-3 prose-headings:font-semibold prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-strong:font-semibold prose-code:text-sm prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:p-4 prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline max-w-none">
+                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                                {message.content}
+                              </ReactMarkdown>
+                            </div>
+                          </div>
+                        )}
 
                         {/* Sources */}
                         {message.sources && message.sources.length > 0 && (
-                          <div className="space-y-2">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Sources:
+                          <div className="mt-4 space-y-2 border-t pt-4">
+                            <p className="text-sm font-medium text-muted-foreground">
+                              Sources
                             </p>
                             <div className="flex flex-wrap gap-2">
                               {message.sources.map((source, srcIndex) => (
@@ -327,9 +487,9 @@ function ChatContent() {
                         {/* Suggested Follow-ups */}
                         {message.suggested_followups &&
                           message.suggested_followups.length > 0 && (
-                            <div className="space-y-2">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Related questions:
+                            <div className="mt-4 space-y-3">
+                              <p className="text-sm font-medium text-muted-foreground">
+                                Related questions
                               </p>
                               <div className="flex flex-wrap gap-2">
                                 {message.suggested_followups.map(
@@ -340,7 +500,7 @@ function ChatContent() {
                                         setInput(followup);
                                         inputRef.current?.focus();
                                       }}
-                                      className="rounded-full border bg-background px-3 py-1 text-xs transition-colors hover:bg-muted"
+                                      className="rounded-full border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
                                     >
                                       {followup}
                                     </button>
@@ -351,35 +511,77 @@ function ChatContent() {
                           )}
 
                         {/* Message Actions */}
-                        {message.role === "assistant" && (
-                          <div className="flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  className="h-6 w-6"
-                                  onClick={() =>
-                                    copyMessage(
-                                      `${message.timestamp}-${index}`,
-                                      message.content
-                                    )
-                                  }
-                                >
-                                  {copiedId === `${message.timestamp}-${index}` ? (
-                                    <Check className="h-3 w-3" />
-                                  ) : (
-                                    <Copy className="h-3 w-3" />
-                                  )}
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Copy</TooltipContent>
-                            </Tooltip>
+                        {editingIndex !== index && (
+                          <div
+                            className={cn(
+                              "flex gap-1 opacity-0 transition-opacity group-hover:opacity-100",
+                              message.role === "user" && "justify-end"
+                            )}
+                          >
+                            {message.role === "user" ? (
+                              // User message actions
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    className="h-6 w-6"
+                                    onClick={() =>
+                                      handleStartEdit(index, message.content)
+                                    }
+                                    disabled={isLoading}
+                                  >
+                                    <Pencil className="h-3 w-3" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Edit message</TooltipContent>
+                              </Tooltip>
+                            ) : (
+                              // Assistant message actions
+                              <>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() =>
+                                        copyMessage(
+                                          `${message.timestamp}-${index}`,
+                                          message.content
+                                        )
+                                      }
+                                    >
+                                      {copiedId === `${message.timestamp}-${index}` ? (
+                                        <Check className="h-3 w-3" />
+                                      ) : (
+                                        <Copy className="h-3 w-3" />
+                                      )}
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Copy</TooltipContent>
+                                </Tooltip>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="h-6 w-6"
+                                      onClick={() => handleRegenerate(index)}
+                                      disabled={isLoading}
+                                    >
+                                      <RefreshCw className="h-3 w-3" />
+                                    </Button>
+                                  </TooltipTrigger>
+                                  <TooltipContent>Regenerate response</TooltipContent>
+                                </Tooltip>
+                              </>
+                            )}
                           </div>
                         )}
                       </div>
 
-                      {message.role === "user" && (
+                      {message.role === "user" && editingIndex !== index && (
                         <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
                           <User className="h-4 w-4" />
                         </div>
@@ -419,7 +621,7 @@ function ChatContent() {
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="border-t p-4">
+          <div className="border-t bg-background p-4">
             <div className="mx-auto max-w-3xl">
               <div className="relative">
                 <textarea
@@ -451,6 +653,28 @@ function ChatContent() {
             </div>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+              <AlertDialogDescription>
+                This action cannot be undone. This will permanently delete this
+                conversation and all its messages.
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              <AlertDialogCancel>Cancel</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleConfirmDelete}
+                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              >
+                Delete
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div>
     </TooltipProvider>
   );
