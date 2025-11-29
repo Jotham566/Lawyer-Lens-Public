@@ -3,8 +3,7 @@
 import { useState, useRef, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
+import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import {
   Send,
   Plus,
@@ -461,13 +460,7 @@ function ChatContent() {
                             <p className="whitespace-pre-wrap">{message.content}</p>
                           </div>
                         ) : (
-                          <div className="max-w-none">
-                            <div className="prose prose-slate dark:prose-invert prose-p:text-[15px] prose-p:leading-7 prose-p:my-4 prose-ul:my-4 prose-ol:my-4 prose-li:text-[15px] prose-li:leading-7 prose-li:my-2 prose-headings:mt-6 prose-headings:mb-3 prose-headings:font-semibold prose-h1:text-xl prose-h2:text-lg prose-h3:text-base prose-strong:font-semibold prose-code:text-sm prose-code:bg-muted prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-pre:bg-muted prose-pre:p-4 prose-blockquote:border-l-primary prose-blockquote:text-muted-foreground prose-a:text-primary prose-a:no-underline hover:prose-a:underline max-w-none">
-                              <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                                {message.content}
-                              </ReactMarkdown>
-                            </div>
-                          </div>
+                          <MarkdownRenderer content={message.content} />
                         )}
 
                         {/* Sources */}
