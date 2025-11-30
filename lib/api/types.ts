@@ -219,7 +219,9 @@ export interface ChatSource {
   document_type: DocumentType;
   excerpt: string;
   relevance_score: number;
-  section?: string;
+  section?: string;  // Human-readable section heading (breadcrumb path)
+  section_id?: string;  // Section identifier for fetching from AKN XML
+  legal_reference?: string;  // Formatted legal reference like "Part II, Section 9(2)"
 }
 
 export interface ChatRequest {
@@ -266,4 +268,45 @@ export interface SearchFacets {
 export interface FacetItem {
   value: string;
   count: number;
+}
+
+// Hierarchy path item for legal reference
+export interface HierarchyPathItem {
+  type: string;  // 'part', 'section', 'subsection', etc.
+  identifier: string;
+  title: string;
+}
+
+// Section extraction types for citation preview
+export interface SectionResponse {
+  document_id: string;
+  eid: string;
+  section_type: string; // 'section', 'subsection', 'paragraph', etc.
+  number: string | null;
+  heading: string | null;
+  content: string; // Plain text content of the section
+  html_content: string | null; // Optional HTML-formatted content
+  parent_eid: string | null;
+  children_eids: string[];
+  hierarchy_path: HierarchyPathItem[]; // Full hierarchy path
+  legal_reference: string | null; // Formatted reference like "Part II, Section 9(2)"
+}
+
+// Expanded source for complete table data
+export interface ExpandedSourceResponse {
+  document_id: string;
+  title: string;
+  human_readable_id: string;
+  document_type: DocumentType;
+  full_excerpt: string; // Complete text, not truncated
+  section: string | null;
+  tables: ExpandedTable[]; // Complete tables from hierarchical structure
+  adjacent_chunks: string[]; // Adjacent content for context
+}
+
+export interface ExpandedTable {
+  rows: string[][];
+  header_rows?: number[];
+  identifier?: string;
+  section?: string;
 }

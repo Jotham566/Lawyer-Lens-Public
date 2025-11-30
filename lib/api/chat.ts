@@ -39,6 +39,7 @@ export async function getChatHealth(): Promise<ChatHealthResponse> {
  */
 export type StreamEvent =
   | { type: "content"; text: string }
+  | { type: "content_update"; fullContent: string }
   | { type: "citations"; citations: ChatSource[] }
   | { type: "done" }
   | { type: "error"; message: string };
@@ -67,12 +68,16 @@ export async function* streamChatWithTypewriter(
   let revealedLength = 0;
   let isStreaming = true;
   let citations: ChatSource[] | null = null;
+  let contentUpdatePending: string | null = null;
 
   // Start the stream
   const streamPromise = (async () => {
     for await (const event of streamChatMessage(request)) {
       if (event.type === "content") {
         contentBuffer += event.text;
+      } else if (event.type === "content_update") {
+        // Backend sends sanitized content - queue it to replace buffer after reveal
+        contentUpdatePending = event.fullContent;
       } else if (event.type === "citations") {
         citations = event.citations;
       } else if (event.type === "done") {
@@ -100,6 +105,11 @@ export async function* streamChatWithTypewriter(
 
   // Wait for stream to complete
   await streamPromise;
+
+  // If there's a content update (sanitized version), send it to replace the content
+  if (contentUpdatePending !== null) {
+    yield { type: "content_update", fullContent: contentUpdatePending };
+  }
 
   // Send citations if we have them
   if (citations) {
@@ -172,6 +182,13 @@ export async function* streamChatMessage(
             } catch (e) {
               console.error("Failed to parse citations:", e);
             }
+            continue;
+          }
+
+          if (content.startsWith("[CONTENT_UPDATE]")) {
+            // Backend sends sanitized content to replace the streamed content
+            const fullContent = content.slice(16).replace(/\\n/g, "\n"); // Remove "[CONTENT_UPDATE]" prefix
+            yield { type: "content_update", fullContent };
             continue;
           }
 

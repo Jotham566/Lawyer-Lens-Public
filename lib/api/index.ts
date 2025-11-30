@@ -20,6 +20,7 @@ export {
   getAvailableYears,
   getCourtLevels,
   getDocumentAknXml,
+  getDocumentSection,
   type AknXmlResponse,
 } from "./documents";
 
@@ -52,6 +53,8 @@ export type {
   HierarchicalNode,
   PaginatedResponse,
   DocumentFilters,
+  // Section types
+  SectionResponse,
   // Search types
   SearchParams,
   SearchHighlight,

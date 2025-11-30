@@ -1,24 +1,105 @@
 "use client";
 
+import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
+import {
+  SourceCitation,
+  parseSourceCitations,
+} from "@/components/citations";
+import { TooltipProvider } from "@/components/ui/tooltip";
+import type { ChatSource } from "@/lib/api/types";
 
 interface MarkdownRendererProps {
   content: string;
   className?: string;
+  /** Sources for citation linking (indexed by number [1], [2], etc.) */
+  sources?: ChatSource[];
+  /** Enable citation preview on hover */
+  enableCitationPreviews?: boolean;
 }
 
-export function MarkdownRenderer({ content, className }: MarkdownRendererProps) {
+/**
+ * Process text to find and render source citations like [1], [2, 3]
+ */
+function renderTextWithCitations(
+  text: string,
+  sources: ChatSource[],
+  enablePreviews: boolean
+): React.ReactNode {
+  if (!enablePreviews || sources.length === 0) {
+    return text;
+  }
+
+  const segments = parseSourceCitations(text);
+
+  // If no citations found, return plain text
+  if (segments.length === 1 && segments[0].type === "text") {
+    return text;
+  }
+
+  return segments.map((segment, idx) => {
+    if (segment.type === "text") {
+      return <React.Fragment key={idx}>{segment.content}</React.Fragment>;
+    }
+
+    // Citation segment
+    return (
+      <SourceCitation
+        key={idx}
+        numbers={segment.numbers!}
+        sources={sources}
+      />
+    );
+  });
+}
+
+/**
+ * Process React children and apply citation rendering to text nodes
+ */
+function processChildren(
+  children: React.ReactNode,
+  sources: ChatSource[],
+  enablePreviews: boolean
+): React.ReactNode {
+  return React.Children.map(children, (child, idx) => {
+    // Only process string children
+    if (typeof child === "string") {
+      return (
+        <React.Fragment key={idx}>
+          {renderTextWithCitations(child, sources, enablePreviews)}
+        </React.Fragment>
+      );
+    }
+    return child;
+  });
+}
+
+export function MarkdownRenderer({
+  content,
+  className,
+  sources = [],
+  enableCitationPreviews = true,
+}: MarkdownRendererProps) {
+  // Helper to process children with citation detection
+  const withCitations = (children: React.ReactNode) => {
+    if (!enableCitationPreviews || sources.length === 0) {
+      return children;
+    }
+    return processChildren(children, sources, true);
+  };
+
   return (
-    <div className={cn("markdown-body", className)}>
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          // Paragraphs
+    <TooltipProvider delayDuration={200}>
+      <div className={cn("markdown-body", className)}>
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+          // Paragraphs - with citation parsing
           p: ({ children }) => (
             <p className="mb-4 text-[15px] leading-7 text-foreground last:mb-0">
-              {children}
+              {withCitations(children)}
             </p>
           ),
 
@@ -56,7 +137,7 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             </ol>
           ),
           li: ({ children }) => (
-            <li className="text-[15px] leading-7">{children}</li>
+            <li className="text-[15px] leading-7">{withCitations(children)}</li>
           ),
 
           // Strong and emphasis
@@ -135,9 +216,10 @@ export function MarkdownRenderer({ content, className }: MarkdownRendererProps) 
             <td className="px-4 py-3 text-foreground">{children}</td>
           ),
         }}
-      >
-        {content}
-      </ReactMarkdown>
-    </div>
+        >
+          {content}
+        </ReactMarkdown>
+      </div>
+    </TooltipProvider>
   );
 }

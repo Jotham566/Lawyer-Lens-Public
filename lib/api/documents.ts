@@ -12,6 +12,8 @@ import type {
   PaginatedResponse,
   RepositoryStats,
   DocumentType,
+  SectionResponse,
+  ExpandedSourceResponse,
 } from "./types";
 
 /**
@@ -143,3 +145,48 @@ export interface AknXmlResponse {
 export async function getDocumentAknXml(id: string): Promise<AknXmlResponse> {
   return apiGet<AknXmlResponse>(`/public/documents/${id}/akn`);
 }
+
+/**
+ * Get a specific section from a document by its AKN eId
+ *
+ * The eId follows AKN naming conventions:
+ * - sec_19 - Section 19
+ * - sec_19__subsec_2 - Section 19(2)
+ * - sec_19__subsec_2__para_a - Section 19(2)(a)
+ *
+ * @param documentId - The UUID of the document
+ * @param eId - The AKN element identifier (e.g., "sec_19__subsec_2")
+ */
+export async function getDocumentSection(
+  documentId: string,
+  eId: string
+): Promise<SectionResponse> {
+  return apiGet<SectionResponse>(`/public/documents/${documentId}/section/${eId}`);
+}
+
+/**
+ * Get expanded source content for a citation
+ *
+ * When a citation excerpt contains table data that may be truncated,
+ * this fetches the complete content from the document's hierarchical structure.
+ *
+ * @param documentId - The UUID of the document
+ * @param excerpt - The partial excerpt to expand
+ * @param section - Optional section reference
+ */
+export async function expandSource(
+  documentId: string,
+  excerpt: string,
+  section?: string
+): Promise<ExpandedSourceResponse> {
+  const params: Record<string, string | undefined> = {
+    excerpt,
+    section,
+  };
+  return apiGet<ExpandedSourceResponse>(
+    `/public/documents/${documentId}/expand-source`,
+    params
+  );
+}
+
+export type { SectionResponse, ExpandedSourceResponse };

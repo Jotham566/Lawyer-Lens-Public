@@ -175,6 +175,11 @@ function ChatContent() {
             fullContent += event.text;
             updateLastMessage(activeConvId, fullContent);
             break;
+          case "content_update":
+            // Backend sends sanitized content - replace the full content
+            fullContent = event.fullContent;
+            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
+            break;
           case "citations":
             sources = event.citations;
             updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
@@ -475,7 +480,11 @@ function ChatContent() {
                             <p className="whitespace-pre-wrap">{message.content}</p>
                           </div>
                         ) : (
-                          <MarkdownRenderer content={message.content} />
+                          <MarkdownRenderer
+                            content={message.content}
+                            sources={message.sources}
+                            enableCitationPreviews={true}
+                          />
                         )}
 
                         {/* Sources */}
