@@ -35,12 +35,87 @@ export async function getChatHealth(): Promise<ChatHealthResponse> {
 }
 
 /**
+ * Stream event types from the chat API
+ */
+export type StreamEvent =
+  | { type: "content"; text: string }
+  | { type: "citations"; citations: ChatSource[] }
+  | { type: "done" }
+  | { type: "error"; message: string };
+
+/**
+ * Configuration for typing animation
+ */
+interface TypewriterConfig {
+  /** Characters to reveal per tick (default: 3) */
+  charsPerTick?: number;
+  /** Delay between ticks in ms (default: 10) */
+  tickDelay?: number;
+}
+
+/**
+ * Stream chat with typewriter effect
+ * Buffers incoming content and reveals it gradually for a typing animation
+ */
+export async function* streamChatWithTypewriter(
+  request: ChatRequest,
+  config: TypewriterConfig = {}
+): AsyncGenerator<StreamEvent, void, unknown> {
+  const { charsPerTick = 10, tickDelay = 10 } = config;
+
+  let contentBuffer = "";
+  let revealedLength = 0;
+  let isStreaming = true;
+  let citations: ChatSource[] | null = null;
+
+  // Start the stream
+  const streamPromise = (async () => {
+    for await (const event of streamChatMessage(request)) {
+      if (event.type === "content") {
+        contentBuffer += event.text;
+      } else if (event.type === "citations") {
+        citations = event.citations;
+      } else if (event.type === "done") {
+        isStreaming = false;
+      } else if (event.type === "error") {
+        isStreaming = false;
+        throw new Error(event.message);
+      }
+    }
+    isStreaming = false;
+  })();
+
+  // Reveal content gradually
+  while (isStreaming || revealedLength < contentBuffer.length) {
+    if (revealedLength < contentBuffer.length) {
+      const nextLength = Math.min(revealedLength + charsPerTick, contentBuffer.length);
+      const newText = contentBuffer.slice(revealedLength, nextLength);
+      revealedLength = nextLength;
+      yield { type: "content", text: newText };
+    }
+
+    // Small delay for typing effect
+    await new Promise(resolve => setTimeout(resolve, tickDelay));
+  }
+
+  // Wait for stream to complete
+  await streamPromise;
+
+  // Send citations if we have them
+  if (citations) {
+    yield { type: "citations", citations };
+  }
+
+  yield { type: "done" };
+}
+
+/**
  * Stream chat response (for real-time typing effect)
- * Returns an async generator that yields response chunks
+ * Returns an async generator that yields stream events
  */
 export async function* streamChatMessage(
   request: ChatRequest
-): AsyncGenerator<string, void, unknown> {
+): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
 
   const response = await fetch(`${API_BASE}/chat/stream`, {
@@ -61,26 +136,48 @@ export async function* streamChatMessage(
   }
 
   const decoder = new TextDecoder();
+  let buffer = "";
 
   try {
     while (true) {
       const { done, value } = await reader.read();
       if (done) break;
 
-      const chunk = decoder.decode(value, { stream: true });
+      buffer += decoder.decode(value, { stream: true });
 
       // Parse SSE format: "data: content\n\n"
-      const lines = chunk.split("\n");
+      const lines = buffer.split("\n\n");
+      // Keep the last incomplete chunk in the buffer
+      buffer = lines.pop() || "";
+
       for (const line of lines) {
         if (line.startsWith("data: ")) {
           const content = line.slice(6); // Remove "data: " prefix
+
           if (content === "[DONE]") {
+            yield { type: "done" };
             return;
           }
+
           if (content.startsWith("[ERROR]")) {
-            throw new Error(content.slice(8));
+            yield { type: "error", message: content.slice(7) };
+            return;
           }
-          yield content;
+
+          if (content.startsWith("[CITATIONS]")) {
+            try {
+              const citationsJson = content.slice(11); // Remove "[CITATIONS]" prefix
+              const citations = JSON.parse(citationsJson) as ChatSource[];
+              yield { type: "citations", citations };
+            } catch (e) {
+              console.error("Failed to parse citations:", e);
+            }
+            continue;
+          }
+
+          // Regular content - unescape newlines
+          const text = content.replace(/\\n/g, "\n");
+          yield { type: "content", text };
         }
       }
     }

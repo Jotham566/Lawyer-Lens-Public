@@ -37,8 +37,10 @@ export {
   sendChatMessage,
   getChatHealth,
   streamChatMessage,
+  streamChatWithTypewriter,
   getSuggestedQuestions,
   mapCitationsToSources,
+  type StreamEvent,
 } from "./chat";
 
 // Types

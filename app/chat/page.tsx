@@ -45,7 +45,7 @@ import {
   useChatStore,
   useCurrentConversation,
 } from "@/lib/stores";
-import { sendChatMessage, getSuggestedQuestions } from "@/lib/api";
+import { streamChatWithTypewriter, getSuggestedQuestions } from "@/lib/api";
 import type { ChatMessage, ChatSource } from "@/lib/api/types";
 
 const suggestedQuestions = [
@@ -69,6 +69,7 @@ function ChatContent() {
     createConversation,
     deleteConversation,
     addMessage,
+    updateLastMessage,
     editMessageAndTruncate,
     removeMessagesFrom,
     setLoading,
@@ -136,6 +137,14 @@ function ChatContent() {
     setLoading(true);
     setError(null);
 
+    // Add placeholder for assistant response
+    const aiMessagePlaceholder: ChatMessage = {
+      role: "assistant",
+      content: "",
+      timestamp: new Date().toISOString(),
+    };
+    addMessage(activeConvId, aiMessagePlaceholder);
+
     // Get conversation history for context
     const historyMessages = messagesForHistory || currentConversation?.messages || [];
     const conversationHistory = [
@@ -146,42 +155,48 @@ function ChatContent() {
       { role: "user", content: text },
     ];
 
-    // Call actual API
+    // Stream the response
     try {
-      const response = await sendChatMessage({
+      let fullContent = "";
+      let sources: ChatSource[] = [];
+
+      const stream = streamChatWithTypewriter({
         message: text,
         conversation_id: activeConvId,
         conversation_history: conversationHistory,
         search_mode: "hybrid",
-        max_context_chunks: 5,
+        max_context_chunks: 10,
         temperature: 0.3,
       });
 
-      // Map API response to ChatMessage format
-      const aiMessage: ChatMessage = {
-        role: "assistant",
-        content: response.content,
-        sources: response.citations.map((citation) => ({
-          document_id: citation.document_id,
-          title: citation.title,
-          human_readable_id: citation.human_readable_id,
-          document_type: citation.document_type,
-          excerpt: citation.excerpt,
-          relevance_score: citation.relevance_score,
-          section: citation.section,
-        })),
-        suggested_followups: getSuggestedQuestions(),
-        timestamp: response.timestamp,
-      };
-
-      addMessage(activeConvId, aiMessage);
+      for await (const event of stream) {
+        switch (event.type) {
+          case "content":
+            fullContent += event.text;
+            updateLastMessage(activeConvId, fullContent);
+            break;
+          case "citations":
+            sources = event.citations;
+            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
+            break;
+          case "error":
+            setError(event.message);
+            break;
+          case "done":
+            // Ensure final update with all data
+            if (sources.length === 0) {
+              updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions());
+            }
+            break;
+        }
+      }
     } catch (err) {
       console.error("Chat error:", err);
       setError(err instanceof Error ? err.message : "Failed to get response");
     } finally {
       setLoading(false);
     }
-  }, [input, currentConversationId, currentConversation?.messages, createConversation, addMessage, setLoading, setError]);
+  }, [input, currentConversationId, currentConversation?.messages, createConversation, addMessage, updateLastMessage, setLoading, setError]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
