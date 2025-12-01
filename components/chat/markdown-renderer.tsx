@@ -3,9 +3,6 @@
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import remarkMath from "remark-math";
-import rehypeKatex from "rehype-katex";
-import "katex/dist/katex.min.css";
 import { cn } from "@/lib/utils";
 import {
   SourceCitation,
@@ -13,6 +10,7 @@ import {
 } from "@/components/citations";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ChatSource } from "@/lib/api/types";
+import katex from "katex";
 
 interface MarkdownRendererProps {
   content: string;
@@ -21,6 +19,105 @@ interface MarkdownRendererProps {
   sources?: ChatSource[];
   /** Enable citation preview on hover */
   enableCitationPreviews?: boolean;
+  /** Whether content is still streaming (defer math rendering) */
+  isStreaming?: boolean;
+}
+
+/**
+ * Auto-render math expressions in a DOM element.
+ * Finds $...$ (inline) and $$...$$ (display) and renders them with KaTeX.
+ */
+function renderMathInElement(element: HTMLElement): void {
+  const delimiters = [
+    { left: "$$", right: "$$", display: true },
+    { left: "$", right: "$", display: false },
+  ];
+
+  const renderMath = (text: string): DocumentFragment => {
+    const fragment = document.createDocumentFragment();
+    let remaining = text;
+
+    while (remaining.length > 0) {
+      let found = false;
+
+      for (const delimiter of delimiters) {
+        const startIdx = remaining.indexOf(delimiter.left);
+        if (startIdx === -1) continue;
+
+        // For $, make sure it's not $$
+        if (delimiter.left === "$" && remaining[startIdx + 1] === "$") {
+          continue;
+        }
+
+        const searchStart = startIdx + delimiter.left.length;
+        let endIdx = remaining.indexOf(delimiter.right, searchStart);
+
+        // For $, make sure we don't match $$
+        if (delimiter.left === "$" && delimiter.right === "$") {
+          while (endIdx !== -1 && remaining[endIdx + 1] === "$") {
+            endIdx = remaining.indexOf(delimiter.right, endIdx + 2);
+          }
+        }
+
+        if (endIdx === -1) continue;
+
+        // Add text before math
+        if (startIdx > 0) {
+          fragment.appendChild(document.createTextNode(remaining.slice(0, startIdx)));
+        }
+
+        // Render math
+        const mathContent = remaining.slice(searchStart, endIdx);
+        const mathSpan = document.createElement("span");
+
+        if (delimiter.display) {
+          mathSpan.className = "block my-4 overflow-x-auto";
+        }
+
+        try {
+          katex.render(mathContent, mathSpan, {
+            displayMode: delimiter.display,
+            throwOnError: false,
+            strict: false,
+          });
+        } catch {
+          mathSpan.textContent = delimiter.left + mathContent + delimiter.right;
+        }
+
+        fragment.appendChild(mathSpan);
+        remaining = remaining.slice(endIdx + delimiter.right.length);
+        found = true;
+        break;
+      }
+
+      if (!found) {
+        // No more math found, add remaining text
+        fragment.appendChild(document.createTextNode(remaining));
+        break;
+      }
+    }
+
+    return fragment;
+  };
+
+  // Process text nodes
+  const walker = document.createTreeWalker(element, NodeFilter.SHOW_TEXT, null);
+  const textNodes: Text[] = [];
+
+  let node: Node | null;
+  while ((node = walker.nextNode())) {
+    if (node.textContent && node.textContent.includes("$")) {
+      textNodes.push(node as Text);
+    }
+  }
+
+  for (const textNode of textNodes) {
+    const text = textNode.textContent || "";
+    if (!text.includes("$")) continue;
+
+    const fragment = renderMath(text);
+    textNode.parentNode?.replaceChild(fragment, textNode);
+  }
 }
 
 /**
@@ -84,7 +181,23 @@ export function MarkdownRenderer({
   className,
   sources = [],
   enableCitationPreviews = true,
+  isStreaming = false,
 }: MarkdownRendererProps) {
+  const containerRef = React.useRef<HTMLDivElement>(null);
+
+  // Process math expressions after render, but only when not streaming
+  React.useEffect(() => {
+    if (!isStreaming && containerRef.current && content.includes("$")) {
+      // Small delay to ensure DOM is fully updated
+      const timer = setTimeout(() => {
+        if (containerRef.current) {
+          renderMathInElement(containerRef.current);
+        }
+      }, 10);
+      return () => clearTimeout(timer);
+    }
+  }, [content, isStreaming]);
+
   // Helper to process children with citation detection
   const withCitations = (children: React.ReactNode) => {
     if (!enableCitationPreviews || sources.length === 0) {
@@ -95,10 +208,9 @@ export function MarkdownRenderer({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className={cn("markdown-body", className)}>
+      <div ref={containerRef} className={cn("markdown-body", className)}>
         <ReactMarkdown
-          remarkPlugins={[remarkGfm, remarkMath]}
-          rehypePlugins={[rehypeKatex]}
+          remarkPlugins={[remarkGfm]}
           components={{
           // Paragraphs - with citation parsing
           p: ({ children }) => (

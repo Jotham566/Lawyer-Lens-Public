@@ -484,6 +484,7 @@ function ChatContent() {
                             content={message.content}
                             sources={message.sources}
                             enableCitationPreviews={true}
+                            isStreaming={isLoading && index === currentConversation.messages.length - 1}
                           />
                         )}
 
