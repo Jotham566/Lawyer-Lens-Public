@@ -3,6 +3,9 @@
 import * as React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import remarkMath from "remark-math";
+import rehypeKatex from "rehype-katex";
+import "katex/dist/katex.min.css";
 import { cn } from "@/lib/utils";
 import {
   SourceCitation,
@@ -94,7 +97,8 @@ export function MarkdownRenderer({
     <TooltipProvider delayDuration={200}>
       <div className={cn("markdown-body", className)}>
         <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
+          remarkPlugins={[remarkGfm, remarkMath]}
+          rehypePlugins={[rehypeKatex]}
           components={{
           // Paragraphs - with citation parsing
           p: ({ children }) => (
