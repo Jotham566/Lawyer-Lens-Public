@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Search,
@@ -8,66 +9,159 @@ import {
   Gavel,
   ScrollText,
   Scale,
-  MessageSquare,
   ArrowRight,
   Sparkles,
+  BookOpen,
+  Zap,
+  Shield,
+  Clock,
+  ChevronRight,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { cn } from "@/lib/utils";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 
-const documentTypes = [
+const searchModes = [
   {
-    title: "Acts",
-    description: "Browse enacted legislation and statutes",
-    icon: FileText,
-    href: "/browse/acts",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    value: "ai",
+    label: "AI Search",
+    description: "Get answers with source citations",
+    icon: "sparkles",
   },
   {
-    title: "Judgments",
-    description: "Access court decisions and case law",
-    icon: Gavel,
-    href: "/browse/judgments",
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-100 dark:bg-purple-900/30",
-  },
-  {
-    title: "Regulations",
-    description: "Find regulatory instruments and rules",
-    icon: ScrollText,
-    href: "/browse/regulations",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-100 dark:bg-green-900/30",
-  },
-  {
-    title: "Constitution",
-    description: "The supreme law of Uganda",
-    icon: Scale,
-    href: "/browse/constitution",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    value: "keyword",
+    label: "Keyword Search",
+    description: "Find exact terms in documents",
+    icon: "search",
   },
 ];
 
 const suggestedQueries = [
-  "What are the penalties for tax evasion?",
-  "Employment termination procedures",
-  "Land registration requirements",
-  "Company incorporation process",
+  {
+    query: "What are the penalties for tax evasion?",
+    category: "Tax Law",
+  },
+  {
+    query: "Employment termination procedures",
+    category: "Employment",
+  },
+  {
+    query: "Land registration requirements",
+    category: "Property",
+  },
+  {
+    query: "Company incorporation process",
+    category: "Corporate",
+  },
+  {
+    query: "Criminal bail conditions",
+    category: "Criminal",
+  },
+  {
+    query: "Child custody rights",
+    category: "Family",
+  },
+];
+
+const quickActions = [
+  {
+    title: "Browse Acts",
+    description: "Explore enacted legislation",
+    icon: FileText,
+    href: "/legislation/acts",
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-50 dark:bg-blue-950/50",
+  },
+  {
+    title: "Find Case Law",
+    description: "Search court judgments",
+    icon: Gavel,
+    href: "/judgments",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-50 dark:bg-purple-950/50",
+  },
+  {
+    title: "View Constitution",
+    description: "The supreme law",
+    icon: Scale,
+    href: "/legislation/constitution",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-50 dark:bg-amber-950/50",
+  },
+  {
+    title: "Regulations",
+    description: "Statutory instruments",
+    icon: ScrollText,
+    href: "/legislation/regulations",
+    color: "text-green-600 dark:text-green-400",
+    bgColor: "bg-green-50 dark:bg-green-950/50",
+  },
+];
+
+const features = [
+  {
+    icon: Sparkles,
+    title: "AI-Powered Answers",
+    description: "Get instant, contextual answers with source citations",
+  },
+  {
+    icon: Zap,
+    title: "Fast Search",
+    description: "Search thousands of documents in milliseconds",
+  },
+  {
+    icon: Shield,
+    title: "Authoritative Sources",
+    description: "Official legislation and court judgments",
+  },
+  {
+    icon: Clock,
+    title: "Always Current",
+    description: "Regularly updated legal database",
+  },
 ];
 
 export default function HomePage() {
+  const router = useRouter();
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
+  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     getRepositoryStats()
       .then(setStats)
       .catch(console.error);
   }, []);
+
+  const handleSearch = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchQuery.trim()) {
+      const query = encodeURIComponent(searchQuery.trim());
+
+      if (searchMode === "ai") {
+        // AI Search goes to chat for AI-powered answers
+        router.push(`/chat?q=${query}`);
+      } else {
+        // Keyword Search goes to search page
+        router.push(`/search?q=${query}&mode=keyword`);
+      }
+    }
+  };
+
+  const handleSuggestedQuery = (query: string) => {
+    router.push(`/chat?q=${encodeURIComponent(query)}`);
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "Enter") {
+      handleSearch(e);
+    }
+  };
 
   // Helper to get count by type
   const getTypeCount = (type: string): number => {
@@ -77,102 +171,182 @@ export default function HomePage() {
   };
 
   return (
-    <div className="flex flex-col">
-      {/* Hero Section */}
-      <section className="relative overflow-hidden border-b bg-gradient-to-b from-background to-muted/30 px-4 py-16 md:py-24">
-        <div className="mx-auto max-w-4xl text-center">
-          <Badge variant="secondary" className="mb-4">
-            <Sparkles className="mr-1 h-3 w-3" />
+    <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      {/* Hero Section - AI First */}
+      <section className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
+        <div className="w-full max-w-3xl mx-auto text-center">
+          {/* Badge */}
+          <Badge
+            variant="secondary"
+            className="mb-6 px-4 py-1.5 text-sm font-medium"
+          >
+            <Sparkles className="mr-2 h-3.5 w-3.5" />
             AI-Powered Legal Research
           </Badge>
-          <h1 className="text-balance text-4xl font-bold tracking-tight md:text-5xl lg:text-6xl">
-            Uganda&apos;s Legal Intelligence Platform
+
+          {/* Main Heading */}
+          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+            Ask anything about{" "}
+            <span className="text-primary">Uganda&apos;s laws</span>
           </h1>
-          <p className="mx-auto mt-4 max-w-2xl text-balance text-lg text-muted-foreground md:text-xl">
-            Access laws, judgments, and regulations. Search with natural
-            language and get AI-powered answers to your legal questions.
+
+          <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            Search legislation, case law, and regulations. Get AI-powered answers
+            with citations to authoritative sources.
           </p>
 
-          {/* Search Box */}
-          <div className="mx-auto mt-8 max-w-2xl">
-            <form action="/search" method="get" className="relative">
-              <Search className="absolute left-4 top-1/2 h-5 w-5 -translate-y-1/2 text-muted-foreground" />
-              <input
-                type="search"
-                name="q"
-                placeholder="Search laws, cases, regulations..."
-                className="h-14 w-full rounded-xl border bg-background pl-12 pr-4 text-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <Button
-                type="submit"
-                size="lg"
-                className="absolute right-2 top-1/2 -translate-y-1/2"
-              >
-                Search
-              </Button>
-            </form>
-          </div>
-
-          {/* Quick Stats - Now from API */}
-          <div className="mt-12 flex flex-wrap items-center justify-center gap-8 text-sm text-muted-foreground">
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">
+          {/* Stats Bar - Prominently Visible */}
+          <div className="mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-8">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
+              <BookOpen className="h-4 w-4 text-primary" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? stats.total_documents.toLocaleString() : "—"}
               </span>
-              <span>Documents</span>
+              <span className="text-sm text-muted-foreground">Documents</span>
             </div>
-            <div className="hidden h-6 w-px bg-border sm:block" />
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/50">
+              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("act").toLocaleString() : "—"}
               </span>
-              <span>Acts</span>
+              <span className="text-sm text-muted-foreground">Acts</span>
             </div>
-            <div className="hidden h-6 w-px bg-border sm:block" />
-            <div className="flex items-center gap-2">
-              <span className="text-2xl font-bold text-foreground">
+            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-950/50">
+              <Gavel className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+              <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("judgment").toLocaleString() : "—"}
               </span>
-              <span>Judgments</span>
+              <span className="text-sm text-muted-foreground">Judgments</span>
+            </div>
+          </div>
+
+          {/* Search Interface */}
+          <div className="mt-8 w-full">
+            {/* Search Mode Tabs */}
+            <Tabs
+              value={searchMode}
+              onValueChange={setSearchMode}
+              className="mb-4"
+            >
+              <TabsList className="grid w-full max-w-sm mx-auto grid-cols-2 h-10">
+                {searchModes.map((mode) => (
+                  <TabsTrigger
+                    key={mode.value}
+                    value={mode.value}
+                    className="text-xs sm:text-sm"
+                  >
+                    {mode.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </Tabs>
+
+            {/* Search Input */}
+            <form onSubmit={handleSearch} className="relative">
+              <div
+                className={cn(
+                  "relative rounded-2xl border-2 bg-background shadow-sm transition-all duration-200",
+                  isFocused
+                    ? "border-primary shadow-lg shadow-primary/10"
+                    : "border-border hover:border-muted-foreground/50"
+                )}
+              >
+                <div className="flex items-center">
+                  <div className="pl-5 pr-3">
+                    {searchMode === "ai" ? (
+                      <Sparkles className="h-5 w-5 text-primary" />
+                    ) : (
+                      <Search className="h-5 w-5 text-muted-foreground" />
+                    )}
+                  </div>
+                  <input
+                    type="text"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={handleKeyDown}
+                    onFocus={() => setIsFocused(true)}
+                    onBlur={() => setIsFocused(false)}
+                    placeholder={
+                      searchMode === "keyword"
+                        ? 'Search exact terms like "Income Tax Act"...'
+                        : "Ask a legal question or search for documents..."
+                    }
+                    className="flex-1 h-14 sm:h-16 bg-transparent text-base sm:text-lg outline-none placeholder:text-muted-foreground/60"
+                  />
+                  <Button
+                    type="submit"
+                    size="lg"
+                    className="mr-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6"
+                    disabled={!searchQuery.trim()}
+                  >
+                    <span className="hidden sm:inline mr-2">Search</span>
+                    <ArrowRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              </div>
+            </form>
+
+            {/* Mode Description */}
+            <p className="mt-3 text-sm text-muted-foreground">
+              {searchModes.find((m) => m.value === searchMode)?.description}
+            </p>
+          </div>
+
+          {/* Suggested Queries */}
+          <div className="mt-8">
+            <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
+            <div className="flex flex-wrap justify-center gap-2">
+              {suggestedQueries.slice(0, 4).map((item) => (
+                <button
+                  key={item.query}
+                  onClick={() => handleSuggestedQuery(item.query)}
+                  className="group inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted hover:border-primary/50"
+                >
+                  <span className="text-xs text-muted-foreground">
+                    {item.category}
+                  </span>
+                  <span className="text-muted-foreground">•</span>
+                  <span className="text-foreground/80 group-hover:text-foreground">
+                    {item.query}
+                  </span>
+                </button>
+              ))}
             </div>
           </div>
         </div>
       </section>
 
-      {/* Document Types */}
-      <section className="px-4 py-12 md:py-16">
+      {/* Quick Actions */}
+      <section className="border-t bg-muted/30 px-4 py-10 md:py-12">
         <div className="mx-auto max-w-6xl">
-          <div className="mb-8 flex items-center justify-between">
-            <div>
-              <h2 className="text-2xl font-semibold tracking-tight">
-                Browse by Type
-              </h2>
-              <p className="mt-1 text-muted-foreground">
-                Explore documents organized by category
-              </p>
-            </div>
-            <Button variant="ghost" asChild>
-              <Link href="/browse">
-                View all <ArrowRight className="ml-1 h-4 w-4" />
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-xl font-semibold">Quick Access</h2>
+            <Button variant="ghost" size="sm" asChild>
+              <Link href="/browse" className="text-muted-foreground">
+                Browse all
+                <ChevronRight className="ml-1 h-4 w-4" />
               </Link>
             </Button>
           </div>
 
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-            {documentTypes.map((type) => (
-              <Link key={type.href} href={type.href}>
-                <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md">
-                  <CardHeader className="pb-2">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            {quickActions.map((action) => (
+              <Link key={action.href} href={action.href}>
+                <Card className="h-full transition-all hover:shadow-md hover:border-primary/30 cursor-pointer group">
+                  <CardContent className="p-4 md:p-5">
                     <div
-                      className={`mb-2 flex h-10 w-10 items-center justify-center rounded-lg ${type.bgColor}`}
+                      className={cn(
+                        "inline-flex h-10 w-10 items-center justify-center rounded-lg mb-3 transition-transform group-hover:scale-105",
+                        action.bgColor
+                      )}
                     >
-                      <type.icon className={`h-5 w-5 ${type.color}`} />
+                      <action.icon className={cn("h-5 w-5", action.color)} />
                     </div>
-                    <CardTitle className="text-lg">{type.title}</CardTitle>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-sm text-muted-foreground">
-                      {type.description}
+                    <h3 className="font-medium text-sm md:text-base">
+                      {action.title}
+                    </h3>
+                    <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                      {action.description}
                     </p>
                   </CardContent>
                 </Card>
@@ -182,66 +356,39 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* AI Assistant Teaser */}
-      <section className="border-t bg-muted/30 px-4 py-12 md:py-16">
+      {/* Features Section */}
+      <section className="px-4 py-10 md:py-12">
         <div className="mx-auto max-w-6xl">
-          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
-            <div>
-              <Badge variant="outline" className="mb-4">
-                <MessageSquare className="mr-1 h-3 w-3" />
-                AI Legal Assistant
-              </Badge>
-              <h2 className="text-3xl font-semibold tracking-tight">
-                Ask questions in plain language
-              </h2>
-              <p className="mt-4 text-lg text-muted-foreground">
-                Get instant answers to your legal questions. Our AI assistant
-                searches through thousands of documents to find relevant
-                information and provides citations.
-              </p>
-              <Button asChild size="lg" className="mt-6">
-                <Link href="/chat">
-                  Try AI Assistant
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Link>
-              </Button>
-            </div>
-
-            <Card className="bg-background">
-              <CardHeader>
-                <CardTitle className="text-base font-medium">
-                  Try asking...
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {suggestedQueries.map((query) => (
-                  <Link
-                    key={query}
-                    href={`/chat?q=${encodeURIComponent(query)}`}
-                    className="block rounded-lg border bg-muted/50 px-4 py-3 text-sm transition-colors hover:bg-muted"
-                  >
-                    &quot;{query}&quot;
-                  </Link>
-                ))}
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
+            {features.map((feature) => (
+              <div key={feature.title} className="text-center">
+                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
+                  <feature.icon className="h-6 w-6 text-primary" />
+                </div>
+                <h3 className="font-medium text-sm md:text-base">
+                  {feature.title}
+                </h3>
+                <p className="text-xs md:text-sm text-muted-foreground mt-1">
+                  {feature.description}
+                </p>
+              </div>
+            ))}
           </div>
         </div>
       </section>
 
       {/* Footer */}
-      <footer className="border-t px-4 py-8">
+      <footer className="border-t px-4 py-4 bg-muted/20">
         <div className="mx-auto max-w-6xl">
-          <div className="flex flex-col items-center justify-between gap-4 text-sm text-muted-foreground sm:flex-row">
-            <p>Lawyer Lens - Uganda Legal Intelligence Platform</p>
-            <div className="flex gap-4">
-              <Link href="/about" className="hover:text-foreground">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="text-sm text-muted-foreground">
+              Lawyer Lens - Uganda Legal Intelligence Platform
+            </p>
+            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+              <Link href="/about" className="hover:text-foreground transition-colors">
                 About
               </Link>
-              <Link href="/legal" className="hover:text-foreground">
-                Legal
-              </Link>
-              <Link href="/help" className="hover:text-foreground">
+              <Link href="/help" className="hover:text-foreground transition-colors">
                 Help
               </Link>
             </div>

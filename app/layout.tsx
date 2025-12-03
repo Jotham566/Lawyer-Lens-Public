@@ -3,7 +3,7 @@ import { Inter, JetBrains_Mono } from "next/font/google";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { Providers } from "@/components/providers";
-import { Sidebar, Header } from "@/components/layout";
+import { AppShell } from "@/components/layout";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -76,18 +76,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <Providers>
-          <div className="relative flex min-h-screen">
-            {/* Sidebar - hidden on mobile, visible on desktop */}
-            <div className="hidden lg:block">
-              <Sidebar />
-            </div>
-
-            {/* Main content area */}
-            <div className="flex flex-1 flex-col">
-              <Header />
-              <main className="flex-1">{children}</main>
-            </div>
-          </div>
+          <AppShell>{children}</AppShell>
         </Providers>
       </body>
     </html>

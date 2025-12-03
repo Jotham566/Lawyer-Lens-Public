@@ -9,10 +9,11 @@ import {
   FileText,
   Gavel,
   ScrollText,
-  Scale,
   X,
   ChevronLeft,
   ChevronRight,
+  BookOpen,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -28,31 +29,47 @@ import {
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
 import { useSearch, type SearchMode } from "@/lib/hooks";
+import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import type { DocumentType, SearchResult, SemanticResult, HybridResult } from "@/lib/api/types";
 
 const documentTypeConfig: Record<
   DocumentType,
-  { label: string; icon: typeof FileText; className: string }
+  { label: string; pluralLabel: string; icon: typeof FileText; className: string; color: string; bgColor: string }
 > = {
-  act: { label: "Act", icon: FileText, className: "badge-act" },
-  judgment: { label: "Judgment", icon: Gavel, className: "badge-judgment" },
+  act: {
+    label: "Act",
+    pluralLabel: "Acts of Parliament",
+    icon: FileText,
+    className: "badge-act",
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-50 dark:bg-blue-950/50",
+  },
+  judgment: {
+    label: "Judgment",
+    pluralLabel: "Court Judgments",
+    icon: Gavel,
+    className: "badge-judgment",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-50 dark:bg-purple-950/50",
+  },
   regulation: {
     label: "Regulation",
+    pluralLabel: "Regulations",
     icon: ScrollText,
     className: "badge-regulation",
+    color: "text-green-600 dark:text-green-400",
+    bgColor: "bg-green-50 dark:bg-green-950/50",
   },
   constitution: {
     label: "Constitution",
-    icon: Scale,
+    pluralLabel: "Constitutional Documents",
+    icon: BookOpen,
     className: "badge-constitution",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-50 dark:bg-amber-950/50",
   },
 };
 
-const searchModes: { value: SearchMode; label: string; description: string }[] = [
-  { value: "keyword", label: "Keyword", description: "Exact word matching" },
-  { value: "semantic", label: "Semantic", description: "AI-powered meaning" },
-  { value: "hybrid", label: "Hybrid", description: "Best of both" },
-];
 
 function SearchContent() {
   const router = useRouter();
@@ -78,10 +95,6 @@ function SearchContent() {
     if (newQuery.trim()) {
       updateSearchParams({ q: newQuery.trim(), page: "1" });
     }
-  };
-
-  const handleModeChange = (newMode: SearchMode) => {
-    updateSearchParams({ mode: newMode, page: "1" });
   };
 
   const handleTypeFilter = (type: DocumentType | "all") => {
@@ -122,10 +135,24 @@ function SearchContent() {
     : 0;
 
   return (
-    <div className="flex flex-col gap-6 p-4 md:p-6">
+    <div className="container mx-auto px-4 py-6 max-w-6xl">
+      <Breadcrumbs className="mb-6" />
+
       {/* Search Header */}
-      <div className="space-y-4">
-        <h1 className="text-2xl font-semibold tracking-tight">Search</h1>
+      <div className="space-y-4 mb-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
+            <Search className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+              Search Legal Documents
+            </h1>
+            <p className="text-muted-foreground">
+              Find acts, judgments, regulations, and constitutional provisions
+            </p>
+          </div>
+        </div>
 
         {/* Search Form */}
         <form onSubmit={handleSearch} className="relative max-w-2xl">
@@ -134,8 +161,8 @@ function SearchContent() {
             type="search"
             name="q"
             defaultValue={query}
-            placeholder="Search laws, cases, regulations..."
-            className="h-11 w-full rounded-lg border bg-background pl-10 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            placeholder="e.g., 'land registration requirements' or 'Civil Appeal No. 123'"
+            className="h-12 w-full rounded-lg border bg-background pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <Button
             type="submit"
@@ -146,22 +173,20 @@ function SearchContent() {
           </Button>
         </form>
 
-        {/* Search Mode Toggle */}
-        <div className="flex flex-wrap items-center gap-2">
-          {searchModes.map((searchMode) => (
-            <Button
-              key={searchMode.value}
-              variant={mode === searchMode.value ? "default" : "outline"}
-              size="sm"
-              onClick={() => handleModeChange(searchMode.value)}
-              className="gap-1"
-            >
-              {searchMode.label}
-              <span className="hidden text-xs opacity-70 sm:inline">
-                ({searchMode.description})
-              </span>
-            </Button>
-          ))}
+        {/* Search Type Indicator with AI Option */}
+        <div className="flex flex-wrap items-center gap-3 text-sm">
+          <div className="flex items-center gap-2 text-muted-foreground">
+            <Search className="h-4 w-4" />
+            <span>Keyword Search</span>
+            <span className="text-xs">(finds exact terms)</span>
+          </div>
+          <span className="text-muted-foreground">|</span>
+          <Button variant="outline" size="sm" className="gap-1.5" asChild>
+            <Link href={query ? `/chat?q=${encodeURIComponent(query)}` : "/chat"}>
+              <Sparkles className="h-3.5 w-3.5" />
+              Switch to AI Search
+            </Link>
+          </Button>
         </div>
       </div>
 

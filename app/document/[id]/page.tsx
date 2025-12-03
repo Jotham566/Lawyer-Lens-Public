@@ -1,20 +1,20 @@
 "use client";
 
-import { use, useState } from "react";
+import { use, useState, useEffect } from "react";
 import Link from "next/link";
 import {
   FileText,
   Download,
   Share2,
   Printer,
-  ChevronRight,
   Check,
   ExternalLink,
   ZoomIn,
   ZoomOut,
   Gavel,
   ScrollText,
-  Scale,
+  BookOpen,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -36,23 +36,42 @@ import { cn } from "@/lib/utils";
 import { useDocument } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
+import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import { SaveButton } from "@/components/library/save-button";
+import { useLibraryStore } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
 
 const documentTypeConfig: Record<
   DocumentType,
-  { label: string; icon: typeof FileText; className: string }
+  { label: string; icon: typeof FileText; className: string; color: string; bgColor: string }
 > = {
-  act: { label: "Act", icon: FileText, className: "badge-act" },
-  judgment: { label: "Judgment", icon: Gavel, className: "badge-judgment" },
+  act: {
+    label: "Act",
+    icon: FileText,
+    className: "badge-act",
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-50 dark:bg-blue-950/50",
+  },
+  judgment: {
+    label: "Judgment",
+    icon: Gavel,
+    className: "badge-judgment",
+    color: "text-purple-600 dark:text-purple-400",
+    bgColor: "bg-purple-50 dark:bg-purple-950/50",
+  },
   regulation: {
     label: "Regulation",
     icon: ScrollText,
     className: "badge-regulation",
+    color: "text-green-600 dark:text-green-400",
+    bgColor: "bg-green-50 dark:bg-green-950/50",
   },
   constitution: {
     label: "Constitution",
-    icon: Scale,
+    icon: BookOpen,
     className: "badge-constitution",
+    color: "text-amber-600 dark:text-amber-400",
+    bgColor: "bg-amber-50 dark:bg-amber-950/50",
   },
 };
 
@@ -67,6 +86,19 @@ export default function DocumentPage({ params }: PageProps) {
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "medium"
   );
+  const addToHistory = useLibraryStore((s) => s.addToHistory);
+
+  // Add to reading history when document loads
+  useEffect(() => {
+    if (document) {
+      addToHistory({
+        documentId: document.id,
+        humanReadableId: document.human_readable_id,
+        title: document.title,
+        documentType: document.document_type,
+      });
+    }
+  }, [document, addToHistory]);
 
   const copyLink = () => {
     navigator.clipboard.writeText(window.location.href);
@@ -119,23 +151,10 @@ export default function DocumentPage({ params }: PageProps) {
     <TooltipProvider>
       <div className="flex flex-col">
         {/* Breadcrumb */}
-        <div className="border-b px-4 py-2 md:px-6">
-          <nav className="flex items-center gap-2 text-sm text-muted-foreground">
-            <Link href="/browse" className="hover:text-foreground">
-              Browse
-            </Link>
-            <ChevronRight className="h-4 w-4" />
-            <Link
-              href={`/browse/${document.document_type}s`}
-              className="hover:text-foreground"
-            >
-              {typeConfig?.label || document.document_type}s
-            </Link>
-            <ChevronRight className="h-4 w-4" />
-            <span className="truncate text-foreground">
-              {document.human_readable_id}
-            </span>
-          </nav>
+        <div className="border-b px-4 py-3 md:px-6">
+          <div className="mx-auto max-w-5xl">
+            <Breadcrumbs />
+          </div>
         </div>
 
         {/* Header */}
@@ -144,13 +163,11 @@ export default function DocumentPage({ params }: PageProps) {
             <div className="flex items-start gap-4">
               <div
                 className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-lg",
-                  typeConfig?.className
-                    ? typeConfig.className.replace("badge-", "bg-").concat("/20")
-                    : "bg-muted"
+                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
+                  typeConfig?.bgColor || "bg-muted"
                 )}
               >
-                <TypeIcon className="h-6 w-6" />
+                <TypeIcon className={cn("h-6 w-6", typeConfig?.color)} />
               </div>
               <div className="min-w-0 flex-1">
                 <div className="flex flex-wrap items-center gap-2">
@@ -177,6 +194,21 @@ export default function DocumentPage({ params }: PageProps) {
 
             {/* Actions */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
+              {/* Save to Library */}
+              <SaveButton
+                document={{
+                  id: document.id,
+                  humanReadableId: document.human_readable_id,
+                  title: document.title,
+                  documentType: document.document_type,
+                  shortTitle: document.short_title,
+                  actYear: document.act_year,
+                  caseNumber: document.case_number,
+                  courtLevel: document.court_level,
+                  publicationDate: document.publication_date,
+                }}
+                size="sm"
+              />
               {/* Judgments: PDF download only */}
               {document.document_type === "judgment" && (
                 <Button variant="outline" size="sm" asChild>
@@ -230,6 +262,14 @@ export default function DocumentPage({ params }: PageProps) {
               <Button variant="outline" size="sm" onClick={handlePrint}>
                 <Printer className="mr-2 h-4 w-4" />
                 Print
+              </Button>
+
+              {/* Ask AI link */}
+              <Button variant="ghost" size="sm" asChild className="ml-auto">
+                <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
+                  <MessageSquare className="mr-2 h-4 w-4" />
+                  Ask AI about this
+                </Link>
               </Button>
             </div>
           </div>

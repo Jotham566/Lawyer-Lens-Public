@@ -10,3 +10,11 @@ export {
   useCurrentConversation,
   useConversationMessages,
 } from "./chat-store";
+export {
+  useLibraryStore,
+  useSavedDocuments,
+  useReadingHistory,
+  useIsDocumentSaved,
+  type SavedDocument,
+  type ReadingHistoryEntry,
+} from "./library-store";
