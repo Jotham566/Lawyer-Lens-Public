@@ -130,7 +130,6 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
-  const [isFocused, setIsFocused] = useState(false);
 
   useEffect(() => {
     getRepositoryStats()
@@ -242,48 +241,37 @@ export default function HomePage() {
             </Tabs>
 
             {/* Search Input */}
-            <form onSubmit={handleSearch} className="relative">
-              <div
-                className={cn(
-                  "relative rounded-2xl border-2 bg-background shadow-sm transition-all duration-200",
-                  isFocused
-                    ? "border-primary shadow-lg shadow-primary/10"
-                    : "border-border hover:border-muted-foreground/50"
-                )}
-              >
-                <div className="flex items-center">
-                  <div className="pl-5 pr-3">
-                    {searchMode === "ai" ? (
-                      <Sparkles className="h-5 w-5 text-primary" />
-                    ) : (
-                      <Search className="h-5 w-5 text-muted-foreground" />
-                    )}
-                  </div>
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    onFocus={() => setIsFocused(true)}
-                    onBlur={() => setIsFocused(false)}
-                    placeholder={
-                      searchMode === "keyword"
-                        ? 'Search exact terms like "Income Tax Act"...'
-                        : "Ask a legal question or search for documents..."
-                    }
-                    className="flex-1 h-14 sm:h-16 bg-transparent text-base sm:text-lg outline-none placeholder:text-muted-foreground/60"
-                  />
-                  <Button
-                    type="submit"
-                    size="lg"
-                    className="mr-2 rounded-xl h-10 sm:h-11 px-4 sm:px-6"
-                    disabled={!searchQuery.trim()}
-                  >
-                    <span className="hidden sm:inline mr-2">Search</span>
-                    <ArrowRight className="h-4 w-4" />
-                  </Button>
+            <form onSubmit={handleSearch} className="flex items-center gap-2">
+              <div className="relative flex-1">
+                <div className="absolute left-4 top-1/2 -translate-y-1/2">
+                  {searchMode === "ai" ? (
+                    <Sparkles className="h-5 w-5 text-primary" />
+                  ) : (
+                    <Search className="h-5 w-5 text-muted-foreground" />
+                  )}
                 </div>
+                <input
+                  type="text"
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  placeholder={
+                    searchMode === "keyword"
+                      ? 'Search exact terms like "Income Tax Act"...'
+                      : "Ask a legal question or search for documents..."
+                  }
+                  className="w-full h-14 sm:h-16 rounded-xl border bg-background pl-12 pr-4 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/60"
+                />
               </div>
+              <Button
+                type="submit"
+                size="lg"
+                className="h-14 sm:h-16 rounded-xl px-4 sm:px-6"
+                disabled={!searchQuery.trim()}
+              >
+                <span className="hidden sm:inline mr-2">Search</span>
+                <ArrowRight className="h-4 w-4" />
+              </Button>
             </form>
 
             {/* Mode Description */}

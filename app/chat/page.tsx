@@ -19,11 +19,21 @@ import {
   AlertCircle,
   Pencil,
   X,
+  Scale,
+  ArrowUp,
+  History,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import {
   Tooltip,
   TooltipContent,
@@ -53,8 +63,32 @@ const suggestedQuestions = [
   "How do I register a company in Uganda?",
   "What are the requirements for land ownership?",
   "Explain the process for filing a civil suit",
-  "What employment rights do workers have?",
 ];
+
+function formatRelativeTime(timestamp: string): string {
+  const date = new Date(timestamp);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const diffMins = Math.floor(diffMs / 60000);
+  const diffHours = Math.floor(diffMs / 3600000);
+  const diffDays = Math.floor(diffMs / 86400000);
+
+  if (diffMins < 1) return "Just now";
+  if (diffMins < 60) return `${diffMins}m ago`;
+  if (diffHours < 24) return `${diffHours}h ago`;
+  if (diffDays < 7) return `${diffDays}d ago`;
+  return date.toLocaleDateString();
+}
+
+function TypingIndicator() {
+  return (
+    <div className="flex items-center gap-1 px-2 py-1">
+      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]" />
+      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]" />
+      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" />
+    </div>
+  );
+}
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -83,6 +117,7 @@ function ChatContent() {
   const [editContent, setEditContent] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
+  const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
@@ -113,6 +148,10 @@ function ChatContent() {
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
+
+  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    setInput(e.target.value);
+  };
 
   const handleSend = useCallback(async (message?: string, conversationId?: string, messagesForHistory?: ChatMessage[]) => {
     const text = message || input.trim();
@@ -229,6 +268,7 @@ function ChatContent() {
   const handleNewConversation = () => {
     createConversation();
     setInput("");
+    setMobileHistoryOpen(false);
   };
 
   const handleDeleteClick = (id: string, e: React.MouseEvent) => {
@@ -303,13 +343,93 @@ function ChatContent() {
     }, 50);
   };
 
+  const handleSelectConversation = (id: string) => {
+    setCurrentConversation(id);
+    setMobileHistoryOpen(false);
+  };
+
+  // Conversation list component (shared between sidebar and mobile sheet)
+  const ConversationList = () => (
+    <div className="flex-1 overflow-y-auto p-2">
+      {conversations.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-8 text-center">
+          <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-2" />
+          <p className="text-sm text-muted-foreground">
+            No conversations yet
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            Start a new chat to begin
+          </p>
+        </div>
+      ) : (
+        <div className="space-y-1">
+          {conversations.map((conv) => (
+            <div
+              key={conv.id}
+              role="button"
+              tabIndex={0}
+              onClick={() => handleSelectConversation(conv.id)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleSelectConversation(conv.id);
+                }
+              }}
+              className={cn(
+                "group relative cursor-pointer rounded-lg px-3 py-3 text-left transition-colors",
+                currentConversationId === conv.id
+                  ? "bg-accent"
+                  : "hover:bg-muted"
+              )}
+            >
+              <div className="flex items-start gap-3 pr-8">
+                <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm font-medium" title={conv.title}>
+                    {conv.title}
+                  </p>
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-xs text-muted-foreground">
+                      {conv.messages.length} messages
+                    </span>
+                    {conv.updatedAt && (
+                      <>
+                        <span className="text-xs text-muted-foreground">·</span>
+                        <span className="text-xs text-muted-foreground">
+                          {formatRelativeTime(conv.updatedAt)}
+                        </span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
+                onClick={(e) => handleDeleteClick(conv.id, e)}
+                aria-label="Delete conversation"
+              >
+                <Trash2 className="h-4 w-4" />
+              </Button>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <TooltipProvider>
-      <div className="flex h-[calc(100vh-3.5rem)] flex-col md:flex-row">
-        {/* Conversation Sidebar */}
+      {/* Account for header (4rem) and mobile bottom nav (4rem on mobile) */}
+      <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
+        {/* Desktop Conversation Sidebar */}
         <div className="hidden min-w-[280px] max-w-[280px] flex-col border-r bg-muted/30 md:flex">
           <div className="flex items-center justify-between border-b p-3">
-            <h2 className="text-sm font-medium">Conversations</h2>
+            <div className="flex items-center gap-2">
+              <Scale className="h-4 w-4 text-primary" />
+              <h2 className="text-sm font-medium">Chat History</h2>
+            </div>
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button
@@ -324,87 +444,75 @@ function ChatContent() {
               <TooltipContent>New conversation</TooltipContent>
             </Tooltip>
           </div>
-
-          <div className="flex-1 overflow-y-auto p-2">
-              {conversations.length === 0 ? (
-                <p className="px-2 py-4 text-center text-sm text-muted-foreground">
-                  No conversations yet
-                </p>
-              ) : (
-                <div className="space-y-1">
-                  {conversations.map((conv) => (
-                    <div
-                      key={conv.id}
-                      role="button"
-                      tabIndex={0}
-                      onClick={() => setCurrentConversation(conv.id)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" || e.key === " ") {
-                          e.preventDefault();
-                          setCurrentConversation(conv.id);
-                        }
-                      }}
-                      className={cn(
-                        "group relative cursor-pointer rounded-lg px-2 py-2 pr-9 text-left text-sm transition-colors",
-                        currentConversationId === conv.id
-                          ? "bg-accent"
-                          : "hover:bg-muted"
-                      )}
-                    >
-                      <div className="flex items-start gap-2">
-                        <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                        <div className="min-w-0 flex-1 overflow-hidden">
-                          <p className="truncate text-sm font-medium" title={conv.title}>
-                            {conv.title}
-                          </p>
-                          <p className="text-xs text-muted-foreground">
-                            {conv.messages.length} messages
-                          </p>
-                        </div>
-                      </div>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleDeleteClick(conv.id, e);
-                        }}
-                        title="Delete conversation"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    </div>
-                  ))}
-                </div>
-              )}
-          </div>
+          <ConversationList />
         </div>
 
         {/* Chat Area */}
         <div className="flex flex-1 flex-col">
+          {/* Chat Header - Mobile */}
+          <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
+            <div className="flex items-center gap-2">
+              <Sparkles className="h-5 w-5 text-primary" />
+              <h1 className="font-semibold">AI Assistant</h1>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8"
+                onClick={handleNewConversation}
+                aria-label="New conversation"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+              <Sheet open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
+                <SheetTrigger asChild>
+                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Chat history">
+                    <History className="h-4 w-4" />
+                  </Button>
+                </SheetTrigger>
+                <SheetContent side="right" className="w-80 p-0">
+                  <SheetHeader className="border-b p-4">
+                    <SheetTitle className="flex items-center gap-2">
+                      <MessageSquare className="h-4 w-4" />
+                      Chat History
+                    </SheetTitle>
+                  </SheetHeader>
+                  <ConversationList />
+                </SheetContent>
+              </Sheet>
+            </div>
+          </div>
+
           {/* Messages */}
           <ScrollArea className="flex-1">
             <div className="mx-auto max-w-3xl px-4 py-6">
               {!currentConversation ||
               currentConversation.messages.length === 0 ? (
-                // Empty State
-                <div className="flex flex-col items-center justify-center py-12 text-center">
-                  <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
-                    <Sparkles className="h-8 w-8 text-primary" />
+                // Empty State - Modern Design
+                <div className="flex flex-col items-center justify-center py-8 md:py-16 text-center">
+                  {/* Gradient Icon Background */}
+                  <div className="relative mb-6">
+                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 blur-xl" />
+                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
+                      <Sparkles className="h-10 w-10 text-primary" />
+                    </div>
                   </div>
-                  <h2 className="text-2xl font-semibold">AI Legal Assistant</h2>
-                  <p className="mt-2 max-w-md text-muted-foreground">
+
+                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
+                    AI Legal Assistant
+                  </h2>
+                  <p className="mt-3 max-w-md text-muted-foreground">
                     Ask questions about Uganda&apos;s laws, regulations, and legal
-                    procedures. I&apos;ll search through thousands of documents to
-                    find relevant information.
+                    procedures. Get answers with citations to authoritative sources.
                   </p>
 
-                  <div className="mt-8 w-full max-w-lg">
-                    <p className="mb-3 text-sm font-medium text-muted-foreground">
+                  {/* Suggested Questions */}
+                  <div className="mt-10 w-full max-w-lg">
+                    <p className="mb-4 text-sm font-medium text-muted-foreground">
                       Try asking:
                     </p>
-                    <div className="grid gap-2">
+                    <div className="grid gap-3">
                       {suggestedQuestions.map((question) => (
                         <button
                           key={question}
@@ -412,9 +520,14 @@ function ChatContent() {
                             setInput(question);
                             inputRef.current?.focus();
                           }}
-                          className="rounded-lg border bg-card px-4 py-3 text-left text-sm transition-colors hover:bg-muted"
+                          className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:bg-muted hover:border-primary/30 hover:shadow-sm"
                         >
-                          &quot;{question}&quot;
+                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
+                            <MessageSquare className="h-4 w-4 text-primary" />
+                          </div>
+                          <span className="text-foreground/80 group-hover:text-foreground">
+                            {question}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -422,7 +535,7 @@ function ChatContent() {
                 </div>
               ) : (
                 // Messages List
-                <div className="space-y-8">
+                <div className="space-y-6">
                   {currentConversation.messages.map((message, index) => (
                     <div
                       key={`${message.timestamp}-${index}`}
@@ -432,7 +545,7 @@ function ChatContent() {
                       )}
                     >
                       {message.role === "assistant" && (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
                           <Bot className="h-5 w-5 text-primary" />
                         </div>
                       )}
@@ -441,7 +554,7 @@ function ChatContent() {
                         className={cn(
                           "group space-y-3",
                           message.role === "user"
-                            ? "max-w-[75%] text-right"
+                            ? "max-w-[80%] text-right"
                             : "max-w-[90%]"
                         )}
                       >
@@ -453,7 +566,7 @@ function ChatContent() {
                               value={editContent}
                               onChange={(e) => setEditContent(e.target.value)}
                               onKeyDown={(e) => handleEditKeyDown(e, index)}
-                              className="w-full min-w-[300px] resize-none rounded-xl border bg-background px-4 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                              className="w-full min-w-[300px] resize-none rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
                               rows={Math.min(editContent.split("\n").length + 1, 6)}
                             />
                             <div className="flex justify-end gap-2">
@@ -476,22 +589,29 @@ function ChatContent() {
                             </div>
                           </div>
                         ) : message.role === "user" ? (
-                          <div className="inline-block rounded-2xl bg-primary px-4 py-2 text-sm text-primary-foreground">
+                          <div className="inline-block rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm selection:bg-primary-foreground selection:text-primary">
                             <p className="whitespace-pre-wrap">{message.content}</p>
                           </div>
+                        ) : message.content === "" && isLoading ? (
+                          // Typing indicator for empty streaming message
+                          <div className="rounded-2xl bg-muted px-4 py-3">
+                            <TypingIndicator />
+                          </div>
                         ) : (
-                          <MarkdownRenderer
-                            content={message.content}
-                            sources={message.sources}
-                            enableCitationPreviews={true}
-                            isStreaming={isLoading && index === currentConversation.messages.length - 1}
-                          />
+                          <div className="rounded-2xl bg-muted/50 px-4 py-3">
+                            <MarkdownRenderer
+                              content={message.content}
+                              sources={message.sources}
+                              enableCitationPreviews={true}
+                              isStreaming={isLoading && index === currentConversation.messages.length - 1}
+                            />
+                          </div>
                         )}
 
                         {/* Sources */}
                         {message.sources && message.sources.length > 0 && (
-                          <div className="mt-4 space-y-2 border-t pt-4">
-                            <p className="text-sm font-medium text-muted-foreground">
+                          <div className="space-y-2 pt-2">
+                            <p className="text-xs font-medium text-muted-foreground">
                               Sources
                             </p>
                             <div className="flex flex-wrap gap-2">
@@ -505,8 +625,8 @@ function ChatContent() {
                         {/* Suggested Follow-ups */}
                         {message.suggested_followups &&
                           message.suggested_followups.length > 0 && (
-                            <div className="mt-4 space-y-3">
-                              <p className="text-sm font-medium text-muted-foreground">
+                            <div className="space-y-2 pt-2">
+                              <p className="text-xs font-medium text-muted-foreground">
                                 Related questions
                               </p>
                               <div className="flex flex-wrap gap-2">
@@ -518,7 +638,7 @@ function ChatContent() {
                                         setInput(followup);
                                         inputRef.current?.focus();
                                       }}
-                                      className="rounded-full border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted"
+                                      className="rounded-full border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
                                     >
                                       {followup}
                                     </button>
@@ -529,7 +649,7 @@ function ChatContent() {
                           )}
 
                         {/* Message Actions */}
-                        {editingIndex !== index && (
+                        {editingIndex !== index && message.content && (
                           <div
                             className={cn(
                               "flex gap-1 opacity-0 transition-opacity group-hover:opacity-100",
@@ -543,13 +663,13 @@ function ChatContent() {
                                   <Button
                                     variant="ghost"
                                     size="icon"
-                                    className="h-6 w-6"
+                                    className="h-7 w-7"
                                     onClick={() =>
                                       handleStartEdit(index, message.content)
                                     }
                                     disabled={isLoading}
                                   >
-                                    <Pencil className="h-3 w-3" />
+                                    <Pencil className="h-3.5 w-3.5" />
                                   </Button>
                                 </TooltipTrigger>
                                 <TooltipContent>Edit message</TooltipContent>
@@ -562,7 +682,7 @@ function ChatContent() {
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6"
+                                      className="h-7 w-7"
                                       onClick={() =>
                                         copyMessage(
                                           `${message.timestamp}-${index}`,
@@ -571,24 +691,26 @@ function ChatContent() {
                                       }
                                     >
                                       {copiedId === `${message.timestamp}-${index}` ? (
-                                        <Check className="h-3 w-3" />
+                                        <Check className="h-3.5 w-3.5 text-green-500" />
                                       ) : (
-                                        <Copy className="h-3 w-3" />
+                                        <Copy className="h-3.5 w-3.5" />
                                       )}
                                     </Button>
                                   </TooltipTrigger>
-                                  <TooltipContent>Copy</TooltipContent>
+                                  <TooltipContent>
+                                    {copiedId === `${message.timestamp}-${index}` ? "Copied!" : "Copy"}
+                                  </TooltipContent>
                                 </Tooltip>
                                 <Tooltip>
                                   <TooltipTrigger asChild>
                                     <Button
                                       variant="ghost"
                                       size="icon"
-                                      className="h-6 w-6"
+                                      className="h-7 w-7"
                                       onClick={() => handleRegenerate(index)}
                                       disabled={isLoading}
                                     >
-                                      <RefreshCw className="h-3 w-3" />
+                                      <RefreshCw className="h-3.5 w-3.5" />
                                     </Button>
                                   </TooltipTrigger>
                                   <TooltipContent>Regenerate response</TooltipContent>
@@ -600,33 +722,20 @@ function ChatContent() {
                       </div>
 
                       {message.role === "user" && editingIndex !== index && (
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted">
-                          <User className="h-4 w-4" />
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
+                          <User className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
                   ))}
 
-                  {/* Loading indicator */}
-                  {isLoading && (
-                    <div className="flex gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
-                        <Bot className="h-4 w-4 text-primary" />
-                      </div>
-                      <div className="flex items-center gap-2 rounded-2xl bg-muted px-4 py-2">
-                        <RefreshCw className="h-4 w-4 animate-spin" />
-                        <span className="text-sm">Thinking...</span>
-                      </div>
-                    </div>
-                  )}
-
                   {/* Error indicator */}
                   {error && (
-                    <div className="flex gap-3">
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-destructive/10">
-                        <AlertCircle className="h-4 w-4 text-destructive" />
+                    <div className="flex gap-4">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
+                        <AlertCircle className="h-5 w-5 text-destructive" />
                       </div>
-                      <div className="rounded-2xl bg-destructive/10 px-4 py-2 text-sm text-destructive">
+                      <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
                         {error}
                       </div>
                     </div>
@@ -639,36 +748,36 @@ function ChatContent() {
           </ScrollArea>
 
           {/* Input Area */}
-          <div className="border-t bg-background p-4">
-            <div className="mx-auto max-w-3xl">
-              <div className="relative">
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  placeholder="Ask a legal question..."
-                  rows={1}
-                  className="w-full resize-none rounded-xl border bg-background px-4 py-3 pr-12 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                  style={{
-                    minHeight: "48px",
-                    maxHeight: "200px",
-                  }}
-                />
-                <Button
-                  size="icon"
-                  className="absolute bottom-1.5 right-1.5 h-8 w-8"
-                  onClick={() => handleSend()}
-                  disabled={!input.trim() || isLoading}
-                >
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="mt-2 text-center text-xs text-muted-foreground">
-                AI responses are generated and may contain inaccuracies. This is
-                not legal advice.
-              </p>
-            </div>
+          <div className="border-t p-4">
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSend();
+              }}
+              className="mx-auto flex max-w-3xl items-end gap-2"
+            >
+              <textarea
+                ref={inputRef}
+                value={input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                placeholder="Ask a legal question..."
+                rows={1}
+                className="min-h-[44px] max-h-[200px] flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              />
+              <Button
+                type="submit"
+                size="icon"
+                className="h-[44px] w-[44px] shrink-0"
+                disabled={!input.trim() || isLoading}
+                aria-label="Send message"
+              >
+                <ArrowUp className="h-5 w-5" />
+              </Button>
+            </form>
+            <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
+              AI responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
+            </p>
           </div>
         </div>
 
@@ -723,15 +832,10 @@ function SourceBadge({ source }: SourceBadgeProps) {
     <Link href={`/document/${source.document_id}`}>
       <Badge
         variant="outline"
-        className={cn("gap-1 transition-colors", getBadgeClass())}
+        className={cn("gap-1.5 transition-colors", getBadgeClass())}
       >
         <FileText className="h-3 w-3" />
-        <span className="max-w-[150px] truncate">{source.title}</span>
-        {source.human_readable_id && (
-          <span className="text-muted-foreground text-xs">
-            [{source.human_readable_id}]
-          </span>
-        )}
+        <span className="max-w-[180px] truncate">{source.title}</span>
       </Badge>
     </Link>
   );
@@ -741,11 +845,14 @@ export default function ChatPage() {
   return (
     <Suspense
       fallback={
-        <div className="flex h-[calc(100vh-3.5rem)] items-center justify-center">
+        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
           <div className="space-y-4 text-center">
-            <Skeleton className="mx-auto h-16 w-16 rounded-full" />
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-4 w-64" />
+            <div className="relative mx-auto">
+              <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl" />
+              <Skeleton className="relative h-20 w-20 rounded-full" />
+            </div>
+            <Skeleton className="h-8 w-48 mx-auto" />
+            <Skeleton className="h-4 w-64 mx-auto" />
           </div>
         </div>
       }
