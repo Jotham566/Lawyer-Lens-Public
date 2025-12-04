@@ -52,6 +52,7 @@
     "@fontsource/jetbrains-mono": "^5.2.8",
     "@tailwindcss/postcss": "^4",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/katex": "^0.16.7",
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
