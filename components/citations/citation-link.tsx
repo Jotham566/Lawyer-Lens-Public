@@ -166,7 +166,7 @@ export function CitationLink({
                 className="h-8 w-full text-xs"
               >
                 <Link
-                  href={`/documents/${documentId}#${eId}`}
+                  href={`/document/${documentId}#${eId}`}
                   className="flex items-center justify-center gap-1"
                 >
                   View in document

@@ -33,6 +33,8 @@ const ROUTE_LABELS: Record<string, string> = {
   ask: "Ask a Question",
   document: "Document",
   browse: "Browse",
+  about: "About",
+  help: "Help & FAQ",
 };
 
 interface BreadcrumbItem {
