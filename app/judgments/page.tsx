@@ -260,7 +260,7 @@ export default function JudgmentsPage() {
             <div className="flex flex-wrap gap-2">
               <Button variant="outline" size="sm" asChild>
                 <Link href={`/chat?q=Recent landmark Supreme Court decisions in Uganda`}>
-                  Ask AI About Case Law
+                  Ask About Case Law
                 </Link>
               </Button>
               <Button variant="outline" size="sm" asChild>

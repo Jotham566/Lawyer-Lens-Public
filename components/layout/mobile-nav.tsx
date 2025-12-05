@@ -36,7 +36,7 @@ const mainNavItems = [
     icon: Home,
   },
   {
-    title: "AI Assistant",
+    title: "Legal Assistant",
     href: "/chat",
     icon: MessageSquareText,
     description: "Ask legal questions",
@@ -270,7 +270,7 @@ export function MobileBottomNav() {
   const tabs = [
     { href: "/", icon: Home, label: "Home" },
     { href: "/legislation", icon: FileText, label: "Laws" },
-    { href: "/chat", icon: MessageSquareText, label: "AI" },
+    { href: "/chat", icon: MessageSquareText, label: "Ask" },
     { href: "/judgments", icon: Gavel, label: "Cases" },
     { href: "/library", icon: BookMarked, label: "Saved" },
   ];

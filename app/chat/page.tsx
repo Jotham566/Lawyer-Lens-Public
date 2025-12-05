@@ -453,7 +453,7 @@ function ChatContent() {
           <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
-              <h1 className="font-semibold">AI Assistant</h1>
+              <h1 className="font-semibold">Legal Assistant</h1>
             </div>
             <div className="flex items-center gap-2">
               <Button
@@ -500,7 +500,7 @@ function ChatContent() {
                   </div>
 
                   <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    AI Legal Assistant
+                    Legal Research Assistant
                   </h2>
                   <p className="mt-3 max-w-md text-muted-foreground">
                     Ask questions about Uganda&apos;s laws, regulations, and legal
@@ -776,7 +776,7 @@ function ChatContent() {
               </Button>
             </form>
             <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
-              AI responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
+              Responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
             </p>
           </div>
         </div>

@@ -1,7 +1,7 @@
 /**
  * Chat API
  *
- * Functions for AI Legal Assistant interactions.
+ * Functions for Legal Assistant interactions.
  */
 
 import { apiPost, apiGet, getApiBaseUrl } from "./client";
@@ -19,7 +19,7 @@ interface ChatHealthResponse {
 }
 
 /**
- * Send a message to the AI Legal Assistant
+ * Send a message to the Legal Assistant
  */
 export async function sendChatMessage(
   request: ChatRequest

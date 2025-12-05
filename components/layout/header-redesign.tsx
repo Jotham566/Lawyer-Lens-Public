@@ -178,7 +178,7 @@ export function HeaderRedesign({
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 ml-auto">
-          {/* AI Assistant Link */}
+          {/* Legal Assistant Link */}
           <Button
             variant="ghost"
             size="sm"
@@ -190,7 +190,7 @@ export function HeaderRedesign({
           >
             <Link href="/chat">
               <MessageSquareText className="h-4 w-4" />
-              <span className="hidden lg:inline">AI Assistant</span>
+              <span className="hidden lg:inline">Legal Assistant</span>
             </Link>
           </Button>
 

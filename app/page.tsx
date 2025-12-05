@@ -28,7 +28,7 @@ import type { RepositoryStats } from "@/lib/api/types";
 const searchModes = [
   {
     value: "ai",
-    label: "AI Search",
+    label: "Smart Search",
     description: "Get answers with source citations",
     icon: "sparkles",
   },
@@ -105,12 +105,12 @@ const quickActions = [
 const features = [
   {
     icon: Sparkles,
-    title: "AI-Powered Answers",
-    description: "Get instant, contextual answers with source citations",
+    title: "Instant Answers",
+    description: "Get contextual answers with source citations in seconds",
   },
   {
     icon: Zap,
-    title: "Fast Search",
+    title: "10x Faster Research",
     description: "Search thousands of documents in milliseconds",
   },
   {
@@ -143,7 +143,7 @@ export default function HomePage() {
       const query = encodeURIComponent(searchQuery.trim());
 
       if (searchMode === "ai") {
-        // AI Search goes to chat for AI-powered answers
+        // Smart Search goes to chat for answers with citations
         router.push(`/chat?q=${query}`);
       } else {
         // Keyword Search goes to search page
@@ -171,7 +171,7 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
-      {/* Hero Section - AI First */}
+      {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
         <div className="w-full max-w-3xl mx-auto text-center">
           {/* Badge */}
@@ -180,7 +180,7 @@ export default function HomePage() {
             className="mb-6 px-4 py-1.5 text-sm font-medium"
           >
             <Sparkles className="mr-2 h-3.5 w-3.5" />
-            AI-Powered Legal Research
+            Professional Legal Research
           </Badge>
 
           {/* Main Heading */}
@@ -190,7 +190,7 @@ export default function HomePage() {
           </h1>
 
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Search legislation, case law, and regulations. Get AI-powered answers
+            Search legislation, case law, and regulations. Get instant answers
             with citations to authoritative sources.
           </p>
 

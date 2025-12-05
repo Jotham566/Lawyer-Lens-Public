@@ -23,7 +23,7 @@ export const metadata: Metadata = {
     template: "%s | Lawyer Lens",
   },
   description:
-    "Access Uganda's laws, judgments, and regulations. Search, browse, and interact with legal documents using AI-powered tools.",
+    "Access Uganda's laws, judgments, and regulations. Search, browse, and get instant answers with citations to authoritative sources.",
   keywords: [
     "Uganda law",
     "legal documents",
@@ -32,7 +32,7 @@ export const metadata: Metadata = {
     "regulations",
     "constitution",
     "legal research",
-    "AI legal assistant",
+    "legal assistant",
   ],
   authors: [{ name: "Lawyer Lens Team" }],
   creator: "Lawyer Lens",
@@ -42,13 +42,13 @@ export const metadata: Metadata = {
     siteName: "Lawyer Lens",
     title: "Lawyer Lens - Uganda Legal Intelligence Platform",
     description:
-      "Access Uganda's laws, judgments, and regulations with AI-powered search.",
+      "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },
   twitter: {
     card: "summary_large_image",
     title: "Lawyer Lens - Uganda Legal Intelligence Platform",
     description:
-      "Access Uganda's laws, judgments, and regulations with AI-powered search.",
+      "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },
   robots: {
     index: true,

@@ -39,7 +39,7 @@ interface NavItem {
 const mainNavItems: NavItem[] = [
   { title: "Home", href: "/", icon: Home },
   { title: "Search", href: "/search", icon: Search },
-  { title: "AI Assistant", href: "/chat", icon: MessageSquare, badge: "AI" },
+  { title: "Legal Assistant", href: "/chat", icon: MessageSquare },
 ];
 
 const browseNavItems: NavItem[] = [

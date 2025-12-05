@@ -1,7 +1,7 @@
 /**
  * Chat Store
  *
- * State management for AI Legal Assistant conversations.
+ * State management for Legal Assistant conversations.
  */
 
 import { create } from "zustand";

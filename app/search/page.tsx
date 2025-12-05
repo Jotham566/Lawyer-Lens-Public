@@ -173,7 +173,7 @@ function SearchContent() {
           </Button>
         </form>
 
-        {/* Search Type Indicator with AI Option */}
+        {/* Search Type Indicator with Smart Search Option */}
         <div className="flex flex-wrap items-center gap-3 text-sm">
           <div className="flex items-center gap-2 text-muted-foreground">
             <Search className="h-4 w-4" />
@@ -184,7 +184,7 @@ function SearchContent() {
           <Button variant="outline" size="sm" className="gap-1.5" asChild>
             <Link href={query ? `/chat?q=${encodeURIComponent(query)}` : "/chat"}>
               <Sparkles className="h-3.5 w-3.5" />
-              Switch to AI Search
+              Get Answers with Citations
             </Link>
           </Button>
         </div>

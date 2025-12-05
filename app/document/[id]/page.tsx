@@ -265,11 +265,11 @@ export default function DocumentPage({ params }: PageProps) {
                 Print
               </Button>
 
-              {/* Ask AI link */}
+              {/* Ask about document link */}
               <Button variant="ghost" size="sm" asChild className="ml-auto">
                 <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
                   <MessageSquare className="mr-2 h-4 w-4" />
-                  Ask AI about this
+                  Ask about this
                 </Link>
               </Button>
             </div>

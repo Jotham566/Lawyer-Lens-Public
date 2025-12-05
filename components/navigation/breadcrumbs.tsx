@@ -29,8 +29,8 @@ const ROUTE_LABELS: Record<string, string> = {
   recent: "Recently Viewed",
   collections: "Collections",
   search: "Search",
-  chat: "AI Assistant",
-  ask: "Ask Legal AI",
+  chat: "Legal Assistant",
+  ask: "Ask a Question",
   document: "Document",
   browse: "Browse",
 };

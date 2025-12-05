@@ -138,7 +138,7 @@ export default function ConstitutionPage() {
               </Button>
               <Button variant="outline" asChild>
                 <Link href={`/chat?q=What are the fundamental rights in Uganda's Constitution?`}>
-                  Ask AI About Constitution
+                  Ask About Constitution
                   <ArrowRight className="ml-2 h-4 w-4" />
                 </Link>
               </Button>

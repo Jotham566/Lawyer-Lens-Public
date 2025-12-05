@@ -75,7 +75,7 @@ export function Header({ className }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/chat">AI Assistant</Link>
+              <Link href="/chat">Legal Assistant</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/help">Help & FAQ</Link>
