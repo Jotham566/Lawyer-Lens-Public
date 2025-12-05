@@ -25,6 +25,18 @@ export interface HierarchicalTable {
   page?: number;
 }
 
+// Text fragment with styling information
+export interface TextFragment {
+  text: string;
+  styles: string[]; // e.g., ["bold"], ["italic"], ["bold", "italic"]
+}
+
+// Styled text block with fragments
+export interface StyledTextBlock {
+  text: string; // Plain text version
+  fragments: TextFragment[];
+}
+
 // Hierarchical structure for document content
 export interface HierarchicalNode {
   type: string;
@@ -32,8 +44,13 @@ export interface HierarchicalNode {
   title?: string;
   label?: string;
   text?: string[];
+  styled_text?: StyledTextBlock[]; // Text with formatting (bold, italic, etc.)
   tables?: HierarchicalTable[];
   children?: HierarchicalNode[];
+  // AKN enrichment fields (added by backend HierarchyEnricher)
+  akn_eid?: string;
+  legal_reference?: string;
+  hierarchy_path?: HierarchyPathItem[];
 }
 
 // Main document interface

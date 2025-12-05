@@ -111,6 +111,17 @@ function DocumentHeader({
   );
 }
 
+// ============ Helper Functions ============
+
+/**
+ * Generate an ID for ToC linking
+ */
+function getNodeId(node: HierarchicalNode): string {
+  if (node.akn_eid) return node.akn_eid;
+  const type = node.type?.toLowerCase() || "node";
+  return `${type}-${node.identifier || "unknown"}`;
+}
+
 // ============ Node Renderer ============
 
 interface RenderNodeProps {
@@ -146,8 +157,9 @@ function RenderNode({ node, depth }: RenderNodeProps) {
 // ============ Structural Components ============
 
 function Part({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
   return (
-    <section className="mt-10 first:mt-0">
+    <section id={id} data-toc-id={id} className="mt-10 first:mt-0 scroll-mt-4">
       <h2 className="text-center font-bold text-lg mb-6">
         {node.identifier && <span>PART {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -161,8 +173,9 @@ function Part({ node }: { node: HierarchicalNode }) {
 }
 
 function Chapter({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
   return (
-    <section className="mt-8">
+    <section id={id} data-toc-id={id} className="mt-8 scroll-mt-4">
       <h3 className="text-center font-bold mb-4">
         {node.identifier && <span>Chapter {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -176,8 +189,9 @@ function Chapter({ node }: { node: HierarchicalNode }) {
 }
 
 function Section({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
   return (
-    <section className="mt-6">
+    <section id={id} data-toc-id={id} className="mt-6 scroll-mt-4">
       <div className="font-bold mb-2">
         {node.identifier && <span>{node.identifier}. </span>}
         {node.title && <span>{node.title}</span>}
@@ -191,11 +205,11 @@ function Section({ node }: { node: HierarchicalNode }) {
 
 function Subsection({ node }: { node: HierarchicalNode }) {
   return (
-    <div className="flex mt-3">
-      <div className="w-12 flex-shrink-0">
+    <div className="flex mt-2">
+      <div className="w-10 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -206,11 +220,11 @@ function Subsection({ node }: { node: HierarchicalNode }) {
 
 function Paragraph({ node }: { node: HierarchicalNode }) {
   return (
-    <div className="flex mt-2 ml-12">
-      <div className="w-10 flex-shrink-0">
+    <div className="flex mt-1.5 ml-10">
+      <div className="w-8 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -221,11 +235,11 @@ function Paragraph({ node }: { node: HierarchicalNode }) {
 
 function Subparagraph({ node }: { node: HierarchicalNode }) {
   return (
-    <div className="flex mt-1 ml-10">
-      <div className="w-10 flex-shrink-0">
+    <div className="flex mt-1 ml-8">
+      <div className="w-8 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
-      <div className="flex-1">
+      <div className="flex-1 min-w-0">
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -235,8 +249,9 @@ function Subparagraph({ node }: { node: HierarchicalNode }) {
 }
 
 function Schedule({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
   return (
-    <section className="mt-10 pt-8 border-t-2 border-border">
+    <section id={id} data-toc-id={id} className="mt-10 pt-8 border-t-2 border-border scroll-mt-4">
       <h2 className="text-center font-bold text-lg mb-6">
         {node.identifier && <span>Schedule {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -250,8 +265,9 @@ function Schedule({ node }: { node: HierarchicalNode }) {
 }
 
 function Article({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
   return (
-    <section className="mt-6">
+    <section id={id} data-toc-id={id} className="mt-6 scroll-mt-4">
       <div className="font-bold mb-2">
         {node.identifier && <span>Article {node.identifier}. </span>}
         {node.title && <span>{node.title}</span>}
@@ -298,7 +314,7 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
   return (
     <div className="node-content">
       {node.text.map((text, index) => (
-        <p key={index} className="my-1">
+        <p key={index} className={index === 0 ? "mt-0 mb-1" : "my-1"}>
           {text}
         </p>
       ))}
