@@ -5,6 +5,15 @@ import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import {
+  ToolsDropdown,
+  ActiveToolIndicator,
+  getToolPlaceholder,
+  getToolEmptyStateTitle,
+  getToolEmptyStateDescription,
+  getToolSuggestedQuestions,
+  type ToolMode,
+} from "@/components/chat/tools-dropdown";
+import {
   Send,
   Plus,
   Trash2,
@@ -55,15 +64,15 @@ import {
   useChatStore,
   useCurrentConversation,
 } from "@/lib/stores";
-import { streamChatWithTypewriter, getSuggestedQuestions } from "@/lib/api";
+import {
+  streamChatWithTypewriter,
+  getSuggestedQuestions,
+  createResearchSession,
+} from "@/lib/api";
 import type { ChatMessage, ChatSource } from "@/lib/api/types";
+import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
 
-const suggestedQuestions = [
-  "What are the penalties for tax evasion in Uganda?",
-  "How do I register a company in Uganda?",
-  "What are the requirements for land ownership?",
-  "Explain the process for filing a civil suit",
-];
+// Default suggested questions for chat mode (tool-specific ones come from getToolSuggestedQuestions)
 
 function formatRelativeTime(timestamp: string): string {
   const date = new Date(timestamp);
@@ -112,7 +121,20 @@ function ChatContent() {
 
   const currentConversation = useCurrentConversation();
   const [input, setInput] = useState(initialQuery || "");
+  const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
   const [copiedId, setCopiedId] = useState<string | null>(null);
+
+  // Tool execution state (will be used for showing inline progress)
+  const [_activeToolExecution, setActiveToolExecution] = useState<{
+    tool: ToolMode;
+    query: string;
+    status: "running" | "complete" | "error";
+    progress?: ToolProgress;
+    result?: ResearchResult | null;
+    error?: string;
+    redirectToChat?: boolean;
+  } | null>(null);
+  void _activeToolExecution; // Suppress unused warning - will be used for inline tool UI
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
@@ -153,18 +175,12 @@ function ChatContent() {
     setInput(e.target.value);
   };
 
-  const handleSend = useCallback(async (message?: string, conversationId?: string, messagesForHistory?: ChatMessage[]) => {
-    const text = message || input.trim();
-    const convId = conversationId || currentConversationId;
-
-    if (!text) return;
-
-    // Create conversation if none exists
-    let activeConvId = convId;
-    if (!activeConvId) {
-      activeConvId = createConversation();
-    }
-
+  // Regular chat function (extracted for reuse when tools redirect to chat)
+  const handleRegularChat = useCallback(async (
+    text: string,
+    activeConvId: string,
+    messagesForHistory?: ChatMessage[]
+  ) => {
     // Add user message
     const userMessage: ChatMessage = {
       role: "user",
@@ -172,7 +188,6 @@ function ChatContent() {
       timestamp: new Date().toISOString(),
     };
     addMessage(activeConvId, userMessage);
-    setInput("");
     setLoading(true);
     setError(null);
 
@@ -215,7 +230,6 @@ function ChatContent() {
             updateLastMessage(activeConvId, fullContent);
             break;
           case "content_update":
-            // Backend sends sanitized content - replace the full content
             fullContent = event.fullContent;
             updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
             break;
@@ -227,7 +241,6 @@ function ChatContent() {
             setError(event.message);
             break;
           case "done":
-            // Ensure final update with all data
             if (sources.length === 0) {
               updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions());
             }
@@ -240,7 +253,135 @@ function ChatContent() {
     } finally {
       setLoading(false);
     }
-  }, [input, currentConversationId, currentConversation?.messages, createConversation, addMessage, updateLastMessage, setLoading, setError]);
+  }, [currentConversation?.messages, addMessage, updateLastMessage, setLoading, setError]);
+
+  const handleSend = useCallback(async (message?: string, conversationId?: string, messagesForHistory?: ChatMessage[]) => {
+    const text = message || input.trim();
+    const convId = conversationId || currentConversationId;
+
+    if (!text) return;
+
+    // Handle Deep Research tool inline
+    if (selectedTool === "deep-research") {
+      setInput("");
+      const toolToUse = selectedTool;
+      setSelectedTool("chat"); // Reset tool after use
+
+      // Create conversation if none exists
+      let activeConvId = convId;
+      if (!activeConvId) {
+        activeConvId = createConversation();
+      }
+
+      // Add user message
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: `🔍 **Deep Research:** ${text}`,
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConvId, userMessage);
+
+      // Set tool execution state
+      setActiveToolExecution({
+        tool: toolToUse,
+        query: text,
+        status: "running",
+        progress: { phase: "starting", message: "Starting deep research..." },
+      });
+
+      try {
+        // Create research session
+        const session = await createResearchSession({ query: text });
+
+        // Check if triage redirected to chat (simple query)
+        if (session.status === "redirect_to_chat") {
+          setActiveToolExecution(null);
+          // Fall back to normal chat for simple queries
+          await handleRegularChat(text, activeConvId, messagesForHistory);
+          return;
+        }
+
+        // Update progress based on session status
+        setActiveToolExecution(prev => prev ? {
+          ...prev,
+          progress: {
+            phase: session.status === "clarifying" ? "clarifying" : "researching",
+            message: session.status === "clarifying"
+              ? "This query requires clarification. Please use the full research interface."
+              : "Research in progress...",
+          },
+        } : null);
+
+        // For now, show a message that deep research is available at /research
+        // TODO: Implement full inline research flow with clarification UI
+        const assistantMessage: ChatMessage = {
+          role: "assistant",
+          content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(activeConvId, assistantMessage);
+        setActiveToolExecution(null);
+
+      } catch (err) {
+        console.error("Research error:", err);
+        setActiveToolExecution({
+          tool: toolToUse,
+          query: text,
+          status: "error",
+          error: err instanceof Error ? err.message : "Failed to start research",
+        });
+
+        // Add error message
+        const errorMessage: ChatMessage = {
+          role: "assistant",
+          content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(activeConvId, errorMessage);
+        setActiveToolExecution(null);
+      }
+      return;
+    }
+
+    // Handle Draft Contract tool
+    if (selectedTool === "draft-contract") {
+      setInput("");
+      setSelectedTool("chat"); // Reset tool after use
+
+      // Create conversation if none exists
+      let activeConvId = convId;
+      if (!activeConvId) {
+        activeConvId = createConversation();
+      }
+
+      // Add user message
+      const userMessage: ChatMessage = {
+        role: "user",
+        content: `📄 **Draft Contract:** ${text}`,
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConvId, userMessage);
+
+      // For contract drafting, direct to the contracts page for now
+      // TODO: Implement inline contract flow
+      const assistantMessage: ChatMessage = {
+        role: "assistant",
+        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConvId, assistantMessage);
+      return;
+    }
+
+    // Regular chat - create conversation if none exists
+    let activeConvId = convId;
+    if (!activeConvId) {
+      activeConvId = createConversation();
+    }
+
+    setInput("");
+    await handleRegularChat(text, activeConvId, messagesForHistory);
+  }, [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage]);
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
@@ -499,21 +640,30 @@ function ChatContent() {
                     </div>
                   </div>
 
+                  {/* Active Tool Indicator */}
+                  {selectedTool !== "chat" && (
+                    <div className="mb-4">
+                      <ActiveToolIndicator
+                        tool={selectedTool}
+                        onClear={() => setSelectedTool("chat")}
+                      />
+                    </div>
+                  )}
+
                   <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    Legal Research Assistant
+                    {getToolEmptyStateTitle(selectedTool)}
                   </h2>
                   <p className="mt-3 max-w-md text-muted-foreground">
-                    Ask questions about Uganda&apos;s laws, regulations, and legal
-                    procedures. Get answers with citations to authoritative sources.
+                    {getToolEmptyStateDescription(selectedTool)}
                   </p>
 
                   {/* Suggested Questions */}
                   <div className="mt-10 w-full max-w-lg">
                     <p className="mb-4 text-sm font-medium text-muted-foreground">
-                      Try asking:
+                      {selectedTool === "draft-contract" ? "Try these:" : "Try asking:"}
                     </p>
                     <div className="grid gap-3">
-                      {suggestedQuestions.map((question) => (
+                      {getToolSuggestedQuestions(selectedTool).map((question) => (
                         <button
                           key={question}
                           onClick={() => {
@@ -749,32 +899,50 @@ function ChatContent() {
 
           {/* Input Area */}
           <div className="border-t p-4">
-            <form
-              onSubmit={(e) => {
-                e.preventDefault();
-                handleSend();
-              }}
-              className="mx-auto flex max-w-3xl items-end gap-2"
-            >
-              <textarea
-                ref={inputRef}
-                value={input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                placeholder="Ask a legal question..."
-                rows={1}
-                className="min-h-[44px] max-h-[200px] flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-              />
-              <Button
-                type="submit"
-                size="icon"
-                className="h-[44px] w-[44px] shrink-0"
-                disabled={!input.trim() || isLoading}
-                aria-label="Send message"
+            <div className="mx-auto max-w-3xl">
+              {/* Tool Selection Row */}
+              <div className="flex items-center gap-2 mb-3">
+                <ToolsDropdown
+                  selectedTool={selectedTool}
+                  onSelectTool={setSelectedTool}
+                  disabled={isLoading}
+                />
+                {selectedTool !== "chat" && (
+                  <ActiveToolIndicator
+                    tool={selectedTool}
+                    onClear={() => setSelectedTool("chat")}
+                  />
+                )}
+              </div>
+
+              {/* Input Form */}
+              <form
+                onSubmit={(e) => {
+                  e.preventDefault();
+                  handleSend();
+                }}
+                className="flex items-end gap-2"
               >
-                <ArrowUp className="h-5 w-5" />
-              </Button>
-            </form>
+                <textarea
+                  ref={inputRef}
+                  value={input}
+                  onChange={handleInputChange}
+                  onKeyDown={handleKeyDown}
+                  placeholder={getToolPlaceholder(selectedTool)}
+                  rows={1}
+                  className="min-h-[44px] max-h-[200px] flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-[44px] w-[44px] shrink-0"
+                  disabled={!input.trim() || isLoading}
+                  aria-label="Send message"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              </form>
+            </div>
             <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
               Responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
             </p>

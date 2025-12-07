@@ -44,6 +44,53 @@ export {
   type StreamEvent,
 } from "./chat";
 
+// Research API
+export {
+  createResearchSession,
+  getResearchSession,
+  submitClarifyingAnswers,
+  approveResearchBrief,
+  getResearchReport,
+  streamResearchProgress,
+  type ResearchStatus,
+  type ResearchPhase,
+  type ClarifyingQuestion,
+  type ResearchTopic,
+  type ResearchBrief,
+  type ResearchSession,
+  type CreateResearchRequest,
+  type ClarifyAnswers,
+  type ResearchReport,
+  type ResearchSection,
+  type ResearchCitation,
+  type StreamProgress,
+  type ResearchTopicRequest,
+  type ApproveBriefRequest,
+} from "./research";
+
+// Contracts API
+export {
+  getContractTemplates,
+  getContractTemplate,
+  createContractSession,
+  getContractSession,
+  submitContractRequirements,
+  submitContractReview,
+  getContractDownloadUrl,
+  streamContractProgress,
+  type ContractPhase,
+  type ContractTemplate,
+  type TemplateField,
+  type ContractSession,
+  type ContractRequirements,
+  type PartyInfo,
+  type ContractDraft,
+  type ContractSection,
+  type CreateContractRequest,
+  type ContractReview,
+  type SectionEdit,
+} from "./contracts";
+
 // Types
 export type {
   // Document types
