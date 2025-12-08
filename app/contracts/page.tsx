@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -11,12 +11,17 @@ import {
   AlertCircle,
   ChevronRight,
   Download,
-  Edit3,
   Plus,
   Trash2,
   Building2,
   User,
   Sparkles,
+  PenLine,
+  X,
+  Check,
+  List,
+  Shield,
+  Scale,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -38,12 +43,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import {
   getContractTemplates,
@@ -55,6 +54,7 @@ import {
   type ContractTemplate,
   type ContractSession,
   type ContractRequirements,
+  type ContractQuestion,
   type PartyInfo,
 } from "@/lib/api";
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
@@ -104,10 +104,15 @@ function ContractsContent() {
     { ...defaultParty, role: "Second Party" },
   ]);
   const [keyTerms, setKeyTerms] = useState<Record<string, string>>({});
+  const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [jurisdiction, setJurisdiction] = useState("Uganda");
   const [sectionEdits, setSectionEdits] = useState<Record<string, string>>({});
+  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [activeSection, setActiveSection] = useState<string | null>(null);
+  const showSidebar = true; // Always show sidebar in review phase
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
   // Load templates
   useEffect(() => {
@@ -222,7 +227,9 @@ function ContractsContent() {
       const requirements: ContractRequirements = {
         parties: parties.filter((p) => p.name.trim()),
         key_terms: keyTerms,
+        variable_values: variableValues,
         jurisdiction,
+        effective_date: keyTerms.effective_date,
       };
 
       const updatedSession = await submitContractRequirements(
@@ -279,11 +286,88 @@ function ContractsContent() {
     setParties(updated);
   };
 
+  const renderQuestionInput = (question: ContractQuestion) => {
+    const value = variableValues[question.variable] || "";
+    const updateValue = (newValue: string) => {
+      setVariableValues((prev) => ({ ...prev, [question.variable]: newValue }));
+    };
+
+    switch (question.question_type) {
+      case "select":
+        return (
+          <Select value={value} onValueChange={updateValue}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select an option" />
+            </SelectTrigger>
+            <SelectContent>
+              {question.options?.map((option: string) => (
+                <SelectItem key={option} value={option}>
+                  {option}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        );
+      case "textarea":
+        return (
+          <Textarea
+            value={value}
+            onChange={(e) => updateValue(e.target.value)}
+            className="mt-1 min-h-[100px]"
+            placeholder="Enter your response..."
+          />
+        );
+      case "date":
+        return (
+          <Input
+            type="date"
+            value={value}
+            onChange={(e) => updateValue(e.target.value)}
+            className="mt-1"
+          />
+        );
+      case "number":
+        return (
+          <Input
+            type="number"
+            value={value}
+            onChange={(e) => updateValue(e.target.value)}
+            className="mt-1"
+            placeholder="Enter a number"
+          />
+        );
+      case "boolean":
+        return (
+          <Select value={value} onValueChange={updateValue}>
+            <SelectTrigger className="mt-1">
+              <SelectValue placeholder="Select yes or no" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="yes">Yes</SelectItem>
+              <SelectItem value="no">No</SelectItem>
+            </SelectContent>
+          </Select>
+        );
+      default: // text
+        return (
+          <Input
+            type="text"
+            value={value}
+            onChange={(e) => updateValue(e.target.value)}
+            className="mt-1"
+            placeholder="Enter your response..."
+          />
+        );
+    }
+  };
+
   const renderPhaseIndicator = () => {
     if (!session) return null;
 
     const phases = ["requirements", "drafting", "review", "complete"];
-    const currentIndex = phases.indexOf(session.phase);
+    // Map "approval" phase to "complete" for display purposes
+    const displayPhase = session.phase === "approval" ? "complete" : session.phase;
+    const currentIndex = phases.indexOf(displayPhase);
 
     return (
       <div className="flex items-center gap-2 mb-6">
@@ -532,45 +616,93 @@ function ContractsContent() {
                 ))}
               </div>
 
-              {/* Key Terms */}
-              <div className="space-y-3">
-                <Label className="text-base">Key Terms</Label>
-                <div className="grid gap-3">
-                  <div>
-                    <Label className="text-xs">Effective Date</Label>
-                    <Input
-                      type="date"
-                      value={keyTerms.effective_date || ""}
-                      onChange={(e) =>
-                        setKeyTerms({ ...keyTerms, effective_date: e.target.value })
-                      }
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Duration/Term</Label>
-                    <Input
-                      value={keyTerms.duration || ""}
-                      onChange={(e) =>
-                        setKeyTerms({ ...keyTerms, duration: e.target.value })
-                      }
-                      placeholder="E.g., 2 years, indefinite, project completion"
-                      className="mt-1"
-                    />
-                  </div>
-                  <div>
-                    <Label className="text-xs">Value/Consideration</Label>
-                    <Input
-                      value={keyTerms.value || ""}
-                      onChange={(e) =>
-                        setKeyTerms({ ...keyTerms, value: e.target.value })
-                      }
-                      placeholder="E.g., UGX 5,000,000 per month"
-                      className="mt-1"
-                    />
+              {/* Key Terms - shown when no dynamic questions */}
+              {(!session.questions || session.questions.length === 0) && (
+                <div className="space-y-3">
+                  <Label className="text-base">Key Terms</Label>
+                  <div className="grid gap-3">
+                    <div>
+                      <Label className="text-xs">Effective Date</Label>
+                      <Input
+                        type="date"
+                        value={keyTerms.effective_date || ""}
+                        onChange={(e) =>
+                          setKeyTerms({ ...keyTerms, effective_date: e.target.value })
+                        }
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Duration/Term</Label>
+                      <Input
+                        value={keyTerms.duration || ""}
+                        onChange={(e) =>
+                          setKeyTerms({ ...keyTerms, duration: e.target.value })
+                        }
+                        placeholder="E.g., 2 years, indefinite, project completion"
+                        className="mt-1"
+                      />
+                    </div>
+                    <div>
+                      <Label className="text-xs">Value/Consideration</Label>
+                      <Input
+                        value={keyTerms.value || ""}
+                        onChange={(e) =>
+                          setKeyTerms({ ...keyTerms, value: e.target.value })
+                        }
+                        placeholder="E.g., UGX 5,000,000 per month"
+                        className="mt-1"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
+
+              {/* Dynamic Questions from Backend */}
+              {session.questions && session.questions.length > 0 && (
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-4 w-4 text-green-500" />
+                    <Label className="text-base">Contract Details</Label>
+                  </div>
+                  <p className="text-sm text-muted-foreground -mt-2">
+                    Please answer the following questions to customize your contract.
+                  </p>
+
+                  {/* Group questions by their group field */}
+                  {(() => {
+                    const groups = session.questions.reduce((acc, q) => {
+                      const group = q.group || "general";
+                      if (!acc[group]) acc[group] = [];
+                      acc[group].push(q);
+                      return acc;
+                    }, {} as Record<string, ContractQuestion[]>);
+
+                    return Object.entries(groups).map(([groupName, questions]) => (
+                      <div key={groupName} className="space-y-3">
+                        {Object.keys(groups).length > 1 && (
+                          <Label className="text-sm font-medium text-muted-foreground capitalize">
+                            {groupName.replace(/_/g, " ")}
+                          </Label>
+                        )}
+                        <div className="grid gap-4">
+                          {questions.map((question) => (
+                            <div key={question.id}>
+                              <Label className="text-sm">
+                                {question.question}
+                                {question.required && (
+                                  <span className="text-destructive ml-1">*</span>
+                                )}
+                              </Label>
+                              {renderQuestionInput(question)}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    ));
+                  })()}
+                </div>
+              )}
 
               {/* Jurisdiction */}
               <div>
@@ -657,162 +789,473 @@ function ContractsContent() {
     );
   }
 
-  // Review phase
+  // Review phase - Document-centric design with sidebar navigation
   if (session?.phase === "review" && session.draft) {
+    const scrollToSection = (sectionId: string) => {
+      const element = sectionRefs.current[sectionId];
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+        setActiveSection(sectionId);
+      }
+    };
+
+    const handleSaveSection = (_sectionId: string) => {
+      setEditingSection(null);
+    };
+
+    const handleCancelEdit = (sectionId: string) => {
+      // Revert to original content
+      const newEdits = { ...sectionEdits };
+      delete newEdits[sectionId];
+      setSectionEdits(newEdits);
+      setEditingSection(null);
+    };
+
+    const getSectionContent = (sectionId: string, originalContent: string) => {
+      return sectionEdits[sectionId] !== undefined ? sectionEdits[sectionId] : originalContent;
+    };
+
     return (
       <TooltipProvider>
-        <div className="container mx-auto max-w-4xl px-4 py-8">
-          <div className="flex items-center justify-between mb-6">
-            <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <ArrowLeft className="h-4 w-4" />
-              Back to Chat
-            </Link>
-          </div>
-
-          {renderPhaseIndicator()}
-
-          <div className="space-y-6">
-            {/* Draft Header */}
-            <Card>
-              <CardHeader>
-                <div className="flex items-start gap-4">
-                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-green-500/10">
-                    <FileText className="h-6 w-6 text-green-500" />
-                  </div>
-                  <div className="flex-1">
-                    <CardTitle className="text-xl">{session.draft.title}</CardTitle>
-                    <CardDescription className="mt-1">
-                      Review the draft below and make any necessary edits before finalizing.
-                    </CardDescription>
+        <div className="min-h-screen bg-muted/30">
+          {/* Sticky Header */}
+          <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+            <div className="container mx-auto px-4">
+              <div className="flex h-16 items-center justify-between">
+                <div className="flex items-center gap-4">
+                  <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                    <ArrowLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Back</span>
+                  </Link>
+                  <div className="hidden sm:block h-6 w-px bg-border" />
+                  <div className="flex items-center gap-2">
+                    <Scale className="h-5 w-5 text-green-600" />
+                    <h1 className="font-semibold truncate max-w-[200px] sm:max-w-none">
+                      {session.draft.title}
+                    </h1>
                   </div>
                 </div>
-              </CardHeader>
-            </Card>
+                <div className="flex items-center gap-2">
+                  <Badge variant="secondary" className="hidden sm:flex">
+                    <FileText className="h-3 w-3 mr-1" />
+                    {session.draft.sections.length} sections
+                  </Badge>
+                  <Button
+                    onClick={handleApproveContract}
+                    disabled={isLoading}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isLoading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        <span className="hidden sm:inline">Approve & Finalize</span>
+                        <span className="sm:hidden">Approve</span>
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </div>
 
-            {/* Warnings */}
-            {session.draft.warnings && session.draft.warnings.length > 0 && (
-              <Card className="border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
-                <CardContent className="pt-4">
-                  <div className="flex items-start gap-3">
-                    <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
-                      <p className="font-medium text-amber-800 dark:text-amber-200">
-                        Review Notes
-                      </p>
-                      <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
-                        {session.draft.warnings.map((warning, i) => (
-                          <li key={i}>{warning}</li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Contract Sections */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">Contract Content</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Accordion type="multiple" className="w-full">
-                  {session.draft.sections.map((section, index) => {
-                    const sectionId = section.id || `section-${index}`;
-                    const sectionTitle = section.title || `Section ${index + 1}`;
-
-                    return (
-                      <AccordionItem key={sectionId} value={sectionId}>
-                        <AccordionTrigger className="text-left">
-                          <div className="flex items-center gap-2">
-                            <span>{sectionTitle}</span>
-                            {section.editable && (
-                              <Badge variant="outline" className="ml-2">
-                                <Edit3 className="h-3 w-3 mr-1" />
-                                Editable
-                              </Badge>
-                            )}
+          <div className="container mx-auto px-4 py-6">
+            <div className="flex gap-6">
+              {/* Sidebar - Table of Contents */}
+              <aside className={cn(
+                "hidden lg:block w-64 shrink-0",
+                !showSidebar && "lg:hidden"
+              )}>
+                <div className="sticky top-24 space-y-4">
+                  {/* Info Cards */}
+                  {(session.draft.warnings?.length > 0 || session.draft.compliance_notes?.length > 0) && (
+                    <Card className="overflow-hidden">
+                      {session.draft.warnings && session.draft.warnings.length > 0 && (
+                        <div className="p-3 border-b bg-amber-50 dark:bg-amber-950/30">
+                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
+                            <AlertCircle className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              {session.draft.warnings.length} Review Note{session.draft.warnings.length !== 1 && "s"}
+                            </span>
                           </div>
-                        </AccordionTrigger>
-                        <AccordionContent>
-                          <div className="space-y-3 pt-2">
-                            {section.editable !== false ? (
-                              <Textarea
-                                value={
-                                  sectionEdits[sectionId] !== undefined
-                                    ? sectionEdits[sectionId]
-                                    : section.content
-                                }
-                                onChange={(e) =>
-                                  setSectionEdits({
-                                    ...sectionEdits,
-                                    [sectionId]: e.target.value,
-                                  })
-                                }
-                                className="min-h-[150px] font-mono text-sm"
-                              />
-                            ) : (
-                              <div className="prose prose-sm dark:prose-invert max-w-none">
-                                <MarkdownRenderer content={section.content} />
+                        </div>
+                      )}
+                      {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
+                        <div className="p-3 bg-green-50 dark:bg-green-950/30">
+                          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
+                            <Shield className="h-4 w-4" />
+                            <span className="text-sm font-medium">
+                              {session.draft.compliance_notes.length} Compliance Note{session.draft.compliance_notes.length !== 1 && "s"}
+                            </span>
+                          </div>
+                        </div>
+                      )}
+                    </Card>
+                  )}
+
+                  {/* Table of Contents */}
+                  <Card>
+                    <CardHeader className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <List className="h-4 w-4 text-muted-foreground" />
+                        <span className="text-sm font-medium">Contents</span>
+                      </div>
+                    </CardHeader>
+                    <CardContent className="p-0">
+                      <nav className="max-h-[calc(100vh-320px)] overflow-y-auto">
+                        <ul className="py-2">
+                          {session.draft.sections.map((section, index) => {
+                            const sectionId = section.id || `section-${index}`;
+                            // Try to get a meaningful title: use section.title, or extract from content
+                            const extractTitle = (content: string) => {
+                              // Try to find a heading or first meaningful line
+                              const lines = content.split('\n').filter(l => l.trim());
+                              const firstLine = lines[0] || '';
+                              // Remove markdown heading markers and clean up
+                              return firstLine.replace(/^#+\s*/, '').replace(/^\*+\s*/, '').trim().slice(0, 50);
+                            };
+                            const sectionTitle = section.title && section.title !== `Section ${index + 1}`
+                              ? section.title
+                              : extractTitle(section.content) || `Section ${index + 1}`;
+                            const isActive = activeSection === sectionId;
+                            const isEdited = sectionEdits[sectionId] !== undefined;
+                            const contentLength = section.content?.length || 0;
+                            const isCurrentlyEditing = editingSection === sectionId;
+
+                            return (
+                              <li key={sectionId}>
+                                <button
+                                  onClick={() => scrollToSection(sectionId)}
+                                  className={cn(
+                                    "w-full text-left px-4 py-2.5 text-sm transition-colors group",
+                                    "hover:bg-muted/80",
+                                    isActive && "bg-muted border-l-2 border-primary",
+                                    !isActive && "border-l-2 border-transparent",
+                                    isCurrentlyEditing && "bg-primary/5 border-l-2 border-primary"
+                                  )}
+                                >
+                                  <div className="flex items-start gap-2">
+                                    <span className={cn(
+                                      "flex items-center justify-center h-5 w-5 rounded text-xs font-medium shrink-0 mt-0.5",
+                                      isActive || isCurrentlyEditing ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                                    )}>
+                                      {index + 1}
+                                    </span>
+                                    <div className="flex-1 min-w-0">
+                                      <div className="flex items-center gap-1">
+                                        <span className={cn(
+                                          "font-medium truncate",
+                                          isActive && "text-primary"
+                                        )}>
+                                          {sectionTitle}
+                                        </span>
+                                        {isCurrentlyEditing && (
+                                          <PenLine className="h-3 w-3 text-primary shrink-0" />
+                                        )}
+                                      </div>
+                                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
+                                        <span>{Math.ceil(contentLength / 100) * 100}+ chars</span>
+                                        {isEdited && (
+                                          <Badge variant="outline" className="h-4 px-1 text-[10px] text-amber-600 border-amber-300">
+                                            modified
+                                          </Badge>
+                                        )}
+                                        {!section.editable && (
+                                          <Badge variant="outline" className="h-4 px-1 text-[10px]">
+                                            locked
+                                          </Badge>
+                                        )}
+                                      </div>
+                                    </div>
+                                  </div>
+                                </button>
+                              </li>
+                            );
+                          })}
+                        </ul>
+                      </nav>
+                    </CardContent>
+                  </Card>
+                </div>
+              </aside>
+
+              {/* Main Document Content */}
+              <main className="flex-1 min-w-0">
+                {/* Warnings Banner */}
+                {session.draft.warnings && session.draft.warnings.length > 0 && (
+                  <Card className="mb-6 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
+                    <CardContent className="py-4">
+                      <div className="flex items-start gap-3">
+                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+                        <div className="space-y-2 flex-1">
+                          <p className="font-medium text-amber-800 dark:text-amber-200">
+                            Review Notes
+                          </p>
+                          <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
+                            {session.draft.warnings.map((warning, i) => (
+                              <li key={i} className="flex items-start gap-2">
+                                <span className="text-amber-500">•</span>
+                                {warning}
+                              </li>
+                            ))}
+                          </ul>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* Document */}
+                <Card className="shadow-lg">
+                  {/* Document Header */}
+                  <div className="border-b bg-muted/30 p-6 text-center">
+                    <h1 className="text-2xl font-bold tracking-tight">
+                      {session.draft.title}
+                    </h1>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Generated {new Date(session.created_at).toLocaleDateString("en-US", {
+                        year: "numeric",
+                        month: "long",
+                        day: "numeric",
+                      })}
+                    </p>
+                  </div>
+
+                  {/* Document Body - All sections visible */}
+                  <div className="divide-y">
+                    {session.draft.sections.map((section, index) => {
+                      const sectionId = section.id || `section-${index}`;
+                      const sectionTitle = section.title || `Section ${index + 1}`;
+                      const isEditing = editingSection === sectionId;
+                      const content = getSectionContent(sectionId, section.content);
+
+                      return (
+                        <div
+                          key={sectionId}
+                          ref={(el) => { sectionRefs.current[sectionId] = el; }}
+                          className={cn(
+                            "scroll-mt-24 transition-colors",
+                            activeSection === sectionId && "bg-primary/5"
+                          )}
+                        >
+                          {/* Section Header */}
+                          <div className="sticky top-16 z-10 flex items-center justify-between px-6 py-3 bg-muted/50 border-b">
+                            <div className="flex items-center gap-3">
+                              <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary text-sm font-medium">
+                                {index + 1}
+                              </span>
+                              <h2 className="font-semibold text-base">
+                                {sectionTitle}
+                              </h2>
+                            </div>
+                            {section.editable !== false && (
+                              <div className="flex items-center gap-2">
+                                {isEditing ? (
+                                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
+                                    <PenLine className="h-3 w-3 mr-1" />
+                                    Editing
+                                  </Badge>
+                                ) : (
+                                  <Tooltip>
+                                    <TooltipTrigger asChild>
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => setEditingSection(sectionId)}
+                                        className="text-muted-foreground hover:text-foreground"
+                                      >
+                                        <PenLine className="h-4 w-4 mr-1" />
+                                        Edit
+                                      </Button>
+                                    </TooltipTrigger>
+                                    <TooltipContent>
+                                      <p>Click to edit or double-click content</p>
+                                    </TooltipContent>
+                                  </Tooltip>
+                                )}
                               </div>
                             )}
                           </div>
-                        </AccordionContent>
-                      </AccordionItem>
-                    );
-                  })}
-                </Accordion>
-              </CardContent>
-            </Card>
 
-            {/* Compliance Notes */}
-            {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
-              <Card>
-                <CardHeader>
-                  <CardTitle className="text-lg flex items-center gap-2">
-                    <CheckCircle2 className="h-5 w-5 text-green-500" />
-                    Compliance Notes
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <ul className="space-y-2">
-                    {session.draft.compliance_notes.map((note, i) => (
-                      <li key={i} className="flex items-start gap-2 text-sm">
-                        <ChevronRight className="h-4 w-4 mt-0.5 text-green-500 shrink-0" />
-                        {note}
-                      </li>
-                    ))}
-                  </ul>
-                </CardContent>
-              </Card>
-            )}
+                          {/* Section Content */}
+                          <div className="p-6">
+                            {isEditing ? (
+                              <div className="space-y-3">
+                                {/* Edit Mode Panel */}
+                                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 overflow-hidden">
+                                  {/* Editor Header */}
+                                  <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20">
+                                    <div className="flex items-center gap-2 text-sm text-primary">
+                                      <PenLine className="h-4 w-4" />
+                                      <span className="font-medium">Editing: {sectionTitle}</span>
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {content.length} characters
+                                    </div>
+                                  </div>
 
-            {error && (
-              <div className="flex items-center gap-2 text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
-                <AlertCircle className="h-4 w-4" />
-                {error}
-              </div>
-            )}
+                                  {/* Textarea */}
+                                  <Textarea
+                                    value={content}
+                                    onChange={(e) =>
+                                      setSectionEdits({
+                                        ...sectionEdits,
+                                        [sectionId]: e.target.value,
+                                      })
+                                    }
+                                    onKeyDown={(e) => {
+                                      // Escape to cancel
+                                      if (e.key === "Escape") {
+                                        handleCancelEdit(sectionId);
+                                      }
+                                      // Cmd/Ctrl + Enter to save
+                                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
+                                        handleSaveSection(sectionId);
+                                      }
+                                    }}
+                                    className="min-h-[250px] font-serif text-base leading-relaxed resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
+                                    autoFocus
+                                    placeholder="Enter section content..."
+                                  />
 
-            {/* Actions */}
-            <div className="flex gap-3">
-              <Button
-                onClick={handleApproveContract}
-                disabled={isLoading}
-                className="flex-1"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Finalizing...
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Approve & Finalize
-                  </>
+                                  {/* Editor Footer with Actions */}
+                                  <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-t">
+                                    <div className="text-xs text-muted-foreground">
+                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Esc</kbd>
+                                      <span className="mx-1">to cancel</span>
+                                      <span className="mx-2">|</span>
+                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Cmd</kbd>
+                                      <span className="mx-0.5">+</span>
+                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd>
+                                      <span className="mx-1">to save</span>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() => handleCancelEdit(sectionId)}
+                                      >
+                                        <X className="h-4 w-4 mr-1" />
+                                        Cancel
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        onClick={() => handleSaveSection(sectionId)}
+                                        className="bg-primary"
+                                      >
+                                        <Check className="h-4 w-4 mr-1" />
+                                        Save Changes
+                                      </Button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            ) : (
+                              <div
+                                className="prose prose-slate dark:prose-invert max-w-none
+                                  prose-headings:font-semibold prose-headings:tracking-tight
+                                  prose-p:leading-relaxed prose-p:text-justify
+                                  prose-li:marker:text-muted-foreground
+                                  group cursor-pointer rounded-lg transition-colors hover:bg-muted/30"
+                                onDoubleClick={() => {
+                                  if (section.editable !== false) {
+                                    setEditingSection(sectionId);
+                                  }
+                                }}
+                                title={section.editable !== false ? "Double-click to edit" : undefined}
+                              >
+                                <MarkdownRenderer content={content} />
+                                {section.editable !== false && (
+                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 text-xs text-muted-foreground flex items-center gap-1">
+                                    <PenLine className="h-3 w-3" />
+                                    Double-click to edit
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  {/* Signature Block Placeholder */}
+                  <div className="border-t p-6 bg-muted/20">
+                    <div className="grid sm:grid-cols-2 gap-8">
+                      <div className="space-y-4">
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                          First Party
+                        </p>
+                        <div className="border-b border-dashed pt-8" />
+                        <p className="text-sm text-muted-foreground">Signature</p>
+                        <div className="border-b border-dashed pt-8" />
+                        <p className="text-sm text-muted-foreground">Date</p>
+                      </div>
+                      <div className="space-y-4">
+                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
+                          Second Party
+                        </p>
+                        <div className="border-b border-dashed pt-8" />
+                        <p className="text-sm text-muted-foreground">Signature</p>
+                        <div className="border-b border-dashed pt-8" />
+                        <p className="text-sm text-muted-foreground">Date</p>
+                      </div>
+                    </div>
+                  </div>
+                </Card>
+
+                {/* Compliance Notes */}
+                {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
+                  <Card className="mt-6">
+                    <CardHeader className="pb-3">
+                      <CardTitle className="text-base flex items-center gap-2">
+                        <Shield className="h-5 w-5 text-green-600" />
+                        Compliance Notes
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <ul className="space-y-2">
+                        {session.draft.compliance_notes.map((note, i) => (
+                          <li key={i} className="flex items-start gap-3 text-sm">
+                            <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 shrink-0" />
+                            <span className="text-muted-foreground">{note}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </CardContent>
+                  </Card>
                 )}
-              </Button>
+
+                {error && (
+                  <div className="mt-6 flex items-center gap-2 text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
+                    <AlertCircle className="h-4 w-4" />
+                    {error}
+                  </div>
+                )}
+
+                {/* Mobile Actions */}
+                <div className="lg:hidden mt-6">
+                  <Button
+                    onClick={handleApproveContract}
+                    disabled={isLoading}
+                    className="w-full bg-green-600 hover:bg-green-700"
+                    size="lg"
+                  >
+                    {isLoading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Finalizing...
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="mr-2 h-4 w-4" />
+                        Approve & Finalize Contract
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </main>
             </div>
           </div>
         </div>
@@ -820,8 +1263,8 @@ function ContractsContent() {
     );
   }
 
-  // Complete phase
-  if (session?.phase === "complete") {
+  // Complete/Approval phase - show success screen
+  if (session?.phase === "complete" || session?.phase === "approval") {
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">

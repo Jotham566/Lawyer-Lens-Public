@@ -15,6 +15,7 @@ export type ContractPhase =
   | "requirements"
   | "drafting"
   | "review"
+  | "approval"
   | "complete"
   | "failed";
 
@@ -37,23 +38,42 @@ export interface TemplateField {
   default_value?: string;
 }
 
+export interface ContractQuestion {
+  id: string;
+  variable: string;
+  question: string;
+  question_type: "text" | "number" | "date" | "select" | "multiselect" | "boolean" | "textarea";
+  options?: string[];
+  required: boolean;
+  group: string;
+}
+
 export interface ContractSession {
   session_id: string;
   template_id?: string;
+  status: string;
+  contract_type: string;
   description: string;
+  title?: string;
   phase: ContractPhase;
+  questions?: ContractQuestion[];
   requirements?: ContractRequirements;
   draft?: ContractDraft;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
+  progress_percent?: number;
   error?: string;
 }
 
 export interface ContractRequirements {
   parties: PartyInfo[];
   key_terms: Record<string, string>;
+  variable_values?: Record<string, string>;
   special_clauses?: string[];
   jurisdiction: string;
+  effective_date?: string;
+  term_months?: number;
+  contract_value?: number;
 }
 
 export interface PartyInfo {

@@ -81,6 +81,7 @@ export {
   type ContractPhase,
   type ContractTemplate,
   type TemplateField,
+  type ContractQuestion,
   type ContractSession,
   type ContractRequirements,
   type PartyInfo,
