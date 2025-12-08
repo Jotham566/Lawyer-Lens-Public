@@ -111,6 +111,12 @@ export interface ResearchCitation {
   case_citation?: string;
   external_url?: string;
   relevance_score: number;
+  // Enhanced fields for document linking
+  document_id?: string;
+  akn_eid?: string;
+  document_url?: string;
+  court?: string;
+  quoted_text?: string;
 }
 
 export interface StreamProgress {

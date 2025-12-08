@@ -718,9 +718,8 @@ function ContractsContent() {
               <CardContent>
                 <Accordion type="multiple" className="w-full">
                   {session.draft.sections.map((section, index) => {
-                    // Handle both id and section_id for backwards compatibility
-                    const sectionId = section.id || section.section_id || `section-${index}`;
-                    const sectionTitle = section.title || section.heading || `Section ${index + 1}`;
+                    const sectionId = section.id || `section-${index}`;
+                    const sectionTitle = section.title || `Section ${index + 1}`;
 
                     return (
                       <AccordionItem key={sectionId} value={sectionId}>

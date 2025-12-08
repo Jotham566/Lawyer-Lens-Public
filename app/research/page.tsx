@@ -16,6 +16,10 @@ import {
   BookOpen,
   Clock,
   Sparkles,
+  Pencil,
+  Plus,
+  Trash2,
+  X,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -88,6 +92,42 @@ function ResearchContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<StreamProgress | null>(null);
+
+  // Brief editing state
+  const [isEditingBrief, setIsEditingBrief] = useState(false);
+  const [editedTopics, setEditedTopics] = useState<Array<{
+    id: string;
+    title: string;
+    description: string;
+    keywords: string[];
+    priority: number;
+  }>>([]);
+  const [editedJurisdictions, setEditedJurisdictions] = useState<string[]>([]);
+  const [editedDocTypes, setEditedDocTypes] = useState<string[]>([]);
+  const [editedTimeScope, setEditedTimeScope] = useState("current");
+  const [editedReportFormat, setEditedReportFormat] = useState("comprehensive");
+
+  // Initialize editing state when brief is available
+  useEffect(() => {
+    if (session?.research_brief && !isEditingBrief) {
+      setEditedTopics(session.research_brief.topics?.map(t => ({
+        id: t.id,
+        title: t.title,
+        description: t.description || "",
+        keywords: t.keywords || [],
+        priority: t.priority || 1,
+      })) || []);
+      setEditedJurisdictions(session.research_brief.jurisdictions || ["Uganda"]);
+      // Filter out any invalid document types from backend response
+      const validDocTypes = ["legislation", "judgment", "regulation", "schedule", "treaty", "web"];
+      const backendDocTypes = session.research_brief.document_types || [];
+      setEditedDocTypes(backendDocTypes.filter(dt => validDocTypes.includes(dt)).length > 0
+        ? backendDocTypes.filter(dt => validDocTypes.includes(dt))
+        : ["legislation", "judgment"]);
+      setEditedTimeScope(session.research_brief.time_scope || "current");
+      setEditedReportFormat(session.research_brief.report_format || "comprehensive");
+    }
+  }, [session?.research_brief, isEditingBrief]);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -172,27 +212,33 @@ function ResearchContent() {
     setError(null);
 
     try {
-      // Construct the ApproveBriefRequest with full brief data
+      // Use edited values if in edit mode, otherwise use original brief
       const briefRequest: ApproveBriefRequest = {
         brief: {
           query: session.research_brief.original_query,
           clarifications: session.research_brief.clarifications || [],
-          jurisdictions: session.research_brief.jurisdictions || ["Uganda"],
-          document_types: session.research_brief.document_types || ["legislation", "judgment"],
-          time_scope: session.research_brief.time_scope || "current",
-          topics: session.research_brief.topics?.map((topic) => ({
+          jurisdictions: editedJurisdictions.length > 0 ? editedJurisdictions : ["Uganda"],
+          document_types: editedDocTypes.length > 0 ? editedDocTypes : ["legislation", "judgment"],
+          time_scope: editedTimeScope || "current",
+          topics: editedTopics.length > 0 ? editedTopics.map((topic) => ({
+            title: topic.title,
+            description: topic.description || "",
+            keywords: topic.keywords || [],
+            priority: topic.priority || 1,
+          })) : session.research_brief.topics?.map((topic) => ({
             title: topic.title,
             description: topic.description || "",
             keywords: topic.keywords || [],
             priority: topic.priority || 1,
           })) || [],
-          report_format: session.research_brief.report_format || "comprehensive",
+          report_format: editedReportFormat || "comprehensive",
           include_recommendations: session.research_brief.include_recommendations ?? true,
         },
       };
 
       const updatedSession = await approveResearchBrief(session.session_id, briefRequest);
       setSession(updatedSession);
+      setIsEditingBrief(false);
       startProgressStream(session.session_id);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to approve brief");
@@ -200,6 +246,180 @@ function ResearchContent() {
       setIsLoading(false);
     }
   };
+
+  // Helper functions for brief editing
+  const addTopic = () => {
+    setEditedTopics([...editedTopics, {
+      id: `topic-${Date.now()}`,
+      title: "",
+      description: "",
+      keywords: [],
+      priority: editedTopics.length + 1,
+    }]);
+  };
+
+  const removeTopic = (id: string) => {
+    setEditedTopics(editedTopics.filter(t => t.id !== id));
+  };
+
+  const updateTopic = (id: string, field: string, value: string | string[] | number) => {
+    setEditedTopics(editedTopics.map(t =>
+      t.id === id ? { ...t, [field]: value } : t
+    ));
+  };
+
+  const toggleDocType = (docType: string) => {
+    if (editedDocTypes.includes(docType)) {
+      setEditedDocTypes(editedDocTypes.filter(dt => dt !== docType));
+    } else {
+      setEditedDocTypes([...editedDocTypes, docType]);
+    }
+  };
+
+  // Handle PDF export
+  const handleExportPdf = useCallback(() => {
+    if (!report) return;
+
+    // Create a print-friendly HTML document
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+        <head>
+          <title>${report.title}</title>
+          <style>
+            body {
+              font-family: 'Times New Roman', Times, serif;
+              max-width: 800px;
+              margin: 0 auto;
+              padding: 40px;
+              line-height: 1.6;
+              color: #1a1a1a;
+            }
+            h1 {
+              font-size: 24px;
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+              margin-bottom: 20px;
+            }
+            h2 {
+              font-size: 18px;
+              margin-top: 30px;
+              margin-bottom: 15px;
+              color: #333;
+            }
+            h3 {
+              font-size: 16px;
+              margin-top: 20px;
+              color: #444;
+            }
+            p {
+              margin-bottom: 12px;
+              text-align: justify;
+            }
+            .metadata {
+              color: #666;
+              font-size: 12px;
+              margin-bottom: 30px;
+            }
+            .executive-summary {
+              background: #f5f5f5;
+              padding: 20px;
+              border-left: 4px solid #333;
+              margin-bottom: 30px;
+            }
+            .section {
+              margin-bottom: 30px;
+              page-break-inside: avoid;
+            }
+            .citation {
+              padding: 10px;
+              margin-bottom: 10px;
+              border: 1px solid #ddd;
+              background: #fafafa;
+              font-size: 14px;
+            }
+            .citation-type {
+              display: inline-block;
+              background: #333;
+              color: white;
+              padding: 2px 8px;
+              font-size: 11px;
+              border-radius: 3px;
+              margin-right: 8px;
+            }
+            .citation-title {
+              font-weight: bold;
+            }
+            .citation-reference {
+              color: #666;
+              font-style: italic;
+            }
+            .citations-section {
+              page-break-before: always;
+            }
+            @media print {
+              body { padding: 20px; }
+              .citation { page-break-inside: avoid; }
+            }
+          </style>
+        </head>
+        <body>
+          <h1>${report.title}</h1>
+          <div class="metadata">
+            Generated: ${new Date(report.generated_at).toLocaleDateString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric'
+            })} | ${report.citations?.length || 0} citations
+          </div>
+
+          <div class="executive-summary">
+            <h2>Executive Summary</h2>
+            ${report.executive_summary.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+          </div>
+
+          ${report.sections?.map((section) => `
+            <div class="section">
+              <h2>${section.title}</h2>
+              ${section.content.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+            </div>
+          `).join('') || ''}
+
+          ${report.citations && report.citations.length > 0 ? `
+            <div class="citations-section">
+              <h2>Sources & Citations</h2>
+              ${report.citations.map((citation) => `
+                <div class="citation">
+                  <span class="citation-type">${citation.source_type}</span>
+                  <span class="citation-title">${citation.title}</span>
+                  ${citation.legal_reference ? `<div class="citation-reference">${citation.legal_reference}</div>` : ''}
+                  ${citation.case_citation ? `<div class="citation-reference">${citation.case_citation}${citation.court ? ` (${citation.court})` : ''}</div>` : ''}
+                </div>
+              `).join('')}
+            </div>
+          ` : ''}
+        </body>
+      </html>
+    `;
+
+    // Open a new window and print
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      // Wait for content to load then trigger print
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+      // Fallback for browsers that don't trigger onload
+      setTimeout(() => {
+        printWindow.print();
+      }, 500);
+    } else {
+      // Fallback: use the current window
+      alert('Please allow popups to export PDF. Alternatively, use Ctrl/Cmd+P to print this page.');
+    }
+  }, [report]);
 
   const startProgressStream = useCallback((sessionId: string) => {
     const cleanup = streamResearchProgress(
@@ -441,6 +661,19 @@ function ResearchContent() {
 
   // Brief approval phase
   if (session?.status === "brief_review" && session.research_brief) {
+    const availableDocTypes = ["legislation", "judgment", "regulation", "schedule", "treaty", "web"];
+    const availableJurisdictions = ["Uganda", "East Africa", "Commonwealth", "International"];
+    const availableTimeScopes = [
+      { value: "current", label: "Current law only" },
+      { value: "historical", label: "Include historical versions" },
+      { value: "all", label: "All time periods" },
+    ];
+    const availableFormats = [
+      { value: "comprehensive", label: "Comprehensive (detailed analysis)" },
+      { value: "summary", label: "Summary (key points only)" },
+      { value: "brief", label: "Brief (quick overview)" },
+    ];
+
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -453,13 +686,37 @@ function ResearchContent() {
 
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-blue-500" />
-                Research Brief
-              </CardTitle>
-              <CardDescription>
-                Review and approve the research plan before we begin.
-              </CardDescription>
+              <div className="flex items-center justify-between">
+                <div>
+                  <CardTitle className="flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-blue-500" />
+                    Research Brief
+                  </CardTitle>
+                  <CardDescription>
+                    {isEditingBrief
+                      ? "Customize the research plan to your needs."
+                      : "Review and approve the research plan before we begin."
+                    }
+                  </CardDescription>
+                </div>
+                <Button
+                  variant={isEditingBrief ? "secondary" : "outline"}
+                  size="sm"
+                  onClick={() => setIsEditingBrief(!isEditingBrief)}
+                >
+                  {isEditingBrief ? (
+                    <>
+                      <X className="mr-2 h-4 w-4" />
+                      Cancel Edit
+                    </>
+                  ) : (
+                    <>
+                      <Pencil className="mr-2 h-4 w-4" />
+                      Edit Brief
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardHeader>
             <CardContent className="space-y-6">
               <div className="p-4 bg-muted/50 rounded-lg">
@@ -467,11 +724,65 @@ function ResearchContent() {
                 <p className="text-sm">{session.research_brief.original_query}</p>
               </div>
 
-              {session.research_brief.topics && session.research_brief.topics.length > 0 && (
-                <div>
-                  <h4 className="font-medium mb-2">Research Topics</h4>
+              {/* Research Topics - Editable or Read-only */}
+              <div>
+                <div className="flex items-center justify-between mb-2">
+                  <h4 className="font-medium">Research Topics</h4>
+                  {isEditingBrief && (
+                    <Button variant="outline" size="sm" onClick={addTopic}>
+                      <Plus className="mr-1 h-3 w-3" />
+                      Add Topic
+                    </Button>
+                  )}
+                </div>
+
+                {isEditingBrief ? (
+                  <div className="space-y-3">
+                    {editedTopics.map((topic, index) => (
+                      <div key={topic.id} className="p-3 border rounded-lg space-y-2">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-muted-foreground w-6">#{index + 1}</span>
+                          <Input
+                            value={topic.title}
+                            onChange={(e) => updateTopic(topic.id, "title", e.target.value)}
+                            placeholder="Topic title..."
+                            className="flex-1"
+                          />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => removeTopic(topic.id)}
+                            className="h-8 w-8 text-destructive hover:text-destructive"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        <Textarea
+                          value={topic.description}
+                          onChange={(e) => updateTopic(topic.id, "description", e.target.value)}
+                          placeholder="Description (optional)..."
+                          className="min-h-[60px] text-sm"
+                        />
+                        <div>
+                          <Label className="text-xs text-muted-foreground">Keywords (comma-separated)</Label>
+                          <Input
+                            value={topic.keywords.join(", ")}
+                            onChange={(e) => updateTopic(topic.id, "keywords", e.target.value.split(",").map(k => k.trim()).filter(Boolean))}
+                            placeholder="keyword1, keyword2, ..."
+                            className="mt-1"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                    {editedTopics.length === 0 && (
+                      <p className="text-sm text-muted-foreground text-center py-4">
+                        No topics added. Click &quot;Add Topic&quot; to get started.
+                      </p>
+                    )}
+                  </div>
+                ) : (
                   <ul className="space-y-2">
-                    {session.research_brief.topics.map((topic) => (
+                    {(editedTopics.length > 0 ? editedTopics : session.research_brief.topics || []).map((topic) => (
                       <li key={topic.id} className="flex items-start gap-2 text-sm p-3 border rounded-lg">
                         <ChevronRight className="h-4 w-4 mt-0.5 text-primary shrink-0" />
                         <div>
@@ -483,40 +794,109 @@ function ResearchContent() {
                       </li>
                     ))}
                   </ul>
-                </div>
-              )}
+                )}
+              </div>
 
+              {/* Jurisdictions and Document Types */}
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2 text-sm">Jurisdictions</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {session.research_brief.jurisdictions.map((j) => (
-                      <Badge key={j} variant="secondary">{j}</Badge>
-                    ))}
-                  </div>
+                  {isEditingBrief ? (
+                    <div className="flex flex-wrap gap-2">
+                      {availableJurisdictions.map((j) => (
+                        <Badge
+                          key={j}
+                          variant={editedJurisdictions.includes(j) ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => {
+                            if (editedJurisdictions.includes(j)) {
+                              setEditedJurisdictions(editedJurisdictions.filter(jur => jur !== j));
+                            } else {
+                              setEditedJurisdictions([...editedJurisdictions, j]);
+                            }
+                          }}
+                        >
+                          {j}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {editedJurisdictions.map((j) => (
+                        <Badge key={j} variant="secondary">{j}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div>
                   <h4 className="font-medium mb-2 text-sm">Document Types</h4>
-                  <div className="flex flex-wrap gap-1">
-                    {session.research_brief.document_types.map((dt) => (
-                      <Badge key={dt} variant="outline">{dt}</Badge>
-                    ))}
-                  </div>
+                  {isEditingBrief ? (
+                    <div className="flex flex-wrap gap-2">
+                      {availableDocTypes.map((dt) => (
+                        <Badge
+                          key={dt}
+                          variant={editedDocTypes.includes(dt) ? "default" : "outline"}
+                          className="cursor-pointer"
+                          onClick={() => toggleDocType(dt)}
+                        >
+                          {dt}
+                        </Badge>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="flex flex-wrap gap-1">
+                      {editedDocTypes.map((dt) => (
+                        <Badge key={dt} variant="outline">{dt}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </div>
               </div>
 
-              <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
-                <div className="flex items-center gap-2">
-                  <BookOpen className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">
-                    {session.research_brief.report_format} report
-                  </span>
+              {/* Time Scope and Report Format */}
+              {isEditingBrief ? (
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <h4 className="font-medium mb-2 text-sm">Time Scope</h4>
+                    <RadioGroup value={editedTimeScope} onValueChange={setEditedTimeScope}>
+                      {availableTimeScopes.map((scope) => (
+                        <div key={scope.value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={scope.value} id={`scope-${scope.value}`} />
+                          <Label htmlFor={`scope-${scope.value}`} className="font-normal text-sm">
+                            {scope.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+                  <div>
+                    <h4 className="font-medium mb-2 text-sm">Report Format</h4>
+                    <RadioGroup value={editedReportFormat} onValueChange={setEditedReportFormat}>
+                      {availableFormats.map((format) => (
+                        <div key={format.value} className="flex items-center space-x-2">
+                          <RadioGroupItem value={format.value} id={`format-${format.value}`} />
+                          <Label htmlFor={`format-${format.value}`} className="font-normal text-sm">
+                            {format.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Clock className="h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm">~2-5 minutes</span>
+              ) : (
+                <div className="flex items-center gap-4 p-4 bg-muted/50 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <BookOpen className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">
+                      {editedReportFormat} report
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Clock className="h-4 w-4 text-muted-foreground" />
+                    <span className="text-sm">~2-5 minutes</span>
+                  </div>
                 </div>
-              </div>
+              )}
 
               {error && (
                 <div className="flex items-center gap-2 text-sm text-destructive">
@@ -525,23 +905,52 @@ function ResearchContent() {
                 </div>
               )}
 
-              <Button
-                onClick={handleApproveBrief}
-                disabled={isLoading}
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting Research...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Approve & Start Research
-                  </>
+              <div className="flex gap-2">
+                {isEditingBrief && (
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      // Reset to original values
+                      setEditedTopics(session.research_brief?.topics?.map(t => ({
+                        id: t.id,
+                        title: t.title,
+                        description: t.description || "",
+                        keywords: t.keywords || [],
+                        priority: t.priority || 1,
+                      })) || []);
+                      setEditedJurisdictions(session.research_brief?.jurisdictions || ["Uganda"]);
+                      const validTypes = ["legislation", "judgment", "regulation", "schedule", "treaty", "web"];
+                      const originalTypes = session.research_brief?.document_types || [];
+                      setEditedDocTypes(originalTypes.filter(dt => validTypes.includes(dt)).length > 0
+                        ? originalTypes.filter(dt => validTypes.includes(dt))
+                        : ["legislation", "judgment"]);
+                      setEditedTimeScope(session.research_brief?.time_scope || "current");
+                      setEditedReportFormat(session.research_brief?.report_format || "comprehensive");
+                      setIsEditingBrief(false);
+                    }}
+                    className="flex-1"
+                  >
+                    Reset to Original
+                  </Button>
                 )}
-              </Button>
+                <Button
+                  onClick={handleApproveBrief}
+                  disabled={isLoading || (isEditingBrief && editedTopics.length === 0)}
+                  className={isEditingBrief ? "flex-1" : "w-full"}
+                >
+                  {isLoading ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Starting Research...
+                    </>
+                  ) : (
+                    <>
+                      <Sparkles className="mr-2 h-4 w-4" />
+                      {isEditingBrief ? "Save & Start Research" : "Approve & Start Research"}
+                    </>
+                  )}
+                </Button>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -608,7 +1017,7 @@ function ResearchContent() {
               <ArrowLeft className="h-4 w-4" />
               Back to Chat
             </Link>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={handleExportPdf}>
               <Download className="mr-2 h-4 w-4" />
               Export PDF
             </Button>
@@ -678,7 +1087,17 @@ function ResearchContent() {
                           {citation.source_type}
                         </Badge>
                         <div className="flex-1 min-w-0">
-                          <p className="font-medium">{citation.title}</p>
+                          {/* Make title clickable if document_url exists */}
+                          {citation.document_url ? (
+                            <Link
+                              href={citation.document_url}
+                              className="font-medium text-primary hover:underline"
+                            >
+                              {citation.title}
+                            </Link>
+                          ) : (
+                            <p className="font-medium">{citation.title}</p>
+                          )}
                           {citation.legal_reference && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {citation.legal_reference}
@@ -687,16 +1106,44 @@ function ResearchContent() {
                           {citation.case_citation && (
                             <p className="text-sm text-muted-foreground mt-1">
                               {citation.case_citation}
+                              {citation.court && ` (${citation.court})`}
+                            </p>
+                          )}
+                          {/* Show excerpt if available */}
+                          {citation.quoted_text && (
+                            <p className="text-xs text-muted-foreground mt-2 italic border-l-2 border-muted pl-2">
+                              &ldquo;{citation.quoted_text}&rdquo;
                             </p>
                           )}
                         </div>
-                        {citation.external_url && (
-                          <a href={citation.external_url} target="_blank" rel="noopener noreferrer">
-                            <Button variant="ghost" size="icon" className="shrink-0">
-                              <ExternalLink className="h-4 w-4" />
-                            </Button>
-                          </a>
-                        )}
+                        <div className="flex items-center gap-1 shrink-0">
+                          {/* Internal document link */}
+                          {citation.document_url && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Link href={citation.document_url}>
+                                  <Button variant="ghost" size="icon">
+                                    <FileText className="h-4 w-4" />
+                                  </Button>
+                                </Link>
+                              </TooltipTrigger>
+                              <TooltipContent>View source document</TooltipContent>
+                            </Tooltip>
+                          )}
+                          {/* External URL link */}
+                          {citation.external_url && (
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <a href={citation.external_url} target="_blank" rel="noopener noreferrer">
+                                  <Button variant="ghost" size="icon">
+                                    <ExternalLink className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                              </TooltipTrigger>
+                              <TooltipContent>Open external source</TooltipContent>
+                            </Tooltip>
+                          )}
+                        </div>
                       </div>
                     ))}
                   </div>
