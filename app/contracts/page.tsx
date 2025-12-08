@@ -22,6 +22,7 @@ import {
   List,
   Shield,
   Scale,
+  Save,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,8 +57,17 @@ import {
   type ContractRequirements,
   type ContractQuestion,
   type PartyInfo,
+  type EnhancedTemplate,
+  type ContractListItem,
 } from "@/lib/api";
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
+import {
+  SourceSelection,
+  TemplateBrowser,
+  ContractBrowser,
+  SaveAsTemplateDialog,
+  type SourceType,
+} from "@/components/contracts";
 
 const phaseLabels: Record<string, { label: string; description: string }> = {
   requirements: {
@@ -98,7 +108,14 @@ function ContractsContent() {
   const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [session, setSession] = useState<ContractSession | null>(null);
   const [description, setDescription] = useState(initialDescription || "");
-  const [selectedTemplate, setSelectedTemplate] = useState<string | undefined>();
+
+  // Source selection state
+  const [selectedSource, setSelectedSource] = useState<SourceType>("fresh");
+  const [selectedTemplateData, setSelectedTemplateData] = useState<EnhancedTemplate | null>(null);
+  const [selectedContractData, setSelectedContractData] = useState<ContractListItem | null>(null);
+  const [showTemplateBrowser, setShowTemplateBrowser] = useState(false);
+  const [showContractBrowser, setShowContractBrowser] = useState(false);
+  const [showSaveAsTemplate, setShowSaveAsTemplate] = useState(false);
   const [parties, setParties] = useState<PartyInfo[]>([
     { ...defaultParty, role: "First Party" },
     { ...defaultParty, role: "Second Party" },
@@ -126,13 +143,8 @@ function ContractsContent() {
     }
   }, [sessionIdParam]);
 
-  // Auto-start if description provided
-  useEffect(() => {
-    if (initialDescription && !sessionIdParam && !session && templates.length > 0) {
-      handleStartContract();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialDescription, templates]);
+  // Note: Auto-start behavior removed - user must click "Start Drafting" explicitly
+  // The initialDescription from ?q= param is pre-filled in the textarea for convenience
 
   // Poll for updates while in drafting phase
   useEffect(() => {
@@ -203,11 +215,21 @@ function ContractsContent() {
 
     try {
       const contractType = inferContractType(description);
-      const newSession = await createContractSession({
+
+      // Build request with source selection
+      const request: Parameters<typeof createContractSession>[0] = {
         contract_type: contractType,
         description: description.trim(),
-        template_id: selectedTemplate,
-      });
+      };
+
+      // Add template or source contract based on selection
+      if (selectedSource === "template" && selectedTemplateData) {
+        request.template_id = selectedTemplateData.id;
+      } else if (selectedSource === "clone" && selectedContractData) {
+        request.source_contract_id = selectedContractData.session_id;
+      }
+
+      const newSession = await createContractSession(request);
       setSession(newSession);
       router.replace(`/contracts?session=${newSession.session_id}`);
     } catch (err) {
@@ -215,6 +237,26 @@ function ContractsContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleSourceSelect = (source: SourceType) => {
+    setSelectedSource(source);
+    if (source === "fresh") {
+      setSelectedTemplateData(null);
+      setSelectedContractData(null);
+    }
+  };
+
+  const handleTemplateSelect = (template: EnhancedTemplate) => {
+    setSelectedSource("template");
+    setSelectedTemplateData(template);
+    setSelectedContractData(null);
+  };
+
+  const handleContractSelect = (contract: ContractListItem) => {
+    setSelectedSource("clone");
+    setSelectedContractData(contract);
+    setSelectedTemplateData(null);
   };
 
   const handleSubmitRequirements = async () => {
@@ -444,28 +486,16 @@ function ContractsContent() {
                 />
               </div>
 
-              {templates.length > 0 && (
-                <div>
-                  <Label htmlFor="template">Template (Optional)</Label>
-                  <Select value={selectedTemplate} onValueChange={setSelectedTemplate}>
-                    <SelectTrigger className="mt-2">
-                      <SelectValue placeholder="Select a template or let AI choose" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {templates.map((template) => (
-                        <SelectItem key={template.id} value={template.id}>
-                          <div className="flex flex-col">
-                            <span>{template.name}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {template.description}
-                            </span>
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-              )}
+              <SourceSelection
+                onSelect={handleSourceSelect}
+                onOpenTemplateBrowser={() => setShowTemplateBrowser(true)}
+                onOpenContractBrowser={() => setShowContractBrowser(true)}
+                selectedSource={selectedSource}
+                selectedTemplateId={selectedTemplateData?.id}
+                selectedContractId={selectedContractData?.session_id}
+                templateName={selectedTemplateData?.name}
+                contractName={selectedContractData?.title || undefined}
+              />
 
               {error && (
                 <div className="flex items-center gap-2 text-sm text-destructive">
@@ -494,6 +524,20 @@ function ContractsContent() {
             </div>
           </CardContent>
         </Card>
+
+        {/* Browser Modals */}
+        <TemplateBrowser
+          open={showTemplateBrowser}
+          onClose={() => setShowTemplateBrowser(false)}
+          onSelect={handleTemplateSelect}
+          selectedId={selectedTemplateData?.id}
+        />
+        <ContractBrowser
+          open={showContractBrowser}
+          onClose={() => setShowContractBrowser(false)}
+          onSelect={handleContractSelect}
+          selectedId={selectedContractData?.session_id}
+        />
       </div>
     );
   }
@@ -1286,7 +1330,7 @@ function ContractsContent() {
                   Your contract has been finalized and is ready for download.
                 </p>
 
-                <div className="flex gap-3 mt-6">
+                <div className="flex flex-wrap gap-3 mt-6 justify-center">
                   <Button asChild>
                     <a
                       href={getContractDownloadUrl(session.session_id, "pdf")}
@@ -1305,6 +1349,13 @@ function ContractsContent() {
                       Download Word
                     </a>
                   </Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => setShowSaveAsTemplate(true)}
+                  >
+                    <Save className="mr-2 h-4 w-4" />
+                    Save as Template
+                  </Button>
                 </div>
 
                 <Button
@@ -1313,6 +1364,9 @@ function ContractsContent() {
                   onClick={() => {
                     setSession(null);
                     setDescription("");
+                    setSelectedSource("fresh");
+                    setSelectedTemplateData(null);
+                    setSelectedContractData(null);
                     router.replace("/contracts");
                   }}
                 >
@@ -1321,6 +1375,17 @@ function ContractsContent() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Save as Template Dialog */}
+          <SaveAsTemplateDialog
+            open={showSaveAsTemplate}
+            onClose={() => setShowSaveAsTemplate(false)}
+            sessionId={session.session_id}
+            contractType={session.contract_type || "general"}
+            onSuccess={() => {
+              // Could show a toast notification here
+            }}
+          />
         </div>
       </TooltipProvider>
     );

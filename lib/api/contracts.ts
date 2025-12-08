@@ -102,7 +102,39 @@ export interface CreateContractRequest {
   contract_type: string; // employment, nda, service, sale, lease
   description: string;
   template_id?: string;
+  source_contract_id?: string; // Clone from existing contract
+  uploaded_file_id?: string; // Use uploaded file as template
   use_default_template?: boolean;
+}
+
+export interface SaveAsTemplateRequest {
+  name: string;
+  description?: string;
+  make_public?: boolean;
+}
+
+export interface ContractListItem {
+  session_id: string;
+  title: string | null;
+  contract_type: string;
+  status: string;
+  phase: string;
+  created_at: string;
+  updated_at?: string;
+  parties: string[];
+}
+
+export interface EnhancedTemplate {
+  id: string;
+  name: string;
+  description: string | null;
+  contract_type: string;
+  jurisdiction: string;
+  source: "system" | "user" | "from_contract" | "uploaded";
+  times_used: number;
+  created_at: string;
+  sections_count: number;
+  variables_count: number;
 }
 
 export interface ContractReview {
@@ -218,4 +250,50 @@ export function streamContractProgress(
   return () => {
     eventSource.close();
   };
+}
+
+/**
+ * Get user's past contracts for cloning
+ */
+export async function getMyContracts(options?: {
+  contract_type?: string;
+  phase?: string;
+  limit?: number;
+  offset?: number;
+}): Promise<ContractListItem[]> {
+  const params = new URLSearchParams();
+  if (options?.contract_type) params.append("contract_type", options.contract_type);
+  if (options?.phase) params.append("phase", options.phase);
+  if (options?.limit) params.append("limit", options.limit.toString());
+  if (options?.offset) params.append("offset", options.offset.toString());
+
+  const query = params.toString();
+  return apiGet<ContractListItem[]>(`/contracts/my-contracts${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Get enhanced templates with metadata
+ */
+export async function getEnhancedTemplates(options?: {
+  contract_type?: string;
+  source?: string;
+  search?: string;
+}): Promise<EnhancedTemplate[]> {
+  const params = new URLSearchParams();
+  if (options?.contract_type) params.append("contract_type", options.contract_type);
+  if (options?.source) params.append("source", options.source);
+  if (options?.search) params.append("search", options.search);
+
+  const query = params.toString();
+  return apiGet<EnhancedTemplate[]>(`/contracts/templates/enhanced${query ? `?${query}` : ""}`);
+}
+
+/**
+ * Save a contract as a reusable template
+ */
+export async function saveContractAsTemplate(
+  sessionId: string,
+  request: SaveAsTemplateRequest
+): Promise<ContractTemplate> {
+  return apiPost<ContractTemplate>(`/contracts/${sessionId}/save-as-template`, request);
 }

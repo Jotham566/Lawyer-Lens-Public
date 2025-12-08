@@ -78,6 +78,9 @@ export {
   submitContractReview,
   getContractDownloadUrl,
   streamContractProgress,
+  getMyContracts,
+  getEnhancedTemplates,
+  saveContractAsTemplate,
   type ContractPhase,
   type ContractTemplate,
   type TemplateField,
@@ -90,6 +93,9 @@ export {
   type CreateContractRequest,
   type ContractReview,
   type SectionEdit,
+  type SaveAsTemplateRequest,
+  type ContractListItem,
+  type EnhancedTemplate,
 } from "./contracts";
 
 // Types
