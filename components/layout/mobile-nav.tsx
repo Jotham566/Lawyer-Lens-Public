@@ -124,7 +124,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
         <SheetHeader className="border-b p-4">
           <SheetTitle className="flex items-center gap-2">
             <Scale className="h-5 w-5 text-primary" />
-            Lawyer Lens
+            Law Lens
           </SheetTitle>
         </SheetHeader>
 

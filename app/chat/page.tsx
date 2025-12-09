@@ -99,6 +99,16 @@ function TypingIndicator() {
   );
 }
 
+// Helper to strip markdown from titles for display
+const stripMarkdownFromTitle = (title: string): string => {
+  return title
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove **bold**
+    .replace(/\*([^*]+)\*/g, "$1") // Remove *italic*
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, "") // Remove emojis
+    .replace(/^(Deep Research|Draft Contract):\s*/i, "") // Remove tool prefixes
+    .trim();
+};
+
 function ChatContent() {
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q");
@@ -526,8 +536,8 @@ function ChatContent() {
               <div className="flex items-start gap-3 pr-8">
                 <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={conv.title}>
-                    {conv.title}
+                  <p className="truncate text-sm font-medium" title={stripMarkdownFromTitle(conv.title)}>
+                    {stripMarkdownFromTitle(conv.title)}
                   </p>
                   <div className="flex items-center gap-2 mt-1">
                     <span className="text-xs text-muted-foreground">

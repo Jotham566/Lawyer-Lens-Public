@@ -54,8 +54,8 @@ const jetbrainsMono = localFont({
 
 export const metadata: Metadata = {
   title: {
-    default: "Lawyer Lens - Uganda Legal Intelligence Platform",
-    template: "%s | Lawyer Lens",
+    default: "Law Lens - Uganda Legal Intelligence Platform",
+    template: "%s | Law Lens",
   },
   description:
     "Access Uganda's laws, judgments, and regulations. Search, browse, and get instant answers with citations to authoritative sources.",
@@ -69,19 +69,19 @@ export const metadata: Metadata = {
     "legal research",
     "legal assistant",
   ],
-  authors: [{ name: "Lawyer Lens Team" }],
-  creator: "Lawyer Lens",
+  authors: [{ name: "Law Lens Team" }],
+  creator: "Law Lens",
   openGraph: {
     type: "website",
     locale: "en_UG",
-    siteName: "Lawyer Lens",
-    title: "Lawyer Lens - Uganda Legal Intelligence Platform",
+    siteName: "Law Lens",
+    title: "Law Lens - Uganda Legal Intelligence Platform",
     description:
       "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Lawyer Lens - Uganda Legal Intelligence Platform",
+    title: "Law Lens - Uganda Legal Intelligence Platform",
     description:
       "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },

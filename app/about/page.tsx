@@ -15,7 +15,7 @@ export default function AboutPage() {
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              About Lawyer Lens
+              About Law Lens
             </h1>
             <p className="text-muted-foreground">
               Uganda&apos;s Legal Intelligence Platform
@@ -28,7 +28,7 @@ export default function AboutPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">Our Mission</h2>
         <p className="text-muted-foreground leading-relaxed">
-          Lawyer Lens is dedicated to making Uganda&apos;s legal information accessible,
+          Law Lens is dedicated to making Uganda&apos;s legal information accessible,
           searchable, and understandable. We provide legal professionals, researchers,
           students, and citizens with instant access to legislation, court judgments,
           and regulatory documents.
@@ -79,7 +79,7 @@ export default function AboutPage() {
             <CardContent>
               <p className="text-sm text-muted-foreground">
                 Whether you&apos;re a lawyer, student, researcher, or citizen,
-                Lawyer Lens helps you navigate Uganda&apos;s legal landscape.
+                Law Lens helps you navigate Uganda&apos;s legal landscape.
               </p>
             </CardContent>
           </Card>
@@ -105,7 +105,7 @@ export default function AboutPage() {
       <section className="border-t pt-8">
         <h2 className="text-xl font-semibold mb-4">Legal Disclaimer</h2>
         <p className="text-sm text-muted-foreground leading-relaxed">
-          The information provided on Lawyer Lens is for general informational purposes
+          The information provided on Law Lens is for general informational purposes
           only and does not constitute legal advice. While we strive to ensure accuracy,
           we make no warranties about the completeness or reliability of the information.
           For specific legal matters, please consult a qualified legal professional.

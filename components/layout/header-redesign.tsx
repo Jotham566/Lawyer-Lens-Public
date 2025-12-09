@@ -86,7 +86,7 @@ export function HeaderRedesign({
         <Link href="/" className="flex items-center gap-2 mr-4">
           <Scale className="h-6 w-6 text-primary" />
           <span className="hidden font-bold text-lg sm:inline-block">
-            Lawyer Lens
+            Law Lens
           </span>
         </Link>
 

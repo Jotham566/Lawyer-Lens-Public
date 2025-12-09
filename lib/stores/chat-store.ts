@@ -49,9 +49,17 @@ interface ChatState {
 const generateId = () => Math.random().toString(36).substring(2, 15);
 
 const generateTitle = (message: string): string => {
-  // Take first 50 chars of the first message as title
-  const title = message.slice(0, 50);
-  return title.length < message.length ? `${title}...` : title;
+  // Strip markdown formatting, emojis, and tool prefixes for cleaner titles
+  let cleaned = message
+    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove **bold**
+    .replace(/\*([^*]+)\*/g, "$1") // Remove *italic*
+    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, "") // Remove emojis
+    .replace(/^(Deep Research|Draft Contract):\s*/i, "") // Remove tool prefixes
+    .trim();
+
+  // Take first 50 chars as title
+  const title = cleaned.slice(0, 50);
+  return title.length < cleaned.length ? `${title}...` : title;
 };
 
 export const useChatStore = create<ChatState>()(
@@ -216,7 +224,7 @@ export const useChatStore = create<ChatState>()(
         }),
     }),
     {
-      name: "lawyer-lens-chat",
+      name: "law-lens-chat",
       partialize: (state) => ({
         conversations: state.conversations.slice(0, 50), // Keep last 50 conversations
         currentConversationId: state.currentConversationId,

@@ -23,7 +23,7 @@ export function Logo({ collapsed = false, className }: LogoProps) {
       </div>
       {!collapsed && (
         <span className="text-lg tracking-tight">
-          Lawyer<span className="text-primary">Lens</span>
+          Law<span className="text-primary">Lens</span>
         </span>
       )}
     </Link>

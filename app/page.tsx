@@ -370,7 +370,7 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Lawyer Lens - Uganda Legal Intelligence Platform
+              Law Lens - Uganda Legal Intelligence Platform
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <Link href="/about" className="hover:text-foreground transition-colors">

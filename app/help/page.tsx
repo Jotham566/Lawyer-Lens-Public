@@ -35,10 +35,10 @@ const faqs = [
   {
     question: "What types of documents are available?",
     answer:
-      "Lawyer Lens provides access to Acts of Parliament, Court Judgments from various levels (Supreme Court, Court of Appeal, High Court, etc.), Regulations and Statutory Instruments, and the Constitution of Uganda.",
+      "Law Lens provides access to Acts of Parliament, Court Judgments from various levels (Supreme Court, Court of Appeal, High Court, etc.), Regulations and Statutory Instruments, and the Constitution of Uganda.",
   },
   {
-    question: "Is the information on Lawyer Lens legally authoritative?",
+    question: "Is the information on Law Lens legally authoritative?",
     answer:
       "While we source our documents from official publications, the information is provided for reference purposes only. For legal proceedings or advice, always verify with official gazettes or consult a qualified legal professional.",
   },
@@ -102,7 +102,7 @@ export default function HelpPage() {
               Help & FAQ
             </h1>
             <p className="text-muted-foreground">
-              Learn how to use Lawyer Lens effectively
+              Learn how to use Law Lens effectively
             </p>
           </div>
         </div>
@@ -164,7 +164,7 @@ export default function HelpPage() {
         <p className="text-sm text-muted-foreground leading-relaxed">
           If you couldn&apos;t find the answer to your question, please reach out
           to our support team. We&apos;re here to help you make the most of
-          Lawyer Lens.
+          Law Lens.
         </p>
       </section>
     </div>

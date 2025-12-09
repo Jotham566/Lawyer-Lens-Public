@@ -142,7 +142,7 @@ export const useLibraryStore = create<LibraryState>()(
       },
     }),
     {
-      name: "lawyer-lens-library",
+      name: "law-lens-library",
       version: 1,
     }
   )

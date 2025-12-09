@@ -1,5 +1,5 @@
 /**
- * API Client for Lawyer Lens Public Portal
+ * API Client for Law Lens Public Portal
  *
  * Provides typed API calls to the backend services.
  */

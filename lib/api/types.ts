@@ -1,5 +1,5 @@
 /**
- * API Types for Lawyer Lens Public Portal
+ * API Types for Law Lens Public Portal
  *
  * These types match the backend API responses.
  */

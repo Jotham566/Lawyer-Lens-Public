@@ -78,7 +78,7 @@ export const useUIStore = create<UIState>()(
       setPreferredSearchMode: (mode) => set({ preferredSearchMode: mode }),
     }),
     {
-      name: "lawyer-lens-ui",
+      name: "law-lens-ui",
       partialize: (state) => ({
         sidebar: state.sidebar,
         documentFontSize: state.documentFontSize,
