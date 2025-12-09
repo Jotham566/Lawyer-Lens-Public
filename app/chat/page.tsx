@@ -739,8 +739,11 @@ function ChatContent() {
                             </div>
                           </div>
                         ) : message.role === "user" ? (
-                          <div className="inline-block rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm selection:bg-primary-foreground selection:text-primary">
-                            <p className="whitespace-pre-wrap">{message.content}</p>
+                          <div className="inline-block rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm selection:bg-primary-foreground selection:text-primary [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+                            <MarkdownRenderer
+                              content={message.content}
+                              className="text-primary-foreground [&_p]:text-primary-foreground [&_strong]:text-primary-foreground"
+                            />
                           </div>
                         ) : message.content === "" && isLoading ? (
                           // Typing indicator for empty streaming message

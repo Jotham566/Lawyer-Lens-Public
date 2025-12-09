@@ -46,13 +46,11 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import {
-  getContractTemplates,
   createContractSession,
   getContractSession,
   submitContractRequirements,
   submitContractReview,
   getContractDownloadUrl,
-  type ContractTemplate,
   type ContractSession,
   type ContractRequirements,
   type ContractQuestion,
@@ -105,7 +103,6 @@ function ContractsContent() {
   const initialDescription = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
 
-  const [templates, setTemplates] = useState<ContractTemplate[]>([]);
   const [session, setSession] = useState<ContractSession | null>(null);
   const [description, setDescription] = useState(initialDescription || "");
 
@@ -130,11 +127,6 @@ function ContractsContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
-
-  // Load templates
-  useEffect(() => {
-    loadTemplates();
-  }, []);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -164,15 +156,6 @@ function ContractsContent() {
 
     return () => clearInterval(pollInterval);
   }, [session?.session_id, session?.phase]);
-
-  const loadTemplates = async () => {
-    try {
-      const templateList = await getContractTemplates();
-      setTemplates(templateList);
-    } catch (err) {
-      console.error("Failed to load templates:", err);
-    }
-  };
 
   const loadSession = async (sessionId: string) => {
     setIsLoading(true);
