@@ -148,13 +148,34 @@ export default function DocumentPage({ params }: PageProps) {
   const TypeIcon = typeConfig?.icon || FileText;
   const pdfUrl = getDocumentPdfUrl(id);
 
+  // Generate breadcrumb items based on document type
+  const getBreadcrumbItems = () => {
+    const docTitle = document.short_title || document.title;
+    const truncatedTitle = docTitle.length > 50 ? `${docTitle.slice(0, 50)}...` : docTitle;
+
+    const typeToPath: Record<DocumentType, { label: string; href: string }> = {
+      act: { label: "Acts", href: "/browse/acts" },
+      judgment: { label: "Case Law", href: "/browse/judgments" },
+      regulation: { label: "Regulations", href: "/browse/regulations" },
+      constitution: { label: "Constitution", href: "/browse/constitution" },
+    };
+
+    const typeInfo = typeToPath[document.document_type] || { label: "Browse", href: "/browse" };
+
+    return [
+      { label: "Browse", href: "/browse", isCurrentPage: false },
+      { label: typeInfo.label, href: typeInfo.href, isCurrentPage: false },
+      { label: truncatedTitle, href: `/document/${id}`, isCurrentPage: true },
+    ];
+  };
+
   return (
     <TooltipProvider>
       <div className="flex flex-col">
         {/* Breadcrumb */}
         <div className="border-b px-4 py-3 md:px-6">
           <div className="mx-auto max-w-5xl">
-            <Breadcrumbs />
+            <Breadcrumbs items={getBreadcrumbItems()} />
           </div>
         </div>
 

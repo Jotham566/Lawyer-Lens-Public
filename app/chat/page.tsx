@@ -699,14 +699,16 @@ function ChatContent() {
                   {currentConversation.messages.map((message, index) => (
                     <div
                       key={`${message.timestamp}-${index}`}
-                      className={cn(
-                        "flex gap-4",
-                        message.role === "user" ? "justify-end" : "justify-start"
-                      )}
+                      className="flex gap-4 justify-start"
                     >
                       {message.role === "assistant" && (
                         <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
                           <Bot className="h-5 w-5 text-primary" />
+                        </div>
+                      )}
+                      {message.role === "user" && (
+                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
+                          <User className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
 
@@ -714,7 +716,7 @@ function ChatContent() {
                         className={cn(
                           "group space-y-3",
                           message.role === "user"
-                            ? "max-w-[80%] text-right"
+                            ? "max-w-[80%]"
                             : "max-w-[90%]"
                         )}
                       >
@@ -749,10 +751,10 @@ function ChatContent() {
                             </div>
                           </div>
                         ) : message.role === "user" ? (
-                          <div className="inline-block rounded-2xl bg-primary px-4 py-3 text-sm text-primary-foreground shadow-sm selection:bg-primary-foreground selection:text-primary [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+                          <div className="inline-block rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm selection:bg-primary/20 selection:text-foreground [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
                             <MarkdownRenderer
                               content={message.content}
-                              className="text-primary-foreground [&_p]:text-primary-foreground [&_strong]:text-primary-foreground"
+                              className="text-foreground [&_p]:text-foreground [&_strong]:text-foreground"
                             />
                           </div>
                         ) : message.content === "" && isLoading ? (
