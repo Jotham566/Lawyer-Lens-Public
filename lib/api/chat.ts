@@ -5,7 +5,13 @@
  */
 
 import { apiPost, apiGet, getApiBaseUrl } from "./client";
-import type { ChatRequest, ChatResponse, ChatSource } from "./types";
+import type {
+  ChatRequest,
+  ChatResponse,
+  ChatSource,
+  VerificationStatus,
+  ConfidenceInfo,
+} from "./types";
 
 /**
  * Chat health response type
@@ -35,12 +41,21 @@ export async function getChatHealth(): Promise<ChatHealthResponse> {
 }
 
 /**
+ * Verification data from the stream
+ */
+export interface StreamVerificationData {
+  verification: VerificationStatus;
+  confidence_info: ConfidenceInfo;
+}
+
+/**
  * Stream event types from the chat API
  */
 export type StreamEvent =
   | { type: "content"; text: string }
   | { type: "content_update"; fullContent: string }
   | { type: "citations"; citations: ChatSource[] }
+  | { type: "verification"; data: StreamVerificationData }
   | { type: "done" }
   | { type: "error"; message: string };
 
@@ -69,6 +84,7 @@ export async function* streamChatWithTypewriter(
   let isStreaming = true;
   let citations: ChatSource[] | null = null;
   let contentUpdatePending: string | null = null;
+  let verificationData: StreamVerificationData | null = null;
 
   // Start the stream
   const streamPromise = (async () => {
@@ -80,6 +96,8 @@ export async function* streamChatWithTypewriter(
         contentUpdatePending = event.fullContent;
       } else if (event.type === "citations") {
         citations = event.citations;
+      } else if (event.type === "verification") {
+        verificationData = event.data;
       } else if (event.type === "done") {
         isStreaming = false;
       } else if (event.type === "error") {
@@ -114,6 +132,11 @@ export async function* streamChatWithTypewriter(
   // Send citations if we have them
   if (citations) {
     yield { type: "citations", citations };
+  }
+
+  // Send verification data if available (for trust indicators)
+  if (verificationData) {
+    yield { type: "verification", data: verificationData };
   }
 
   yield { type: "done" };
@@ -189,6 +212,17 @@ export async function* streamChatMessage(
             // Backend sends sanitized content to replace the streamed content
             const fullContent = content.slice(16).replace(/\\n/g, "\n"); // Remove "[CONTENT_UPDATE]" prefix
             yield { type: "content_update", fullContent };
+            continue;
+          }
+
+          if (content.startsWith("[VERIFICATION]")) {
+            try {
+              const verificationJson = content.slice(14); // Remove "[VERIFICATION]" prefix
+              const data = JSON.parse(verificationJson) as StreamVerificationData;
+              yield { type: "verification", data };
+            } catch (e) {
+              console.error("Failed to parse verification data:", e);
+            }
             continue;
           }
 

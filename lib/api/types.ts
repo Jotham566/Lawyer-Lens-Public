@@ -227,6 +227,10 @@ export interface ChatMessage {
   sources?: ChatSource[];
   suggested_followups?: string[];
   timestamp?: string;
+  /** Response verification status (for assistant messages) */
+  verification?: VerificationStatus;
+  /** Detailed confidence information (for assistant messages) */
+  confidence_info?: ConfidenceInfo;
 }
 
 export interface ChatSource {
@@ -250,6 +254,36 @@ export interface ChatRequest {
   temperature?: number;
 }
 
+/**
+ * Verification status with positive, trust-building framing.
+ * Uses encouraging language to build user confidence.
+ */
+export interface VerificationStatus {
+  /** Verification level: 'verified', 'partially_verified', or 'unverified' */
+  level: "verified" | "partially_verified" | "unverified";
+  /** How well entities are grounded in sources (0-1) */
+  source_grounding: number;
+  /** How well claims are supported by sources (0-1) */
+  claim_support: number;
+  /** Brief, encouraging status message */
+  message: string;
+  /** Optional notes about verification (max 2) */
+  notes: string[];
+}
+
+/**
+ * Confidence information with positive framing.
+ * Uses "high", "good", "moderate" instead of negative terms.
+ */
+export interface ConfidenceInfo {
+  /** Overall confidence score (0-1) */
+  score: number;
+  /** Confidence level: 'high', 'good', or 'moderate' */
+  level: "high" | "good" | "moderate";
+  /** Contributing factors with scores */
+  factors: Record<string, number>;
+}
+
 export interface ChatResponse {
   message_id: string;
   content: string;
@@ -259,6 +293,10 @@ export interface ChatResponse {
   tokens_used: number;
   processing_time_ms: number;
   timestamp: string;
+  /** Response verification status (trust indicator) */
+  verification?: VerificationStatus;
+  /** Detailed confidence information */
+  confidence_info?: ConfidenceInfo;
 }
 
 // Statistics types

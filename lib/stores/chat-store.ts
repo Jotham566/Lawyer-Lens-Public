@@ -6,7 +6,12 @@
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import type { ChatMessage, ChatSource } from "@/lib/api/types";
+import type {
+  ChatMessage,
+  ChatSource,
+  VerificationStatus,
+  ConfidenceInfo,
+} from "@/lib/api/types";
 
 interface Conversation {
   id: string;
@@ -33,7 +38,9 @@ interface ChatState {
     conversationId: string,
     content: string,
     sources?: ChatSource[],
-    suggestedFollowups?: string[]
+    suggestedFollowups?: string[],
+    verification?: VerificationStatus,
+    confidenceInfo?: ConfidenceInfo
   ) => void;
   editMessageAndTruncate: (
     conversationId: string,
@@ -50,7 +57,7 @@ const generateId = () => Math.random().toString(36).substring(2, 15);
 
 const generateTitle = (message: string): string => {
   // Strip markdown formatting, emojis, and tool prefixes for cleaner titles
-  let cleaned = message
+  const cleaned = message
     .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove **bold**
     .replace(/\*([^*]+)\*/g, "$1") // Remove *italic*
     .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, "") // Remove emojis
@@ -137,7 +144,14 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
-      updateLastMessage: (conversationId, content, sources, suggestedFollowups) => {
+      updateLastMessage: (
+        conversationId,
+        content,
+        sources,
+        suggestedFollowups,
+        verification,
+        confidenceInfo
+      ) => {
         set((state) => {
           const conversations = state.conversations.map((conv) => {
             if (conv.id !== conversationId) return conv;
@@ -152,6 +166,8 @@ export const useChatStore = create<ChatState>()(
                 sources: sources || messages[lastIndex].sources,
                 suggested_followups:
                   suggestedFollowups || messages[lastIndex].suggested_followups,
+                verification: verification || messages[lastIndex].verification,
+                confidence_info: confidenceInfo || messages[lastIndex].confidence_info,
               };
             }
 

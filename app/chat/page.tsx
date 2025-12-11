@@ -69,7 +69,8 @@ import {
   getSuggestedQuestions,
   createResearchSession,
 } from "@/lib/api";
-import type { ChatMessage, ChatSource } from "@/lib/api/types";
+import type { ChatMessage, ChatSource, VerificationStatus, ConfidenceInfo } from "@/lib/api/types";
+import { TrustBadge } from "@/components/chat/trust-indicator";
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
 
 // Default suggested questions for chat mode (tool-specific ones come from getToolSuggestedQuestions)
@@ -223,6 +224,8 @@ function ChatContent() {
     try {
       let fullContent = "";
       let sources: ChatSource[] = [];
+      let verification: VerificationStatus | undefined;
+      let confidenceInfo: ConfidenceInfo | undefined;
 
       const stream = streamChatWithTypewriter({
         message: text,
@@ -241,18 +244,24 @@ function ChatContent() {
             break;
           case "content_update":
             fullContent = event.fullContent;
-            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
+            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
             break;
           case "citations":
             sources = event.citations;
-            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions());
+            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+            break;
+          case "verification":
+            // Capture trust metrics from verification event
+            verification = event.data.verification;
+            confidenceInfo = event.data.confidence_info;
+            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
             break;
           case "error":
             setError(event.message);
             break;
           case "done":
             if (sources.length === 0) {
-              updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions());
+              updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions(), verification, confidenceInfo);
             }
             break;
         }
@@ -773,17 +782,25 @@ function ChatContent() {
                           </div>
                         )}
 
-                        {/* Sources */}
-                        {message.sources && message.sources.length > 0 && (
-                          <div className="space-y-2 pt-2">
-                            <p className="text-xs font-medium text-muted-foreground">
-                              Sources
-                            </p>
-                            <div className="flex flex-wrap gap-2">
-                              {message.sources.map((source, srcIndex) => (
-                                <SourceBadge key={srcIndex} source={source} />
-                              ))}
-                            </div>
+                        {/* Sources and Trust Indicator */}
+                        {message.role === "assistant" && message.content && (
+                          <div className="flex flex-wrap items-center gap-3 pt-2">
+                            {/* Trust Badge - only show when not streaming and verification exists */}
+                            {!(isLoading && index === currentConversation.messages.length - 1) &&
+                              message.verification && (
+                                <TrustBadge
+                                  verification={message.verification}
+                                  confidenceInfo={message.confidence_info}
+                                />
+                              )}
+                            {/* Sources */}
+                            {message.sources && message.sources.length > 0 && (
+                              <div className="flex flex-wrap gap-2">
+                                {message.sources.map((source, srcIndex) => (
+                                  <SourceBadge key={srcIndex} source={source} />
+                                ))}
+                              </div>
+                            )}
                           </div>
                         )}
 
