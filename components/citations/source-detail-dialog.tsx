@@ -25,6 +25,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
+import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
 
 interface SourceDetailDialogProps {
@@ -651,7 +652,7 @@ export function SourceDetailDialog({
               {!isExpanding && htmlContent && !showRaw && (
                 <div
                   className="rounded-lg border border-border bg-muted/30 p-4 prose prose-sm max-w-none dark:prose-invert"
-                  dangerouslySetInnerHTML={{ __html: htmlContent }}
+                  dangerouslySetInnerHTML={{ __html: sanitizeDocumentHtml(htmlContent) }}
                 />
               )}
 

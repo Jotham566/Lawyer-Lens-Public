@@ -1,8 +1,9 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState, useRef, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   Search,
   Filter,
@@ -28,8 +29,10 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { sanitizeSearchHighlight } from "@/lib/utils/sanitize";
 import { useSearch, type SearchMode } from "@/lib/hooks";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import { SearchSuggestions, saveRecentSearch } from "@/components/search";
 import type { DocumentType, SearchResult, SemanticResult, HybridResult } from "@/lib/api/types";
 
 const documentTypeConfig: Record<
@@ -75,6 +78,13 @@ function SearchContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { query, mode, page, filters, data, isLoading, error } = useSearch();
+  const [inputValue, setInputValue] = useState(query);
+  const inputRef = useRef<HTMLInputElement>(null);
+
+  // Sync input value with URL query
+  useEffect(() => {
+    setInputValue(query);
+  }, [query]);
 
   const updateSearchParams = (updates: Record<string, string | undefined>) => {
     const params = new URLSearchParams(searchParams.toString());
@@ -93,8 +103,15 @@ function SearchContent() {
     const formData = new FormData(e.currentTarget);
     const newQuery = formData.get("q") as string;
     if (newQuery.trim()) {
+      saveRecentSearch(newQuery.trim());
       updateSearchParams({ q: newQuery.trim(), page: "1" });
     }
+  };
+
+  const handleSuggestionSelect = (suggestion: string) => {
+    setInputValue(suggestion);
+    saveRecentSearch(suggestion);
+    updateSearchParams({ q: suggestion, page: "1" });
   };
 
   const handleTypeFilter = (type: DocumentType | "all") => {
@@ -155,22 +172,38 @@ function SearchContent() {
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="relative max-w-2xl">
-          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+        <form onSubmit={handleSearch} className="relative max-w-2xl" role="search" aria-label="Search legal documents">
+          <label htmlFor="search-input" className="sr-only">
+            Search legal documents
+          </label>
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <input
+            ref={inputRef}
+            id="search-input"
             type="search"
             name="q"
-            defaultValue={query}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
             placeholder="e.g., 'land registration requirements' or 'Civil Appeal No. 123'"
+            aria-label="Search query"
+            aria-haspopup="listbox"
+            aria-autocomplete="list"
+            autoComplete="off"
             className="h-12 w-full rounded-lg border bg-background pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
           />
           <Button
             type="submit"
             size="sm"
             className="absolute right-1.5 top-1/2 -translate-y-1/2"
+            aria-label="Submit search"
           >
             Search
           </Button>
+          <SearchSuggestions
+            query={inputValue}
+            onSelect={handleSuggestionSelect}
+            inputRef={inputRef}
+          />
         </form>
 
         {/* Search Type Indicator with Smart Search Option */}
@@ -193,10 +226,10 @@ function SearchContent() {
       {/* Filters & Results */}
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         {/* Filters Sidebar */}
-        <aside className="space-y-4">
+        <aside className="space-y-4" role="region" aria-label="Search filters">
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-medium">
-              <Filter className="h-4 w-4" />
+              <Filter className="h-4 w-4" aria-hidden="true" />
               Filters
             </h2>
             {hasFilters && (
@@ -297,10 +330,10 @@ function SearchContent() {
         </aside>
 
         {/* Results */}
-        <div className="space-y-4">
+        <div className="space-y-4" role="region" aria-label="Search results">
           {/* Results Header */}
           {query && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground">
+            <div className="flex items-center justify-between text-sm text-muted-foreground" aria-live="polite">
               <span>
                 {isLoading
                   ? "Searching..."
@@ -341,7 +374,7 @@ function SearchContent() {
 
           {/* Error State */}
           {error && (
-            <Card className="border-destructive">
+            <Card className="border-destructive" role="alert" aria-live="assertive">
               <CardContent className="pt-6">
                 <p className="text-sm text-destructive">
                   An error occurred while searching. Please try again.
@@ -468,12 +501,9 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
         <CardContent>
           {content && (
             <p
-              className="line-clamp-2 text-sm text-muted-foreground"
+              className="line-clamp-2 text-sm text-muted-foreground [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800/50"
               dangerouslySetInnerHTML={{
-                __html: content.replace(
-                  /<em>/g,
-                  '<mark class="bg-yellow-200 dark:bg-yellow-800/50">'
-                ).replace(/<\/em>/g, "</mark>"),
+                __html: sanitizeSearchHighlight(content),
               }}
             />
           )}
@@ -503,22 +533,24 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
 
 export default function SearchPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="p-4 md:p-6">
-          <div className="space-y-4">
-            <Skeleton className="h-8 w-48" />
-            <Skeleton className="h-11 max-w-2xl" />
-            <div className="flex gap-2">
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
-              <Skeleton className="h-9 w-24" />
+    <PageErrorBoundary fallback="search">
+      <Suspense
+        fallback={
+          <div className="p-4 md:p-6">
+            <div className="space-y-4">
+              <Skeleton className="h-8 w-48" />
+              <Skeleton className="h-11 max-w-2xl" />
+              <div className="flex gap-2">
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+                <Skeleton className="h-9 w-24" />
+              </div>
             </div>
           </div>
-        </div>
-      }
-    >
-      <SearchContent />
-    </Suspense>
+        }
+      >
+        <SearchContent />
+      </Suspense>
+    </PageErrorBoundary>
   );
 }

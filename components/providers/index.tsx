@@ -2,6 +2,8 @@
 
 import { QueryProvider } from "./query-provider";
 import { ThemeProvider } from "./theme-provider";
+import { CommandPalette } from "@/components/command-palette";
+import { OfflineBanner } from "@/components/offline-banner";
 
 interface ProvidersProps {
   children: React.ReactNode;
@@ -17,6 +19,8 @@ export function Providers({ children }: ProvidersProps) {
         disableTransitionOnChange
       >
         {children}
+        <CommandPalette />
+        <OfflineBanner />
       </ThemeProvider>
     </QueryProvider>
   );

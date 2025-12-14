@@ -23,6 +23,131 @@ interface MarkdownRendererProps {
   isStreaming?: boolean;
 }
 
+// Memoized markdown components to avoid recreation on each render
+const createMarkdownComponents = (
+  withCitations: (children: React.ReactNode) => React.ReactNode
+) => ({
+  // Paragraphs - with citation parsing
+  p: ({ children }: { children?: React.ReactNode }) => (
+    <p className="mb-4 text-[15px] leading-7 text-foreground last:mb-0">
+      {withCitations(children)}
+    </p>
+  ),
+
+  // Headings
+  h1: ({ children }: { children?: React.ReactNode }) => (
+    <h1 className="mb-4 mt-6 text-xl font-semibold text-foreground first:mt-0">
+      {children}
+    </h1>
+  ),
+  h2: ({ children }: { children?: React.ReactNode }) => (
+    <h2 className="mb-3 mt-6 text-lg font-semibold text-foreground first:mt-0">
+      {children}
+    </h2>
+  ),
+  h3: ({ children }: { children?: React.ReactNode }) => (
+    <h3 className="mb-3 mt-5 text-base font-semibold text-foreground first:mt-0">
+      {children}
+    </h3>
+  ),
+  h4: ({ children }: { children?: React.ReactNode }) => (
+    <h4 className="mb-2 mt-4 text-sm font-semibold text-foreground first:mt-0">
+      {children}
+    </h4>
+  ),
+
+  // Lists
+  ul: ({ children }: { children?: React.ReactNode }) => (
+    <ul className="mb-4 ml-6 list-disc space-y-2 text-[15px] leading-7 text-foreground [&>li]:pl-1">
+      {children}
+    </ul>
+  ),
+  ol: ({ children }: { children?: React.ReactNode }) => (
+    <ol className="mb-4 ml-6 list-decimal space-y-2 text-[15px] leading-7 text-foreground [&>li]:pl-1">
+      {children}
+    </ol>
+  ),
+  li: ({ children }: { children?: React.ReactNode }) => (
+    <li className="text-[15px] leading-7">{withCitations(children)}</li>
+  ),
+
+  // Strong and emphasis
+  strong: ({ children }: { children?: React.ReactNode }) => (
+    <strong className="font-semibold text-foreground">{children}</strong>
+  ),
+  em: ({ children }: { children?: React.ReactNode }) => (
+    <em className="italic">{children}</em>
+  ),
+
+  // Links
+  a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
+    <a
+      href={href}
+      target="_blank"
+      rel="noopener noreferrer"
+      className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
+    >
+      {children}
+    </a>
+  ),
+
+  // Code
+  code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
+    const isInline = !className;
+    if (isInline) {
+      return (
+        <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground">
+          {children}
+        </code>
+      );
+    }
+    return (
+      <code className={cn("font-mono text-sm", className)} {...props}>
+        {children}
+      </code>
+    );
+  },
+  pre: ({ children }: { children?: React.ReactNode }) => (
+    <pre className="mb-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
+      {children}
+    </pre>
+  ),
+
+  // Blockquotes
+  blockquote: ({ children }: { children?: React.ReactNode }) => (
+    <blockquote className="mb-4 border-l-4 border-primary/30 pl-4 italic text-muted-foreground">
+      {children}
+    </blockquote>
+  ),
+
+  // Horizontal rule
+  hr: () => <hr className="my-6 border-border" />,
+
+  // Tables
+  table: ({ children }: { children?: React.ReactNode }) => (
+    <div className="mb-4 overflow-x-auto rounded-lg border">
+      <table className="w-full border-collapse text-sm">
+        {children}
+      </table>
+    </div>
+  ),
+  thead: ({ children }: { children?: React.ReactNode }) => (
+    <thead className="bg-muted/50">{children}</thead>
+  ),
+  tbody: ({ children }: { children?: React.ReactNode }) => <tbody>{children}</tbody>,
+  tr: ({ children }: { children?: React.ReactNode }) => (
+    <tr className="border-b border-border last:border-0">{children}</tr>
+  ),
+  th: ({ children }: { children?: React.ReactNode }) => (
+    <th className="px-4 py-3 text-left font-semibold text-foreground">
+      {children}
+    </th>
+  ),
+  td: ({ children }: { children?: React.ReactNode }) => (
+    <td className="px-4 py-3 text-foreground">{children}</td>
+  ),
+});
+
 /**
  * Auto-render math expressions in a DOM element.
  * Finds $...$ (inline) and $$...$$ (display) and renders them with KaTeX.
@@ -176,7 +301,7 @@ function processChildren(
   });
 }
 
-export function MarkdownRenderer({
+function MarkdownRendererInner({
   content,
   className,
   sources = [],
@@ -199,143 +324,60 @@ export function MarkdownRenderer({
   }, [content, isStreaming]);
 
   // Helper to process children with citation detection
-  const withCitations = (children: React.ReactNode) => {
+  const withCitations = React.useCallback((children: React.ReactNode) => {
     if (!enableCitationPreviews || sources.length === 0) {
       return children;
     }
     return processChildren(children, sources, true);
-  };
+  }, [enableCitationPreviews, sources]);
+
+  // Memoize components to avoid recreation on each render
+  const components = React.useMemo(
+    () => createMarkdownComponents(withCitations),
+    [withCitations]
+  );
 
   return (
     <TooltipProvider delayDuration={200}>
       <div ref={containerRef} className={cn("markdown-body", className)}>
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-          // Paragraphs - with citation parsing
-          p: ({ children }) => (
-            <p className="mb-4 text-[15px] leading-7 text-foreground last:mb-0">
-              {withCitations(children)}
-            </p>
-          ),
-
-          // Headings
-          h1: ({ children }) => (
-            <h1 className="mb-4 mt-6 text-xl font-semibold text-foreground first:mt-0">
-              {children}
-            </h1>
-          ),
-          h2: ({ children }) => (
-            <h2 className="mb-3 mt-6 text-lg font-semibold text-foreground first:mt-0">
-              {children}
-            </h2>
-          ),
-          h3: ({ children }) => (
-            <h3 className="mb-3 mt-5 text-base font-semibold text-foreground first:mt-0">
-              {children}
-            </h3>
-          ),
-          h4: ({ children }) => (
-            <h4 className="mb-2 mt-4 text-sm font-semibold text-foreground first:mt-0">
-              {children}
-            </h4>
-          ),
-
-          // Lists
-          ul: ({ children }) => (
-            <ul className="mb-4 ml-6 list-disc space-y-2 text-[15px] leading-7 text-foreground [&>li]:pl-1">
-              {children}
-            </ul>
-          ),
-          ol: ({ children }) => (
-            <ol className="mb-4 ml-6 list-decimal space-y-2 text-[15px] leading-7 text-foreground [&>li]:pl-1">
-              {children}
-            </ol>
-          ),
-          li: ({ children }) => (
-            <li className="text-[15px] leading-7">{withCitations(children)}</li>
-          ),
-
-          // Strong and emphasis
-          strong: ({ children }) => (
-            <strong className="font-semibold text-foreground">{children}</strong>
-          ),
-          em: ({ children }) => (
-            <em className="italic">{children}</em>
-          ),
-
-          // Links
-          a: ({ href, children }) => (
-            <a
-              href={href}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
-            >
-              {children}
-            </a>
-          ),
-
-          // Code
-          code: ({ className, children, ...props }) => {
-            const isInline = !className;
-            if (isInline) {
-              return (
-                <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground">
-                  {children}
-                </code>
-              );
-            }
-            return (
-              <code className={cn("font-mono text-sm", className)} {...props}>
-                {children}
-              </code>
-            );
-          },
-          pre: ({ children }) => (
-            <pre className="mb-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
-              {children}
-            </pre>
-          ),
-
-          // Blockquotes
-          blockquote: ({ children }) => (
-            <blockquote className="mb-4 border-l-4 border-primary/30 pl-4 italic text-muted-foreground">
-              {children}
-            </blockquote>
-          ),
-
-          // Horizontal rule
-          hr: () => <hr className="my-6 border-border" />,
-
-          // Tables
-          table: ({ children }) => (
-            <div className="mb-4 overflow-x-auto rounded-lg border">
-              <table className="w-full border-collapse text-sm">
-                {children}
-              </table>
-            </div>
-          ),
-          thead: ({ children }) => (
-            <thead className="bg-muted/50">{children}</thead>
-          ),
-          tbody: ({ children }) => <tbody>{children}</tbody>,
-          tr: ({ children }) => (
-            <tr className="border-b border-border last:border-0">{children}</tr>
-          ),
-          th: ({ children }) => (
-            <th className="px-4 py-3 text-left font-semibold text-foreground">
-              {children}
-            </th>
-          ),
-          td: ({ children }) => (
-            <td className="px-4 py-3 text-foreground">{children}</td>
-          ),
-        }}
-        >
+        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
           {content}
         </ReactMarkdown>
       </div>
     </TooltipProvider>
   );
 }
+
+/**
+ * Memoized markdown renderer with smart comparison
+ * Skips re-render if content only added to end (streaming optimization)
+ */
+export const MarkdownRenderer = React.memo(
+  MarkdownRendererInner,
+  (prevProps, nextProps) => {
+    // During streaming, only re-render when content changes significantly
+    // or when streaming ends
+    if (prevProps.isStreaming && nextProps.isStreaming) {
+      // During streaming, throttle re-renders to every ~50 characters
+      const lengthDiff = nextProps.content.length - prevProps.content.length;
+      if (lengthDiff > 0 && lengthDiff < 50) {
+        // Small incremental change during streaming - skip render
+        return true;
+      }
+    }
+
+    // Always re-render if:
+    // - streaming state changed
+    // - content changed (beyond streaming threshold)
+    // - sources changed
+    // - citation preview setting changed
+    // - className changed
+    return (
+      prevProps.content === nextProps.content &&
+      prevProps.isStreaming === nextProps.isStreaming &&
+      prevProps.className === nextProps.className &&
+      prevProps.enableCitationPreviews === nextProps.enableCitationPreviews &&
+      prevProps.sources === nextProps.sources
+    );
+  }
+);

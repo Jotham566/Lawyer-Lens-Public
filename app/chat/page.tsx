@@ -2,53 +2,10 @@
 
 import { useState, useRef, useEffect, Suspense, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import Link from "next/link";
-import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
-import {
-  ToolsDropdown,
-  ActiveToolIndicator,
-  getToolPlaceholder,
-  getToolEmptyStateTitle,
-  getToolEmptyStateDescription,
-  getToolSuggestedQuestions,
-  type ToolMode,
-} from "@/components/chat/tools-dropdown";
-import {
-  Send,
-  Plus,
-  Trash2,
-  MessageSquare,
-  Bot,
-  User,
-  FileText,
-  Sparkles,
-  RefreshCw,
-  Copy,
-  Check,
-  AlertCircle,
-  Pencil,
-  X,
-  Scale,
-  ArrowUp,
-  History,
-} from "lucide-react";
+import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -59,56 +16,28 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { cn } from "@/lib/utils";
+import { PageErrorBoundary } from "@/components/error-boundary";
 import {
-  useChatStore,
-  useCurrentConversation,
-} from "@/lib/stores";
+  ConversationSidebar,
+  MobileHistorySheet,
+  ChatInput,
+  EmptyState,
+  VirtualizedMessageList,
+  type ToolMode,
+} from "@/components/chat";
+import { useChatStore, useCurrentConversation } from "@/lib/stores";
 import {
   streamChatWithTypewriter,
   getSuggestedQuestions,
   createResearchSession,
 } from "@/lib/api";
-import type { ChatMessage, ChatSource, VerificationStatus, ConfidenceInfo } from "@/lib/api/types";
-import { TrustBadge } from "@/components/chat/trust-indicator";
+import type {
+  ChatMessage as ChatMessageType,
+  ChatSource,
+  VerificationStatus,
+  ConfidenceInfo,
+} from "@/lib/api/types";
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
-
-// Default suggested questions for chat mode (tool-specific ones come from getToolSuggestedQuestions)
-
-function formatRelativeTime(timestamp: string): string {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
-}
-
-function TypingIndicator() {
-  return (
-    <div className="flex items-center gap-1 px-2 py-1">
-      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.3s]" />
-      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce [animation-delay:-0.15s]" />
-      <span className="h-2 w-2 rounded-full bg-primary/60 animate-bounce" />
-    </div>
-  );
-}
-
-// Helper to strip markdown from titles for display
-const stripMarkdownFromTitle = (title: string): string => {
-  return title
-    .replace(/\*\*([^*]+)\*\*/g, "$1") // Remove **bold**
-    .replace(/\*([^*]+)\*/g, "$1") // Remove *italic*
-    .replace(/[\u{1F300}-\u{1F9FF}]|[\u{2600}-\u{26FF}]|[\u{2700}-\u{27BF}]/gu, "") // Remove emojis
-    .replace(/^(Deep Research|Draft Contract):\s*/i, "") // Remove tool prefixes
-    .trim();
-};
 
 function ChatContent() {
   const searchParams = useSearchParams();
@@ -135,7 +64,7 @@ function ChatContent() {
   const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Tool execution state (will be used for showing inline progress)
+  // Tool execution state
   const [_activeToolExecution, setActiveToolExecution] = useState<{
     tool: ToolMode;
     query: string;
@@ -145,277 +74,272 @@ function ChatContent() {
     error?: string;
     redirectToChat?: boolean;
   } | null>(null);
-  void _activeToolExecution; // Suppress unused warning - will be used for inline tool UI
+  void _activeToolExecution;
+
   const [editingIndex, setEditingIndex] = useState<number | null>(null);
   const [editContent, setEditContent] = useState("");
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
-
-  // Auto-scroll to bottom when messages change
-  useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  }, [currentConversation?.messages]);
 
   // Focus edit input when editing
   useEffect(() => {
     if (editingIndex !== null && editInputRef.current) {
       editInputRef.current.focus();
-      editInputRef.current.setSelectionRange(
-        editContent.length,
-        editContent.length
-      );
+      editInputRef.current.setSelectionRange(editContent.length, editContent.length);
     }
   }, [editingIndex, editContent]);
+
+  // Keyboard shortcuts
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd+N or Ctrl+N - New conversation
+      if ((e.metaKey || e.ctrlKey) && e.key === "n") {
+        e.preventDefault();
+        createConversation();
+        setInput("");
+      }
+
+      // Escape - Cancel editing or close mobile sheet
+      if (e.key === "Escape") {
+        if (editingIndex !== null) {
+          setEditingIndex(null);
+          setEditContent("");
+        } else if (mobileHistoryOpen) {
+          setMobileHistoryOpen(false);
+        } else if (deleteDialogOpen) {
+          setDeleteDialogOpen(false);
+        }
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [createConversation, editingIndex, mobileHistoryOpen, deleteDialogOpen]);
 
   // Create conversation and send initial query
   useEffect(() => {
     if (initialQuery && !currentConversationId) {
       const id = createConversation();
       setInput(initialQuery);
-      // Delay sending to allow state to update
       setTimeout(() => handleSend(initialQuery, id), 100);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
   };
 
-  // Regular chat function (extracted for reuse when tools redirect to chat)
-  const handleRegularChat = useCallback(async (
-    text: string,
-    activeConvId: string,
-    messagesForHistory?: ChatMessage[]
-  ) => {
-    // Add user message
-    const userMessage: ChatMessage = {
-      role: "user",
-      content: text,
-      timestamp: new Date().toISOString(),
-    };
-    addMessage(activeConvId, userMessage);
-    setLoading(true);
-    setError(null);
-
-    // Add placeholder for assistant response
-    const aiMessagePlaceholder: ChatMessage = {
-      role: "assistant",
-      content: "",
-      timestamp: new Date().toISOString(),
-    };
-    addMessage(activeConvId, aiMessagePlaceholder);
-
-    // Get conversation history for context
-    const historyMessages = messagesForHistory || currentConversation?.messages || [];
-    const conversationHistory = [
-      ...historyMessages.map((msg) => ({
-        role: msg.role,
-        content: msg.content,
-      })),
-      { role: "user", content: text },
-    ];
-
-    // Stream the response
-    try {
-      let fullContent = "";
-      let sources: ChatSource[] = [];
-      let verification: VerificationStatus | undefined;
-      let confidenceInfo: ConfidenceInfo | undefined;
-
-      const stream = streamChatWithTypewriter({
-        message: text,
-        conversation_id: activeConvId,
-        conversation_history: conversationHistory,
-        search_mode: "hybrid",
-        max_context_chunks: 10,
-        temperature: 0.3,
-      });
-
-      for await (const event of stream) {
-        switch (event.type) {
-          case "content":
-            fullContent += event.text;
-            updateLastMessage(activeConvId, fullContent);
-            break;
-          case "content_update":
-            fullContent = event.fullContent;
-            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
-            break;
-          case "citations":
-            sources = event.citations;
-            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
-            break;
-          case "verification":
-            // Capture trust metrics from verification event
-            verification = event.data.verification;
-            confidenceInfo = event.data.confidence_info;
-            updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
-            break;
-          case "error":
-            setError(event.message);
-            break;
-          case "done":
-            if (sources.length === 0) {
-              updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions(), verification, confidenceInfo);
-            }
-            break;
-        }
-      }
-    } catch (err) {
-      console.error("Chat error:", err);
-      setError(err instanceof Error ? err.message : "Failed to get response");
-    } finally {
-      setLoading(false);
-    }
-  }, [currentConversation?.messages, addMessage, updateLastMessage, setLoading, setError]);
-
-  const handleSend = useCallback(async (message?: string, conversationId?: string, messagesForHistory?: ChatMessage[]) => {
-    const text = message || input.trim();
-    const convId = conversationId || currentConversationId;
-
-    if (!text) return;
-
-    // Handle Deep Research tool inline
-    if (selectedTool === "deep-research") {
-      setInput("");
-      const toolToUse = selectedTool;
-      setSelectedTool("chat"); // Reset tool after use
-
-      // Create conversation if none exists
-      let activeConvId = convId;
-      if (!activeConvId) {
-        activeConvId = createConversation();
-      }
-
-      // Add user message
-      const userMessage: ChatMessage = {
+  // Regular chat function
+  const handleRegularChat = useCallback(
+    async (text: string, activeConvId: string, messagesForHistory?: ChatMessageType[]) => {
+      const userMessage: ChatMessageType = {
         role: "user",
-        content: `🔍 **Deep Research:** ${text}`,
+        content: text,
         timestamp: new Date().toISOString(),
       };
       addMessage(activeConvId, userMessage);
+      setLoading(true);
+      setError(null);
 
-      // Set tool execution state
-      setActiveToolExecution({
-        tool: toolToUse,
-        query: text,
-        status: "running",
-        progress: { phase: "starting", message: "Starting deep research..." },
-      });
+      const aiMessagePlaceholder: ChatMessageType = {
+        role: "assistant",
+        content: "",
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConvId, aiMessagePlaceholder);
+
+      const historyMessages = messagesForHistory || currentConversation?.messages || [];
+      const conversationHistory = [
+        ...historyMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        { role: "user", content: text },
+      ];
 
       try {
-        // Create research session
-        const session = await createResearchSession({ query: text });
+        let fullContent = "";
+        let sources: ChatSource[] = [];
+        let verification: VerificationStatus | undefined;
+        let confidenceInfo: ConfidenceInfo | undefined;
 
-        // Check if triage redirected to chat (simple query)
-        if (session.status === "redirect_to_chat") {
-          setActiveToolExecution(null);
-          // Fall back to normal chat for simple queries
-          await handleRegularChat(text, activeConvId, messagesForHistory);
-          return;
+        const stream = streamChatWithTypewriter({
+          message: text,
+          conversation_id: activeConvId,
+          conversation_history: conversationHistory,
+          search_mode: "hybrid",
+          max_context_chunks: 10,
+          temperature: 0.3,
+        });
+
+        for await (const event of stream) {
+          switch (event.type) {
+            case "content":
+              fullContent += event.text;
+              updateLastMessage(activeConvId, fullContent);
+              break;
+            case "content_update":
+              fullContent = event.fullContent;
+              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              break;
+            case "citations":
+              sources = event.citations;
+              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              break;
+            case "verification":
+              verification = event.data.verification;
+              confidenceInfo = event.data.confidence_info;
+              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              break;
+            case "error":
+              setError(event.message);
+              break;
+            case "done":
+              if (sources.length === 0) {
+                updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions(), verification, confidenceInfo);
+              }
+              break;
+          }
+        }
+      } catch (err) {
+        console.error("Chat error:", err);
+        setError(err instanceof Error ? err.message : "Failed to get response");
+      } finally {
+        setLoading(false);
+      }
+    },
+    [currentConversation?.messages, addMessage, updateLastMessage, setLoading, setError]
+  );
+
+  const handleSend = useCallback(
+    async (message?: string, conversationId?: string, messagesForHistory?: ChatMessageType[]) => {
+      const text = message || input.trim();
+      const convId = conversationId || currentConversationId;
+
+      if (!text) return;
+
+      // Handle Deep Research tool
+      if (selectedTool === "deep-research") {
+        setInput("");
+        const toolToUse = selectedTool;
+        setSelectedTool("chat");
+
+        let activeConvId = convId;
+        if (!activeConvId) {
+          activeConvId = createConversation();
         }
 
-        // Update progress based on session status
-        setActiveToolExecution(prev => prev ? {
-          ...prev,
-          progress: {
-            phase: session.status === "clarifying" ? "clarifying" : "researching",
-            message: session.status === "clarifying"
-              ? "This query requires clarification. Please use the full research interface."
-              : "Research in progress...",
-          },
-        } : null);
-
-        // For now, show a message that deep research is available at /research
-        // TODO: Implement full inline research flow with clarification UI
-        const assistantMessage: ChatMessage = {
-          role: "assistant",
-          content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
+        const userMessage: ChatMessageType = {
+          role: "user",
+          content: `🔍 **Deep Research:** ${text}`,
           timestamp: new Date().toISOString(),
         };
-        addMessage(activeConvId, assistantMessage);
-        setActiveToolExecution(null);
+        addMessage(activeConvId, userMessage);
 
-      } catch (err) {
-        console.error("Research error:", err);
         setActiveToolExecution({
           tool: toolToUse,
           query: text,
-          status: "error",
-          error: err instanceof Error ? err.message : "Failed to start research",
+          status: "running",
+          progress: { phase: "starting", message: "Starting deep research..." },
         });
 
-        // Add error message
-        const errorMessage: ChatMessage = {
-          role: "assistant",
-          content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
+        try {
+          const session = await createResearchSession({ query: text });
+
+          if (session.status === "redirect_to_chat") {
+            setActiveToolExecution(null);
+            await handleRegularChat(text, activeConvId, messagesForHistory);
+            return;
+          }
+
+          setActiveToolExecution((prev) =>
+            prev
+              ? {
+                  ...prev,
+                  progress: {
+                    phase: session.status === "clarifying" ? "clarifying" : "researching",
+                    message:
+                      session.status === "clarifying"
+                        ? "This query requires clarification. Please use the full research interface."
+                        : "Research in progress...",
+                  },
+                }
+              : null
+          );
+
+          const assistantMessage: ChatMessageType = {
+            role: "assistant",
+            content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
+            timestamp: new Date().toISOString(),
+          };
+          addMessage(activeConvId, assistantMessage);
+          setActiveToolExecution(null);
+        } catch (err) {
+          console.error("Research error:", err);
+          setActiveToolExecution({
+            tool: toolToUse,
+            query: text,
+            status: "error",
+            error: err instanceof Error ? err.message : "Failed to start research",
+          });
+
+          const errorMessage: ChatMessageType = {
+            role: "assistant",
+            content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
+            timestamp: new Date().toISOString(),
+          };
+          addMessage(activeConvId, errorMessage);
+          setActiveToolExecution(null);
+        }
+        return;
+      }
+
+      // Handle Draft Contract tool
+      if (selectedTool === "draft-contract") {
+        setInput("");
+        setSelectedTool("chat");
+
+        let activeConvId = convId;
+        if (!activeConvId) {
+          activeConvId = createConversation();
+        }
+
+        const userMessage: ChatMessageType = {
+          role: "user",
+          content: `📄 **Draft Contract:** ${text}`,
           timestamp: new Date().toISOString(),
         };
-        addMessage(activeConvId, errorMessage);
-        setActiveToolExecution(null);
+        addMessage(activeConvId, userMessage);
+
+        const assistantMessage: ChatMessageType = {
+          role: "assistant",
+          content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
+          timestamp: new Date().toISOString(),
+        };
+        addMessage(activeConvId, assistantMessage);
+        return;
       }
-      return;
-    }
 
-    // Handle Draft Contract tool
-    if (selectedTool === "draft-contract") {
-      setInput("");
-      setSelectedTool("chat"); // Reset tool after use
-
-      // Create conversation if none exists
+      // Regular chat
       let activeConvId = convId;
       if (!activeConvId) {
         activeConvId = createConversation();
       }
 
-      // Add user message
-      const userMessage: ChatMessage = {
-        role: "user",
-        content: `📄 **Draft Contract:** ${text}`,
-        timestamp: new Date().toISOString(),
-      };
-      addMessage(activeConvId, userMessage);
-
-      // For contract drafting, direct to the contracts page for now
-      // TODO: Implement inline contract flow
-      const assistantMessage: ChatMessage = {
-        role: "assistant",
-        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
-        timestamp: new Date().toISOString(),
-      };
-      addMessage(activeConvId, assistantMessage);
-      return;
-    }
-
-    // Regular chat - create conversation if none exists
-    let activeConvId = convId;
-    if (!activeConvId) {
-      activeConvId = createConversation();
-    }
-
-    setInput("");
-    await handleRegularChat(text, activeConvId, messagesForHistory);
-  }, [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage]);
+      setInput("");
+      await handleRegularChat(text, activeConvId, messagesForHistory);
+    },
+    [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage]
+  );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
-    }
-  };
-
-  const handleEditKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>, index: number) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleEditSubmit(index);
-    } else if (e.key === "Escape") {
-      setEditingIndex(null);
-      setEditContent("");
     }
   };
 
@@ -455,27 +379,21 @@ function ChatContent() {
     setEditContent("");
   };
 
-  const handleEditSubmit = (index: number) => {
-    if (!currentConversationId || !editContent.trim()) return;
+  const handleEditSubmit = (index: number, content: string) => {
+    if (!currentConversationId || !content.trim()) return;
 
-    const trimmedContent = editContent.trim();
+    const trimmedContent = content.trim();
     const originalMessage = currentConversation?.messages[index];
 
-    // If content hasn't changed, just cancel
     if (originalMessage?.content === trimmedContent) {
       handleCancelEdit();
       return;
     }
 
-    // Get messages up to the edited message for history context
     const messagesBeforeEdit = currentConversation?.messages.slice(0, index) || [];
-
-    // Edit and truncate (removes all messages after this one)
     editMessageAndTruncate(currentConversationId, index, trimmedContent);
-
     handleCancelEdit();
 
-    // Re-run the query with the new content
     setTimeout(() => {
       handleSend(trimmedContent, currentConversationId, messagesBeforeEdit);
     }, 50);
@@ -484,20 +402,17 @@ function ChatContent() {
   const handleRegenerate = (messageIndex: number) => {
     if (!currentConversationId || !currentConversation) return;
 
-    // Find the user message before this assistant message
     const userMessageIndex = messageIndex - 1;
     if (userMessageIndex < 0) return;
 
     const userMessage = currentConversation.messages[userMessageIndex];
     if (userMessage.role !== "user") return;
 
-    // Get messages up to (but not including) the user message for history
     const messagesBeforeUser = currentConversation.messages.slice(0, userMessageIndex);
+    // Remove from userMessageIndex to also remove the original user message
+    // since handleSend will add it again
+    removeMessagesFrom(currentConversationId, userMessageIndex);
 
-    // Remove the assistant message
-    removeMessagesFrom(currentConversationId, messageIndex);
-
-    // Re-send the user message
     setTimeout(() => {
       handleSend(userMessage.content, currentConversationId, messagesBeforeUser);
     }, 50);
@@ -508,108 +423,26 @@ function ChatContent() {
     setMobileHistoryOpen(false);
   };
 
-  // Conversation list component (shared between sidebar and mobile sheet)
-  const ConversationList = () => (
-    <div className="flex-1 overflow-y-auto p-2">
-      {conversations.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-8 text-center">
-          <MessageSquare className="h-8 w-8 text-muted-foreground/50 mb-2" />
-          <p className="text-sm text-muted-foreground">
-            No conversations yet
-          </p>
-          <p className="text-xs text-muted-foreground mt-1">
-            Start a new chat to begin
-          </p>
-        </div>
-      ) : (
-        <div className="space-y-1">
-          {conversations.map((conv) => (
-            <div
-              key={conv.id}
-              role="button"
-              tabIndex={0}
-              onClick={() => handleSelectConversation(conv.id)}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  handleSelectConversation(conv.id);
-                }
-              }}
-              className={cn(
-                "group relative cursor-pointer rounded-lg px-3 py-3 text-left transition-colors",
-                currentConversationId === conv.id
-                  ? "bg-accent"
-                  : "hover:bg-muted"
-              )}
-            >
-              <div className="flex items-start gap-3 pr-8">
-                <MessageSquare className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium" title={stripMarkdownFromTitle(conv.title)}>
-                    {stripMarkdownFromTitle(conv.title)}
-                  </p>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-muted-foreground">
-                      {conv.messages.length} messages
-                    </span>
-                    {conv.updatedAt && (
-                      <>
-                        <span className="text-xs text-muted-foreground">·</span>
-                        <span className="text-xs text-muted-foreground">
-                          {formatRelativeTime(conv.updatedAt)}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="absolute right-1 top-1/2 h-7 w-7 -translate-y-1/2 rounded text-muted-foreground opacity-0 transition-opacity hover:bg-destructive/10 hover:text-destructive group-hover:opacity-100"
-                onClick={(e) => handleDeleteClick(conv.id, e)}
-                aria-label="Delete conversation"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            </div>
-          ))}
-        </div>
-      )}
-    </div>
-  );
+  const handleSelectQuestion = (question: string) => {
+    setInput(question);
+    inputRef.current?.focus();
+  };
 
   return (
     <TooltipProvider>
-      {/* Account for header (4rem) and mobile bottom nav (4rem on mobile) */}
       <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
-        {/* Desktop Conversation Sidebar */}
-        <div className="hidden min-w-[280px] max-w-[280px] flex-col border-r bg-muted/30 md:flex">
-          <div className="flex items-center justify-between border-b p-3">
-            <div className="flex items-center gap-2">
-              <Scale className="h-4 w-4 text-primary" />
-              <h2 className="text-sm font-medium">Chat History</h2>
-            </div>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="h-8 w-8"
-                  onClick={handleNewConversation}
-                >
-                  <Plus className="h-4 w-4" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>New conversation</TooltipContent>
-            </Tooltip>
-          </div>
-          <ConversationList />
-        </div>
+        {/* Desktop Sidebar */}
+        <ConversationSidebar
+          conversations={conversations}
+          currentConversationId={currentConversationId}
+          onSelectConversation={handleSelectConversation}
+          onDeleteConversation={handleDeleteClick}
+          onNewConversation={handleNewConversation}
+        />
 
         {/* Chat Area */}
         <div className="flex flex-1 flex-col">
-          {/* Chat Header - Mobile */}
+          {/* Mobile Header */}
           <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
             <div className="flex items-center gap-2">
               <Sparkles className="h-5 w-5 text-primary" />
@@ -625,360 +458,56 @@ function ChatContent() {
               >
                 <Plus className="h-4 w-4" />
               </Button>
-              <Sheet open={mobileHistoryOpen} onOpenChange={setMobileHistoryOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8" aria-label="Chat history">
-                    <History className="h-4 w-4" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="right" className="w-80 p-0">
-                  <SheetHeader className="border-b p-4">
-                    <SheetTitle className="flex items-center gap-2">
-                      <MessageSquare className="h-4 w-4" />
-                      Chat History
-                    </SheetTitle>
-                  </SheetHeader>
-                  <ConversationList />
-                </SheetContent>
-              </Sheet>
+              <MobileHistorySheet
+                open={mobileHistoryOpen}
+                onOpenChange={setMobileHistoryOpen}
+                conversations={conversations}
+                currentConversationId={currentConversationId}
+                onSelectConversation={handleSelectConversation}
+                onDeleteConversation={handleDeleteClick}
+              />
             </div>
           </div>
 
           {/* Messages */}
-          <ScrollArea className="flex-1">
-            <div className="mx-auto max-w-3xl px-4 py-6">
-              {!currentConversation ||
-              currentConversation.messages.length === 0 ? (
-                // Empty State - Modern Design
-                <div className="flex flex-col items-center justify-center py-8 md:py-16 text-center">
-                  {/* Gradient Icon Background */}
-                  <div className="relative mb-6">
-                    <div className="absolute inset-0 rounded-full bg-gradient-to-br from-primary/20 to-primary/5 blur-xl" />
-                    <div className="relative flex h-20 w-20 items-center justify-center rounded-full bg-gradient-to-br from-primary/10 to-primary/5 border border-primary/20">
-                      <Sparkles className="h-10 w-10 text-primary" />
-                    </div>
-                  </div>
-
-                  {/* Active Tool Indicator */}
-                  {selectedTool !== "chat" && (
-                    <div className="mb-4">
-                      <ActiveToolIndicator
-                        tool={selectedTool}
-                        onClear={() => setSelectedTool("chat")}
-                      />
-                    </div>
-                  )}
-
-                  <h2 className="text-2xl md:text-3xl font-bold tracking-tight">
-                    {getToolEmptyStateTitle(selectedTool)}
-                  </h2>
-                  <p className="mt-3 max-w-md text-muted-foreground">
-                    {getToolEmptyStateDescription(selectedTool)}
-                  </p>
-
-                  {/* Suggested Questions */}
-                  <div className="mt-10 w-full max-w-lg">
-                    <p className="mb-4 text-sm font-medium text-muted-foreground">
-                      {selectedTool === "draft-contract" ? "Try these:" : "Try asking:"}
-                    </p>
-                    <div className="grid gap-3">
-                      {getToolSuggestedQuestions(selectedTool).map((question) => (
-                        <button
-                          key={question}
-                          onClick={() => {
-                            setInput(question);
-                            inputRef.current?.focus();
-                          }}
-                          className="group flex items-center gap-3 rounded-xl border bg-card px-4 py-3 text-left text-sm transition-all hover:bg-muted hover:border-primary/30 hover:shadow-sm"
-                        >
-                          <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                            <MessageSquare className="h-4 w-4 text-primary" />
-                          </div>
-                          <span className="text-foreground/80 group-hover:text-foreground">
-                            {question}
-                          </span>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                // Messages List
-                <div className="space-y-6">
-                  {currentConversation.messages.map((message, index) => (
-                    <div
-                      key={`${message.timestamp}-${index}`}
-                      className="flex gap-4 justify-start"
-                    >
-                      {message.role === "assistant" && (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
-                          <Bot className="h-5 w-5 text-primary" />
-                        </div>
-                      )}
-                      {message.role === "user" && (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-
-                      <div
-                        className={cn(
-                          "group space-y-3",
-                          message.role === "user"
-                            ? "max-w-[80%]"
-                            : "max-w-[90%]"
-                        )}
-                      >
-                        {/* User message - editable */}
-                        {message.role === "user" && editingIndex === index ? (
-                          <div className="space-y-2">
-                            <textarea
-                              ref={editInputRef}
-                              value={editContent}
-                              onChange={(e) => setEditContent(e.target.value)}
-                              onKeyDown={(e) => handleEditKeyDown(e, index)}
-                              className="w-full min-w-[300px] resize-none rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                              rows={Math.min(editContent.split("\n").length + 1, 6)}
-                            />
-                            <div className="flex justify-end gap-2">
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                onClick={handleCancelEdit}
-                              >
-                                <X className="mr-1 h-3 w-3" />
-                                Cancel
-                              </Button>
-                              <Button
-                                size="sm"
-                                onClick={() => handleEditSubmit(index)}
-                                disabled={!editContent.trim()}
-                              >
-                                <Send className="mr-1 h-3 w-3" />
-                                Send
-                              </Button>
-                            </div>
-                          </div>
-                        ) : message.role === "user" ? (
-                          <div className="inline-block rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm selection:bg-primary/20 selection:text-foreground [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
-                            <MarkdownRenderer
-                              content={message.content}
-                              className="text-foreground [&_p]:text-foreground [&_strong]:text-foreground"
-                            />
-                          </div>
-                        ) : message.content === "" && isLoading ? (
-                          // Typing indicator for empty streaming message
-                          <div className="rounded-2xl bg-muted px-4 py-3">
-                            <TypingIndicator />
-                          </div>
-                        ) : (
-                          <div className="rounded-2xl bg-muted/50 px-4 py-3">
-                            <MarkdownRenderer
-                              content={message.content}
-                              sources={message.sources}
-                              enableCitationPreviews={true}
-                              isStreaming={isLoading && index === currentConversation.messages.length - 1}
-                            />
-                          </div>
-                        )}
-
-                        {/* Sources and Trust Indicator */}
-                        {message.role === "assistant" && message.content && (
-                          <div className="flex flex-wrap items-center gap-3 pt-2">
-                            {/* Trust Badge - only show when not streaming and verification exists */}
-                            {!(isLoading && index === currentConversation.messages.length - 1) &&
-                              message.verification && (
-                                <TrustBadge
-                                  verification={message.verification}
-                                  confidenceInfo={message.confidence_info}
-                                />
-                              )}
-                            {/* Sources */}
-                            {message.sources && message.sources.length > 0 && (
-                              <div className="flex flex-wrap gap-2">
-                                {message.sources.map((source, srcIndex) => (
-                                  <SourceBadge key={srcIndex} source={source} />
-                                ))}
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {/* Suggested Follow-ups */}
-                        {message.suggested_followups &&
-                          message.suggested_followups.length > 0 && (
-                            <div className="space-y-2 pt-2">
-                              <p className="text-xs font-medium text-muted-foreground">
-                                Related questions
-                              </p>
-                              <div className="flex flex-wrap gap-2">
-                                {message.suggested_followups.map(
-                                  (followup, fIndex) => (
-                                    <button
-                                      key={fIndex}
-                                      onClick={() => {
-                                        setInput(followup);
-                                        inputRef.current?.focus();
-                                      }}
-                                      className="rounded-full border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
-                                    >
-                                      {followup}
-                                    </button>
-                                  )
-                                )}
-                              </div>
-                            </div>
-                          )}
-
-                        {/* Message Actions */}
-                        {editingIndex !== index && message.content && (
-                          <div
-                            className={cn(
-                              "flex gap-1 opacity-0 transition-opacity group-hover:opacity-100",
-                              message.role === "user" && "justify-end"
-                            )}
-                          >
-                            {message.role === "user" ? (
-                              // User message actions
-                              <Tooltip>
-                                <TooltipTrigger asChild>
-                                  <Button
-                                    variant="ghost"
-                                    size="icon"
-                                    className="h-7 w-7"
-                                    onClick={() =>
-                                      handleStartEdit(index, message.content)
-                                    }
-                                    disabled={isLoading}
-                                  >
-                                    <Pencil className="h-3.5 w-3.5" />
-                                  </Button>
-                                </TooltipTrigger>
-                                <TooltipContent>Edit message</TooltipContent>
-                              </Tooltip>
-                            ) : (
-                              // Assistant message actions
-                              <>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() =>
-                                        copyMessage(
-                                          `${message.timestamp}-${index}`,
-                                          message.content
-                                        )
-                                      }
-                                    >
-                                      {copiedId === `${message.timestamp}-${index}` ? (
-                                        <Check className="h-3.5 w-3.5 text-green-500" />
-                                      ) : (
-                                        <Copy className="h-3.5 w-3.5" />
-                                      )}
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>
-                                    {copiedId === `${message.timestamp}-${index}` ? "Copied!" : "Copy"}
-                                  </TooltipContent>
-                                </Tooltip>
-                                <Tooltip>
-                                  <TooltipTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="h-7 w-7"
-                                      onClick={() => handleRegenerate(index)}
-                                      disabled={isLoading}
-                                    >
-                                      <RefreshCw className="h-3.5 w-3.5" />
-                                    </Button>
-                                  </TooltipTrigger>
-                                  <TooltipContent>Regenerate response</TooltipContent>
-                                </Tooltip>
-                              </>
-                            )}
-                          </div>
-                        )}
-                      </div>
-
-                      {message.role === "user" && editingIndex !== index && (
-                        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        </div>
-                      )}
-                    </div>
-                  ))}
-
-                  {/* Error indicator */}
-                  {error && (
-                    <div className="flex gap-4">
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
-                        <AlertCircle className="h-5 w-5 text-destructive" />
-                      </div>
-                      <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                        {error}
-                      </div>
-                    </div>
-                  )}
-
-                  <div ref={messagesEndRef} />
-                </div>
-              )}
-            </div>
-          </ScrollArea>
+          <div className="flex-1 overflow-hidden" role="region" aria-label="Chat messages">
+            {!currentConversation || currentConversation.messages.length === 0 ? (
+              <div className="mx-auto max-w-3xl px-4 py-6">
+                <EmptyState
+                  selectedTool={selectedTool}
+                  onClearTool={() => setSelectedTool("chat")}
+                  onSelectQuestion={handleSelectQuestion}
+                />
+              </div>
+            ) : (
+              <VirtualizedMessageList
+                messages={currentConversation.messages}
+                isLoading={isLoading}
+                error={error}
+                editingIndex={editingIndex}
+                copiedId={copiedId}
+                onStartEdit={handleStartEdit}
+                onCancelEdit={handleCancelEdit}
+                onEditSubmit={handleEditSubmit}
+                onCopy={copyMessage}
+                onRegenerate={handleRegenerate}
+                onSelectFollowup={handleSelectQuestion}
+                editInputRef={editInputRef}
+              />
+            )}
+          </div>
 
           {/* Input Area */}
-          <div className="border-t p-4">
-            <div className="mx-auto max-w-3xl">
-              {/* Tool Selection Row */}
-              <div className="flex items-center gap-2 mb-3">
-                <ToolsDropdown
-                  selectedTool={selectedTool}
-                  onSelectTool={setSelectedTool}
-                  disabled={isLoading}
-                />
-                {selectedTool !== "chat" && (
-                  <ActiveToolIndicator
-                    tool={selectedTool}
-                    onClear={() => setSelectedTool("chat")}
-                  />
-                )}
-              </div>
-
-              {/* Input Form */}
-              <form
-                onSubmit={(e) => {
-                  e.preventDefault();
-                  handleSend();
-                }}
-                className="flex items-end gap-2"
-              >
-                <textarea
-                  ref={inputRef}
-                  value={input}
-                  onChange={handleInputChange}
-                  onKeyDown={handleKeyDown}
-                  placeholder={getToolPlaceholder(selectedTool)}
-                  rows={1}
-                  className="min-h-[44px] max-h-[200px] flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-[44px] w-[44px] shrink-0"
-                  disabled={!input.trim() || isLoading}
-                  aria-label="Send message"
-                >
-                  <ArrowUp className="h-5 w-5" />
-                </Button>
-              </form>
-            </div>
-            <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
-              Responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
-            </p>
-          </div>
+          <ChatInput
+            ref={inputRef}
+            value={input}
+            onChange={handleInputChange}
+            onKeyDown={handleKeyDown}
+            onSubmit={() => handleSend()}
+            isLoading={isLoading}
+            selectedTool={selectedTool}
+            onSelectTool={setSelectedTool}
+          />
         </div>
 
         {/* Delete Confirmation Dialog */}
@@ -987,8 +516,8 @@ function ChatContent() {
             <AlertDialogHeader>
               <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
               <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this
-                conversation and all its messages.
+                This action cannot be undone. This will permanently delete this conversation and all
+                its messages.
               </AlertDialogDescription>
             </AlertDialogHeader>
             <AlertDialogFooter>
@@ -1007,57 +536,25 @@ function ChatContent() {
   );
 }
 
-interface SourceBadgeProps {
-  source: ChatSource;
-}
-
-function SourceBadge({ source }: SourceBadgeProps) {
-  // Get badge color based on document type
-  const getBadgeClass = () => {
-    switch (source.document_type) {
-      case "act":
-        return "border-blue-200 bg-blue-50 hover:bg-blue-100 dark:border-blue-800 dark:bg-blue-950";
-      case "judgment":
-        return "border-purple-200 bg-purple-50 hover:bg-purple-100 dark:border-purple-800 dark:bg-purple-950";
-      case "regulation":
-        return "border-green-200 bg-green-50 hover:bg-green-100 dark:border-green-800 dark:bg-green-950";
-      case "constitution":
-        return "border-amber-200 bg-amber-50 hover:bg-amber-100 dark:border-amber-800 dark:bg-amber-950";
-      default:
-        return "";
-    }
-  };
-
-  return (
-    <Link href={`/document/${source.document_id}`}>
-      <Badge
-        variant="outline"
-        className={cn("gap-1.5 transition-colors", getBadgeClass())}
-      >
-        <FileText className="h-3 w-3" />
-        <span className="max-w-[180px] truncate">{source.title}</span>
-      </Badge>
-    </Link>
-  );
-}
-
 export default function ChatPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
-          <div className="space-y-4 text-center">
-            <div className="relative mx-auto">
-              <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl" />
-              <Skeleton className="relative h-20 w-20 rounded-full" />
+    <PageErrorBoundary fallback="chat">
+      <Suspense
+        fallback={
+          <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+            <div className="space-y-4 text-center">
+              <div className="relative mx-auto">
+                <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl" />
+                <Skeleton className="relative h-20 w-20 rounded-full" />
+              </div>
+              <Skeleton className="h-8 w-48 mx-auto" />
+              <Skeleton className="h-4 w-64 mx-auto" />
             </div>
-            <Skeleton className="h-8 w-48 mx-auto" />
-            <Skeleton className="h-4 w-64 mx-auto" />
           </div>
-        </div>
-      }
-    >
-      <ChatContent />
-    </Suspense>
+        }
+      >
+        <ChatContent />
+      </Suspense>
+    </PageErrorBoundary>
   );
 }

@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
+import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   Search,
   ArrowLeft,
@@ -1222,15 +1223,17 @@ function ResearchContent() {
 
 export default function ResearchPage() {
   return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <Skeleton className="h-8 w-48 mb-8" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      }
-    >
-      <ResearchContent />
-    </Suspense>
+    <PageErrorBoundary fallback="generic">
+      <Suspense
+        fallback={
+          <div className="container mx-auto max-w-3xl px-4 py-8">
+            <Skeleton className="h-8 w-48 mb-8" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        }
+      >
+        <ResearchContent />
+      </Suspense>
+    </PageErrorBoundary>
   );
 }

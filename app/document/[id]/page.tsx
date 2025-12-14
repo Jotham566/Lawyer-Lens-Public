@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useState, useEffect } from "react";
+import { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
   Download,
@@ -80,8 +81,7 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
-export default function DocumentPage({ params }: PageProps) {
-  const { id } = use(params);
+function DocumentContent({ id }: { id: string }) {
   const { data: document, isLoading, error } = useDocument(id);
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
@@ -533,6 +533,28 @@ export default function DocumentPage({ params }: PageProps) {
         </div>
       </div>
     </TooltipProvider>
+  );
+}
+
+export default function DocumentPage({ params }: PageProps) {
+  const { id } = use(params);
+
+  return (
+    <PageErrorBoundary fallback="document">
+      <Suspense
+        fallback={
+          <div className="p-4 md:p-6">
+            <div className="mx-auto max-w-4xl space-y-6">
+              <Skeleton className="h-6 w-48" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-[600px] w-full" />
+            </div>
+          </div>
+        }
+      >
+        <DocumentContent id={id} />
+      </Suspense>
+    </PageErrorBoundary>
   );
 }
 

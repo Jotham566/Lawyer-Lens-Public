@@ -9,6 +9,7 @@ export {
   useChatStore,
   useCurrentConversation,
   useConversationMessages,
+  type Conversation,
 } from "./chat-store";
 export {
   useLibraryStore,

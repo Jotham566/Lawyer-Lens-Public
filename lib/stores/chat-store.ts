@@ -13,7 +13,7 @@ import type {
   ConfidenceInfo,
 } from "@/lib/api/types";
 
-interface Conversation {
+export interface Conversation {
   id: string;
   title: string;
   messages: ChatMessage[];
