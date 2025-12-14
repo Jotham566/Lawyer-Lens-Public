@@ -3,7 +3,6 @@
 import React, { memo, forwardRef, useState, useEffect } from "react";
 import {
   Bot,
-  User,
   Copy,
   Check,
   RefreshCw,
@@ -204,47 +203,56 @@ function ChatMessageComponent({
   const messageId = `${message.timestamp}-${index}`;
   const isStreaming = isLoading && isLastMessage;
 
-  return (
-    <div className="flex gap-4 justify-start">
-      {message.role === "assistant" && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
-          <Bot className="h-5 w-5 text-primary" />
-        </div>
-      )}
-      {message.role === "user" && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
-
-      <div
-        className={cn(
-          "group space-y-3",
-          message.role === "user" && isEditing
-            ? "w-full max-w-2xl"
-            : message.role === "user"
-            ? "max-w-[80%]"
-            : "max-w-[90%]"
-        )}
-      >
-        {/* User message - editable */}
-        {message.role === "user" && isEditing ? (
-          <MessageEditForm
-            ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
-            initialContent={message.content}
-            onSubmit={(content) => onEditSubmit(index, content)}
-            onCancel={onCancelEdit}
-          />
-        ) : message.role === "user" ? (
-          <div className="inline-block rounded-2xl bg-muted px-4 py-3 text-sm text-foreground shadow-sm selection:bg-primary/20 selection:text-foreground [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
-            <MarkdownRenderer
-              content={message.content}
-              className="text-foreground [&_p]:text-foreground [&_strong]:text-foreground"
+  // User messages: right-aligned, AI messages: left-aligned with icon
+  if (message.role === "user") {
+    return (
+      <div className="flex justify-end">
+        <div
+          className={cn(
+            "group space-y-3",
+            isEditing ? "w-full max-w-2xl" : "max-w-[80%]"
+          )}
+        >
+          {isEditing ? (
+            <MessageEditForm
+              ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
+              initialContent={message.content}
+              onSubmit={(content) => onEditSubmit(index, content)}
+              onCancel={onCancelEdit}
             />
-          </div>
-        ) : message.content === "" && isLoading ? (
-          // Typing indicator for empty streaming message
-          <div className="rounded-2xl bg-muted px-4 py-3">
+          ) : (
+            <div className="inline-block rounded-2xl bg-slate-200 dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 shadow-sm selection:bg-slate-400/30 dark:selection:bg-slate-500/30 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+              <MarkdownRenderer
+                content={message.content}
+                className="text-slate-900 dark:text-slate-100 [&_p]:text-slate-900 dark:[&_p]:text-slate-100 [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100 [&_a]:text-slate-700 dark:[&_a]:text-slate-300 [&_a]:underline"
+              />
+            </div>
+          )}
+
+          {/* User Message Actions */}
+          {!isEditing && message.content && (
+            <div className="flex justify-end gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+              <UserMessageActions
+                onEdit={() => onStartEdit(index, message.content)}
+                disabled={isLoading}
+              />
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
+  // Assistant message: left-aligned with icon
+  return (
+    <div className="flex gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
+        <Bot className="h-4 w-4 text-primary" />
+      </div>
+
+      <div className="group space-y-3 max-w-[90%]">
+        {message.content === "" && isLoading ? (
+          <div className="rounded-2xl bg-muted/50 px-4 py-3">
             <TypingIndicator />
           </div>
         ) : (
@@ -259,16 +267,14 @@ function ChatMessageComponent({
         )}
 
         {/* Sources and Trust Indicator */}
-        {message.role === "assistant" && message.content && (
-          <div className="flex flex-wrap items-center gap-3 pt-2">
-            {/* Trust Badge - only show when not streaming and verification exists */}
+        {message.content && (
+          <div className="flex flex-wrap items-center gap-3">
             {!isStreaming && message.verification && (
               <TrustBadge
                 verification={message.verification}
                 confidenceInfo={message.confidence_info}
               />
             )}
-            {/* Sources */}
             <SourceBadgeList sources={message.sources || []} />
           </div>
         )}
@@ -293,38 +299,20 @@ function ChatMessageComponent({
           </div>
         )}
 
-        {/* Message Actions */}
-        {!isEditing && message.content && (
-          <div
-            className={cn(
-              "flex gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100",
-              message.role === "user" && "justify-end"
-            )}
-          >
-            {message.role === "user" ? (
-              <UserMessageActions
-                onEdit={() => onStartEdit(index, message.content)}
-                disabled={isLoading}
-              />
-            ) : (
-              <AssistantMessageActions
-                messageId={messageId}
-                content={message.content}
-                copiedId={copiedId}
-                onCopy={onCopy}
-                onRegenerate={() => onRegenerate(index)}
-                disabled={isLoading}
-              />
-            )}
+        {/* Assistant Message Actions */}
+        {message.content && (
+          <div className="flex gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+            <AssistantMessageActions
+              messageId={messageId}
+              content={message.content}
+              copiedId={copiedId}
+              onCopy={onCopy}
+              onRegenerate={() => onRegenerate(index)}
+              disabled={isLoading}
+            />
           </div>
         )}
       </div>
-
-      {message.role === "user" && !isEditing && (
-        <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-muted border">
-          <User className="h-5 w-5 text-muted-foreground" />
-        </div>
-      )}
     </div>
   );
 }
