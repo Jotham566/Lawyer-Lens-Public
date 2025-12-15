@@ -58,6 +58,65 @@ function getTypeBadgeColor(type: DocumentType) {
 }
 
 /**
+ * Get relevance level from score
+ */
+function getRelevanceLevel(score: number): "high" | "medium" | "low" {
+  if (score >= 0.8) return "high";
+  if (score >= 0.6) return "medium";
+  return "low";
+}
+
+/**
+ * Get relevance dot color classes
+ */
+function getRelevanceDotColor(level: "high" | "medium" | "low") {
+  switch (level) {
+    case "high":
+      return "bg-green-500 dark:bg-green-400";
+    case "medium":
+      return "bg-yellow-500 dark:bg-yellow-400";
+    case "low":
+      return "bg-orange-500 dark:bg-orange-400";
+  }
+}
+
+/**
+ * Get relevance label for accessibility
+ */
+function getRelevanceLabel(level: "high" | "medium" | "low"): string {
+  switch (level) {
+    case "high":
+      return "high relevance";
+    case "medium":
+      return "medium relevance";
+    case "low":
+      return "low relevance";
+  }
+}
+
+/**
+ * Quality indicator dot component
+ */
+function QualityDot({ score }: { score: number }) {
+  if (score <= 0) return null;
+
+  const level = getRelevanceLevel(score);
+  const colorClass = getRelevanceDotColor(level);
+  const label = getRelevanceLabel(level);
+
+  return (
+    <span
+      className={cn(
+        "inline-block w-1.5 h-1.5 rounded-full ml-0.5 align-middle",
+        colorClass
+      )}
+      title={`${Math.round(score * 100)}% relevance (${label})`}
+      aria-hidden="true"
+    />
+  );
+}
+
+/**
  * Detect if text contains table data and get info about it
  */
 function detectTableInfo(text: string): { isTable: boolean; rowCount: number; columnCount: number } {
@@ -189,6 +248,17 @@ export function SourceCitation({
     const source = relevantSources[0];
     const Icon = getDocumentIcon(source.document_type);
     const tableInfo = detectTableInfo(source.excerpt);
+    const sectionRef = source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt);
+    const relevanceLevel = source.relevance_score > 0 ? getRelevanceLevel(source.relevance_score) : null;
+
+    // Build accessible label
+    const ariaLabel = [
+      `Citation ${numbers[0]}`,
+      sectionRef,
+      source.title,
+      source.document_type,
+      relevanceLevel ? `${relevanceLevel} relevance` : null,
+    ].filter(Boolean).join(", ");
 
     return (
       <>
@@ -205,8 +275,11 @@ export function SourceCitation({
                 }
               }}
               className="inline-flex items-center gap-0.5 text-primary font-medium hover:underline cursor-pointer"
+              aria-label={ariaLabel}
+              aria-haspopup="dialog"
             >
               {displayText}
+              <QualityDot score={source.relevance_score} />
             </span>
           </TooltipTrigger>
             <TooltipContent
@@ -271,6 +344,10 @@ export function SourceCitation({
   }
 
   // Multiple sources - show combined tooltip with click to select
+  // Use highest relevance score for the combined indicator
+  const highestRelevance = Math.max(...relevantSources.map(s => s.relevance_score || 0));
+  const multiAriaLabel = `Citations ${numbers.join(", ")}, ${relevantSources.length} sources from ${[...new Set(relevantSources.map(s => s.document_type))].join(" and ")} documents`;
+
   return (
     <>
       <Tooltip>
@@ -285,9 +362,12 @@ export function SourceCitation({
                 handleClick(relevantSources[0], numbers[0], 0);
               }
             }}
-            className="text-primary font-medium hover:underline cursor-pointer"
+            className="inline-flex items-center gap-0.5 text-primary font-medium hover:underline cursor-pointer"
+            aria-label={multiAriaLabel}
+            aria-haspopup="dialog"
           >
             {displayText}
+            <QualityDot score={highestRelevance} />
           </span>
         </TooltipTrigger>
         <TooltipContent

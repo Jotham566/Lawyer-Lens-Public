@@ -34,6 +34,13 @@ interface CitationContextValue {
 
   // Mobile detection
   isMobile: boolean;
+
+  // Comparison mode
+  isCompareMode: boolean;
+  selectedForCompare: number[];
+  toggleCompareMode: () => void;
+  toggleCompareSelection: (index: number) => void;
+  clearCompareSelection: () => void;
 }
 
 const CitationContext = React.createContext<CitationContextValue | null>(null);
@@ -50,6 +57,10 @@ export function CitationProvider({ children }: CitationProviderProps) {
   const [isPanelOpen, setIsPanelOpen] = React.useState(false);
   const [currentIndex, setCurrentIndex] = React.useState(0);
   const [preferredView, setPreferredView] = React.useState<ViewMode>("panel");
+
+  // Comparison mode state
+  const [isCompareMode, setIsCompareMode] = React.useState(false);
+  const [selectedForCompare, setSelectedForCompare] = React.useState<number[]>([]);
 
   // Mobile detection
   const [isMobile, setIsMobile] = React.useState(false);
@@ -122,6 +133,35 @@ export function CitationProvider({ children }: CitationProviderProps) {
     }
   }, [allSources]);
 
+  // Comparison mode functions
+  const toggleCompareMode = React.useCallback(() => {
+    setIsCompareMode(prev => {
+      if (prev) {
+        // Exiting compare mode - clear selections
+        setSelectedForCompare([]);
+      }
+      return !prev;
+    });
+  }, []);
+
+  const toggleCompareSelection = React.useCallback((index: number) => {
+    setSelectedForCompare(prev => {
+      if (prev.includes(index)) {
+        // Remove from selection
+        return prev.filter(i => i !== index);
+      } else if (prev.length < 2) {
+        // Add to selection (max 2)
+        return [...prev, index];
+      }
+      // Already have 2 selected, replace the second one
+      return [prev[0], index];
+    });
+  }, []);
+
+  const clearCompareSelection = React.useCallback(() => {
+    setSelectedForCompare([]);
+  }, []);
+
   // Keyboard navigation
   React.useEffect(() => {
     if (!isPanelOpen) return;
@@ -182,6 +222,11 @@ export function CitationProvider({ children }: CitationProviderProps) {
     preferredView,
     setPreferredView,
     isMobile,
+    isCompareMode,
+    selectedForCompare,
+    toggleCompareMode,
+    toggleCompareSelection,
+    clearCompareSelection,
   }), [
     activeSource,
     activeCitationNumber,
@@ -198,6 +243,11 @@ export function CitationProvider({ children }: CitationProviderProps) {
     canGoPrevious,
     preferredView,
     isMobile,
+    isCompareMode,
+    selectedForCompare,
+    toggleCompareMode,
+    toggleCompareSelection,
+    clearCompareSelection,
   ]);
 
   return (

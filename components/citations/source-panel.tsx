@@ -12,6 +12,8 @@ import {
   ExternalLink,
   X,
   Loader2,
+  ArrowLeftRight,
+  GripVertical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,6 +23,8 @@ import { expandSource, getDocumentSection } from "@/lib/api/documents";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import { HighlightedExcerpt } from "./highlighted-excerpt";
 import { CitationNavigation, CitationNavigationHints } from "./citation-navigation";
+import { RelatedSources } from "./related-sources";
+import { CitationExport } from "./citation-export";
 import { useCitation } from "./citation-context";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
 
@@ -242,12 +246,79 @@ export function SourcePanel() {
     goToIndex,
     canGoNext,
     canGoPrevious,
+    toggleCompareMode,
   } = useCitation();
 
   const [copied, setCopied] = React.useState(false);
   const [showRaw, setShowRaw] = React.useState(false);
   const [isExpanding, setIsExpanding] = React.useState(false);
   const scrollAreaRef = React.useRef<HTMLDivElement>(null);
+
+  // Panel resizing state
+  const MIN_WIDTH = 320;
+  const MAX_WIDTH = 700;
+  const DEFAULT_WIDTH = 480;
+
+  const [panelWidth, setPanelWidth] = React.useState(() => {
+    // Try to restore from localStorage
+    if (typeof window !== "undefined") {
+      const saved = localStorage.getItem("citation-panel-width");
+      if (saved) {
+        const parsed = parseInt(saved, 10);
+        if (!isNaN(parsed) && parsed >= MIN_WIDTH && parsed <= MAX_WIDTH) {
+          return parsed;
+        }
+      }
+    }
+    return DEFAULT_WIDTH;
+  });
+  const [isResizing, setIsResizing] = React.useState(false);
+  const resizeStartX = React.useRef(0);
+  const resizeStartWidth = React.useRef(0);
+
+  // Handle resize drag
+  const handleResizeStart = React.useCallback((e: React.MouseEvent | React.TouchEvent) => {
+    e.preventDefault();
+    setIsResizing(true);
+    resizeStartX.current = "touches" in e ? e.touches[0].clientX : e.clientX;
+    resizeStartWidth.current = panelWidth;
+  }, [panelWidth]);
+
+  React.useEffect(() => {
+    if (!isResizing) return;
+
+    const handleMove = (e: MouseEvent | TouchEvent) => {
+      const clientX = "touches" in e ? e.touches[0].clientX : e.clientX;
+      // Calculate new width (resizing from left edge, so movement left = wider)
+      const delta = resizeStartX.current - clientX;
+      const newWidth = Math.min(MAX_WIDTH, Math.max(MIN_WIDTH, resizeStartWidth.current + delta));
+      setPanelWidth(newWidth);
+    };
+
+    const handleEnd = () => {
+      setIsResizing(false);
+      // Persist to localStorage
+      localStorage.setItem("citation-panel-width", panelWidth.toString());
+    };
+
+    document.addEventListener("mousemove", handleMove);
+    document.addEventListener("mouseup", handleEnd);
+    document.addEventListener("touchmove", handleMove);
+    document.addEventListener("touchend", handleEnd);
+
+    // Prevent text selection while resizing
+    document.body.style.userSelect = "none";
+    document.body.style.cursor = "col-resize";
+
+    return () => {
+      document.removeEventListener("mousemove", handleMove);
+      document.removeEventListener("mouseup", handleEnd);
+      document.removeEventListener("touchmove", handleMove);
+      document.removeEventListener("touchend", handleEnd);
+      document.body.style.userSelect = "";
+      document.body.style.cursor = "";
+    };
+  }, [isResizing, panelWidth]);
 
   // Track content with its source key - this prevents needing to reset state on navigation
   // Old content is automatically ignored when sourceKey doesn't match
@@ -418,11 +489,36 @@ export function SourcePanel() {
 
       {/* Panel */}
       <div
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[440px] md:w-[500px] bg-background border-l shadow-lg flex flex-col"
+        className="fixed inset-y-0 right-0 z-50 bg-background border-l shadow-lg flex flex-col"
+        style={{ width: `min(100vw, ${panelWidth}px)` }}
         role="dialog"
         aria-modal="true"
         aria-labelledby="citation-panel-title"
       >
+        {/* Resize handle */}
+        <div
+          className={cn(
+            "absolute left-0 top-0 bottom-0 w-1 cursor-col-resize group hidden sm:flex items-center justify-center",
+            "hover:bg-primary/20 active:bg-primary/30 transition-colors",
+            isResizing && "bg-primary/30"
+          )}
+          onMouseDown={handleResizeStart}
+          onTouchStart={handleResizeStart}
+          role="separator"
+          aria-orientation="vertical"
+          aria-label="Resize panel"
+          aria-valuenow={panelWidth}
+          aria-valuemin={MIN_WIDTH}
+          aria-valuemax={MAX_WIDTH}
+        >
+          <div className={cn(
+            "absolute left-0 w-4 h-12 flex items-center justify-center -translate-x-1/2 rounded bg-muted border opacity-0 group-hover:opacity-100 transition-opacity",
+            isResizing && "opacity-100"
+          )}>
+            <GripVertical className="h-4 w-4 text-muted-foreground" />
+          </div>
+        </div>
+
         {/* Custom close button */}
         <button
           onClick={closePanel}
@@ -504,9 +600,15 @@ export function SourcePanel() {
                     size="sm"
                     onClick={handleCopy}
                     className="h-6 px-2 text-xs"
+                    title="Copy excerpt"
                   >
                     {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
                   </Button>
+                  <CitationExport
+                    source={activeSource}
+                    sectionRef={sectionRef}
+                    className="h-6 px-2 text-xs"
+                  />
                 </div>
               </div>
 
@@ -566,6 +668,17 @@ export function SourcePanel() {
               )}
             </div>
 
+            {/* Related Sources */}
+            {allSources.length > 1 && (
+              <RelatedSources
+                activeSource={activeSource}
+                allSources={allSources}
+                onSelectSource={goToIndex}
+                currentIndex={currentIndex}
+                className="pt-2 border-t"
+              />
+            )}
+
             {/* Keyboard hints */}
             {allSources.length > 1 && (
               <CitationNavigationHints className="justify-center pt-2" />
@@ -578,12 +691,25 @@ export function SourcePanel() {
           <Button variant="outline" size="sm" onClick={closePanel}>
             Close
           </Button>
-          <Button size="sm" asChild>
-            <Link href={`/document/${activeSource.document_id}`} className="flex items-center gap-2">
-              View Document
-              <ExternalLink className="h-3.5 w-3.5" />
-            </Link>
-          </Button>
+          <div className="flex items-center gap-2">
+            {allSources.length > 1 && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={toggleCompareMode}
+                className="flex items-center gap-2"
+              >
+                <ArrowLeftRight className="h-3.5 w-3.5" />
+                Compare
+              </Button>
+            )}
+            <Button size="sm" asChild>
+              <Link href={`/document/${activeSource.document_id}`} className="flex items-center gap-2">
+                View Document
+                <ExternalLink className="h-3.5 w-3.5" />
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
     </>

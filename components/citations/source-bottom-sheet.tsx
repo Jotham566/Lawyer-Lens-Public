@@ -249,15 +249,24 @@ const LazySourcePanel = React.lazy(() =>
   import("./source-panel").then((mod) => ({ default: mod.SourcePanel }))
 );
 
+// Lazy load CitationComparison
+const LazyCitationComparison = React.lazy(() =>
+  import("./citation-comparison").then((mod) => ({ default: mod.CitationComparison }))
+);
+
 /**
  * Responsive wrapper that shows SourcePanel on desktop, SourceBottomSheet on mobile.
+ * Also includes the CitationComparison overlay when in compare mode.
  */
 export function ResponsiveSourceView() {
-  const { isMobile } = useCitation();
+  const { isMobile, isCompareMode } = useCitation();
 
   return (
     <React.Suspense fallback={null}>
-      {isMobile ? <SourceBottomSheet /> : <LazySourcePanel />}
+      {/* Normal panel/sheet view */}
+      {!isCompareMode && (isMobile ? <SourceBottomSheet /> : <LazySourcePanel />)}
+      {/* Comparison mode overlay */}
+      {isCompareMode && <LazyCitationComparison />}
     </React.Suspense>
   );
 }
