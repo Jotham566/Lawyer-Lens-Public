@@ -8,7 +8,6 @@ import {
   SourceCitation,
   parseSourceCitations,
 } from "@/components/citations";
-import { TooltipProvider } from "@/components/ui/tooltip";
 import type { ChatSource } from "@/lib/api/types";
 import katex from "katex";
 
@@ -338,13 +337,11 @@ function MarkdownRendererInner({
   );
 
   return (
-    <TooltipProvider delayDuration={200}>
-      <div ref={containerRef} className={cn("markdown-body", className)}>
-        <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
-          {content}
-        </ReactMarkdown>
-      </div>
-    </TooltipProvider>
+    <div ref={containerRef} className={cn("markdown-body", className)}>
+      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+        {content}
+      </ReactMarkdown>
+    </div>
   );
 }
 

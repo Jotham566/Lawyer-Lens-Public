@@ -7,7 +7,9 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { cn } from "@/lib/utils";
 import { SourceDetailDialog } from "./source-detail-dialog";
+import { useCitationOptional } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
 
 interface SourceCitationProps {
@@ -62,21 +64,17 @@ function detectTableInfo(text: string): { isTable: boolean; rowCount: number; co
   const pipeCount = (text.match(/\|/g) || []).length;
   if (pipeCount < 2) return { isTable: false, rowCount: 0, columnCount: 0 };
 
-  // Try to count rows by newlines or numbered patterns
   const lines = text.split(/\n/).filter(line => line.trim() && line.includes('|'));
 
   if (lines.length >= 2) {
-    // Count columns from first line
     const firstLine = lines[0];
     const columnCount = firstLine.split('|').filter(c => c.trim()).length;
     return { isTable: true, rowCount: lines.length, columnCount };
   }
 
-  // Check for numbered row pattern like "1. | ... | 2. | ..."
   const numberedPattern = /\d+\.?\s*\|/g;
   const numberedMatches = text.match(numberedPattern);
   if (numberedMatches && numberedMatches.length >= 2) {
-    // Estimate columns from pipe count / row count
     const avgPipesPerRow = pipeCount / numberedMatches.length;
     return { isTable: true, rowCount: numberedMatches.length, columnCount: Math.round(avgPipesPerRow) + 1 };
   }
@@ -93,61 +91,37 @@ function truncate(text: string, maxLength: number): string {
 }
 
 /**
- * Check if a string looks like a document ID (e.g., "EDA-2014-11", "UGA-ACT-2024-001")
- * These should NOT be shown as section references
+ * Check if a string looks like a document ID
  */
 function isDocumentId(value: string): boolean {
-  // Pattern: letters-numbers-numbers or letters-letters-numbers-numbers
-  // e.g., "EDA-2014-11", "UGA-ACT-2024-001"
   return /^[A-Z]+-([A-Z]+-)?(\d{4}-)?\d+$/i.test(value);
 }
 
 /**
  * Format a section reference for display
- * Extracts "Section X" or "Section X(Y)" from various formats
  */
 function formatSectionRef(section: string | undefined, sectionId?: string | undefined, excerpt?: string | undefined): string | null {
-  // Try section first, then sectionId
   for (const input of [section, sectionId]) {
     if (!input) continue;
-
-    // Skip if this looks like a document ID, not a section identifier
     if (isDocumentId(input)) continue;
 
-    // Pattern 1: Already in "Section X" or "Section X(Y)" format
     const sectionMatch = input.match(/(Section\s+\d+(?:\s*\([^)]+\))?)/i);
-    if (sectionMatch) {
-      return sectionMatch[1];
-    }
+    if (sectionMatch) return sectionMatch[1];
 
-    // Pattern 2: "X. Title" format at start (e.g., "11. Imposition of excise duty")
     const numberedMatch = input.match(/^(\d+)\.\s/);
-    if (numberedMatch) {
-      return `Section ${numberedMatch[1]}`;
-    }
+    if (numberedMatch) return `Section ${numberedMatch[1]}`;
 
-    // Pattern 3: Breadcrumb path - look for "X. Title" pattern anywhere
-    // But skip document IDs in the path
     if (input.includes(">")) {
       const parts = input.split(">").map(p => p.trim());
       for (const part of parts) {
-        // Skip document ID parts
         if (isDocumentId(part)) continue;
-
-        // Look for "X. Title" pattern
         const partMatch = part.match(/^(\d+)\.\s/);
-        if (partMatch) {
-          return `Section ${partMatch[1]}`;
-        }
-        // Look for "Section X" pattern
+        if (partMatch) return `Section ${partMatch[1]}`;
         const secMatch = part.match(/Section\s+(\d+)/i);
-        if (secMatch) {
-          return `Section ${secMatch[1]}`;
-        }
+        if (secMatch) return `Section ${secMatch[1]}`;
       }
     }
 
-    // Pattern 4: section_id format like "sec_11" or "sec_11__subsec_2"
     const eIdMatch = input.match(/sec_(\d+)(?:__subsec_(\d+))?(?:__para_([a-z]))?/i);
     if (eIdMatch) {
       let ref = `Section ${eIdMatch[1]}`;
@@ -156,19 +130,12 @@ function formatSectionRef(section: string | undefined, sectionId?: string | unde
       return ref;
     }
 
-    // Pattern 5: Just a number (common for section_id)
-    if (/^\d+$/.test(input)) {
-      return `Section ${input}`;
-    }
+    if (/^\d+$/.test(input)) return `Section ${input}`;
   }
 
-  // Pattern 6: Extract from excerpt - look for subsection marker at start
-  // e.g., "(1) Subject to this Act..." or "(2) Unless otherwise..."
   if (excerpt) {
     const subsecMatch = excerpt.match(/^\s*\((\d+)\)\s/);
-    if (subsecMatch) {
-      return `Subsection (${subsecMatch[1]})`;
-    }
+    if (subsecMatch) return `Subsection (${subsecMatch[1]})`;
   }
 
   return null;
@@ -179,8 +146,6 @@ function formatSectionRef(section: string | undefined, sectionId?: string | unde
  *
  * Renders citations like [1], [2, 3] as interactive elements that show
  * the source excerpt on hover and open a detailed view on click.
- *
- * Uses Tooltip for hover preview and Dialog for full details (including tables).
  */
 export function SourceCitation({
   numbers,
@@ -188,6 +153,14 @@ export function SourceCitation({
   children,
 }: SourceCitationProps) {
   const [openDialogIdx, setOpenDialogIdx] = React.useState<number | null>(null);
+  const citationContext = useCitationOptional();
+
+  // Update context with sources when they change
+  React.useEffect(() => {
+    if (citationContext && sources.length > 0) {
+      citationContext.setAllSources(sources);
+    }
+  }, [citationContext, sources]);
 
   // Get the relevant sources (1-indexed to 0-indexed)
   const relevantSources = numbers
@@ -198,10 +171,18 @@ export function SourceCitation({
   const displayText = children || `[${numbers.join(", ")}]`;
 
   // If no matching sources, just render the text without hover
-  // (This shouldn't happen if backend sanitizes citations properly)
   if (relevantSources.length === 0) {
     return <span className="text-primary font-medium">{displayText}</span>;
   }
+
+  // Handle click - open panel if context available, otherwise dialog
+  const handleClick = (source: ChatSource, number: number, dialogIdx: number) => {
+    if (citationContext) {
+      citationContext.openPanel(source, number);
+    } else {
+      setOpenDialogIdx(dialogIdx);
+    }
+  };
 
   // For single source
   if (relevantSources.length === 1) {
@@ -213,20 +194,29 @@ export function SourceCitation({
       <>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button
-              onClick={() => setOpenDialogIdx(0)}
+            <span
+              role="button"
+              tabIndex={0}
+              onClick={() => handleClick(source, numbers[0], 0)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  handleClick(source, numbers[0], 0);
+                }
+              }}
               className="inline-flex items-center gap-0.5 text-primary font-medium hover:underline cursor-pointer"
             >
               {displayText}
-            </button>
+            </span>
           </TooltipTrigger>
-          <TooltipContent
-            side="top"
-            className="max-w-sm p-3 text-left bg-popover text-popover-foreground border border-border shadow-lg"
-            sideOffset={5}
-          >
-            {/* Section reference - shown prominently if available */}
-            {/* Prefer backend-provided legal_reference, fall back to extracted reference */}
+            <TooltipContent
+              side="top"
+              sideOffset={5}
+              className={cn(
+                "max-w-sm p-3 text-left",
+                "bg-popover text-popover-foreground border border-border shadow-lg"
+              )}
+            >
             {(source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)) && (
               <span className="block text-xs font-semibold text-primary mb-1">
                 {source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)}
@@ -244,7 +234,6 @@ export function SourceCitation({
             </span>
 
             {tableInfo.isTable ? (
-              /* Table preview - show summary instead of truncated pipe text */
               <span className="block">
                 <span className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
                   <Table2 className="h-4 w-4 text-muted-foreground shrink-0" />
@@ -260,19 +249,15 @@ export function SourceCitation({
                 </span>
               </span>
             ) : (
-              /* Text preview - show truncated excerpt */
               <span className="block text-xs leading-relaxed text-foreground/80 line-clamp-3">
                 "{truncate(source.excerpt, 150)}"
               </span>
             )}
 
-            <button
-              onClick={() => setOpenDialogIdx(0)}
-              className="block mt-2 text-[10px] text-primary font-medium hover:underline"
-            >
-              {tableInfo.isTable ? "View full table →" : "Click for full details →"}
-            </button>
-          </TooltipContent>
+            <span className="block mt-2 text-[10px] text-primary font-medium">
+              {tableInfo.isTable ? "Click to view full table →" : "Click for full details →"}
+            </span>
+            </TooltipContent>
         </Tooltip>
 
         <SourceDetailDialog
@@ -290,17 +275,28 @@ export function SourceCitation({
     <>
       <Tooltip>
         <TooltipTrigger asChild>
-          <button
-            onClick={() => setOpenDialogIdx(0)}
+          <span
+            role="button"
+            tabIndex={0}
+            onClick={() => handleClick(relevantSources[0], numbers[0], 0)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                handleClick(relevantSources[0], numbers[0], 0);
+              }
+            }}
             className="text-primary font-medium hover:underline cursor-pointer"
           >
             {displayText}
-          </button>
+          </span>
         </TooltipTrigger>
         <TooltipContent
           side="top"
-          className="max-w-md p-3 text-left bg-popover text-popover-foreground border border-border shadow-lg"
           sideOffset={5}
+          className={cn(
+            "max-w-md p-3 text-left",
+            "bg-popover text-popover-foreground border border-border shadow-lg"
+          )}
         >
           <span className="block font-medium text-sm text-foreground mb-2">
             {relevantSources.length} Sources (click for details)
@@ -312,15 +308,24 @@ export function SourceCitation({
               <span key={`${source.document_id}-${idx}`} className="block mb-2 last:mb-0">
                 <span className="flex items-center gap-1.5">
                   <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
-                  <button
+                  <span
+                    role="button"
+                    tabIndex={0}
                     onClick={(e) => {
                       e.stopPropagation();
-                      setOpenDialogIdx(idx);
+                      handleClick(source, numbers[idx], idx);
                     }}
-                    className="text-xs font-medium text-primary hover:underline truncate text-left"
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        handleClick(source, numbers[idx], idx);
+                      }
+                    }}
+                    className="text-xs font-medium text-primary hover:underline truncate text-left cursor-pointer"
                   >
                     [{numbers[idx]}] {source.title}
-                  </button>
+                  </span>
                 </span>
                 {tableInfo.isTable ? (
                   <span className="flex items-center gap-1.5 ml-4 text-[11px] text-muted-foreground">
@@ -335,10 +340,10 @@ export function SourceCitation({
               </span>
             );
           })}
-        </TooltipContent>
+          </TooltipContent>
       </Tooltip>
 
-      {/* Dialogs for each source */}
+      {/* Dialogs for each source - fallback when no context */}
       {relevantSources.map((source, idx) => (
         <SourceDetailDialog
           key={`dialog-${source.document_id}-${idx}`}
@@ -363,15 +368,12 @@ export interface CitationSegment {
 
 export function parseSourceCitations(text: string): CitationSegment[] {
   const segments: CitationSegment[] = [];
-
-  // Match patterns like [1], [2], [1, 3], [1, 2, 3]
   const citationPattern = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
 
   let lastIndex = 0;
   let match;
 
   while ((match = citationPattern.exec(text)) !== null) {
-    // Add text before citation
     if (match.index > lastIndex) {
       segments.push({
         type: "text",
@@ -379,7 +381,6 @@ export function parseSourceCitations(text: string): CitationSegment[] {
       });
     }
 
-    // Parse numbers from the citation
     const numbersStr = match[1];
     const numbers = numbersStr.split(/\s*,\s*/).map((n) => parseInt(n, 10));
 
@@ -392,7 +393,6 @@ export function parseSourceCitations(text: string): CitationSegment[] {
     lastIndex = match.index + match[0].length;
   }
 
-  // Add remaining text
   if (lastIndex < text.length) {
     segments.push({
       type: "text",

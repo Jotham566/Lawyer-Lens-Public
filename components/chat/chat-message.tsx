@@ -321,11 +321,13 @@ function ChatMessageComponent({
 export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => {
   // Re-render if:
   // - message content changed
+  // - message sources changed (citations arrive after streaming)
   // - editing state changed
   // - loading state changed for last message
   // - copied state changed for this message
   return (
     prevProps.message.content === nextProps.message.content &&
+    prevProps.message.sources === nextProps.message.sources &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.isLastMessage === nextProps.isLastMessage &&
     (prevProps.isLoading === nextProps.isLoading || !nextProps.isLastMessage) &&

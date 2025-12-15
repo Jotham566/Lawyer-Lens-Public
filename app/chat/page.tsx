@@ -25,6 +25,7 @@ import {
   VirtualizedMessageList,
   type ToolMode,
 } from "@/components/chat";
+import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
 import { useChatStore, useCurrentConversation } from "@/lib/stores";
 import {
   streamChatWithTypewriter,
@@ -133,15 +134,9 @@ function ChatContent() {
     setInput(e.target.value);
   };
 
-  // Regular chat function
-  const handleRegularChat = useCallback(
-    async (text: string, activeConvId: string, messagesForHistory?: ChatMessageType[]) => {
-      const userMessage: ChatMessageType = {
-        role: "user",
-        content: text,
-        timestamp: new Date().toISOString(),
-      };
-      addMessage(activeConvId, userMessage);
+  // Stream a response for given message and history (doesn't add user message)
+  const streamResponse = useCallback(
+    async (text: string, activeConvId: string, conversationHistory: { role: string; content: string }[]) => {
       setLoading(true);
       setError(null);
 
@@ -151,15 +146,6 @@ function ChatContent() {
         timestamp: new Date().toISOString(),
       };
       addMessage(activeConvId, aiMessagePlaceholder);
-
-      const historyMessages = messagesForHistory || currentConversation?.messages || [];
-      const conversationHistory = [
-        ...historyMessages.map((msg) => ({
-          role: msg.role,
-          content: msg.content,
-        })),
-        { role: "user", content: text },
-      ];
 
       try {
         let fullContent = "";
@@ -212,7 +198,44 @@ function ChatContent() {
         setLoading(false);
       }
     },
-    [currentConversation?.messages, addMessage, updateLastMessage, setLoading, setError]
+    [addMessage, updateLastMessage, setLoading, setError]
+  );
+
+  // Regular chat function (adds user message, then streams response)
+  const handleRegularChat = useCallback(
+    async (text: string, activeConvId: string, messagesForHistory?: ChatMessageType[]) => {
+      const userMessage: ChatMessageType = {
+        role: "user",
+        content: text,
+        timestamp: new Date().toISOString(),
+      };
+      addMessage(activeConvId, userMessage);
+
+      const historyMessages = messagesForHistory || currentConversation?.messages || [];
+      const conversationHistory = [
+        ...historyMessages.map((msg) => ({
+          role: msg.role,
+          content: msg.content,
+        })),
+        { role: "user", content: text },
+      ];
+
+      await streamResponse(text, activeConvId, conversationHistory);
+    },
+    [currentConversation?.messages, addMessage, streamResponse]
+  );
+
+  // Regenerate response for existing user message (doesn't add user message)
+  const regenerateForMessage = useCallback(
+    async (userContent: string, activeConvId: string, messagesIncludingUser: ChatMessageType[]) => {
+      const conversationHistory = messagesIncludingUser.map((msg) => ({
+        role: msg.role,
+        content: msg.content,
+      }));
+
+      await streamResponse(userContent, activeConvId, conversationHistory);
+    },
+    [streamResponse]
   );
 
   const handleSend = useCallback(
@@ -379,7 +402,8 @@ function ChatContent() {
     setEditContent("");
   };
 
-  const handleEditSubmit = (index: number, content: string) => {
+  const handleEditSubmit = useCallback((index: number, content: string) => {
+    if (isLoading) return;
     if (!currentConversationId || !content.trim()) return;
 
     const trimmedContent = content.trim();
@@ -390,16 +414,29 @@ function ChatContent() {
       return;
     }
 
+    // Capture messages before edit for history
     const messagesBeforeEdit = currentConversation?.messages.slice(0, index) || [];
-    editMessageAndTruncate(currentConversationId, index, trimmedContent);
+    const convId = currentConversationId;
+
+    // Edit the message (this keeps the edited user message and truncates everything after)
+    editMessageAndTruncate(convId, index, trimmedContent);
     handleCancelEdit();
 
-    setTimeout(() => {
-      handleSend(trimmedContent, currentConversationId, messagesBeforeEdit);
-    }, 50);
-  };
+    // Use regenerateForMessage which doesn't add a new user message
+    // The history should include all messages up to and including the edited user message
+    const messagesIncludingEditedUser: ChatMessageType[] = [
+      ...messagesBeforeEdit,
+      { role: "user", content: trimmedContent, timestamp: new Date().toISOString() },
+    ];
 
-  const handleRegenerate = (messageIndex: number) => {
+    setTimeout(() => {
+      regenerateForMessage(trimmedContent, convId, messagesIncludingEditedUser);
+    }, 100);
+  }, [isLoading, currentConversationId, currentConversation, editMessageAndTruncate, regenerateForMessage]);
+
+  const handleRegenerate = useCallback((messageIndex: number) => {
+    // Don't allow regeneration while already loading
+    if (isLoading) return;
     if (!currentConversationId || !currentConversation) return;
 
     const userMessageIndex = messageIndex - 1;
@@ -408,15 +445,21 @@ function ChatContent() {
     const userMessage = currentConversation.messages[userMessageIndex];
     if (userMessage.role !== "user") return;
 
-    const messagesBeforeUser = currentConversation.messages.slice(0, userMessageIndex);
-    // Remove from userMessageIndex to also remove the original user message
-    // since handleSend will add it again
-    removeMessagesFrom(currentConversationId, userMessageIndex);
+    // Capture the content and history BEFORE modifying state
+    // Include all messages up to and including the user message
+    const userContent = userMessage.content;
+    const messagesIncludingUser = currentConversation.messages.slice(0, userMessageIndex + 1);
+    const convId = currentConversationId;
 
+    // Only remove the assistant message (from messageIndex onwards)
+    // Keep the user message intact
+    removeMessagesFrom(convId, messageIndex);
+
+    // Use regenerateForMessage which doesn't add a new user message
     setTimeout(() => {
-      handleSend(userMessage.content, currentConversationId, messagesBeforeUser);
-    }, 50);
-  };
+      regenerateForMessage(userContent, convId, messagesIncludingUser);
+    }, 100);
+  }, [isLoading, currentConversationId, currentConversation, removeMessagesFrom, regenerateForMessage]);
 
   const handleSelectConversation = (id: string) => {
     setCurrentConversation(id);
@@ -429,10 +472,11 @@ function ChatContent() {
   };
 
   return (
-    <TooltipProvider>
-      <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
-        {/* Desktop Sidebar */}
-        <ConversationSidebar
+    <CitationProvider>
+      <TooltipProvider delayDuration={200}>
+        <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
+          {/* Desktop Sidebar */}
+          <ConversationSidebar
           conversations={conversations}
           currentConversationId={currentConversationId}
           onSelectConversation={handleSelectConversation}
@@ -531,8 +575,12 @@ function ChatContent() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Citation Side Panel / Bottom Sheet */}
+        <ResponsiveSourceView />
       </div>
     </TooltipProvider>
+    </CitationProvider>
   );
 }
 
