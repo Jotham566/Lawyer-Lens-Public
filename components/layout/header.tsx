@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell } from "lucide-react";
+import { Menu, Bell, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -76,6 +76,12 @@ export function Header({ className }: HeaderProps) {
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
               <Link href="/chat">Legal Assistant</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/pricing" className="flex items-center">
+                <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
+                View Plans
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/help">Help & FAQ</Link>

@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import { HeaderRedesign } from "./header-redesign";
 import { MobileNav, MobileBottomNav } from "./mobile-nav";
 import { SkipLink } from "@/components/skip-link";
+import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -38,6 +39,9 @@ export function AppShell({ children }: AppShellProps) {
         onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
         isMobileMenuOpen={mobileMenuOpen}
       />
+
+      {/* Global usage warning banner */}
+      <GlobalUsageAlert />
 
       {/* Mobile navigation sheet */}
       <MobileNav open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />

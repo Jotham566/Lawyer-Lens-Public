@@ -15,6 +15,10 @@ import {
   HelpCircle,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  CreditCard,
+  FlaskConical,
+  PenTool,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -26,20 +30,41 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
+import { Badge } from "@/components/ui/badge";
 import { Logo } from "./logo";
 import { useUIStore } from "@/lib/stores";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
 interface NavItem {
   title: string;
   href: string;
   icon: React.ElementType;
   badge?: string;
+  premium?: boolean;
+  featureKey?: string;
 }
 
 const mainNavItems: NavItem[] = [
-  { title: "Home", href: "/", icon: Home },
+  { title: "Home", href: "/dashboard", icon: Home },
   { title: "Search", href: "/search", icon: Search },
   { title: "Legal Assistant", href: "/chat", icon: MessageSquare },
+];
+
+const toolsNavItems: NavItem[] = [
+  {
+    title: "Deep Research",
+    href: "/research",
+    icon: FlaskConical,
+    premium: true,
+    featureKey: "deep_research",
+  },
+  {
+    title: "Contract Drafting",
+    href: "/contracts",
+    icon: PenTool,
+    premium: true,
+    featureKey: "contract_drafting",
+  },
 ];
 
 const browseNavItems: NavItem[] = [
@@ -48,6 +73,11 @@ const browseNavItems: NavItem[] = [
   { title: "Judgments", href: "/browse/judgments", icon: Gavel },
   { title: "Regulations", href: "/browse/regulations", icon: ScrollText },
   { title: "Constitution", href: "/browse/constitution", icon: Scale },
+];
+
+const accountNavItems: NavItem[] = [
+  { title: "Pricing", href: "/pricing", icon: Sparkles },
+  { title: "Billing", href: "/settings/billing", icon: CreditCard },
 ];
 
 const secondaryNavItems: NavItem[] = [
@@ -62,6 +92,7 @@ export function Sidebar({ className }: SidebarProps) {
   const pathname = usePathname();
   const { sidebar, setSidebarCollapsed } = useUIStore();
   const { isCollapsed } = sidebar;
+  const { hasFeature } = useEntitlements();
 
   return (
     <TooltipProvider delayDuration={0}>
@@ -99,8 +130,28 @@ export function Sidebar({ className }: SidebarProps) {
                 <NavLink
                   key={item.href}
                   item={item}
-                  isActive={pathname === item.href}
+                  isActive={pathname === item.href || pathname === "/" && item.href === "/dashboard"}
                   isCollapsed={isCollapsed}
+                />
+              ))}
+            </div>
+
+            <Separator className="mx-2" />
+
+            {/* Tools Section - Premium Features */}
+            <div className="space-y-1">
+              {!isCollapsed && (
+                <span className="mb-2 block px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Tools
+                </span>
+              )}
+              {toolsNavItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                  isCollapsed={isCollapsed}
+                  isLocked={item.featureKey ? !hasFeature(item.featureKey) : false}
                 />
               ))}
             </div>
@@ -115,6 +166,25 @@ export function Sidebar({ className }: SidebarProps) {
                 </span>
               )}
               {browseNavItems.map((item) => (
+                <NavLink
+                  key={item.href}
+                  item={item}
+                  isActive={pathname === item.href || pathname.startsWith(item.href + "/")}
+                  isCollapsed={isCollapsed}
+                />
+              ))}
+            </div>
+
+            <Separator className="mx-2" />
+
+            {/* Account Section */}
+            <div className="space-y-1">
+              {!isCollapsed && (
+                <span className="mb-2 block px-3 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+                  Account
+                </span>
+              )}
+              {accountNavItems.map((item) => (
                 <NavLink
                   key={item.href}
                   item={item}
@@ -146,9 +216,10 @@ interface NavLinkProps {
   item: NavItem;
   isActive: boolean;
   isCollapsed: boolean;
+  isLocked?: boolean;
 }
 
-function NavLink({ item, isActive, isCollapsed }: NavLinkProps) {
+function NavLink({ item, isActive, isCollapsed, isLocked = false }: NavLinkProps) {
   const Icon = item.icon;
 
   const linkContent = (
@@ -159,14 +230,21 @@ function NavLink({ item, isActive, isCollapsed }: NavLinkProps) {
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
           : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
-        isCollapsed && "justify-center px-2"
+        isCollapsed && "justify-center px-2",
+        isLocked && "opacity-75"
       )}
     >
       <Icon className="h-4 w-4 shrink-0" />
       {!isCollapsed && (
         <>
           <span className="flex-1">{item.title}</span>
-          {item.badge && (
+          {isLocked && (
+            <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] px-1.5 py-0">
+              <Sparkles className="h-3 w-3" />
+              Pro
+            </Badge>
+          )}
+          {item.badge && !isLocked && (
             <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
               {item.badge}
             </span>
@@ -182,7 +260,13 @@ function NavLink({ item, isActive, isCollapsed }: NavLinkProps) {
         <TooltipTrigger asChild>{linkContent}</TooltipTrigger>
         <TooltipContent side="right" className="flex items-center gap-2">
           {item.title}
-          {item.badge && (
+          {isLocked && (
+            <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px]">
+              <Sparkles className="h-3 w-3" />
+              Pro
+            </Badge>
+          )}
+          {item.badge && !isLocked && (
             <span className="rounded bg-primary/10 px-1.5 py-0.5 text-xs font-medium text-primary">
               {item.badge}
             </span>

@@ -57,8 +57,9 @@ import {
   RoleBadge,
   InlineLoading,
 } from "@/components/common";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
-export default function TeamMembersPage() {
+function TeamMembersContent() {
   const { isLoading: authLoading } = useRequireAuth();
   const { user, accessToken } = useAuth();
 
@@ -333,5 +334,17 @@ export default function TeamMembersPage() {
         </AlertDialogContent>
       </AlertDialog>
     </div>
+  );
+}
+
+export default function TeamMembersPage() {
+  return (
+    <FeatureGate
+      feature="team_management"
+      requiredTier="team"
+      featureName="Team Management"
+    >
+      <TeamMembersContent />
+    </FeatureGate>
   );
 }

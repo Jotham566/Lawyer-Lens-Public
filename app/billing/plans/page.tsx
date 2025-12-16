@@ -113,15 +113,15 @@ export default function PlansPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">
       <div className="mb-8">
-        <Link href="/billing" className="text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
+        <Link href="/billing" className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Billing
         </Link>
         <div className="text-center">
-          <h1 className="text-4xl font-bold text-slate-900 dark:text-slate-100 mb-4">
+          <h1 className="text-4xl font-bold mb-4">
             Choose Your Plan
           </h1>
-          <p className="text-xl text-slate-600 dark:text-slate-400 max-w-2xl mx-auto">
+          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
             Unlock the full power of Legal Intelligence with a plan that fits your needs
           </p>
         </div>
@@ -129,13 +129,13 @@ export default function PlansPage() {
 
       {/* Billing Toggle */}
       <div className="flex items-center justify-center gap-4 mb-12">
-        <Label htmlFor="billing-toggle" className={!annual ? "font-semibold" : "text-slate-500"}>
+        <Label htmlFor="billing-toggle" className={!annual ? "font-semibold" : "text-muted-foreground"}>
           Monthly
         </Label>
         <Switch id="billing-toggle" checked={annual} onCheckedChange={setAnnual} />
-        <Label htmlFor="billing-toggle" className={annual ? "font-semibold" : "text-slate-500"}>
+        <Label htmlFor="billing-toggle" className={annual ? "font-semibold" : "text-muted-foreground"}>
           Annual
-          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700">
+          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
             Save 20%
           </Badge>
         </Label>
@@ -148,8 +148,8 @@ export default function PlansPage() {
             key={plan.id}
             className={`relative ${
               plan.highlight
-                ? "border-blue-500 border-2 shadow-lg scale-105"
-                : "border-slate-200"
+                ? "border-primary border-2 shadow-lg scale-105"
+                : "border-border"
             }`}
           >
             {plan.highlight && (
@@ -162,7 +162,7 @@ export default function PlansPage() {
             )}
             <CardHeader>
               <div className="flex items-center gap-3 mb-2">
-                <div className={`p-2 rounded-lg ${plan.highlight ? "bg-blue-100 text-blue-600" : "bg-slate-100 text-slate-600"}`}>
+                <div className={`p-2 rounded-lg ${plan.highlight ? "bg-primary/10 text-primary" : "bg-muted text-muted-foreground"}`}>
                   {plan.icon}
                 </div>
                 <CardTitle>{plan.name}</CardTitle>
@@ -173,7 +173,7 @@ export default function PlansPage() {
               <div className="mb-6">
                 <span className="text-4xl font-bold">{getPrice(plan.price)}</span>
                 {plan.price !== null && plan.price > 0 && (
-                  <span className="text-slate-500 ml-2">{plan.period}</span>
+                  <span className="text-muted-foreground ml-2">{plan.period}</span>
                 )}
               </div>
               <ul className="space-y-3">
@@ -182,14 +182,14 @@ export default function PlansPage() {
                   return (
                     <li key={feature.name} className="flex items-center gap-2 text-sm">
                       {value ? (
-                        <Check className="h-4 w-4 text-green-500 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0" />
                       ) : (
-                        <X className="h-4 w-4 text-slate-300 flex-shrink-0" />
+                        <X className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                       )}
-                      <span className={!value ? "text-slate-400" : ""}>
+                      <span className={!value ? "text-muted-foreground/70" : ""}>
                         {feature.name}
                         {typeof value === "string" && (
-                          <span className="text-slate-500 ml-1">({value})</span>
+                          <span className="text-muted-foreground ml-1">({value})</span>
                         )}
                       </span>
                     </li>
@@ -199,7 +199,7 @@ export default function PlansPage() {
             </CardContent>
             <CardFooter>
               <Button
-                className={`w-full ${plan.highlight ? "bg-blue-600 hover:bg-blue-700" : ""}`}
+                className="w-full"
                 variant={plan.highlight ? "default" : "outline"}
                 disabled={plan.disabled}
                 onClick={() => handleSelectPlan(plan.id)}
@@ -217,7 +217,7 @@ export default function PlansPage() {
         <div className="overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
-              <tr className="border-b">
+              <tr className="border-b border-border">
                 <th className="text-left py-4 px-4 font-medium">Feature</th>
                 {plans.map((plan) => (
                   <th key={plan.id} className="text-center py-4 px-4 font-medium">
@@ -228,16 +228,16 @@ export default function PlansPage() {
             </thead>
             <tbody>
               {features.map((feature) => (
-                <tr key={feature.name} className="border-b">
-                  <td className="py-4 px-4 text-slate-600">{feature.name}</td>
+                <tr key={feature.name} className="border-b border-border">
+                  <td className="py-4 px-4 text-muted-foreground">{feature.name}</td>
                   {plans.map((plan) => {
                     const value = feature[plan.id as keyof PlanFeature];
                     return (
                       <td key={plan.id} className="text-center py-4 px-4">
                         {value === true ? (
-                          <Check className="h-5 w-5 text-green-500 mx-auto" />
+                          <Check className="h-5 w-5 text-green-500 dark:text-green-400 mx-auto" />
                         ) : value === false ? (
-                          <X className="h-5 w-5 text-slate-300 mx-auto" />
+                          <X className="h-5 w-5 text-muted-foreground/50 mx-auto" />
                         ) : (
                           <span className="text-sm">{value}</span>
                         )}
@@ -252,33 +252,33 @@ export default function PlansPage() {
       </div>
 
       {/* Trust Badges */}
-      <div className="bg-slate-50 dark:bg-slate-800 rounded-2xl p-8">
+      <div className="bg-muted rounded-2xl p-8">
         <h2 className="text-2xl font-bold text-center mb-8">Trusted by Legal Professionals</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Secure & Compliant</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Bank-level encryption and data protection for your legal documents
             </p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-green-100 text-green-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
               <HeadphonesIcon className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Expert Support</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               Get help from our team of legal tech specialists
             </p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-purple-100 text-purple-600 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
               <Zap className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Cancel Anytime</h3>
-            <p className="text-slate-600 dark:text-slate-400 text-sm">
+            <p className="text-muted-foreground text-sm">
               No long-term contracts. Upgrade, downgrade, or cancel anytime
             </p>
           </div>
@@ -288,7 +288,7 @@ export default function PlansPage() {
       {/* FAQ or Contact */}
       <div className="mt-16 text-center">
         <h2 className="text-2xl font-bold mb-4">Have Questions?</h2>
-        <p className="text-slate-600 dark:text-slate-400 mb-6">
+        <p className="text-muted-foreground mb-6">
           Our team is here to help you find the right plan for your needs
         </p>
         <div className="flex gap-4 justify-center">

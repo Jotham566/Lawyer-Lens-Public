@@ -66,6 +66,7 @@ import {
   SaveAsTemplateDialog,
   type SourceType,
 } from "@/components/contracts";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 const phaseLabels: Record<string, { label: string; description: string }> = {
   requirements: {
@@ -1424,7 +1425,13 @@ export default function ContractsPage() {
         </div>
       }
     >
-      <ContractsContent />
+      <FeatureGate
+        feature="contract_drafting"
+        requiredTier="professional"
+        featureName="Contract Drafting"
+      >
+        <ContractsContent />
+      </FeatureGate>
     </Suspense>
   );
 }

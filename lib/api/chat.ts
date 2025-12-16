@@ -72,10 +72,14 @@ interface TypewriterConfig {
 /**
  * Stream chat with typewriter effect
  * Buffers incoming content and reveals it gradually for a typing animation
+ * @param request - Chat request parameters
+ * @param config - Typewriter animation config
+ * @param accessToken - Optional access token for authenticated requests (enables usage tracking)
  */
 export async function* streamChatWithTypewriter(
   request: ChatRequest,
-  config: TypewriterConfig = {}
+  config: TypewriterConfig = {},
+  accessToken?: string | null
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const { charsPerTick = 10, tickDelay = 10 } = config;
 
@@ -88,7 +92,7 @@ export async function* streamChatWithTypewriter(
 
   // Start the stream
   const streamPromise = (async () => {
-    for await (const event of streamChatMessage(request)) {
+    for await (const event of streamChatMessage(request, accessToken)) {
       if (event.type === "content") {
         contentBuffer += event.text;
       } else if (event.type === "content_update") {
@@ -145,21 +149,48 @@ export async function* streamChatWithTypewriter(
 /**
  * Stream chat response (for real-time typing effect)
  * Returns an async generator that yields stream events
+ * @param request - Chat request parameters
+ * @param accessToken - Optional access token for authenticated requests (enables usage tracking)
  */
 export async function* streamChatMessage(
-  request: ChatRequest
+  request: ChatRequest,
+  accessToken?: string | null
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
 
+  // Build headers with optional auth
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
   const response = await fetch(`${API_BASE}/chat/stream`, {
     method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-    },
+    headers,
     body: JSON.stringify(request),
   });
 
   if (!response.ok) {
+    // Handle specific error cases
+    if (response.status === 429) {
+      try {
+        const errorData = await response.json();
+        if (errorData.detail?.error === "usage_limit_exceeded") {
+          throw new Error(
+            `You've reached your monthly limit of ${errorData.detail.limit} AI queries. ` +
+            `Upgrade your plan for more queries.`
+          );
+        }
+      } catch (e) {
+        // If parsing fails, throw generic rate limit error
+        if (e instanceof Error && e.message.includes("monthly limit")) {
+          throw e;
+        }
+      }
+      throw new Error("Rate limit exceeded. Please try again later.");
+    }
     throw new Error(`Chat stream error: ${response.status}`);
   }
 

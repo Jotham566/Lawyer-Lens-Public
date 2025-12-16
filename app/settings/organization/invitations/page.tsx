@@ -61,6 +61,7 @@ import {
   EmptyState,
   InlineLoading,
 } from "@/components/common";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 const inviteSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
@@ -84,7 +85,7 @@ function formatTimeRemaining(expiresAt: string): string {
   return "Less than 1h remaining";
 }
 
-export default function InvitationsPage() {
+function InvitationsContent() {
   const { isLoading: authLoading } = useRequireAuth();
   const { accessToken } = useAuth();
 
@@ -407,5 +408,17 @@ export default function InvitationsPage() {
         </Button>
       </div>
     </div>
+  );
+}
+
+export default function InvitationsPage() {
+  return (
+    <FeatureGate
+      feature="team_management"
+      requiredTier="team"
+      featureName="Team Management"
+    >
+      <InvitationsContent />
+    </FeatureGate>
   );
 }

@@ -32,6 +32,9 @@ import {
   getSuggestedQuestions,
   createResearchSession,
 } from "@/lib/api";
+import { useRequireAuth, useAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
+import { useEntitlements } from "@/hooks/use-entitlements";
 import type {
   ChatMessage as ChatMessageType,
   ChatSource,
@@ -41,6 +44,11 @@ import type {
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
 
 function ChatContent() {
+  // Require authentication to access chat
+  const { isLoading: authLoading } = useRequireAuth();
+  const { accessToken } = useAuth();
+  const { refresh: refreshEntitlements } = useEntitlements();
+
   const searchParams = useSearchParams();
   const initialQuery = searchParams.get("q");
 
@@ -59,7 +67,8 @@ function ChatContent() {
     setError,
   } = useChatStore();
 
-  // Use active (non-archived) conversations for the sidebar
+  // IMPORTANT: All hooks must be called before any conditional returns
+  // to maintain consistent hook order across renders
   const conversations = useActiveConversations();
   const currentConversation = useCurrentConversation();
   const [input, setInput] = useState(initialQuery || "");
@@ -154,14 +163,18 @@ function ChatContent() {
         let verification: VerificationStatus | undefined;
         let confidenceInfo: ConfidenceInfo | undefined;
 
-        const stream = streamChatWithTypewriter({
-          message: text,
-          conversation_id: activeConvId,
-          conversation_history: conversationHistory,
-          search_mode: "hybrid",
-          max_context_chunks: 10,
-          temperature: 0.3,
-        });
+        const stream = streamChatWithTypewriter(
+          {
+            message: text,
+            conversation_id: activeConvId,
+            conversation_history: conversationHistory,
+            search_mode: "hybrid",
+            max_context_chunks: 10,
+            temperature: 0.3,
+          },
+          {}, // default typewriter config
+          accessToken // pass access token for usage tracking
+        );
 
         for await (const event of stream) {
           switch (event.type) {
@@ -197,9 +210,11 @@ function ChatContent() {
         setError(err instanceof Error ? err.message : "Failed to get response");
       } finally {
         setLoading(false);
+        // Refresh entitlements to update usage counts after query
+        refreshEntitlements();
       }
     },
-    [addMessage, updateLastMessage, setLoading, setError]
+    [addMessage, updateLastMessage, setLoading, setError, refreshEntitlements, accessToken]
   );
 
   // Regular chat function (adds user message, then streams response)
@@ -471,6 +486,11 @@ function ChatContent() {
     setInput(question);
     inputRef.current?.focus();
   };
+
+  // Show loading while checking auth (placed after all hooks)
+  if (authLoading) {
+    return <PageLoading message="Loading..." />;
+  }
 
   return (
     <CitationProvider>

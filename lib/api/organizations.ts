@@ -370,3 +370,25 @@ export async function acceptInvitation(
     headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
+
+// Organization Switching
+
+interface SwitchOrganizationResponse {
+  organization: Organization;
+  message: string;
+}
+
+/**
+ * Switch to a different organization.
+ * Updates the user's default organization and returns the new org details.
+ */
+export async function switchOrganization(
+  accessToken: string,
+  organizationId: string
+): Promise<SwitchOrganizationResponse> {
+  return apiFetch<SwitchOrganizationResponse>("/organizations/switch", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${accessToken}` },
+    body: JSON.stringify({ organization_id: organizationId }),
+  });
+}

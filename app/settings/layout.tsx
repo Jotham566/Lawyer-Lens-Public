@@ -8,35 +8,52 @@ import {
   Bell,
   Shield,
   Building2,
-  Settings
+  Settings,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
+// Individual tiers don't need organization management
+const INDIVIDUAL_TIERS = ["free", "professional"];
+
+// Navigation items with optional team-only flag
 const settingsNavItems = [
   {
     title: "Profile",
     href: "/settings",
     icon: User,
+    teamOnly: false,
   },
   {
     title: "Organization",
     href: "/settings/organization",
     icon: Building2,
+    teamOnly: true, // Only show for Team/Enterprise tiers
   },
   {
     title: "Billing",
     href: "/settings/billing",
     icon: CreditCard,
+    teamOnly: false,
   },
   {
     title: "Preferences",
     href: "/settings/preferences",
     icon: Bell,
+    teamOnly: false,
   },
   {
     title: "Security",
     href: "/settings/security",
     icon: Shield,
+    teamOnly: false,
+  },
+  {
+    title: "Activity",
+    href: "/settings/activity",
+    icon: Activity,
+    teamOnly: false,
   },
 ];
 
@@ -46,6 +63,16 @@ export default function SettingsLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
+  const { entitlements } = useEntitlements();
+
+  // Check if user is on an individual tier
+  const userTier = entitlements?.tier?.toLowerCase() || "free";
+  const isIndividualTier = INDIVIDUAL_TIERS.includes(userTier);
+
+  // Filter nav items based on tier
+  const visibleNavItems = settingsNavItems.filter(
+    (item) => !item.teamOnly || !isIndividualTier
+  );
 
   return (
     <div className="min-h-screen bg-muted/30">
@@ -59,7 +86,7 @@ export default function SettingsLayout({
           {/* Sidebar Navigation */}
           <nav className="w-full md:w-56 shrink-0">
             <ul className="space-y-1">
-              {settingsNavItems.map((item) => {
+              {visibleNavItems.map((item) => {
                 const isActive = pathname === item.href ||
                   (item.href !== "/settings" && pathname.startsWith(item.href));
                 return (

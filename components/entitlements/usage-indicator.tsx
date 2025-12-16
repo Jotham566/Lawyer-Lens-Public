@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { useEntitlements, USAGE_TYPES } from "@/hooks/use-entitlements";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -246,6 +247,69 @@ export function UsageLimitWarning({ usageKey, threshold = 80 }: UsageLimitWarnin
           Upgrade
         </Button>
       </Link>
+    </div>
+  );
+}
+
+/**
+ * Global usage alert banner that monitors all usage types.
+ * Shows a dismissible banner when any usage type is at 80%+ or at limit.
+ */
+export function GlobalUsageAlert() {
+  const { entitlements, loading } = useEntitlements();
+  const [dismissed, setDismissed] = useState<string[]>([]);
+
+  if (loading || !entitlements) return null;
+
+  // Find usage items that are at 80%+ and not dismissed
+  const warningItems = Object.entries(entitlements.usage)
+    .filter(([key, usage]) => {
+      if (usage.is_unlimited) return false;
+      if (dismissed.includes(key)) return false;
+      return (usage.percentage ?? 0) >= 80;
+    })
+    .sort((a, b) => (b[1].percentage ?? 0) - (a[1].percentage ?? 0));
+
+  if (warningItems.length === 0) return null;
+
+  const [topKey, topUsage] = warningItems[0];
+  const isAtLimit = topUsage.is_at_limit;
+
+  return (
+    <div
+      className={`flex items-center justify-between px-4 py-2 text-sm ${
+        isAtLimit
+          ? "bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-800"
+          : "bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800"
+      }`}
+    >
+      <div className="flex items-center gap-2">
+        <AlertCircle
+          className={`h-4 w-4 ${isAtLimit ? "text-red-500" : "text-amber-500"}`}
+        />
+        <span className={isAtLimit ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}>
+          {isAtLimit
+            ? `${topUsage.display_name} limit reached`
+            : `${topUsage.display_name} at ${topUsage.percentage}% — ${topUsage.remaining} remaining`}
+          {warningItems.length > 1 && ` (+${warningItems.length - 1} more)`}
+        </span>
+      </div>
+      <div className="flex items-center gap-2">
+        <Link href="/pricing">
+          <Button size="sm" variant={isAtLimit ? "default" : "outline"} className="h-7 text-xs">
+            Upgrade
+          </Button>
+        </Link>
+        <Button
+          size="sm"
+          variant="ghost"
+          className="h-7 w-7 p-0"
+          onClick={() => setDismissed([...dismissed, topKey])}
+        >
+          <span className="sr-only">Dismiss</span>
+          ×
+        </Button>
+      </div>
     </div>
   );
 }

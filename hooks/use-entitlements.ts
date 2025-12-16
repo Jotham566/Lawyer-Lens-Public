@@ -87,7 +87,17 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       setLoading(true);
       setError(null);
 
-      const response = await fetch("/api/billing/entitlements");
+      // Get access token from localStorage (must match auth-provider.tsx key)
+      const accessToken = typeof window !== "undefined"
+        ? localStorage.getItem("auth_access_token")
+        : null;
+
+      const headers: Record<string, string> = {};
+      if (accessToken) {
+        headers.Authorization = `Bearer ${accessToken}`;
+      }
+
+      const response = await fetch("/api/billing/entitlements", { headers });
       if (!response.ok) {
         throw new Error("Failed to fetch entitlements");
       }
@@ -96,11 +106,48 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       setEntitlements(data);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Unknown error");
-      // Set default free tier entitlements on error
+      // Set default free tier entitlements on error (match API route defaults)
       setEntitlements({
         tier: "free",
         features: {},
-        usage: {},
+        usage: {
+          ai_query: {
+            display_name: "AI Queries",
+            current: 0,
+            limit: 50,
+            is_unlimited: false,
+            remaining: 50,
+            percentage: 0,
+            is_at_limit: false,
+          },
+          deep_research: {
+            display_name: "Deep Research",
+            current: 0,
+            limit: 0,
+            is_unlimited: false,
+            remaining: 0,
+            percentage: 0,
+            is_at_limit: true,
+          },
+          contract_draft: {
+            display_name: "Contract Drafts",
+            current: 0,
+            limit: 0,
+            is_unlimited: false,
+            remaining: 0,
+            percentage: 0,
+            is_at_limit: true,
+          },
+          storage_gb: {
+            display_name: "Storage (GB)",
+            current: 0,
+            limit: 1,
+            is_unlimited: false,
+            remaining: 1,
+            percentage: 0,
+            is_at_limit: false,
+          },
+        },
         period_start: new Date().toISOString(),
         period_end: new Date().toISOString(),
       });

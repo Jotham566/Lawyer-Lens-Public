@@ -10,3 +10,14 @@ export {
   extractUniqueEIds,
   type ParsedCitation,
 } from "./citation-parser";
+
+export {
+  validateUgandaPhone,
+  normalizePhoneNumber,
+  detectProvider,
+  formatPhoneDisplay,
+  getPlaceholder,
+  getProviderName,
+  type MobileProvider,
+  type PhoneValidationResult,
+} from "./phone-validation";

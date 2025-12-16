@@ -3,7 +3,7 @@
 import React, { type ReactNode } from "react"
 import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from "react-error-boundary"
 import * as Sentry from "@sentry/nextjs"
-import { AlertCircle, RefreshCw, Home, MessageSquare } from "lucide-react"
+import { AlertCircle, RefreshCw, Home, MessageSquare, CreditCard } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
 import Link from "next/link"
@@ -144,11 +144,53 @@ export function DocumentErrorFallback({ resetErrorBoundary }: FallbackProps) {
 }
 
 /**
+ * Billing-specific error fallback
+ */
+export function BillingErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  return (
+    <div role="alert" className="flex items-center justify-center min-h-[400px] p-6">
+      <Card className="max-w-md w-full">
+        <CardContent className="pt-6">
+          <div className="flex flex-col items-center text-center">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
+              <CreditCard className="h-8 w-8 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            </div>
+            <h2 className="mt-4 text-lg font-semibold">Billing Error</h2>
+            <p className="mt-2 text-sm text-muted-foreground">
+              We encountered an issue loading your billing information. Your subscription and payment data are safe.
+            </p>
+            {process.env.NODE_ENV === "development" && error && (
+              <pre className="mt-4 p-3 bg-muted rounded text-xs text-left overflow-auto max-w-full">
+                {error.message}
+              </pre>
+            )}
+            <div className="mt-6 flex gap-3">
+              <Button onClick={resetErrorBoundary} variant="default">
+                <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                Try Again
+              </Button>
+              <Button asChild variant="outline">
+                <Link href="/help">
+                  Contact Support
+                </Link>
+              </Button>
+            </div>
+            <p className="mt-4 text-xs text-muted-foreground">
+              If this issue persists, please contact our support team.
+            </p>
+          </div>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+/**
  * Page-level error boundary wrapper
  */
 interface PageErrorBoundaryProps {
   children: ReactNode
-  fallback?: "generic" | "chat" | "search" | "document"
+  fallback?: "generic" | "chat" | "search" | "document" | "billing"
   onReset?: () => void
 }
 
@@ -162,6 +204,7 @@ export function PageErrorBoundary({
     chat: ChatErrorFallback,
     search: SearchErrorFallback,
     document: DocumentErrorFallback,
+    billing: BillingErrorFallback,
   }[fallback]
 
   const handleError = (error: Error, info: React.ErrorInfo) => {

@@ -9,6 +9,7 @@ import {
   ChevronDown,
   Building2,
   Loader2,
+  Sparkles,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -22,10 +23,14 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { useAuth, useAuthModal } from "@/components/providers";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
 export function UserMenu() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { openLogin, openRegister } = useAuthModal();
+  const { entitlements } = useEntitlements();
+  const isFreeTier = !entitlements || entitlements.tier === "free";
+  const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";
 
   // Loading state
   if (isLoading) {
@@ -101,12 +106,14 @@ export function UserMenu() {
               Profile
             </Link>
           </DropdownMenuItem>
-          <DropdownMenuItem asChild>
-            <Link href="/settings/organization" className="cursor-pointer">
-              <Building2 className="mr-2 h-4 w-4" />
-              Organization
-            </Link>
-          </DropdownMenuItem>
+          {isTeamOrEnterprise && (
+            <DropdownMenuItem asChild>
+              <Link href="/settings/organization" className="cursor-pointer">
+                <Building2 className="mr-2 h-4 w-4" />
+                Organization
+              </Link>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem asChild>
             <Link href="/settings/billing" className="cursor-pointer">
               <CreditCard className="mr-2 h-4 w-4" />
@@ -119,6 +126,17 @@ export function UserMenu() {
               Security
             </Link>
           </DropdownMenuItem>
+          {isFreeTier && (
+            <>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem asChild>
+                <Link href="/pricing" className="cursor-pointer text-amber-600 dark:text-amber-400">
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Upgrade Plan
+                </Link>
+              </DropdownMenuItem>
+            </>
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem

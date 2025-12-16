@@ -8,6 +8,10 @@ import {
   AlertCircle,
   Loader2,
   Calendar,
+  ArrowDown,
+  ArrowUp,
+  X,
+  MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -29,7 +33,18 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Separator } from "@/components/ui/separator";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 
 interface Subscription {
   id: string;
@@ -53,6 +68,24 @@ interface PricingTier {
   features: Record<string, boolean>;
 }
 
+// Tier order for upgrade/downgrade detection
+const TIER_ORDER: Record<string, number> = {
+  free: 0,
+  professional: 1,
+  team: 2,
+  enterprise: 3,
+};
+
+// Downgrade reasons for feedback
+const DOWNGRADE_REASONS = [
+  { id: "too_expensive", label: "Too expensive for my needs" },
+  { id: "missing_features", label: "Missing features I need" },
+  { id: "not_using_enough", label: "Not using it enough" },
+  { id: "switching_product", label: "Switching to another product" },
+  { id: "temporary", label: "Temporary - will upgrade again later" },
+  { id: "other", label: "Other reason" },
+];
+
 export default function SubscriptionPage() {
   const router = useRouter();
   const [loading, setLoading] = useState(true);
@@ -60,6 +93,15 @@ export default function SubscriptionPage() {
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [cancelling, setCancelling] = useState(false);
   const [reactivating, setReactivating] = useState(false);
+
+  // Downgrade/Change plan state
+  const [showPlanDialog, setShowPlanDialog] = useState(false);
+  const [selectedTier, setSelectedTier] = useState<PricingTier | null>(null);
+  const [showDowngradeConfirm, setShowDowngradeConfirm] = useState(false);
+  const [downgradeReason, setDowngradeReason] = useState("");
+  const [downgradeFeedback, setDowngradeFeedback] = useState("");
+  const [changingPlan, setChangingPlan] = useState(false);
+  const [changeError, setChangeError] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchData() {
@@ -133,7 +175,86 @@ export default function SubscriptionPage() {
     }
   };
 
+  // Check if tier change is upgrade or downgrade
+  const isDowngrade = (newTier: string): boolean => {
+    if (!subscription) return false;
+    const currentOrder = TIER_ORDER[subscription.tier] ?? 0;
+    const newOrder = TIER_ORDER[newTier] ?? 0;
+    return newOrder < currentOrder;
+  };
+
+  // Handle tier selection
+  const handleTierSelect = (tier: PricingTier) => {
+    setSelectedTier(tier);
+    setChangeError(null);
+
+    if (isDowngrade(tier.tier)) {
+      // Show downgrade confirmation
+      setShowPlanDialog(false);
+      setShowDowngradeConfirm(true);
+    } else {
+      // Upgrade - redirect to checkout
+      router.push(`/billing/checkout?plan=${tier.tier}&annual=false`);
+    }
+  };
+
+  // Get features that will be lost on downgrade
+  const getLostFeatures = (newTier: PricingTier): string[] => {
+    if (!currentTier) return [];
+
+    const lostFeatures: string[] = [];
+    for (const [feature, enabled] of Object.entries(currentTier.features)) {
+      if (enabled && !newTier.features[feature]) {
+        lostFeatures.push(feature);
+      }
+    }
+    return lostFeatures;
+  };
+
+  // Handle downgrade confirmation
+  const handleDowngradeConfirm = async () => {
+    if (!selectedTier || !downgradeReason) return;
+
+    setChangingPlan(true);
+    setChangeError(null);
+
+    try {
+      const response = await fetch("/api/billing/subscription", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          new_tier: selectedTier.tier,
+          downgrade_reason: downgradeReason,
+          downgrade_feedback: downgradeFeedback || undefined,
+        }),
+      });
+
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.detail || "Failed to change plan");
+      }
+
+      // Refresh subscription data
+      const subRes = await fetch("/api/billing/subscription");
+      if (subRes.ok) {
+        const data = await subRes.json();
+        setSubscription(data.subscription);
+      }
+
+      // Reset and close dialogs
+      setShowDowngradeConfirm(false);
+      setSelectedTier(null);
+      setDowngradeReason("");
+      setDowngradeFeedback("");
+    } catch (error) {
+      setChangeError(error instanceof Error ? error.message : "Failed to change plan");
+    } finally {
+      setChangingPlan(false);
+    }
+  };
+
   const currentTier = tiers.find((t) => t.tier === subscription?.tier);
+  const availableTiers = tiers.filter((t) => t.tier !== subscription?.tier && t.tier !== "enterprise");
 
   if (loading) {
     return (
@@ -276,7 +397,7 @@ export default function SubscriptionPage() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-wrap gap-4">
-                <Button onClick={() => router.push("/pricing")}>
+                <Button onClick={() => setShowPlanDialog(true)}>
                   Change Plan
                 </Button>
 
@@ -314,6 +435,183 @@ export default function SubscriptionPage() {
               </div>
             </CardContent>
           </Card>
+
+          {/* Plan Selection Dialog */}
+          <Dialog open={showPlanDialog} onOpenChange={setShowPlanDialog}>
+            <DialogContent className="sm:max-w-lg" aria-describedby="plan-dialog-description">
+              <DialogHeader>
+                <DialogTitle>Change Your Plan</DialogTitle>
+                <DialogDescription id="plan-dialog-description">
+                  Select a new plan. Changes take effect at the end of your current billing period.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-3 py-4" role="listbox" aria-label="Available plans">
+                {availableTiers.map((tier) => {
+                  const isDowngradeTier = isDowngrade(tier.tier);
+                  return (
+                    <div
+                      key={tier.tier}
+                      className="flex items-center justify-between p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
+                      onClick={() => handleTierSelect(tier)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" || e.key === " ") {
+                          e.preventDefault();
+                          handleTierSelect(tier);
+                        }
+                      }}
+                      role="option"
+                      tabIndex={0}
+                      aria-selected={false}
+                      aria-label={`${tier.name} plan, ${tier.monthlyPrice} dollars per month, ${isDowngradeTier ? "downgrade" : "upgrade"}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isDowngradeTier ? (
+                          <ArrowDown className="h-5 w-5 text-orange-500" aria-hidden="true" />
+                        ) : (
+                          <ArrowUp className="h-5 w-5 text-green-500" aria-hidden="true" />
+                        )}
+                        <div>
+                          <p className="font-medium">{tier.name}</p>
+                          <p className="text-sm text-muted-foreground">
+                            ${tier.monthlyPrice}/month
+                          </p>
+                        </div>
+                      </div>
+                      <Badge variant={isDowngradeTier ? "secondary" : "default"}>
+                        {isDowngradeTier ? "Downgrade" : "Upgrade"}
+                      </Badge>
+                    </div>
+                  );
+                })}
+              </div>
+
+              <DialogFooter>
+                <Button variant="outline" onClick={() => setShowPlanDialog(false)}>
+                  Cancel
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+
+          {/* Downgrade Confirmation Dialog */}
+          <Dialog open={showDowngradeConfirm} onOpenChange={setShowDowngradeConfirm}>
+            <DialogContent className="sm:max-w-lg" aria-describedby="downgrade-dialog-description">
+              <DialogHeader>
+                <DialogTitle className="flex items-center gap-2">
+                  <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden="true" />
+                  Confirm Downgrade
+                </DialogTitle>
+                <DialogDescription id="downgrade-dialog-description">
+                  You&apos;re about to downgrade to the {selectedTier?.name} plan.
+                </DialogDescription>
+              </DialogHeader>
+
+              <div className="space-y-4 py-4">
+                {/* Features you'll lose */}
+                {selectedTier && getLostFeatures(selectedTier).length > 0 && (
+                  <div className="p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-900" role="alert" aria-labelledby="lost-features-heading">
+                    <h4 id="lost-features-heading" className="font-medium text-orange-800 dark:text-orange-200 mb-2">
+                      Features you&apos;ll lose:
+                    </h4>
+                    <ul className="space-y-1" role="list">
+                      {getLostFeatures(selectedTier).map((feature) => (
+                        <li key={feature} className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                          <X className="h-4 w-4" aria-hidden="true" />
+                          <span className="capitalize">
+                            {feature.replace(/([A-Z])/g, " $1").trim()}
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+
+                {/* Price difference */}
+                {selectedTier && currentTier && (
+                  <div className="flex items-center justify-between p-3 bg-muted rounded-lg">
+                    <span className="text-sm">New monthly price:</span>
+                    <span className="font-semibold">
+                      ${selectedTier.monthlyPrice}/month
+                      <span className="text-sm text-green-600 ml-2">
+                        (Save ${currentTier.monthlyPrice - selectedTier.monthlyPrice}/month)
+                      </span>
+                    </span>
+                  </div>
+                )}
+
+                <Separator />
+
+                {/* Feedback section */}
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2">
+                    <MessageSquare className="h-4 w-4 text-muted-foreground" />
+                    <Label className="font-medium">Help us improve</Label>
+                  </div>
+
+                  <div className="space-y-3">
+                    <Label htmlFor="reason">Why are you downgrading? *</Label>
+                    <RadioGroup value={downgradeReason} onValueChange={setDowngradeReason}>
+                      {DOWNGRADE_REASONS.map((reason) => (
+                        <div key={reason.id} className="flex items-center space-x-2">
+                          <RadioGroupItem value={reason.id} id={reason.id} />
+                          <Label htmlFor={reason.id} className="font-normal cursor-pointer">
+                            {reason.label}
+                          </Label>
+                        </div>
+                      ))}
+                    </RadioGroup>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="feedback">Additional feedback (optional)</Label>
+                    <Textarea
+                      id="feedback"
+                      placeholder="Tell us more about your experience..."
+                      value={downgradeFeedback}
+                      onChange={(e) => setDowngradeFeedback(e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+                </div>
+
+                {changeError && (
+                  <div className="p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2" role="alert" aria-live="polite">
+                    <AlertCircle className="h-4 w-4" aria-hidden="true" />
+                    {changeError}
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="flex-col sm:flex-row gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setShowDowngradeConfirm(false);
+                    setSelectedTier(null);
+                    setDowngradeReason("");
+                    setDowngradeFeedback("");
+                  }}
+                >
+                  Keep Current Plan
+                </Button>
+                <Button
+                  variant="destructive"
+                  onClick={handleDowngradeConfirm}
+                  disabled={changingPlan || !downgradeReason}
+                >
+                  {changingPlan ? (
+                    <>
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      Processing...
+                    </>
+                  ) : (
+                    "Confirm Downgrade"
+                  )}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </>
       ) : (
         <Card>

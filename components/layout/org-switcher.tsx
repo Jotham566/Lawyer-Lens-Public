@@ -22,6 +22,7 @@ import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
 import {
   listOrganizations,
+  switchOrganization,
   type Organization,
 } from "@/lib/api/organizations";
 
@@ -36,6 +37,7 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
   const [organizations, setOrganizations] = useState<Organization[]>([]);
   const [selectedOrg, setSelectedOrg] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(false);
+  const [switching, setSwitching] = useState(false);
 
   // Load organizations
   useEffect(() => {
@@ -62,11 +64,26 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
     }
   }, [accessToken, isAuthenticated, selectedOrg]);
 
-  const handleSelectOrg = (org: Organization) => {
-    setSelectedOrg(org);
-    setOpen(false);
-    // Store in localStorage for persistence
-    localStorage.setItem("selected_organization_id", org.id);
+  const handleSelectOrg = async (org: Organization) => {
+    if (!accessToken || org.id === selectedOrg?.id) {
+      setOpen(false);
+      return;
+    }
+
+    setSwitching(true);
+    try {
+      const response = await switchOrganization(accessToken, org.id);
+      setSelectedOrg(response.organization);
+      setOpen(false);
+      // Store in localStorage for persistence
+      localStorage.setItem("selected_organization_id", org.id);
+      // Reload the page to refresh data with new org context
+      window.location.reload();
+    } catch (err) {
+      console.error("Failed to switch organization:", err);
+      // Keep the current org selected on error
+      setSwitching(false);
+    }
   };
 
   if (!isAuthenticated) {
@@ -87,8 +104,9 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
           aria-expanded={open}
           aria-label="Select organization"
           className={cn("justify-between gap-2", className)}
+          disabled={switching}
         >
-          {loading ? (
+          {loading || switching ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : (
             <>

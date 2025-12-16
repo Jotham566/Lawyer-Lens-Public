@@ -16,6 +16,7 @@ import {
   BookOpen,
   ChevronDown,
   Activity,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -32,6 +33,7 @@ import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { OrgSwitcher } from "./org-switcher";
 import { useAuth } from "@/components/providers";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
 interface HeaderRedesignProps {
   className?: string;
@@ -68,7 +70,11 @@ export function HeaderRedesign({
   const pathname = usePathname();
   const router = useRouter();
   const { isAuthenticated } = useAuth();
+  const { entitlements } = useEntitlements();
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Only show org switcher for team/enterprise tiers
+  const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -182,7 +188,7 @@ export function HeaderRedesign({
         </form>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-2 ml-auto">
+        <div className="flex items-center gap-1 ml-auto">
           {/* Dashboard Link - Authenticated Users */}
           {isAuthenticated && (
             <Button
@@ -190,13 +196,13 @@ export function HeaderRedesign({
               size="sm"
               asChild
               className={cn(
-                "hidden sm:flex gap-2",
+                "hidden md:flex gap-2",
                 isActive("/dashboard") && "bg-accent text-accent-foreground"
               )}
             >
               <Link href="/dashboard">
                 <Activity className="h-4 w-4" />
-                <span className="hidden lg:inline">Dashboard</span>
+                <span className="hidden xl:inline">Dashboard</span>
               </Link>
             </Button>
           )}
@@ -207,34 +213,51 @@ export function HeaderRedesign({
             size="sm"
             asChild
             className={cn(
-              "hidden sm:flex gap-2",
+              "hidden md:flex gap-2",
               isActive("/chat") && "bg-accent text-accent-foreground"
             )}
           >
             <Link href="/chat">
               <MessageSquareText className="h-4 w-4" />
-              <span className="hidden lg:inline">Legal Assistant</span>
+              <span className="hidden xl:inline">Legal Assistant</span>
             </Link>
           </Button>
 
-          {/* Library Link */}
-          <Button
-            variant="ghost"
-            size="sm"
-            asChild
-            className={cn(
-              "hidden sm:flex gap-2",
-              isActive("/library") && "bg-accent text-accent-foreground"
-            )}
-          >
-            <Link href="/library">
-              <BookMarked className="h-4 w-4" />
-              <span className="hidden lg:inline">Library</span>
-            </Link>
-          </Button>
+          {/* Library Link - Authenticated Users */}
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className={cn(
+                "hidden md:flex gap-2",
+                isActive("/library") && "bg-accent text-accent-foreground"
+              )}
+            >
+              <Link href="/library">
+                <BookMarked className="h-4 w-4" />
+                <span className="hidden xl:inline">Library</span>
+              </Link>
+            </Button>
+          )}
 
-          {/* Organization Switcher - Authenticated Users */}
-          {isAuthenticated && <OrgSwitcher className="hidden sm:flex" />}
+          {/* Pricing Link - Prominent for non-authenticated or free users */}
+          {!isAuthenticated && (
+            <Button
+              variant="outline"
+              size="sm"
+              asChild
+              className="hidden sm:flex gap-2 border-amber-300 hover:bg-amber-50 dark:border-amber-700 dark:hover:bg-amber-950/50"
+            >
+              <Link href="/pricing">
+                <Sparkles className="h-4 w-4 text-amber-500" />
+                <span>Pricing</span>
+              </Link>
+            </Button>
+          )}
+
+          {/* Organization Switcher - Only for Team/Enterprise tiers */}
+          {isAuthenticated && isTeamOrEnterprise && <OrgSwitcher className="hidden lg:flex" />}
 
           {/* Theme Toggle */}
           <ThemeToggle />

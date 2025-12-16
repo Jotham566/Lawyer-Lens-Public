@@ -52,6 +52,7 @@ import {
 } from "@/lib/api";
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import { useResearchSessionsStore } from "@/lib/stores";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 // Map backend status values to UI labels
 const statusLabels: Record<string, { label: string; description: string }> = {
@@ -1272,7 +1273,13 @@ export default function ResearchPage() {
           </div>
         }
       >
-        <ResearchContent />
+        <FeatureGate
+          feature="deep_research"
+          requiredTier="professional"
+          featureName="Deep Research"
+        >
+          <ResearchContent />
+        </FeatureGate>
       </Suspense>
     </PageErrorBoundary>
   );
