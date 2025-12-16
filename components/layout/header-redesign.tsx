@@ -15,6 +15,7 @@ import {
   ScrollText,
   BookOpen,
   ChevronDown,
+  Activity,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
@@ -28,6 +29,9 @@ import {
   NavigationMenuTrigger,
 } from "@/components/ui/navigation-menu";
 import { ThemeToggle } from "./theme-toggle";
+import { UserMenu } from "./user-menu";
+import { OrgSwitcher } from "./org-switcher";
+import { useAuth } from "@/components/providers";
 
 interface HeaderRedesignProps {
   className?: string;
@@ -63,6 +67,7 @@ export function HeaderRedesign({
 }: HeaderRedesignProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
   const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearch = (e: React.FormEvent) => {
@@ -178,6 +183,24 @@ export function HeaderRedesign({
 
         {/* Right Side Actions */}
         <div className="flex items-center gap-2 ml-auto">
+          {/* Dashboard Link - Authenticated Users */}
+          {isAuthenticated && (
+            <Button
+              variant="ghost"
+              size="sm"
+              asChild
+              className={cn(
+                "hidden sm:flex gap-2",
+                isActive("/dashboard") && "bg-accent text-accent-foreground"
+              )}
+            >
+              <Link href="/dashboard">
+                <Activity className="h-4 w-4" />
+                <span className="hidden lg:inline">Dashboard</span>
+              </Link>
+            </Button>
+          )}
+
           {/* Legal Assistant Link */}
           <Button
             variant="ghost"
@@ -210,8 +233,14 @@ export function HeaderRedesign({
             </Link>
           </Button>
 
+          {/* Organization Switcher - Authenticated Users */}
+          {isAuthenticated && <OrgSwitcher className="hidden sm:flex" />}
+
           {/* Theme Toggle */}
           <ThemeToggle />
+
+          {/* User Menu */}
+          <UserMenu />
 
           {/* Mobile Menu Button */}
           <Button

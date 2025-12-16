@@ -14,6 +14,9 @@ import {
   ScrollText,
   BookOpen,
   Scale,
+  Activity,
+  Settings,
+  Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
@@ -23,6 +26,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { useAuth } from "@/components/providers";
 
 interface MobileNavProps {
   open: boolean;
@@ -104,6 +108,7 @@ const judgmentsItems = [
 
 export function MobileNav({ open, onOpenChange }: MobileNavProps) {
   const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
   const [legislationOpen, setLegislationOpen] = useState(
     pathname.startsWith("/legislation") || pathname.startsWith("/browse/acts") || pathname.startsWith("/browse/regulations")
   );
@@ -129,6 +134,33 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
         </SheetHeader>
 
         <div className="flex flex-col overflow-y-auto py-4">
+          {/* Dashboard Link - Authenticated Users */}
+          {isAuthenticated && (
+            <>
+              <nav className="flex flex-col gap-1 px-2 mb-4">
+                <Link
+                  href="/dashboard"
+                  onClick={() => onOpenChange(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    isActive("/dashboard")
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  )}
+                >
+                  <Activity className="h-5 w-5 text-muted-foreground" />
+                  <div className="flex-1">
+                    <div className="font-medium">Dashboard</div>
+                    <div className="text-xs text-muted-foreground">
+                      Your personalized overview
+                    </div>
+                  </div>
+                </Link>
+              </nav>
+              <div className="mb-4 border-t" />
+            </>
+          )}
+
           {/* Main Navigation */}
           <nav className="flex flex-col gap-1 px-2">
             {mainNavItems.map((item) => (
@@ -253,6 +285,41 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
               </CollapsibleContent>
             </Collapsible>
           </div>
+
+          {/* Account Section - Authenticated Users */}
+          {isAuthenticated && (
+            <>
+              <div className="my-4 border-t" />
+              <nav className="flex flex-col gap-1 px-2">
+                <Link
+                  href="/settings"
+                  onClick={() => onOpenChange(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    isActive("/settings") && !pathname.includes("/organization")
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  )}
+                >
+                  <Settings className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Settings</span>
+                </Link>
+                <Link
+                  href="/settings/organization"
+                  onClick={() => onOpenChange(false)}
+                  className={cn(
+                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    isActive("/settings/organization")
+                      ? "bg-accent text-accent-foreground"
+                      : "hover:bg-accent/50"
+                  )}
+                >
+                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <span className="font-medium">Organization</span>
+                </Link>
+              </nav>
+            </>
+          )}
 
         </div>
       </SheetContent>

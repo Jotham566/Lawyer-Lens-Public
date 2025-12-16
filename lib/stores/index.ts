@@ -9,6 +9,10 @@ export {
   useChatStore,
   useCurrentConversation,
   useConversationMessages,
+  useActiveConversations,
+  useArchivedConversations,
+  useStarredConversations,
+  useRecentConversations,
   type Conversation,
 } from "./chat-store";
 export {
@@ -19,3 +23,10 @@ export {
   type SavedDocument,
   type ReadingHistoryEntry,
 } from "./library-store";
+export {
+  useResearchSessionsStore,
+  useRecentResearchSessions,
+  useResearchSessionById,
+  useCompletedResearchSessions,
+  type ResearchSessionSummary,
+} from "./research-store";

@@ -26,7 +26,7 @@ import {
   type ToolMode,
 } from "@/components/chat";
 import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
-import { useChatStore, useCurrentConversation } from "@/lib/stores";
+import { useChatStore, useCurrentConversation, useActiveConversations } from "@/lib/stores";
 import {
   streamChatWithTypewriter,
   getSuggestedQuestions,
@@ -45,7 +45,6 @@ function ChatContent() {
   const initialQuery = searchParams.get("q");
 
   const {
-    conversations,
     currentConversationId,
     isLoading,
     error,
@@ -60,6 +59,8 @@ function ChatContent() {
     setError,
   } = useChatStore();
 
+  // Use active (non-archived) conversations for the sidebar
+  const conversations = useActiveConversations();
   const currentConversation = useCurrentConversation();
   const [input, setInput] = useState(initialQuery || "");
   const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");

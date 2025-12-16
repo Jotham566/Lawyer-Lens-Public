@@ -10,3 +10,4 @@ export { ThemeToggle } from "./theme-toggle";
 export { SearchBar } from "./search-bar";
 export { MobileNav, MobileBottomNav } from "./mobile-nav";
 export { AppShell } from "./app-shell";
+export { UserMenu } from "./user-menu";

@@ -2,10 +2,12 @@
  * Chat Store
  *
  * State management for Legal Assistant conversations.
+ * Supports user-scoped storage for authenticated users.
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useShallow } from "zustand/react/shallow";
 import type {
   ChatMessage,
   ChatSource,
@@ -19,6 +21,9 @@ export interface Conversation {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+  // New fields for better management
+  isArchived?: boolean;
+  isStarred?: boolean;
 }
 
 interface ChatState {
@@ -28,11 +33,19 @@ interface ChatState {
   isLoading: boolean;
   error: string | null;
 
+  // User-scoped storage key
+  userId: string | null;
+  setUserId: (userId: string | null) => void;
+
   // Actions
   setCurrentConversation: (id: string | null) => void;
   createConversation: () => string;
   deleteConversation: (id: string) => void;
   renameConversation: (id: string, title: string) => void;
+  archiveConversation: (id: string) => void;
+  unarchiveConversation: (id: string) => void;
+  starConversation: (id: string) => void;
+  unstarConversation: (id: string) => void;
   addMessage: (conversationId: string, message: ChatMessage) => void;
   updateLastMessage: (
     conversationId: string,
@@ -76,6 +89,9 @@ export const useChatStore = create<ChatState>()(
       conversations: [],
       isLoading: false,
       error: null,
+      userId: null,
+
+      setUserId: (userId) => set({ userId }),
 
       setCurrentConversation: (id) => set({ currentConversationId: id }),
 
@@ -88,6 +104,8 @@ export const useChatStore = create<ChatState>()(
           messages: [],
           createdAt: now,
           updatedAt: now,
+          isArchived: false,
+          isStarred: false,
         };
 
         set((state) => ({
@@ -105,7 +123,7 @@ export const useChatStore = create<ChatState>()(
             conversations: filtered,
             currentConversationId:
               state.currentConversationId === id
-                ? filtered[0]?.id || null
+                ? filtered.find((c) => !c.isArchived)?.id || null
                 : state.currentConversationId,
           };
         });
@@ -116,6 +134,50 @@ export const useChatStore = create<ChatState>()(
           conversations: state.conversations.map((conv) =>
             conv.id === id
               ? { ...conv, title, updatedAt: new Date().toISOString() }
+              : conv
+          ),
+        }));
+      },
+
+      archiveConversation: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) =>
+            conv.id === id
+              ? { ...conv, isArchived: true, updatedAt: new Date().toISOString() }
+              : conv
+          ),
+          currentConversationId:
+            state.currentConversationId === id
+              ? state.conversations.find((c) => c.id !== id && !c.isArchived)?.id || null
+              : state.currentConversationId,
+        }));
+      },
+
+      unarchiveConversation: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) =>
+            conv.id === id
+              ? { ...conv, isArchived: false, updatedAt: new Date().toISOString() }
+              : conv
+          ),
+        }));
+      },
+
+      starConversation: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) =>
+            conv.id === id
+              ? { ...conv, isStarred: true, updatedAt: new Date().toISOString() }
+              : conv
+          ),
+        }));
+      },
+
+      unstarConversation: (id) => {
+        set((state) => ({
+          conversations: state.conversations.map((conv) =>
+            conv.id === id
+              ? { ...conv, isStarred: false, updatedAt: new Date().toISOString() }
               : conv
           ),
         }));
@@ -249,15 +311,52 @@ export const useChatStore = create<ChatState>()(
   )
 );
 
-// Selectors
+// Selectors - using useShallow for stable array/object references
 export const useCurrentConversation = () => {
-  const conversations = useChatStore((s) => s.conversations);
   const currentId = useChatStore((s) => s.currentConversationId);
-  return conversations.find((c) => c.id === currentId) || null;
+  const conversation = useChatStore(
+    useShallow((s) => s.conversations.find((c) => c.id === currentId) || null)
+  );
+  return conversation;
 };
 
 export const useConversationMessages = (conversationId: string | null) => {
-  const conversations = useChatStore((s) => s.conversations);
-  if (!conversationId) return [];
-  return conversations.find((c) => c.id === conversationId)?.messages || [];
+  return useChatStore(
+    useShallow((s) => {
+      if (!conversationId) return [];
+      return s.conversations.find((c) => c.id === conversationId)?.messages || [];
+    })
+  );
+};
+
+// Get active (non-archived) conversations
+export const useActiveConversations = () => {
+  return useChatStore(
+    useShallow((s) => s.conversations.filter((c) => !c.isArchived))
+  );
+};
+
+// Get archived conversations
+export const useArchivedConversations = () => {
+  return useChatStore(
+    useShallow((s) => s.conversations.filter((c) => c.isArchived))
+  );
+};
+
+// Get starred conversations
+export const useStarredConversations = () => {
+  return useChatStore(
+    useShallow((s) => s.conversations.filter((c) => c.isStarred && !c.isArchived))
+  );
+};
+
+// Get recent conversations (non-archived, most recent first, limited)
+export const useRecentConversations = (limit = 10) => {
+  return useChatStore(
+    useShallow((s) =>
+      s.conversations
+        .filter((c) => !c.isArchived)
+        .slice(0, limit)
+    )
+  );
 };

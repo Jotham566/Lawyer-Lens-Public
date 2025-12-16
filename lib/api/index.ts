@@ -98,6 +98,37 @@ export {
   type EnhancedTemplate,
 } from "./contracts";
 
+// Auth API
+export {
+  register,
+  login,
+  logout,
+  refreshToken,
+  verifyEmail,
+  resendVerificationEmail,
+  forgotPassword,
+  resetPassword,
+  changePassword,
+  getCurrentUser,
+  updateProfile,
+  getSessions,
+  revokeSession,
+  revokeAllSessions,
+  type User,
+  type UserSession,
+  type AuthTokens,
+  type LoginResponse,
+  type RegisterResponse,
+  type RegisterRequest,
+  type LoginRequest,
+  type ForgotPasswordRequest,
+  type ResetPasswordRequest,
+  type ChangePasswordRequest,
+  type UpdateProfileRequest,
+  type VerifyEmailRequest,
+  type RefreshTokenRequest,
+} from "./auth";
+
 // Types
 export type {
   // Document types

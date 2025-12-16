@@ -7,6 +7,38 @@
 
 const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
 
+// ============================================================================
+// 401 Event Handling for Auto-Logout
+// ============================================================================
+
+type UnauthorizedHandler = () => void;
+let unauthorizedHandlers: UnauthorizedHandler[] = [];
+
+/**
+ * Subscribe to 401 unauthorized events.
+ * Used by auth provider to handle automatic logout.
+ * @returns Unsubscribe function
+ */
+export function onUnauthorized(handler: UnauthorizedHandler): () => void {
+  unauthorizedHandlers.push(handler);
+  return () => {
+    unauthorizedHandlers = unauthorizedHandlers.filter((h) => h !== handler);
+  };
+}
+
+/**
+ * Emit 401 unauthorized event to all subscribers
+ */
+function emitUnauthorized(): void {
+  unauthorizedHandlers.forEach((handler) => {
+    try {
+      handler();
+    } catch (e) {
+      console.error("Error in unauthorized handler:", e);
+    }
+  });
+}
+
 /**
  * Backend APIError response format
  */
@@ -102,6 +134,13 @@ export async function apiFetch<T>(
     } catch {
       data = await response.text();
     }
+
+    // Emit 401 unauthorized event for auto-logout
+    // Skip for auth endpoints to avoid logout loops during login/refresh
+    if (response.status === 401 && !endpoint.startsWith("/auth/")) {
+      emitUnauthorized();
+    }
+
     throw new APIError(response.status, response.statusText, data);
   }
 
@@ -157,4 +196,53 @@ export async function apiPost<T, D = unknown>(
  */
 export function getApiBaseUrl(): string {
   return API_BASE;
+}
+
+/**
+ * File upload helper (multipart/form-data)
+ */
+export async function apiUpload<T>(
+  endpoint: string,
+  file: File,
+  fieldName = "file",
+  accessToken?: string
+): Promise<T> {
+  const url = `${API_BASE}${endpoint}`;
+
+  const formData = new FormData();
+  formData.append(fieldName, file);
+
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData,
+  });
+
+  if (!response.ok) {
+    let data: unknown;
+    try {
+      data = await response.json();
+    } catch {
+      data = await response.text();
+    }
+
+    // Emit 401 unauthorized event for auto-logout
+    if (response.status === 401) {
+      emitUnauthorized();
+    }
+
+    throw new APIError(response.status, response.statusText, data);
+  }
+
+  const text = await response.text();
+  if (!text) {
+    return {} as T;
+  }
+
+  return JSON.parse(text) as T;
 }

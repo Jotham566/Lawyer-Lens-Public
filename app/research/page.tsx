@@ -51,6 +51,7 @@ import {
   type ApproveBriefRequest,
 } from "@/lib/api";
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
+import { useResearchSessionsStore } from "@/lib/stores";
 
 // Map backend status values to UI labels
 const statusLabels: Record<string, { label: string; description: string }> = {
@@ -93,6 +94,9 @@ function ResearchContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<StreamProgress | null>(null);
+
+  // Research sessions store for persistence
+  const { addSession, updateSession: updateStoredSession } = useResearchSessionsStore();
 
   // Brief editing state
   const [isEditingBrief, setIsEditingBrief] = useState(false);
@@ -151,6 +155,16 @@ function ResearchContent() {
       const sessionData = await getResearchSession(sessionId);
       setSession(sessionData);
 
+      // Track session in store
+      addSession({
+        id: sessionData.session_id,
+        query: sessionData.query,
+        title: sessionData.report?.title || sessionData.query.slice(0, 60),
+        status: sessionData.status,
+        createdAt: sessionData.created_at,
+        reportReady: sessionData.status === "complete",
+      });
+
       // Use status (not phase) to determine what to show
       if (sessionData.status === "complete") {
         // Report is included in session response when complete
@@ -179,6 +193,17 @@ function ResearchContent() {
     try {
       const newSession = await createResearchSession({ query: query.trim() });
       setSession(newSession);
+
+      // Track new session in store
+      addSession({
+        id: newSession.session_id,
+        query: newSession.query,
+        title: newSession.query.slice(0, 60),
+        status: newSession.status,
+        createdAt: newSession.created_at,
+        reportReady: false,
+      });
+
       router.replace(`/research?session=${newSession.session_id}`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to start research");
@@ -435,17 +460,26 @@ function ResearchContent() {
           setReport(reportData);
           const sessionData = await getResearchSession(sessionId);
           setSession(sessionData);
+
+          // Update stored session with completion status
+          updateStoredSession(sessionId, {
+            status: "complete",
+            title: reportData.title,
+            reportReady: true,
+          });
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to load report");
         }
       },
       (errorMsg) => {
         setError(errorMsg);
+        // Update stored session with error status
+        updateStoredSession(sessionId, { status: "error" });
       }
     );
 
     return cleanup;
-  }, []);
+  }, [updateStoredSession]);
 
   const renderPhaseIndicator = () => {
     if (!session) return null;
@@ -499,10 +533,16 @@ function ResearchContent() {
   if (!session && !sessionIdParam) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
-        <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Chat
-        </Link>
+        <div className="flex items-center justify-between mb-8">
+          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Chat
+          </Link>
+          <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <Clock className="h-4 w-4" />
+            View History
+          </Link>
+        </div>
 
         <div className="text-center mb-8">
           <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-blue-500/10 mb-4">
