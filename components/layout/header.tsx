@@ -47,11 +47,33 @@ export function Header({ className }: HeaderProps) {
 
       {/* Right side actions */}
       <div className="flex items-center gap-2">
-        {/* Notifications - placeholder for future */}
-        <Button variant="ghost" size="icon" className="relative h-9 w-9">
-          <Bell className="h-4 w-4" />
-          <span className="sr-only">Notifications</span>
-        </Button>
+        {/* Notifications */}
+        <DropdownMenu>
+          <DropdownMenuTrigger asChild>
+            <Button variant="ghost" size="icon" className="relative h-9 w-9">
+              <Bell className="h-4 w-4" />
+              <span className="sr-only">Notifications</span>
+            </Button>
+          </DropdownMenuTrigger>
+          <DropdownMenuContent align="end" className="w-72">
+            <div className="px-3 py-2 border-b">
+              <p className="text-sm font-medium">Notifications</p>
+            </div>
+            <div className="px-3 py-8 text-center">
+              <Bell className="h-8 w-8 mx-auto text-muted-foreground/50 mb-2" />
+              <p className="text-sm text-muted-foreground">No notifications</p>
+              <p className="text-xs text-muted-foreground/70 mt-1">
+                You&apos;re all caught up
+              </p>
+            </div>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem asChild>
+              <Link href="/settings/notifications" className="text-xs text-center w-full justify-center">
+                Notification Settings
+              </Link>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        </DropdownMenu>
 
         {/* Theme Toggle */}
         <ThemeToggle />

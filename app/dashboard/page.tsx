@@ -36,7 +36,7 @@ import { useEntitlements } from "@/hooks/use-entitlements";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 import { PageLoading } from "@/components/common";
-import { useRecentResearchSessions } from "@/lib/stores";
+import { useRecentResearchSessions, useSavedDocuments } from "@/lib/stores";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const { user } = useAuth();
   const { entitlements, loading: entitlementsLoading, getUsage, refresh: refreshEntitlements } = useEntitlements();
   const recentResearchSessions = useRecentResearchSessions(5);
+  const savedDocuments = useSavedDocuments();
 
   const [stats, setStats] = useState<RepositoryStats | null>(null);
   const [loading, setLoading] = useState(true);
@@ -439,6 +440,58 @@ export default function DashboardPage() {
             </CardContent>
           </Card>
 
+          {/* Saved Documents */}
+          <Card>
+            <CardHeader className="pb-2">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-medium flex items-center gap-2">
+                  <BookMarked className="h-4 w-4 text-muted-foreground" />
+                  Saved Documents
+                </CardTitle>
+                {savedDocuments.length > 0 && (
+                  <Badge variant="secondary" className="text-xs">
+                    {savedDocuments.length}
+                  </Badge>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent>
+              {savedDocuments.length > 0 ? (
+                <div className="space-y-1">
+                  {savedDocuments.slice(0, 4).map((doc) => (
+                    <Link
+                      key={doc.id}
+                      href={`/document/${doc.id}`}
+                      className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors text-sm group"
+                    >
+                      <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
+                      <span className="truncate flex-1 group-hover:text-primary transition-colors">
+                        {doc.title}
+                      </span>
+                    </Link>
+                  ))}
+                  {savedDocuments.length > 4 && (
+                    <Link
+                      href="/library"
+                      className="flex items-center justify-center gap-1 p-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+                    >
+                      View all {savedDocuments.length} documents
+                      <ChevronRight className="h-3 w-3" />
+                    </Link>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-4">
+                  <BookMarked className="h-6 w-6 mx-auto text-muted-foreground/40 mb-2" />
+                  <p className="text-xs text-muted-foreground">No saved documents</p>
+                  <Button variant="link" size="sm" asChild className="mt-1 h-auto p-0 text-xs">
+                    <Link href="/search">Browse documents</Link>
+                  </Button>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Quick Links */}
           <Card>
             <CardHeader className="pb-2">
@@ -452,7 +505,7 @@ export default function DashboardPage() {
                 className="flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-sm"
               >
                 <BookMarked className="h-4 w-4 text-muted-foreground" />
-                <span>Saved Documents</span>
+                <span>My Library</span>
               </Link>
               <Link
                 href="/legislation/constitution"
