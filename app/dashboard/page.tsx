@@ -544,7 +544,7 @@ export default function DashboardPage() {
               Getting Started
             </CardTitle>
             <CardDescription>
-              Here's how to make the most of Law Lens
+              Make the most of Law Lens
             </CardDescription>
           </CardHeader>
           <CardContent>
