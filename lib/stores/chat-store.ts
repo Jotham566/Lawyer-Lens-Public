@@ -82,16 +82,59 @@ const generateTitle = (message: string): string => {
   return title.length < cleaned.length ? `${title}...` : title;
 };
 
+// Helper to get user-specific storage key
+const getStorageKey = (userId: string | null) => {
+  return userId ? `law-lens-chat-${userId}` : "law-lens-chat-anonymous";
+};
+
 export const useChatStore = create<ChatState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       currentConversationId: null,
       conversations: [],
       isLoading: false,
       error: null,
       userId: null,
 
-      setUserId: (userId) => set({ userId }),
+      setUserId: (userId) => {
+        const currentUserId = get().userId;
+
+        // If switching users, load new user's data FIRST then update state
+        // This prevents a race condition where empty data is saved before load
+        if (currentUserId !== userId) {
+          // Default to empty state for new user
+          let newConversations: Conversation[] = [];
+          let newCurrentConversationId: string | null = null;
+
+          // Load the new user's data from localStorage BEFORE updating state
+          // This prevents the persist middleware from overwriting existing data
+          if (typeof window !== "undefined" && userId) {
+            const storageKey = getStorageKey(userId);
+            const stored = localStorage.getItem(storageKey);
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                if (parsed.state) {
+                  newConversations = parsed.state.conversations || [];
+                  newCurrentConversationId = parsed.state.currentConversationId || null;
+                }
+              } catch (e) {
+                console.error("Failed to load user chat data:", e);
+              }
+            }
+          }
+
+          // Update state in a single call to avoid race conditions
+          // The persist middleware will save the correct data, not empty arrays
+          set({
+            userId,
+            conversations: newConversations,
+            currentConversationId: newCurrentConversationId,
+          });
+        } else {
+          set({ userId });
+        }
+      },
 
       setCurrentConversation: (id) => set({ currentConversationId: id }),
 
@@ -303,10 +346,38 @@ export const useChatStore = create<ChatState>()(
     }),
     {
       name: "law-lens-chat",
-      partialize: (state) => ({
-        conversations: state.conversations.slice(0, 50), // Keep last 50 conversations
-        currentConversationId: state.currentConversationId,
-      }),
+      // Use dynamic storage key based on user ID
+      storage: {
+        getItem: (name) => {
+          if (typeof window === "undefined") return null;
+          // Try to get the current user's storage
+          const state = useChatStore.getState?.();
+          const userId = state?.userId;
+          const key = userId ? `${name}-${userId}` : `${name}-anonymous`;
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: (name, value) => {
+          if (typeof window === "undefined") return;
+          const state = useChatStore.getState?.();
+          const userId = state?.userId;
+          const key = userId ? `${name}-${userId}` : `${name}-anonymous`;
+          localStorage.setItem(key, JSON.stringify(value));
+        },
+        removeItem: (name) => {
+          if (typeof window === "undefined") return;
+          const state = useChatStore.getState?.();
+          const userId = state?.userId;
+          const key = userId ? `${name}-${userId}` : `${name}-anonymous`;
+          localStorage.removeItem(key);
+        },
+      },
+      partialize: (state) =>
+        ({
+          conversations: state.conversations.slice(0, 50), // Keep last 50 conversations
+          currentConversationId: state.currentConversationId,
+          userId: state.userId, // Include userId in persisted state
+        }) as ChatState,
     }
   )
 );

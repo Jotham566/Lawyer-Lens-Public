@@ -23,6 +23,7 @@ import {
   type LoginResponse,
 } from "@/lib/api/auth";
 import { onUnauthorized } from "@/lib/api/client";
+import { useChatStore } from "@/lib/stores/chat-store";
 
 // Token storage keys
 const ACCESS_TOKEN_KEY = "auth_access_token";
@@ -121,6 +122,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
         accessToken: tokens.access_token,
       });
 
+      // Set userId in chat store for user-scoped chat history
+      useChatStore.getState().setUserId(user.id);
+
       return true;
     } catch {
       clearStoredTokens();
@@ -130,6 +134,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         isAuthenticated: false,
         accessToken: null,
       });
+      // Clear userId in chat store
+      useChatStore.getState().setUserId(null);
       return false;
     }
   }, []);
@@ -165,6 +171,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           isAuthenticated: true,
           accessToken,
         });
+        // Set userId in chat store for user-scoped chat history
+        useChatStore.getState().setUserId(user.id);
       } catch {
         // Token might be invalid, try refresh
         await refreshSession();
@@ -227,6 +235,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       accessToken: response.tokens.access_token,
     });
 
+    // Set userId in chat store for user-scoped chat history
+    useChatStore.getState().setUserId(response.user.id);
+
     return { requiresVerification: response.requires_email_verification };
   }, []);
 
@@ -243,6 +254,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       accessToken: response.tokens.access_token,
     });
 
+    // Set userId in chat store for user-scoped chat history
+    useChatStore.getState().setUserId(response.user.id);
+
     return { emailSent: response.email_verification_sent };
   }, []);
 
@@ -256,6 +270,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: true,
       accessToken: response.tokens.access_token,
     });
+
+    // Set userId in chat store for user-scoped chat history
+    useChatStore.getState().setUserId(response.user.id);
   }, []);
 
   // Logout
@@ -270,6 +287,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       isAuthenticated: false,
       accessToken: null,
     });
+
+    // Clear userId in chat store (clears chat history for this session)
+    useChatStore.getState().setUserId(null);
 
     // Then call API (fire and forget)
     if (accessToken) {
