@@ -61,16 +61,16 @@ export default function PricingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <main className="min-h-screen bg-background" role="main">
       {/* Header */}
-      <div className="bg-gradient-to-b from-muted/50 to-background pt-16 pb-12">
+      <header className="bg-gradient-to-b from-muted/50 to-background pt-16 pb-12">
         <div className="container mx-auto px-4 text-center">
           <h1 className="text-4xl font-bold tracking-tight mb-4">
             Simple, transparent pricing
           </h1>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
             Choose the plan that fits your needs. All plans include access to
-            Kenya&apos;s comprehensive legal database.
+            Uganda&apos;s comprehensive legal database powered by AI.
           </p>
 
           {/* Billing Toggle */}
@@ -101,10 +101,11 @@ export default function PricingPage() {
             </ToggleGroup>
           </div>
         </div>
-      </div>
+      </header>
 
       {/* Pricing Cards */}
-      <div className="container mx-auto px-4 py-12">
+      <section className="container mx-auto px-4 py-12" aria-labelledby="pricing-plans">
+        <h2 id="pricing-plans" className="sr-only">Pricing Plans</h2>
         {loading ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 max-w-7xl mx-auto">
             {[1, 2, 3, 4].map((i) => (
@@ -125,11 +126,11 @@ export default function PricingPage() {
             ))}
           </div>
         )}
-      </div>
+      </section>
 
       {/* Feature Comparison Table */}
-      <div className="container mx-auto px-4 py-12">
-        <h2 className="text-2xl font-bold text-center mb-8">
+      <section className="container mx-auto px-4 py-12" aria-labelledby="feature-comparison">
+        <h2 id="feature-comparison" className="text-2xl font-bold text-center mb-8">
           Compare all features
         </h2>
         <div className="max-w-5xl mx-auto overflow-x-auto">
@@ -288,17 +289,18 @@ export default function PricingPage() {
             </tbody>
           </table>
         </div>
-      </div>
+      </section>
 
       {/* FAQ Section */}
-      <div className="container mx-auto px-4 py-16">
+      <section className="container mx-auto px-4 py-16" aria-labelledby="pricing-faq">
+        <h2 id="pricing-faq" className="sr-only">Frequently Asked Questions</h2>
         <PricingFAQ />
-      </div>
+      </section>
 
       {/* CTA Section */}
-      <div className="bg-muted/50 py-16">
+      <section className="bg-muted/50 py-16" aria-labelledby="cta-section">
         <div className="container mx-auto px-4 text-center">
-          <h2 className="text-2xl font-bold mb-4">
+          <h2 id="cta-section" className="text-2xl font-bold mb-4">
             Ready to transform your legal research?
           </h2>
           <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
@@ -308,11 +310,12 @@ export default function PricingPage() {
           <a
             href="/register"
             className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
+            aria-label="Get started with a free account"
           >
             Get Started Free
           </a>
         </div>
-      </div>
-    </div>
+      </section>
+    </main>
   );
 }
