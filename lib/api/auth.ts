@@ -228,12 +228,13 @@ export async function updateProfile(
  * Get active sessions
  */
 export async function getSessions(accessToken: string): Promise<UserSession[]> {
-  return apiFetch<UserSession[]>("/auth/sessions", {
+  const response = await apiFetch<{ sessions: UserSession[] }>("/auth/sessions", {
     method: "GET",
     headers: {
       Authorization: `Bearer ${accessToken}`,
     },
   });
+  return response.sessions;
 }
 
 /**
