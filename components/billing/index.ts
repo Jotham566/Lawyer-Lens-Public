@@ -3,3 +3,4 @@ export { SubscriptionsTable } from "./subscriptions-table";
 export { InvoicesTable } from "./invoices-table";
 export { PaymentsTable } from "./payments-table";
 export { UsageDashboard, UsageQuickStats, TeamUsageOverview } from "./usage-dashboard";
+export { SeatManagement, SeatUsageCompact, SeatSummaryCard } from "./seat-management";

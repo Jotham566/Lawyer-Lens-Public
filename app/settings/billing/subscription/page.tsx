@@ -45,6 +45,7 @@ import { Separator } from "@/components/ui/separator";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { SeatManagement } from "@/components/billing/seat-management";
 
 interface Subscription {
   id: string;
@@ -58,6 +59,10 @@ interface Subscription {
   pricePerUnit: number;
   quantity: number;
   trialEnd?: string;
+  // Seat management fields
+  seatsUsed?: number;
+  seatsTotal?: number;
+  pricePerSeat?: number;
 }
 
 interface PricingTier {
@@ -388,6 +393,41 @@ export default function SubscriptionPage() {
                 </ul>
               </CardContent>
             </Card>
+          )}
+
+          {/* Seat Management for Team/Enterprise Plans */}
+          {subscription && (subscription.tier === "team" || subscription.tier === "enterprise") && (
+            <SeatManagement
+              seatInfo={{
+                used: subscription.seatsUsed || subscription.quantity || 1,
+                total: subscription.seatsTotal || subscription.quantity || 1,
+                pricePerSeat: subscription.pricePerSeat || subscription.pricePerUnit || 29,
+                billingCycle: subscription.billingCycle === "annual" ? "annual" : "monthly",
+                canModify: !subscription.cancelAtPeriodEnd && subscription.status === "active",
+              }}
+              onUpdateSeats={async (newTotal, proratedAmount) => {
+                const response = await fetch("/api/billing/subscription", {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify({
+                    seats: newTotal,
+                    prorated_amount: proratedAmount,
+                  }),
+                });
+
+                if (!response.ok) {
+                  const data = await response.json();
+                  throw new Error(data.detail || "Failed to update seats");
+                }
+
+                // Refresh subscription data
+                const subRes = await fetch("/api/billing/subscription");
+                if (subRes.ok) {
+                  const data = await subRes.json();
+                  setSubscription(data.subscription);
+                }
+              }}
+            />
           )}
 
           {/* Actions */}
