@@ -6,6 +6,7 @@ import { HeaderRedesign } from "./header-redesign";
 import { MobileNav, MobileBottomNav } from "./mobile-nav";
 import { SkipLink } from "@/components/skip-link";
 import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
+import { ScreenReaderAnnouncer } from "@/components/accessibility";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -31,6 +32,9 @@ export function AppShell({ children }: AppShellProps) {
 
   return (
     <div className="relative min-h-screen flex flex-col">
+      {/* Screen reader announcements */}
+      <ScreenReaderAnnouncer />
+
       {/* Skip link for accessibility */}
       <SkipLink />
 
@@ -47,7 +51,13 @@ export function AppShell({ children }: AppShellProps) {
       <MobileNav open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
 
       {/* Main content - with padding for bottom nav on mobile */}
-      <main id="main-content" tabIndex={-1} className="flex-1 pb-16 lg:pb-0 focus:outline-none">
+      <main
+        id="main-content"
+        role="main"
+        tabIndex={-1}
+        className="flex-1 pb-16 lg:pb-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        aria-label="Main content"
+      >
         {children}
       </main>
 

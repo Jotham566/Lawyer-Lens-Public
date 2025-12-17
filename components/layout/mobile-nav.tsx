@@ -19,7 +19,7 @@ import {
   Building2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Sheet, SheetContent, SheetHeader, SheetTitle } from "@/components/ui/sheet";
+import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import {
   Collapsible,
@@ -131,6 +131,9 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             <Scale className="h-5 w-5 text-primary" />
             Law Lens
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Main navigation menu for Law Lens
+          </SheetDescription>
         </SheetHeader>
 
         <div className="flex flex-col overflow-y-auto py-4">

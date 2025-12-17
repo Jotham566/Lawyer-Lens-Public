@@ -840,7 +840,7 @@ function ResearchContent() {
               </div>
 
               {/* Jurisdictions and Document Types */}
-              <div className="grid grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
                   <h4 className="font-medium mb-2 text-sm">Jurisdictions</h4>
                   {isEditingBrief ? (
@@ -897,7 +897,7 @@ function ResearchContent() {
 
               {/* Time Scope and Report Format */}
               {isEditingBrief ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
                     <h4 className="font-medium mb-2 text-sm">Time Scope</h4>
                     <RadioGroup value={editedTimeScope} onValueChange={setEditedTimeScope}>

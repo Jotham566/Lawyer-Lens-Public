@@ -18,8 +18,10 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
-import { TrustBadge } from "./trust-indicator";
+import { TrustBadge, ConfidenceFactors, UncertaintyDisclaimer } from "./trust-indicator";
 import { SourceBadgeList } from "./source-badge";
+import { MessageFeedback } from "./message-feedback";
+import { SourceTransparencyInline } from "./source-transparency";
 import type { ChatMessage as ChatMessageType } from "@/lib/api/types";
 
 export function TypingIndicator() {
@@ -268,14 +270,29 @@ function ChatMessageComponent({
 
         {/* Sources and Trust Indicator */}
         {message.content && (
-          <div className="flex flex-wrap items-center gap-3">
-            {!isStreaming && message.verification && (
-              <TrustBadge
-                verification={message.verification}
-                confidenceInfo={message.confidence_info}
-              />
+          <div className="space-y-2">
+            <div className="flex flex-wrap items-center gap-3">
+              {!isStreaming && message.verification && (
+                <TrustBadge
+                  verification={message.verification}
+                  confidenceInfo={message.confidence_info}
+                />
+              )}
+              <SourceBadgeList sources={message.sources || []} />
+              {!isStreaming && message.sources && message.sources.length > 0 && (
+                <SourceTransparencyInline sources={message.sources} />
+              )}
+            </div>
+
+            {/* Uncertainty disclaimer for unverified responses */}
+            {!isStreaming && message.verification?.level === "unverified" && (
+              <UncertaintyDisclaimer verification={message.verification} />
             )}
-            <SourceBadgeList sources={message.sources || []} />
+
+            {/* Why this confidence? (expandable) */}
+            {!isStreaming && message.confidence_info && Object.keys(message.confidence_info.factors || {}).length > 0 && (
+              <ConfidenceFactors confidenceInfo={message.confidence_info} />
+            )}
           </div>
         )}
 
@@ -301,15 +318,24 @@ function ChatMessageComponent({
 
         {/* Assistant Message Actions */}
         {message.content && (
-          <div className="flex gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
-            <AssistantMessageActions
-              messageId={messageId}
-              content={message.content}
-              copiedId={copiedId}
-              onCopy={onCopy}
-              onRegenerate={() => onRegenerate(index)}
-              disabled={isLoading}
-            />
+          <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+            <div className="flex gap-1">
+              <AssistantMessageActions
+                messageId={messageId}
+                content={message.content}
+                copiedId={copiedId}
+                onCopy={onCopy}
+                onRegenerate={() => onRegenerate(index)}
+                disabled={isLoading}
+              />
+            </div>
+            {/* User feedback */}
+            {!isStreaming && (
+              <>
+                <div className="w-px h-4 bg-border" aria-hidden="true" />
+                <MessageFeedback messageId={messageId} />
+              </>
+            )}
           </div>
         )}
       </div>

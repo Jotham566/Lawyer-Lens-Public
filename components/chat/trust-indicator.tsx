@@ -1,12 +1,18 @@
 "use client";
 
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { ShieldCheck, Info } from "lucide-react";
+import {
+  Collapsible,
+  CollapsibleContent,
+  CollapsibleTrigger,
+} from "@/components/ui/collapsible";
+import { ShieldCheck, Info, ChevronDown, HelpCircle, AlertTriangle } from "lucide-react";
 import type { VerificationStatus, ConfidenceInfo } from "@/lib/api/types";
 
 interface TrustIndicatorProps {
@@ -314,6 +320,200 @@ export function TrustIndicatorInline({
       </TooltipTrigger>
       <TooltipContent side="top" className="text-xs max-w-[200px]">
         {verification.message}
+      </TooltipContent>
+    </Tooltip>
+  );
+}
+
+/**
+ * Confidence factor labels for display
+ */
+const FACTOR_LABELS: Record<string, { label: string; description: string }> = {
+  source_coverage: {
+    label: "Source Coverage",
+    description: "How well the response is backed by legal sources",
+  },
+  claim_specificity: {
+    label: "Claim Specificity",
+    description: "How specific and precise the legal claims are",
+  },
+  citation_quality: {
+    label: "Citation Quality",
+    description: "Quality and relevance of cited legal documents",
+  },
+  legal_accuracy: {
+    label: "Legal Accuracy",
+    description: "Consistency with established legal principles",
+  },
+  context_match: {
+    label: "Context Match",
+    description: "How well the response addresses your specific question",
+  },
+  source_authority: {
+    label: "Source Authority",
+    description: "Weight of cited sources (Constitution, Acts, etc.)",
+  },
+};
+
+/**
+ * Get factor label and description
+ */
+function getFactorInfo(key: string): { label: string; description: string } {
+  return FACTOR_LABELS[key] || {
+    label: key.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase()),
+    description: "Contributing factor to confidence score"
+  };
+}
+
+/**
+ * ConfidenceFactors - Expandable explanation of confidence factors
+ */
+export function ConfidenceFactors({
+  confidenceInfo,
+  className,
+}: {
+  confidenceInfo: ConfidenceInfo;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = React.useState(false);
+  const factors = Object.entries(confidenceInfo.factors);
+
+  if (factors.length === 0) return null;
+
+  return (
+    <Collapsible open={isOpen} onOpenChange={setIsOpen} className={className}>
+      <CollapsibleTrigger
+        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        aria-expanded={isOpen}
+      >
+        <HelpCircle className="h-3 w-3" />
+        <span>Why this confidence?</span>
+        <ChevronDown
+          className={cn(
+            "h-3 w-3 transition-transform",
+            isOpen && "rotate-180"
+          )}
+        />
+      </CollapsibleTrigger>
+      <CollapsibleContent className="pt-2">
+        <div className="space-y-2 p-2 rounded-md bg-muted/50 border border-border/50">
+          <p className="text-[11px] text-muted-foreground">
+            Confidence is calculated based on multiple factors:
+          </p>
+          <div className="space-y-1.5">
+            {factors.map(([key, score]) => {
+              const { label, description } = getFactorInfo(key);
+              const scorePercent = Math.round(score * 100);
+              return (
+                <Tooltip key={key}>
+                  <TooltipTrigger asChild>
+                    <div className="space-y-0.5 cursor-help">
+                      <div className="flex items-center justify-between text-[11px]">
+                        <span className="text-muted-foreground">{label}</span>
+                        <span className="font-medium">{scorePercent}%</span>
+                      </div>
+                      <div className="h-1 w-full rounded-full bg-muted overflow-hidden">
+                        <div
+                          className={cn(
+                            "h-full rounded-full transition-all",
+                            scorePercent >= 80
+                              ? "bg-emerald-500"
+                              : scorePercent >= 60
+                              ? "bg-blue-500"
+                              : "bg-slate-400"
+                          )}
+                          style={{ width: `${scorePercent}%` }}
+                        />
+                      </div>
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent side="left" className="text-xs max-w-[200px]">
+                    {description}
+                  </TooltipContent>
+                </Tooltip>
+              );
+            })}
+          </div>
+        </div>
+      </CollapsibleContent>
+    </Collapsible>
+  );
+}
+
+/**
+ * UncertaintyDisclaimer - Shows when response has lower confidence
+ *
+ * Displayed for responses that may need additional verification
+ */
+export function UncertaintyDisclaimer({
+  verification,
+  className,
+}: {
+  verification: VerificationStatus;
+  className?: string;
+}) {
+  // Only show for unverified responses
+  if (verification.level !== "unverified") return null;
+
+  return (
+    <div
+      className={cn(
+        "flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800",
+        className
+      )}
+      role="alert"
+      aria-live="polite"
+    >
+      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      <div className="space-y-1">
+        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+          Verify this response
+        </p>
+        <p className="text-xs text-amber-700 dark:text-amber-300">
+          This response has limited source support. We recommend verifying the
+          information with primary legal sources before relying on it.
+        </p>
+        <div className="flex gap-2 pt-1">
+          <a
+            href="https://ulii.org"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-xs text-amber-700 dark:text-amber-300 underline hover:no-underline"
+          >
+            Uganda Legal Information Institute →
+          </a>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/**
+ * VerifyThisPrompt - Inline prompt suggesting verification
+ */
+export function VerifyThisPrompt({
+  className,
+}: {
+  className?: string;
+}) {
+  return (
+    <Tooltip>
+      <TooltipTrigger asChild>
+        <span
+          className={cn(
+            "inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 cursor-help",
+            className
+          )}
+        >
+          <AlertTriangle className="h-3 w-3" />
+          <span>Verify this</span>
+        </span>
+      </TooltipTrigger>
+      <TooltipContent side="top" className="max-w-xs p-2">
+        <p className="text-xs">
+          This information should be verified against primary legal sources.
+          Legal interpretations may vary and laws may have been amended.
+        </p>
       </TooltipContent>
     </Tooltip>
   );

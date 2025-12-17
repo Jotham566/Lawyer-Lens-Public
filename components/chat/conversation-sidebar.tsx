@@ -7,6 +7,7 @@ import {
   SheetContent,
   SheetHeader,
   SheetTitle,
+  SheetDescription,
   SheetTrigger,
 } from "@/components/ui/sheet";
 import {
@@ -208,6 +209,9 @@ export function MobileHistorySheet({
             <MessageSquare className="h-4 w-4" />
             Chat History
           </SheetTitle>
+          <SheetDescription className="sr-only">
+            Browse and manage your chat conversations
+          </SheetDescription>
         </SheetHeader>
         <div className="flex-1 overflow-y-auto p-2">
           <ConversationList

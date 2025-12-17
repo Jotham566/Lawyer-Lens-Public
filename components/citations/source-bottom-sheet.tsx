@@ -16,6 +16,8 @@ import {
 import {
   Sheet,
   SheetContent,
+  SheetTitle,
+  SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -128,6 +130,14 @@ export function SourceBottomSheet() {
           isExpanded ? "h-[80vh]" : "h-auto max-h-[60vh]"
         )}
       >
+        {/* Accessibility: Title and Description for screen readers */}
+        <SheetTitle className="sr-only">
+          Citation Details: {activeSource.title}
+        </SheetTitle>
+        <SheetDescription className="sr-only">
+          Viewing citation {activeCitationNumber} - {activeSource.document_type} document
+        </SheetDescription>
+
         {/* Drag handle */}
         <div className="flex justify-center py-2">
           <button

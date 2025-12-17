@@ -71,10 +71,23 @@ export function VirtualizedMessageList({
     if (messages.length > previousMessageCount.current && shouldAutoScroll) {
       // Use requestAnimationFrame to ensure DOM is updated
       requestAnimationFrame(() => {
-        virtualizer.scrollToIndex(messages.length - 1, {
-          align: "end",
-          behavior: "smooth",
-        });
+        // Safety check: only scroll if we have messages and virtualizer is ready
+        if (messages.length > 0 && parentRef.current) {
+          try {
+            virtualizer.scrollToIndex(messages.length - 1, {
+              align: "end",
+              behavior: "smooth",
+            });
+          } catch {
+            // Fallback: scroll container directly if virtualizer fails
+            if (parentRef.current) {
+              parentRef.current.scrollTo({
+                top: parentRef.current.scrollHeight,
+                behavior: "smooth",
+              });
+            }
+          }
+        }
       });
     }
     previousMessageCount.current = messages.length;
