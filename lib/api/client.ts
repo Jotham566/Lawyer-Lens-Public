@@ -50,6 +50,60 @@ export interface BackendAPIError {
 }
 
 /**
+ * Feature gating error details from backend
+ */
+export interface FeatureGatingDetails {
+  error: "feature_not_available";
+  message: string;
+  feature: string;
+  tier: string;
+  required_tier: string;
+}
+
+/**
+ * Feature display names for user-friendly messages
+ */
+const FEATURE_DISPLAY_NAMES: Record<string, string> = {
+  deep_research: "Deep Research",
+  contract_drafting: "Contract Drafting",
+  contract_analysis: "Contract Analysis",
+  document_upload: "Document Upload",
+  export_pdf: "PDF Export",
+  export_docx: "Word Export",
+  team_management: "Team Management",
+  sso_saml: "Single Sign-On (SSO)",
+  custom_integrations: "Custom Integrations",
+  api_access: "API Access",
+  audit_logs: "Audit Logs",
+};
+
+/**
+ * Tier display names
+ */
+const TIER_DISPLAY_NAMES: Record<string, string> = {
+  free: "Free",
+  professional: "Professional",
+  team: "Team",
+  enterprise: "Enterprise",
+};
+
+/**
+ * Get display name for a feature
+ */
+export function getFeatureDisplayName(feature: string | undefined | null): string {
+  if (!feature) return "This Feature";
+  return FEATURE_DISPLAY_NAMES[feature] || feature.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase());
+}
+
+/**
+ * Get display name for a tier
+ */
+export function getTierDisplayName(tier: string | undefined | null): string {
+  if (!tier) return "Unknown";
+  return TIER_DISPLAY_NAMES[tier] || tier.charAt(0).toUpperCase() + tier.slice(1);
+}
+
+/**
  * Custom API Error class for handling API errors
  */
 export class APIError extends Error {
@@ -95,6 +149,95 @@ export class APIError extends Error {
    */
   isRetryable(): boolean {
     return this.status >= 500 || this.status === 429 || this.isServiceUnavailable();
+  }
+
+  /**
+   * Check if this is a feature gating error (feature not available for tier)
+   */
+  isFeatureGatingError(): boolean {
+    // Check for 403 status with feature gating data
+    // The backend may return this directly (without error_code wrapper) or wrapped
+    if (this.status !== 403) {
+      return false;
+    }
+    // Check if it's feature gating data (direct or wrapped)
+    return this.isFeatureGatingData(this.data);
+  }
+
+  /**
+   * Get feature gating details if this is a feature gating error
+   */
+  getFeatureGatingDetails(): FeatureGatingDetails | null {
+    if (!this.isFeatureGatingError()) {
+      return null;
+    }
+
+    // The data might be nested in message as a string or as the details object
+    const data = this.data as Record<string, unknown>;
+
+    // Check if the message contains the feature gating error JSON
+    if (data?.message && typeof data.message === "string") {
+      try {
+        // Try to parse the message as JSON (backend sometimes sends it this way)
+        const parsed = JSON.parse(data.message.replace(/'/g, '"'));
+        if (parsed.error === "feature_not_available") {
+          return parsed as FeatureGatingDetails;
+        }
+      } catch {
+        // Check if message contains the error pattern
+        if (data.message.includes("feature_not_available")) {
+          // Parse the string representation
+          const match = data.message.match(/\{.*\}/);
+          if (match) {
+            try {
+              const parsed = JSON.parse(match[0].replace(/'/g, '"'));
+              return parsed as FeatureGatingDetails;
+            } catch {
+              // Fall through
+            }
+          }
+        }
+      }
+    }
+
+    // Check if data itself is the feature gating error
+    if (this.isFeatureGatingData(data)) {
+      return data as unknown as FeatureGatingDetails;
+    }
+
+    return null;
+  }
+
+  /**
+   * Type guard for feature gating error data
+   */
+  private isFeatureGatingData(data: unknown): boolean {
+    if (typeof data !== "object" || data === null) {
+      return false;
+    }
+    const obj = data as Record<string, unknown>;
+
+    // Check for direct feature gating error structure
+    if (obj.error === "feature_not_available" && obj.feature && obj.required_tier) {
+      return true;
+    }
+
+    // Check for nested message containing feature gating error
+    if (obj.message && typeof obj.message === "string") {
+      return obj.message.includes("feature_not_available") || obj.message.includes("not available on");
+    }
+
+    return false;
+  }
+
+  /**
+   * Check if this is a usage limit exceeded error
+   */
+  isUsageLimitError(): boolean {
+    return this.status === 403 && (
+      this.errorCode === "USAGE_LIMIT_EXCEEDED" ||
+      (this.message?.includes("limit") && this.message?.includes("exceeded"))
+    );
   }
 }
 
@@ -158,24 +301,46 @@ export async function apiFetch<T>(
  */
 export async function apiGet<T>(
   endpoint: string,
-  params?: Record<string, string | number | boolean | undefined>
+  paramsOrHeaders?: Record<string, string | number | boolean | undefined> | Record<string, string>,
+  headers?: Record<string, string>
 ): Promise<T> {
   let url = endpoint;
+  let requestHeaders: Record<string, string> | undefined;
 
-  if (params) {
-    const searchParams = new URLSearchParams();
-    Object.entries(params).forEach(([key, value]) => {
-      if (value !== undefined) {
-        searchParams.append(key, String(value));
+  // Handle both old signature (params) and new signature (headers only)
+  if (paramsOrHeaders) {
+    // Check if it's headers (has Authorization key) or params
+    if ('Authorization' in paramsOrHeaders) {
+      requestHeaders = paramsOrHeaders as Record<string, string>;
+    } else if (headers) {
+      // Both params and headers provided
+      const searchParams = new URLSearchParams();
+      Object.entries(paramsOrHeaders).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url = `${endpoint}?${queryString}`;
       }
-    });
-    const queryString = searchParams.toString();
-    if (queryString) {
-      url = `${endpoint}?${queryString}`;
+      requestHeaders = headers;
+    } else {
+      // Just params, no headers
+      const searchParams = new URLSearchParams();
+      Object.entries(paramsOrHeaders).forEach(([key, value]) => {
+        if (value !== undefined) {
+          searchParams.append(key, String(value));
+        }
+      });
+      const queryString = searchParams.toString();
+      if (queryString) {
+        url = `${endpoint}?${queryString}`;
+      }
     }
   }
 
-  return apiFetch<T>(url, { method: "GET" });
+  return apiFetch<T>(url, { method: "GET", headers: requestHeaders });
 }
 
 /**
@@ -183,11 +348,13 @@ export async function apiGet<T>(
  */
 export async function apiPost<T, D = unknown>(
   endpoint: string,
-  data?: D
+  data?: D,
+  headers?: Record<string, string>
 ): Promise<T> {
   return apiFetch<T>(endpoint, {
     method: "POST",
     body: data ? JSON.stringify(data) : undefined,
+    headers,
   });
 }
 

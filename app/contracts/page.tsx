@@ -67,6 +67,8 @@ import {
   type SourceType,
 } from "@/components/contracts";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
+import { useAuth } from "@/components/providers";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
 const phaseLabels: Record<string, { label: string; description: string }> = {
   requirements: {
@@ -101,6 +103,8 @@ const defaultParty: PartyInfo = {
 function ContractsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { accessToken } = useAuth();
+  const { refresh: refreshEntitlements } = useEntitlements();
   const initialDescription = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
 
@@ -145,10 +149,15 @@ function ContractsContent() {
 
     const pollInterval = setInterval(async () => {
       try {
-        const updatedSession = await getContractSession(session.session_id);
+        const updatedSession = await getContractSession(session.session_id, accessToken);
         if (updatedSession.phase !== "drafting") {
           setSession(updatedSession);
           clearInterval(pollInterval);
+          // Refresh entitlements to update usage counts after drafting completes
+          refreshEntitlements();
+        } else {
+          // Update session with progress during drafting
+          setSession(updatedSession);
         }
       } catch (err) {
         console.error("Polling error:", err);
@@ -156,12 +165,12 @@ function ContractsContent() {
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [session?.session_id, session?.phase]);
+  }, [session?.session_id, session?.phase, accessToken]); // Note: refreshEntitlements is stable from context
 
   const loadSession = async (sessionId: string) => {
     setIsLoading(true);
     try {
-      const sessionData = await getContractSession(sessionId);
+      const sessionData = await getContractSession(sessionId, accessToken);
       setSession(sessionData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load session");
@@ -213,7 +222,7 @@ function ContractsContent() {
         request.source_contract_id = selectedContractData.session_id;
       }
 
-      const newSession = await createContractSession(request);
+      const newSession = await createContractSession(request, accessToken);
       setSession(newSession);
       router.replace(`/contracts?session=${newSession.session_id}`);
     } catch (err) {
@@ -260,7 +269,8 @@ function ContractsContent() {
 
       const updatedSession = await submitContractRequirements(
         session.session_id,
-        requirements
+        requirements,
+        accessToken
       );
       setSession(updatedSession);
     } catch (err) {
@@ -284,10 +294,14 @@ function ContractsContent() {
           new_content: content,
         }));
 
-      const updatedSession = await submitContractReview(session.session_id, {
-        approved: true,
-        edits: edits.length > 0 ? edits : undefined,
-      });
+      const updatedSession = await submitContractReview(
+        session.session_id,
+        {
+          approved: true,
+          edits: edits.length > 0 ? edits : undefined,
+        },
+        accessToken
+      );
       setSession(updatedSession);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to approve contract");
@@ -782,8 +796,18 @@ function ContractsContent() {
     );
   }
 
-  // Drafting phase
+  // Drafting phase - Enhanced with progress display
   if (session?.phase === "drafting") {
+    const progress = session.progress_percent || 0;
+    const getProgressStep = (percent: number): string => {
+      if (percent < 20) return "Initializing contract generation...";
+      if (percent < 40) return "Analyzing template structure...";
+      if (percent < 60) return "Generating contract sections...";
+      if (percent < 80) return "Reviewing and refining clauses...";
+      if (percent < 95) return "Finalizing contract draft...";
+      return "Almost complete...";
+    };
+
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -796,7 +820,7 @@ function ContractsContent() {
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
                   <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
@@ -804,10 +828,27 @@ function ContractsContent() {
                   </div>
                 </div>
 
-                <h3 className="mt-6 font-semibold text-lg">Drafting Your Contract...</h3>
+                <h3 className="mt-6 font-semibold text-lg">Drafting Your Contract</h3>
                 <p className="mt-2 text-sm text-muted-foreground max-w-md">
-                  Our AI is generating a customized contract based on your requirements
-                  and Ugandan law.
+                  {getProgressStep(progress)}
+                </p>
+
+                {/* Progress bar */}
+                <div className="w-full max-w-md mt-6 space-y-2">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>Progress</span>
+                    <span>{progress}%</span>
+                  </div>
+                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-green-500 transition-all duration-500 ease-out"
+                      style={{ width: `${progress}%` }}
+                    />
+                  </div>
+                </div>
+
+                <p className="mt-4 text-xs text-muted-foreground">
+                  This typically takes 1-2 minutes for comprehensive contract generation.
                 </p>
               </div>
             </CardContent>

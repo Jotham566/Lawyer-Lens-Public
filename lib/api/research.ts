@@ -79,6 +79,11 @@ export interface ResearchSession {
 export interface CreateResearchRequest {
   query: string;
   context?: string;
+  /**
+   * Force deep research even for simple queries.
+   * Use when user explicitly selects "Deep Research" in the UI.
+   */
+  force_research?: boolean;
 }
 
 export interface ClarifyAnswers {
@@ -151,18 +156,28 @@ export interface ApproveBriefRequest {
  * Create a new research session
  */
 export async function createResearchSession(
-  request: CreateResearchRequest
+  request: CreateResearchRequest,
+  accessToken?: string | null
 ): Promise<ResearchSession> {
-  return apiPost<ResearchSession>("/research", request);
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiPost<ResearchSession>("/research", request, headers);
 }
 
 /**
  * Get research session status
  */
 export async function getResearchSession(
-  sessionId: string
+  sessionId: string,
+  accessToken?: string | null
 ): Promise<ResearchSession> {
-  return apiGet<ResearchSession>(`/research/${sessionId}`);
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiGet<ResearchSession>(`/research/${sessionId}`, headers);
 }
 
 /**
@@ -170,11 +185,16 @@ export async function getResearchSession(
  */
 export async function submitClarifyingAnswers(
   sessionId: string,
-  answers: ClarifyAnswers
+  answers: ClarifyAnswers,
+  accessToken?: string | null
 ): Promise<ResearchSession> {
   // Backend expects responses as a list of strings
   const responses = Object.values(answers);
-  return apiPost<ResearchSession>(`/research/${sessionId}/clarify`, { responses });
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiPost<ResearchSession>(`/research/${sessionId}/clarify`, { responses }, headers);
 }
 
 /**
@@ -182,22 +202,35 @@ export async function submitClarifyingAnswers(
  */
 export async function approveResearchBrief(
   sessionId: string,
-  request: ApproveBriefRequest
+  request: ApproveBriefRequest,
+  accessToken?: string | null
 ): Promise<ResearchSession> {
-  return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request);
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request, headers);
 }
 
 /**
  * Get final research report
  */
 export async function getResearchReport(
-  sessionId: string
+  sessionId: string,
+  accessToken?: string | null
 ): Promise<ResearchReport> {
-  return apiGet<ResearchReport>(`/research/${sessionId}/report`);
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiGet<ResearchReport>(`/research/${sessionId}/report`, headers);
 }
 
 /**
  * Stream research progress via SSE
+ *
+ * Backend sends named events: "progress", "complete", "error"
+ * We need to use addEventListener for named events, not onmessage
  */
 export function streamResearchProgress(
   sessionId: string,
@@ -208,10 +241,36 @@ export function streamResearchProgress(
   const url = `${getApiBaseUrl()}/research/${sessionId}/stream`;
   const eventSource = new EventSource(url);
 
+  // Listen for named "progress" events from backend
+  // Backend sends: event: progress\ndata: {...}
+  eventSource.addEventListener("progress", (event) => {
+    try {
+      const messageEvent = event as MessageEvent;
+      const data = JSON.parse(messageEvent.data);
+      // Transform backend format to frontend StreamProgress format
+      const progress: StreamProgress = {
+        phase: data.phase || "researching",
+        message: data.message || "Processing...",
+        progress: data.progress_percent || 0,
+        details: data.data,
+      };
+      onProgress(progress);
+    } catch (err) {
+      console.error("Failed to parse SSE progress message:", event, err);
+    }
+  });
+
+  // Also handle unnamed events as fallback
   eventSource.onmessage = (event) => {
     try {
-      const data = JSON.parse(event.data) as StreamProgress;
-      onProgress(data);
+      const data = JSON.parse(event.data);
+      const progress: StreamProgress = {
+        phase: data.phase || "researching",
+        message: data.message || "Processing...",
+        progress: data.progress_percent || 0,
+        details: data.data,
+      };
+      onProgress(progress);
     } catch {
       console.error("Failed to parse SSE message:", event.data);
     }

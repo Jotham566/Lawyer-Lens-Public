@@ -32,9 +32,14 @@ import {
   getSuggestedQuestions,
   createResearchSession,
 } from "@/lib/api";
+import { APIError } from "@/lib/api/client";
 import { useRequireAuth, useAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
 import { useEntitlements } from "@/hooks/use-entitlements";
+import {
+  UpgradeRequiredModal,
+  useUpgradeModal,
+} from "@/components/entitlements/upgrade-required-modal";
 import type {
   ChatMessage as ChatMessageType,
   ChatSource,
@@ -94,6 +99,14 @@ function ChatContent() {
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
+
+  // Upgrade modal for feature gating
+  const {
+    isOpen: upgradeModalOpen,
+    details: upgradeDetails,
+    showUpgradeModal,
+    hideUpgradeModal,
+  } = useUpgradeModal();
 
   // Focus edit input when editing
   useEffect(() => {
@@ -287,11 +300,23 @@ function ChatContent() {
         });
 
         try {
-          const session = await createResearchSession({ query: text });
+          // Pass force_research: true since user explicitly selected Deep Research
+          // This tells the backend to use deep research even for simple queries
+          const session = await createResearchSession(
+            { query: text, force_research: true },
+            accessToken
+          );
 
-          if (session.status === "redirect_to_chat") {
+          // Check if triage determined this should redirect to contract drafting
+          // Note: We no longer check redirect_to_chat since force_research overrides that
+          if (session.current_step === "redirect_to_contract") {
             setActiveToolExecution(null);
-            await handleRegularChat(text, activeConvId, messagesForHistory);
+            const assistantMessage: ChatMessageType = {
+              role: "assistant",
+              content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
+              timestamp: new Date().toISOString(),
+            };
+            addMessage(activeConvId, assistantMessage);
             return;
           }
 
@@ -318,7 +343,22 @@ function ChatContent() {
           addMessage(activeConvId, assistantMessage);
           setActiveToolExecution(null);
         } catch (err) {
+          setActiveToolExecution(null);
+
+          // Check for feature gating error (tier restriction)
+          if (err instanceof APIError && err.isFeatureGatingError()) {
+            const gatingDetails = err.getFeatureGatingDetails();
+            if (gatingDetails) {
+              showUpgradeModal(gatingDetails);
+              // Remove the user message since the feature isn't available
+              removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
+              return;
+            }
+          }
+
+          // Log unexpected errors
           console.error("Research error:", err);
+
           setActiveToolExecution({
             tool: toolToUse,
             query: text,
@@ -332,7 +372,6 @@ function ChatContent() {
             timestamp: new Date().toISOString(),
           };
           addMessage(activeConvId, errorMessage);
-          setActiveToolExecution(null);
         }
         return;
       }
@@ -372,7 +411,7 @@ function ChatContent() {
       setInput("");
       await handleRegularChat(text, activeConvId, messagesForHistory);
     },
-    [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage]
+    [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -596,6 +635,13 @@ function ChatContent() {
             </AlertDialogFooter>
           </AlertDialogContent>
         </AlertDialog>
+
+        {/* Upgrade Required Modal for Feature Gating */}
+        <UpgradeRequiredModal
+          open={upgradeModalOpen}
+          onClose={hideUpgradeModal}
+          details={upgradeDetails}
+        />
 
         {/* Citation Side Panel / Bottom Sheet */}
         <ResponsiveSourceView />

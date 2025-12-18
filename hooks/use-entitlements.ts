@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext } from "react";
+import { useState, useEffect, useCallback, createContext, useContext, useRef } from "react";
 
 export type SubscriptionTier = "free" | "professional" | "team" | "enterprise";
 
@@ -81,10 +81,17 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
   const [entitlements, setEntitlements] = useState<EntitlementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  // Track if this is the initial load - use ref to avoid callback recreation
+  // Only show loading skeleton on initial load, not on refresh
+  const isInitialLoadRef = useRef(true);
 
   const refresh = useCallback(async () => {
     try {
-      setLoading(true);
+      // Only set loading=true on initial load to avoid unmounting children in FeatureGate
+      // This prevents ResearchContent from losing state when refreshEntitlements is called
+      if (isInitialLoadRef.current) {
+        setLoading(true);
+      }
       setError(null);
 
       // Get access token from localStorage (must match auth-provider.tsx key)
@@ -153,6 +160,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       });
     } finally {
       setLoading(false);
+      isInitialLoadRef.current = false;
     }
   }, []);
 

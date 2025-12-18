@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, Suspense } from "react";
+import { useState, useEffect, useCallback, useRef, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageErrorBoundary } from "@/components/error-boundary";
@@ -53,6 +53,8 @@ import {
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
+import { useAuth } from "@/components/providers";
+import { useEntitlements } from "@/hooks/use-entitlements";
 
 // Map backend status values to UI labels
 const statusLabels: Record<string, { label: string; description: string }> = {
@@ -82,9 +84,27 @@ const statusLabels: Record<string, { label: string; description: string }> = {
   },
 };
 
+// Get default progress message based on status
+function getDefaultProgressMessage(status: string): string {
+  switch (status) {
+    case "researching":
+      return "Searching legal databases and analyzing sources...";
+    case "writing":
+      return "Generating comprehensive research report...";
+    case "complete":
+      return "Research complete!";
+    case "error":
+      return "An error occurred during research.";
+    default:
+      return "Processing your research request...";
+  }
+}
+
 function ResearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { accessToken } = useAuth();
+  const { refresh: refreshEntitlements } = useEntitlements();
   const initialQuery = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
 
@@ -153,8 +173,33 @@ function ResearchContent() {
   const loadSession = async (sessionId: string) => {
     setIsLoading(true);
     try {
-      const sessionData = await getResearchSession(sessionId);
-      setSession(sessionData);
+      const sessionData = await getResearchSession(sessionId, accessToken);
+
+      // Use status (not phase) to determine what to show
+      // Check for redirect cases first - these are "complete" but have no report
+      if (sessionData.current_step === "redirect_to_chat") {
+        setSession(sessionData);
+        setError("This query was handled by regular chat. Deep research is for complex legal questions requiring multi-source analysis.");
+      } else if (sessionData.current_step === "redirect_to_contract") {
+        setSession(sessionData);
+        setError("This query is better suited for contract drafting. Please use the Contracts feature.");
+      } else if (sessionData.status === "complete") {
+        // For complete status, fetch report FIRST to avoid flickering
+        let reportData = sessionData.report;
+        if (!reportData) {
+          reportData = await getResearchReport(sessionId, accessToken);
+        }
+        // Set report before session to avoid "complete but no report" flicker
+        setReport(reportData);
+        setSession(sessionData);
+        // Refresh entitlements to update usage counts
+        refreshEntitlements();
+      } else if (["researching", "writing"].includes(sessionData.status)) {
+        setSession(sessionData);
+        startProgressStream(sessionId);
+      } else {
+        setSession(sessionData);
+      }
 
       // Track session in store
       addSession({
@@ -165,19 +210,6 @@ function ResearchContent() {
         createdAt: sessionData.created_at,
         reportReady: sessionData.status === "complete",
       });
-
-      // Use status (not phase) to determine what to show
-      if (sessionData.status === "complete") {
-        // Report is included in session response when complete
-        if (sessionData.report) {
-          setReport(sessionData.report);
-        } else {
-          const reportData = await getResearchReport(sessionId);
-          setReport(reportData);
-        }
-      } else if (["researching", "writing"].includes(sessionData.status)) {
-        startProgressStream(sessionId);
-      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load session");
     } finally {
@@ -192,7 +224,7 @@ function ResearchContent() {
     setError(null);
 
     try {
-      const newSession = await createResearchSession({ query: query.trim() });
+      const newSession = await createResearchSession({ query: query.trim() }, accessToken);
       setSession(newSession);
 
       // Track new session in store
@@ -222,7 +254,8 @@ function ResearchContent() {
     try {
       const updatedSession = await submitClarifyingAnswers(
         session.session_id,
-        clarifyAnswers
+        clarifyAnswers,
+        accessToken
       );
       setSession(updatedSession);
     } catch (err) {
@@ -263,7 +296,7 @@ function ResearchContent() {
         },
       };
 
-      const updatedSession = await approveResearchBrief(session.session_id, briefRequest);
+      const updatedSession = await approveResearchBrief(session.session_id, briefRequest, accessToken);
       setSession(updatedSession);
       setIsEditingBrief(false);
       startProgressStream(session.session_id);
@@ -448,18 +481,89 @@ function ResearchContent() {
     }
   }, [report]);
 
+  // Polling fallback for when SSE fails
+  const pollingRef = useRef<NodeJS.Timeout | null>(null);
+
+  const stopPolling = useCallback(() => {
+    if (pollingRef.current) {
+      clearInterval(pollingRef.current);
+      pollingRef.current = null;
+    }
+  }, []);
+
+  const startPolling = useCallback((sessionId: string) => {
+    // Poll every 3 seconds
+    pollingRef.current = setInterval(async () => {
+      try {
+        const sessionData = await getResearchSession(sessionId, accessToken);
+
+        // Check for completion FIRST - don't update session until report is ready
+        if (sessionData.status === "complete") {
+          stopPolling();
+
+          // Fetch report first, then update all state together
+          let reportData = sessionData.report;
+          if (!reportData) {
+            reportData = await getResearchReport(sessionId, accessToken);
+          }
+
+          // Update both report and session together to avoid flickering
+          setReport(reportData);
+          setSession(sessionData);
+
+          updateStoredSession(sessionId, {
+            status: "complete",
+            title: reportData?.title || sessionData.query.slice(0, 60),
+            reportReady: true,
+          });
+          // Refresh entitlements to update usage counts
+          refreshEntitlements();
+        } else if (sessionData.status === "error") {
+          stopPolling();
+          setSession(sessionData);
+          setError(sessionData.error || "Research failed");
+          updateStoredSession(sessionId, { status: "error" });
+        } else {
+          // Only update session for non-complete states
+          setSession(sessionData);
+
+          // Update progress from session data
+          setProgress({
+            phase: sessionData.status,
+            message: sessionData.current_step || getDefaultProgressMessage(sessionData.status),
+            progress: sessionData.progress_percent || 0,
+          });
+        }
+      } catch (err) {
+        console.error("Polling error:", err);
+        // Don't stop polling on transient errors
+      }
+    }, 3000);
+  }, [accessToken, stopPolling, updateStoredSession]); // Note: refreshEntitlements is stable from context
+
   const startProgressStream = useCallback((sessionId: string) => {
-    const cleanup = streamResearchProgress(
+    let sseCleanup: (() => void) | null = null;
+    let usePolling = false;
+
+    // Set initial progress message
+    setProgress({
+      phase: "researching",
+      message: "Connecting to research stream...",
+      progress: 0,
+    });
+
+    sseCleanup = streamResearchProgress(
       sessionId,
       (progressData) => {
         setProgress(progressData);
       },
       async () => {
         // On complete, fetch the report
+        stopPolling();
         try {
-          const reportData = await getResearchReport(sessionId);
+          const reportData = await getResearchReport(sessionId, accessToken);
           setReport(reportData);
-          const sessionData = await getResearchSession(sessionId);
+          const sessionData = await getResearchSession(sessionId, accessToken);
           setSession(sessionData);
 
           // Update stored session with completion status
@@ -468,19 +572,33 @@ function ResearchContent() {
             title: reportData.title,
             reportReady: true,
           });
+
+          // Refresh entitlements to update usage counts
+          refreshEntitlements();
         } catch (err) {
           setError(err instanceof Error ? err.message : "Failed to load report");
         }
       },
-      (errorMsg) => {
-        setError(errorMsg);
-        // Update stored session with error status
-        updateStoredSession(sessionId, { status: "error" });
+      (_errorMsg) => {
+        // SSE failed - fall back to polling instead of showing error
+        if (!usePolling) {
+          usePolling = true;
+          console.log("SSE stream failed, falling back to polling");
+          setProgress({
+            phase: "researching",
+            message: "Research in progress...",
+            progress: 5,
+          });
+          startPolling(sessionId);
+        }
       }
     );
 
-    return cleanup;
-  }, [updateStoredSession]);
+    return () => {
+      if (sseCleanup) sseCleanup();
+      stopPolling();
+    };
+  }, [accessToken, startPolling, stopPolling, updateStoredSession]); // Note: refreshEntitlements is stable from context
 
   const renderPhaseIndicator = () => {
     if (!session) return null;
@@ -1002,6 +1120,9 @@ function ResearchContent() {
 
   // Researching/Writing phase
   if (session?.status === "researching" || session?.status === "writing") {
+    const progressPercent = progress?.progress ?? (session.progress_percent || 0);
+    const progressMessage = progress?.message || session.current_step || getDefaultProgressMessage(session.status);
+
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -1014,7 +1135,7 @@ function ResearchContent() {
 
           <Card>
             <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-12 text-center">
+              <div className="flex flex-col items-center justify-center py-8 text-center">
                 <div className="relative">
                   <div className="absolute inset-0 rounded-full bg-primary/20 animate-ping" />
                   <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
@@ -1024,23 +1145,48 @@ function ResearchContent() {
 
                 <h3 className="mt-6 font-semibold text-lg">
                   {session.status === "researching"
-                    ? "Researching..."
-                    : "Writing Report..."}
+                    ? "Researching Your Query..."
+                    : "Writing Your Report..."}
                 </h3>
 
-                {progress && (
-                  <div className="mt-4 space-y-2 max-w-md">
-                    <p className="text-sm text-muted-foreground">{progress.message}</p>
-                    {progress.progress !== undefined && (
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div
-                          className="h-full bg-primary transition-all duration-500"
-                          style={{ width: `${progress.progress}%` }}
-                        />
-                      </div>
-                    )}
+                <p className="mt-2 text-sm text-muted-foreground max-w-md">
+                  {progressMessage}
+                </p>
+
+                {/* Progress bar */}
+                <div className="mt-4 w-full max-w-md space-y-1">
+                  <div className="flex justify-between text-xs text-muted-foreground">
+                    <span>{session.status === "researching" ? "Analyzing sources" : "Generating report"}</span>
+                    <span>{progressPercent}%</span>
+                  </div>
+                  <div className="h-2 bg-muted rounded-full overflow-hidden">
+                    <div
+                      className="h-full bg-primary transition-all duration-500"
+                      style={{ width: `${Math.max(progressPercent, 5)}%` }}
+                    />
+                  </div>
+                </div>
+
+                {/* Show research topics if available */}
+                {session.research_brief?.topics && session.research_brief.topics.length > 0 && (
+                  <div className="mt-6 w-full max-w-md text-left">
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Research Topics:</p>
+                    <div className="space-y-1">
+                      {session.research_brief.topics.slice(0, 4).map((topic, idx) => (
+                        <div key={topic.id} className="flex items-center gap-2 text-xs">
+                          <div className={`h-2 w-2 rounded-full ${
+                            progressPercent > (idx + 1) * 20 ? "bg-green-500" : "bg-muted-foreground/30"
+                          }`} />
+                          <span className="text-muted-foreground truncate">{topic.title}</span>
+                        </div>
+                      ))}
+                    </div>
                   </div>
                 )}
+
+                <p className="mt-6 text-xs text-muted-foreground">
+                  This may take a few minutes for comprehensive research.
+                </p>
               </div>
             </CardContent>
           </Card>
@@ -1193,6 +1339,34 @@ function ResearchContent() {
               </Card>
             )}
           </div>
+        </div>
+      </TooltipProvider>
+    );
+  }
+
+  // Complete status but report still loading
+  if (session?.status === "complete" && !report) {
+    return (
+      <TooltipProvider>
+        <div className="container mx-auto max-w-3xl px-4 py-8">
+          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Chat
+          </Link>
+
+          <Card>
+            <CardContent className="pt-6">
+              <div className="flex flex-col items-center justify-center py-8 text-center">
+                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+                  <Loader2 className="h-8 w-8 text-primary animate-spin" />
+                </div>
+                <h3 className="mt-4 font-semibold text-lg">Loading Report...</h3>
+                <p className="mt-2 text-sm text-muted-foreground max-w-md">
+                  Your research is complete. Loading the report...
+                </p>
+              </div>
+            </CardContent>
+          </Card>
         </div>
       </TooltipProvider>
     );
