@@ -4,6 +4,7 @@ import "./globals.css";
 import "katex/dist/katex.min.css";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/layout";
+import { Toaster } from "sonner";
 
 // Use local font with system font fallbacks (avoids Google Fonts network issues during build)
 const inter = localFont({
@@ -112,6 +113,7 @@ export default function RootLayout({
       >
         <Providers>
           <AppShell>{children}</AppShell>
+          <Toaster richColors position="top-right" />
         </Providers>
       </body>
     </html>

@@ -15,6 +15,8 @@ import {
   Clock,
   UserPlus,
   Settings,
+  Database,
+  Key,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -358,6 +360,18 @@ function AdminDashboardContent() {
             description="Configure SSO and security"
             icon={Shield}
             href="/admin/security"
+          />
+          <QuickActionCard
+            title="Knowledge Base"
+            description="Upload and search internal docs"
+            icon={Database}
+            href="/knowledge-base"
+          />
+          <QuickActionCard
+            title="API Integrations"
+            description="Manage API keys for integrations"
+            icon={Key}
+            href="/admin/integrations"
           />
         </div>
       </div>

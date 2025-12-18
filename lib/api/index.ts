@@ -129,6 +129,43 @@ export {
   type RefreshTokenRequest,
 } from "./auth";
 
+// Knowledge Base API
+export {
+  uploadDocument,
+  listDocuments,
+  getDocument as getKBDocument,
+  getDocumentStatus,
+  deleteDocument as deleteKBDocument,
+  searchKnowledgeBase,
+  getKnowledgeBaseStats,
+  formatFileSize,
+  getStatusColor,
+  type OrgDocument,
+  type OrgDocumentListResponse,
+  type DocumentUploadResponse,
+  type DocumentSearchResult,
+  type DocumentSearchResponse,
+  type KnowledgeBaseStats,
+  type ProcessingStatus,
+  type DocumentStatus as KBDocumentStatus,
+} from "./knowledge-base";
+
+// Integrations API (API Keys)
+export {
+  getAvailableScopes,
+  listAPIKeys,
+  createAPIKey,
+  revokeAPIKey,
+  getAPIKeyUsage,
+  type APIKeyScope,
+  type APIKey,
+  type APIKeyCreateRequest,
+  type APIKeyCreateResponse,
+  type APIKeyListResponse,
+  type AvailableScopesResponse,
+  type UsageStats,
+} from "./integrations";
+
 // Types
 export type {
   // Document types
