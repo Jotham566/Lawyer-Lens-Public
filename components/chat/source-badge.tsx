@@ -12,21 +12,12 @@ interface DeduplicatedSource {
   count: number;
 }
 
-// Get icon based on document type
-function getDocumentIcon(documentType: string) {
-  switch (documentType) {
-    case "act":
-      return ScrollText;
-    case "judgment":
-      return Scale;
-    case "regulation":
-      return BookOpen;
-    case "constitution":
-      return BookOpen;
-    default:
-      return FileText;
-  }
-}
+const documentIconMap: Record<string, typeof FileText> = {
+  act: ScrollText,
+  judgment: Scale,
+  regulation: BookOpen,
+  constitution: BookOpen,
+};
 
 // Get subtle accent color based on document type
 function getAccentClass(documentType: string): string {
@@ -50,7 +41,7 @@ interface SourceItemProps {
 }
 
 function SourceItem({ source, count }: SourceItemProps) {
-  const Icon = getDocumentIcon(source.document_type);
+  const Icon = documentIconMap[source.document_type] || FileText;
   const accentClass = getAccentClass(source.document_type);
 
   return (

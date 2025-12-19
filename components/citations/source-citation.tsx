@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Scale, Gavel, ScrollText, Table2 } from "lucide-react";
+import { FileText, Scale, Gavel, ScrollText, Table2, type LucideIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -21,23 +21,12 @@ interface SourceCitationProps {
   children?: React.ReactNode;
 }
 
-/**
- * Get icon for document type
- */
-function getDocumentIcon(type: DocumentType) {
-  switch (type) {
-    case "act":
-      return FileText;
-    case "judgment":
-      return Gavel;
-    case "regulation":
-      return ScrollText;
-    case "constitution":
-      return Scale;
-    default:
-      return FileText;
-  }
-}
+const documentIconMap: Record<DocumentType, LucideIcon> = {
+  act: FileText,
+  judgment: Gavel,
+  regulation: ScrollText,
+  constitution: Scale,
+};
 
 /**
  * Get color classes for document type badge
@@ -246,7 +235,7 @@ export function SourceCitation({
   // For single source
   if (relevantSources.length === 1) {
     const source = relevantSources[0];
-    const Icon = getDocumentIcon(source.document_type);
+    const Icon = documentIconMap[source.document_type] || FileText;
     const tableInfo = detectTableInfo(source.excerpt);
     const sectionRef = source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt);
     const relevanceLevel = source.relevance_score > 0 ? getRelevanceLevel(source.relevance_score) : null;
@@ -323,7 +312,7 @@ export function SourceCitation({
               </span>
             ) : (
               <span className="block text-xs leading-relaxed text-foreground/80 line-clamp-3">
-                "{truncate(source.excerpt, 150)}"
+                &quot;{truncate(source.excerpt, 150)}&quot;
               </span>
             )}
 
@@ -382,7 +371,7 @@ export function SourceCitation({
             {relevantSources.length} Sources (click for details)
           </span>
           {relevantSources.map((source, idx) => {
-            const Icon = getDocumentIcon(source.document_type);
+            const Icon = documentIconMap[source.document_type] || FileText;
             const tableInfo = detectTableInfo(source.excerpt);
             return (
               <span key={`${source.document_id}-${idx}`} className="block mb-2 last:mb-0">
@@ -414,7 +403,7 @@ export function SourceCitation({
                   </span>
                 ) : (
                   <span className="block text-[11px] text-muted-foreground ml-4 line-clamp-2">
-                    "{truncate(source.excerpt, 80)}"
+                    &quot;{truncate(source.excerpt, 80)}&quot;
                   </span>
                 )}
               </span>

@@ -12,6 +12,7 @@ import {
   ExternalLink,
   PanelRight,
   Table2,
+  type LucideIcon,
 } from "lucide-react";
 import {
   Tooltip,
@@ -26,15 +27,12 @@ import { useCitationOptional } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
 
 // Document type utilities
-function getDocumentIcon(type: DocumentType) {
-  switch (type) {
-    case "act": return FileText;
-    case "judgment": return Gavel;
-    case "regulation": return ScrollText;
-    case "constitution": return Scale;
-    default: return FileText;
-  }
-}
+const documentIconMap: Record<DocumentType, LucideIcon> = {
+  act: FileText,
+  judgment: Gavel,
+  regulation: ScrollText,
+  constitution: Scale,
+};
 
 function getTypeBadgeColor(type: DocumentType) {
   switch (type) {
@@ -131,7 +129,7 @@ export function CitationHoverPreview({
   const [copied, setCopied] = React.useState(false);
   const citationContext = useCitationOptional();
 
-  const Icon = getDocumentIcon(source.document_type);
+  const Icon = documentIconMap[source.document_type] || FileText;
   const sectionRef = formatSectionRef(source);
   const tableInfo = detectTableInfo(source.excerpt);
 

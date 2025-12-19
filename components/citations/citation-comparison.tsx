@@ -1,6 +1,6 @@
 "use client";
 
-import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight } from "lucide-react";
+import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -10,15 +10,12 @@ import { useCitation } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
 
 // Document type utilities (shared with source-panel)
-function getDocumentIcon(type: DocumentType) {
-  switch (type) {
-    case "act": return FileText;
-    case "judgment": return Gavel;
-    case "regulation": return ScrollText;
-    case "constitution": return Scale;
-    default: return FileText;
-  }
-}
+const documentIconMap: Record<DocumentType, LucideIcon> = {
+  act: FileText,
+  judgment: Gavel,
+  regulation: ScrollText,
+  constitution: Scale,
+};
 
 function getTypeColor(type: DocumentType) {
   switch (type) {
@@ -67,7 +64,7 @@ interface ComparisonCardProps {
 }
 
 function ComparisonCard({ source, citationNumber, onRemove }: ComparisonCardProps) {
-  const Icon = getDocumentIcon(source.document_type);
+  const Icon = documentIconMap[source.document_type] || FileText;
   const colors = getTypeColor(source.document_type);
 
   const sectionRef = source.legal_reference || source.section || null;
@@ -247,7 +244,7 @@ export function CitationComparison() {
           <div className="flex flex-wrap gap-2">
             {allSources.map((source, index) => {
               const isSelected = selectedForCompare.includes(index);
-              const Icon = getDocumentIcon(source.document_type);
+              const Icon = documentIconMap[source.document_type];
               const colors = getTypeColor(source.document_type);
 
               return (

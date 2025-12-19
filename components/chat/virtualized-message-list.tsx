@@ -54,6 +54,7 @@ export function VirtualizedMessageList({
     setShouldAutoScroll(isNearBottom);
   }, []);
 
+  // eslint-disable-next-line react-hooks/incompatible-library
   const virtualizer = useVirtualizer({
     count: messages.length + (error ? 1 : 0), // Add 1 for error item if present
     getScrollElement: () => parentRef.current,

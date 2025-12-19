@@ -14,6 +14,7 @@ import {
   Loader2,
   ArrowLeftRight,
   GripVertical,
+  type LucideIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -29,15 +30,12 @@ import { useCitation } from "./citation-context";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
 
 // Document type utilities
-function getDocumentIcon(type: DocumentType) {
-  switch (type) {
-    case "act": return FileText;
-    case "judgment": return Gavel;
-    case "regulation": return ScrollText;
-    case "constitution": return Scale;
-    default: return FileText;
-  }
-}
+const documentIconMap: Record<DocumentType, LucideIcon> = {
+  act: FileText,
+  judgment: Gavel,
+  regulation: ScrollText,
+  constitution: Scale,
+};
 
 function getTypeColor(type: DocumentType) {
   switch (type) {
@@ -460,7 +458,7 @@ export function SourcePanel() {
 
   if (!activeSource) return null;
 
-  const Icon = getDocumentIcon(activeSource.document_type);
+  const Icon = documentIconMap[activeSource.document_type] || FileText;
   const colors = getTypeColor(activeSource.document_type);
   const sectionRef = formatSectionFromData(sectionData) || formatSectionRef(activeSource);
   // Always fall back to activeSource.excerpt - this shows immediately without any state reset
