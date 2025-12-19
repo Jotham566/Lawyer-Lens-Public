@@ -98,9 +98,27 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
   // Track if this is the initial load - use ref to avoid callback recreation
   // Only show loading skeleton on initial load, not on refresh
   const isInitialLoadRef = useRef(true);
+  // Track the current refresh version to ignore stale responses
+  // This prevents race conditions when multiple refreshes are triggered
+  const refreshVersionRef = useRef(0);
+  // Track the AbortController for the current fetch
+  const abortControllerRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async (options: RefreshOptions = {}) => {
     const { forceLoading = false, reset = false } = options;
+
+    // Abort any in-flight request to prevent race conditions
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    
+    // Increment version and capture it for this request
+    refreshVersionRef.current += 1;
+    const thisVersion = refreshVersionRef.current;
+    
+    // Create new abort controller for this request
+    const abortController = new AbortController();
+    abortControllerRef.current = abortController;
 
     try {
       // Allow callers to force a loading state (e.g., on auth changes) and optionally clear stale data
@@ -132,14 +150,40 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
         headers.Authorization = `Bearer ${accessToken}`;
       }
 
-      const response = await fetch("/api/billing/entitlements", { headers });
+      const response = await fetch("/api/billing/entitlements", { 
+        headers,
+        signal: abortController.signal,
+      });
+      
+      // Check if this request is still the latest one
+      if (thisVersion !== refreshVersionRef.current) {
+        // A newer request was started, ignore this response
+        return;
+      }
+      
       if (!response.ok) {
         throw new Error("Failed to fetch entitlements");
       }
 
       const data = await response.json();
+      
+      // Double-check version again after parsing JSON
+      if (thisVersion !== refreshVersionRef.current) {
+        return;
+      }
+      
       setEntitlements(data);
     } catch (err) {
+      // Ignore aborted requests - a newer request is in flight
+      if (err instanceof Error && err.name === 'AbortError') {
+        return;
+      }
+      
+      // Check if this request is still the latest one
+      if (thisVersion !== refreshVersionRef.current) {
+        return;
+      }
+      
       setError(err instanceof Error ? err.message : "Unknown error");
       // Set default free tier entitlements on error (match API route defaults)
       setEntitlements({
@@ -187,12 +231,22 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
         period_end: new Date().toISOString(),
       });
     } finally {
+      // Only update loading state if this is still the latest request
+      if (thisVersion !== refreshVersionRef.current) {
+        return;
+      }
+      
       setLoading(false);
       setIsRefreshing(false);
       // Mark as initialized after first successful load (even if it failed with fallback data)
       if (isInitialLoadRef.current) {
         // Delay setting hasInitialized to ensure React has finished state updates
-        setTimeout(() => setHasInitialized(true), 50);
+        setTimeout(() => {
+          // Final check before setting initialized - ensure no newer request started
+          if (thisVersion === refreshVersionRef.current) {
+            setHasInitialized(true);
+          }
+        }, 50);
       }
       isInitialLoadRef.current = false;
     }
