@@ -411,7 +411,7 @@ function ChatContent() {
       setInput("");
       await handleRegularChat(text, activeConvId, messagesForHistory);
     },
-    [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
+    [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom, accessToken]
   );
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {

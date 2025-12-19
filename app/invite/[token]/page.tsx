@@ -53,6 +53,17 @@ export default function InvitationPage({
   const [accepting, setAccepting] = useState(false);
   const [accepted, setAccepted] = useState(false);
 
+  // Auto-redirect to dashboard after accepting
+  useEffect(() => {
+    if (!accepted) return;
+
+    const timer = setTimeout(() => {
+      router.push("/dashboard");
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [accepted, router]);
+
   // Load invitation details
   useEffect(() => {
     async function loadInvitation() {
@@ -128,16 +139,6 @@ export default function InvitationPage({
       </div>
     );
   }
-
-  // Auto-redirect to dashboard after accepting
-  useEffect(() => {
-    if (accepted) {
-      const timer = setTimeout(() => {
-        router.push("/dashboard");
-      }, 2000);
-      return () => clearTimeout(timer);
-    }
-  }, [accepted, router]);
 
   if (accepted) {
     return (

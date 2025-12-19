@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef } from "react";
+import { useState, useEffect, Suspense, useRef, useCallback } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -67,7 +67,7 @@ import {
   type SourceType,
 } from "@/components/contracts";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useAuth } from "@/components/providers";
+import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 
 const phaseLabels: Record<string, { label: string; description: string }> = {
@@ -133,12 +133,24 @@ function ContractsContent() {
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
 
+  const loadSession = useCallback(async (sessionId: string) => {
+    setIsLoading(true);
+    try {
+      const sessionData = await getContractSession(sessionId, accessToken);
+      setSession(sessionData);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load session");
+    } finally {
+      setIsLoading(false);
+    }
+  }, [accessToken]);
+
   // Load existing session if session ID provided
   useEffect(() => {
     if (sessionIdParam) {
       loadSession(sessionIdParam);
     }
-  }, [sessionIdParam]);
+  }, [sessionIdParam, loadSession]);
 
   // Note: Auto-start behavior removed - user must click "Start Drafting" explicitly
   // The initialDescription from ?q= param is pre-filled in the textarea for convenience
@@ -165,19 +177,7 @@ function ContractsContent() {
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [session?.session_id, session?.phase, accessToken]); // Note: refreshEntitlements is stable from context
-
-  const loadSession = async (sessionId: string) => {
-    setIsLoading(true);
-    try {
-      const sessionData = await getContractSession(sessionId, accessToken);
-      setSession(sessionData);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load session");
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  }, [session?.session_id, session?.phase, session, accessToken, refreshEntitlements]);
 
   // Infer contract type from description
   const inferContractType = (text: string): string => {
@@ -868,7 +868,7 @@ function ContractsContent() {
       }
     };
 
-    const handleSaveSection = (_sectionId: string) => {
+    const handleSaveSection = () => {
       setEditingSection(null);
     };
 
@@ -1180,7 +1180,7 @@ function ContractsContent() {
                                       }
                                       // Cmd/Ctrl + Enter to save
                                       if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                                        handleSaveSection(sectionId);
+                                        handleSaveSection();
                                       }
                                     }}
                                     className="min-h-[250px] font-serif text-base leading-relaxed resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
@@ -1210,7 +1210,7 @@ function ContractsContent() {
                                       </Button>
                                       <Button
                                         size="sm"
-                                        onClick={() => handleSaveSection(sectionId)}
+                                        onClick={() => handleSaveSection()}
                                         className="bg-primary"
                                       >
                                         <Check className="h-4 w-4 mr-1" />
@@ -1457,6 +1457,19 @@ function ContractsContent() {
 }
 
 export default function ContractsPage() {
+  // Require authentication - redirects to login if not authenticated
+  const { isLoading: authLoading } = useRequireAuth();
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-8">
+        <Skeleton className="h-8 w-48 mb-8" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <Suspense
       fallback={

@@ -80,6 +80,7 @@ export default function OrganizationSettingsPage() {
           description: org.description || "",
         });
       } catch (err) {
+        console.error("Failed to load organization:", err);
         setError("Failed to load organization");
       } finally {
         setLoading(false);

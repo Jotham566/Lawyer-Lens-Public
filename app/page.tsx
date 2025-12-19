@@ -24,6 +24,8 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { cn } from "@/lib/utils";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
+import { useAuth } from "@/components/providers";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
 
 const searchModes = [
   {
@@ -127,6 +129,8 @@ const features = [
 
 export default function HomePage() {
   const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
@@ -143,16 +147,26 @@ export default function HomePage() {
       const query = encodeURIComponent(searchQuery.trim());
 
       if (searchMode === "ai") {
-        // Smart Search goes to chat for answers with citations
+        // Smart Search requires authentication for chat
+        if (!isAuthenticated) {
+          // Store the intended destination with query and show login modal
+          openLogin(`/chat?q=${query}`);
+          return;
+        }
         router.push(`/chat?q=${query}`);
       } else {
-        // Keyword Search goes to search page
+        // Keyword Search is available to all users
         router.push(`/search?q=${query}&mode=keyword`);
       }
     }
   };
 
   const handleSuggestedQuery = (query: string) => {
+    // Suggested queries go to Smart Search (chat), require auth
+    if (!isAuthenticated) {
+      openLogin(`/chat?q=${encodeURIComponent(query)}`);
+      return;
+    }
     router.push(`/chat?q=${encodeURIComponent(query)}`);
   };
 

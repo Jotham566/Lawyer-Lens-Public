@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -19,6 +19,7 @@ import {
   HeadphonesIcon,
 } from "lucide-react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface PlanFeature {
   name: string;
@@ -91,6 +92,7 @@ const plans = [
 ];
 
 export default function PlansPage() {
+  const router = useRouter();
   const [annual, setAnnual] = useState(false);
 
   const getPrice = (price: number | null) => {
@@ -100,15 +102,15 @@ export default function PlansPage() {
     return annual ? `$${annualPrice}/year` : `$${price}/mo`;
   };
 
-  const handleSelectPlan = (planId: string) => {
+  const handleSelectPlan = useCallback((planId: string) => {
     if (planId === "enterprise") {
       // Open contact form or redirect to contact page
-      window.location.href = "/contact?subject=enterprise";
+      router.push("/contact?subject=enterprise");
       return;
     }
     // Redirect to checkout with plan and billing preference
-    window.location.href = `/billing/checkout?plan=${planId}&annual=${annual}`;
-  };
+    router.push(`/billing/checkout?plan=${planId}&annual=${annual}`);
+  }, [annual, router]);
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">

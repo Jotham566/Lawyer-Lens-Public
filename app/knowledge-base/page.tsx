@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import {
   Database,
@@ -61,7 +61,7 @@ function KnowledgeBaseContent() {
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-  const loadStats = async () => {
+  const loadStats = useCallback(async () => {
     if (!accessToken) return;
 
     try {
@@ -72,11 +72,11 @@ function KnowledgeBaseContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken]);
 
   useEffect(() => {
     loadStats();
-  }, [accessToken, refreshTrigger]);
+  }, [accessToken, refreshTrigger, loadStats]);
 
   const handleUploadComplete = () => {
     setRefreshTrigger((t) => t + 1);
@@ -98,7 +98,7 @@ function KnowledgeBaseContent() {
               Knowledge Base
             </h1>
             <p className="text-muted-foreground mt-1">
-              Upload and search your organization's internal documents
+              Upload and search your organization&apos;s internal documents
             </p>
           </div>
         </div>

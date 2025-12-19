@@ -157,6 +157,7 @@ export default function SecuritySettingsPage() {
         const data = await getSessions(accessToken);
         setSessions(data);
       } catch (err) {
+        console.error("Failed to load sessions:", err);
         setSessionError("Failed to load sessions");
       } finally {
         setLoadingSessions(false);

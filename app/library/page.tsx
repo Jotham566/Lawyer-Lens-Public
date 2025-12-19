@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Link from "next/link";
 import {
   Library,
@@ -29,6 +29,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import {
@@ -39,6 +40,8 @@ import {
   type ReadingHistoryEntry,
 } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
+import { useRequireAuth } from "@/components/providers";
+import { formatDistanceToNow } from "date-fns";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -155,16 +158,10 @@ function HistoryEntryCard({ entry }: { entry: ReadingHistoryEntry }) {
   const config = documentTypeConfig[entry.documentType];
   const DocIcon = config.icon;
 
-  const timeAgo = (date: string) => {
-    const diff = Date.now() - new Date(date).getTime();
-    const minutes = Math.floor(diff / 60000);
-    const hours = Math.floor(diff / 3600000);
-    const days = Math.floor(diff / 86400000);
-
-    if (minutes < 60) return `${minutes}m ago`;
-    if (hours < 24) return `${hours}h ago`;
-    return `${days}d ago`;
-  };
+  const relativeTime = useMemo(
+    () => formatDistanceToNow(new Date(entry.lastAccessedAt), { addSuffix: true }),
+    [entry.lastAccessedAt]
+  );
 
   return (
     <Link href={`/document/${entry.documentId}`}>
@@ -187,9 +184,7 @@ function HistoryEntryCard({ entry }: { entry: ReadingHistoryEntry }) {
                 <Badge variant="outline" className="text-xs">
                   {config.label}
                 </Badge>
-                <span className="text-xs text-muted-foreground">
-                  {timeAgo(entry.lastAccessedAt)}
-                </span>
+                <span className="text-xs text-muted-foreground">{relativeTime}</span>
                 {entry.accessCount > 1 && (
                   <span className="text-xs text-muted-foreground">
                     ({entry.accessCount} views)
@@ -206,10 +201,31 @@ function HistoryEntryCard({ entry }: { entry: ReadingHistoryEntry }) {
 }
 
 export default function LibraryPage() {
+  // Require authentication - redirects to login if not authenticated
+  const { isLoading: authLoading } = useRequireAuth();
   const savedDocuments = useSavedDocuments();
   const readingHistory = useReadingHistory();
   const clearHistory = useLibraryStore((s) => s.clearHistory);
   const [activeTab, setActiveTab] = useState("saved");
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="container mx-auto px-4 py-6 max-w-6xl">
+        <Skeleton className="h-8 w-32 mb-6" />
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <Skeleton className="h-12 w-12 rounded-xl" />
+            <div>
+              <Skeleton className="h-8 w-48 mb-2" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+        </div>
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   // Group saved documents by type
   const savedByType = savedDocuments.reduce(

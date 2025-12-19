@@ -53,7 +53,7 @@ import {
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useAuth } from "@/components/providers";
+import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 
 // Map backend status values to UI labels
@@ -155,22 +155,7 @@ function ResearchContent() {
     }
   }, [session?.research_brief, isEditingBrief]);
 
-  // Load existing session if session ID provided
-  useEffect(() => {
-    if (sessionIdParam) {
-      loadSession(sessionIdParam);
-    }
-  }, [sessionIdParam]);
-
-  // Auto-start if query provided
-  useEffect(() => {
-    if (initialQuery && !sessionIdParam && !session) {
-      handleStartResearch();
-    }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [initialQuery]);
-
-  const loadSession = async (sessionId: string) => {
+  const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
     try {
       const sessionData = await getResearchSession(sessionId, accessToken);
@@ -215,7 +200,23 @@ function ResearchContent() {
     } finally {
       setIsLoading(false);
     }
-  };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [accessToken, addSession, refreshEntitlements, updateStoredSession]);
+
+  // Load existing session if session ID provided
+  useEffect(() => {
+    if (sessionIdParam) {
+      loadSession(sessionIdParam);
+    }
+  }, [sessionIdParam, loadSession]);
+
+  // Auto-start if query provided
+  useEffect(() => {
+    if (initialQuery && !sessionIdParam && !session) {
+      handleStartResearch();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [initialQuery]);
 
   const handleStartResearch = async () => {
     if (!query.trim()) return;
@@ -539,7 +540,7 @@ function ResearchContent() {
         // Don't stop polling on transient errors
       }
     }, 3000);
-  }, [accessToken, stopPolling, updateStoredSession]); // Note: refreshEntitlements is stable from context
+  }, [accessToken, stopPolling, updateStoredSession, refreshEntitlements]);
 
   const startProgressStream = useCallback((sessionId: string) => {
     let sseCleanup: (() => void) | null = null;
@@ -579,7 +580,7 @@ function ResearchContent() {
           setError(err instanceof Error ? err.message : "Failed to load report");
         }
       },
-      (_errorMsg) => {
+      () => {
         // SSE failed - fall back to polling instead of showing error
         if (!usePolling) {
           usePolling = true;
@@ -598,7 +599,7 @@ function ResearchContent() {
       if (sseCleanup) sseCleanup();
       stopPolling();
     };
-  }, [accessToken, startPolling, stopPolling, updateStoredSession]); // Note: refreshEntitlements is stable from context
+  }, [accessToken, refreshEntitlements, startPolling, stopPolling, updateStoredSession]);
 
   const renderPhaseIndicator = () => {
     if (!session) return null;
@@ -1437,6 +1438,19 @@ function ResearchContent() {
 }
 
 export default function ResearchPage() {
+  // Require authentication - redirects to login if not authenticated
+  const { isLoading: authLoading } = useRequireAuth();
+
+  // Show loading while checking auth
+  if (authLoading) {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-8">
+        <Skeleton className="h-8 w-48 mb-8" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
+
   return (
     <PageErrorBoundary fallback="generic">
       <Suspense
