@@ -113,13 +113,15 @@ export function TableRowSkeleton({
   columns?: number;
   className?: string;
 }) {
+  const widths = ["20%", "35%", "50%", "65%", "80%"];
+
   return (
     <div className={cn("flex items-center gap-4 py-3", className)}>
       {Array.from({ length: columns }).map((_, i) => (
         <Skeleton
           key={i}
           className="h-4"
-          style={{ width: `${Math.random() * 30 + 15}%` }}
+          style={{ width: widths[i % widths.length] }}
         />
       ))}
     </div>

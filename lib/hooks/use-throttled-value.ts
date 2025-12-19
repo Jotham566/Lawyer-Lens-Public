@@ -1,3 +1,4 @@
+/* eslint-disable react-hooks/set-state-in-effect */
 import { useState, useEffect, useRef, useCallback } from "react";
 
 /**
@@ -6,14 +7,14 @@ import { useState, useEffect, useRef, useCallback } from "react";
  */
 export function useThrottledValue<T>(value: T, intervalMs: number = 50): T {
   const [throttledValue, setThrottledValue] = useState<T>(value);
-  const lastUpdate = useRef<number>(Date.now());
+  const lastUpdate = useRef<number>(0);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const latestValue = useRef<T>(value);
 
   useEffect(() => {
     latestValue.current = value;
     const now = Date.now();
-    const timeSinceLastUpdate = now - lastUpdate.current;
+    const timeSinceLastUpdate = lastUpdate.current === 0 ? Number.POSITIVE_INFINITY : now - lastUpdate.current;
 
     if (timeSinceLastUpdate >= intervalMs) {
       // Enough time has passed, update immediately

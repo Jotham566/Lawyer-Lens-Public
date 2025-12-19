@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import { cn } from "@/lib/utils";
 
 interface AknRendererProps {
@@ -19,70 +19,45 @@ export function AknRenderer({
   className,
   fontSize = "medium",
 }: AknRendererProps) {
-  const [parsedContent, setParsedContent] = useState<React.ReactNode | null>(null);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
+  const parsed = useMemo(() => {
     if (!xmlContent) {
-      setError("No XML content provided");
-      return;
+      return { error: "No XML content provided", meta: null, body: null, attachments: null };
     }
 
     try {
       const parser = new DOMParser();
       const xmlDoc = parser.parseFromString(xmlContent, "text/xml");
 
-      // Check for parsing errors
       const parseError = xmlDoc.querySelector("parsererror");
       if (parseError) {
-        setError("Failed to parse XML content");
-        return;
+        return { error: "Failed to parse XML content", meta: null, body: null, attachments: null };
       }
 
-      // Find the act element
       const act = xmlDoc.querySelector("act");
       if (!act) {
-        setError("No act element found in AKN document");
-        return;
+        return { error: "No act element found in AKN document", meta: null, body: null, attachments: null };
       }
 
-      // Extract meta information for header
       const meta = extractMeta(xmlDoc);
-
-      // Find the body element
       const body = act.querySelector("body");
-
-      // Find attachments (schedules with tables)
       const attachments = act.querySelector("attachments");
 
-      // Convert XML to React elements
-      const content = (
-        <div className="akn-act">
-          {meta && <ActHeader meta={meta} />}
-          {body && <Body element={body} />}
-          {attachments && <Attachments element={attachments} />}
-        </div>
-      );
-
-      setParsedContent(content);
-      setError(null);
+      return { error: null, meta, body, attachments };
     } catch (err) {
-      setError(`Error parsing XML: ${err}`);
+      return { error: `Error parsing XML: ${err}`, meta: null, body: null, attachments: null };
     }
   }, [xmlContent]);
 
-  if (error) {
+  if (parsed.error) {
     return (
       <div className="p-4 text-destructive bg-destructive/10 rounded-lg">
-        {error}
+        {parsed.error}
       </div>
     );
   }
 
-  if (!parsedContent) {
-    return (
-      <div className="p-4 text-muted-foreground">Loading document...</div>
-    );
+  if (!parsed.body && !parsed.attachments) {
+    return <div className="p-4 text-muted-foreground">Loading document...</div>;
   }
 
   return (
@@ -95,7 +70,11 @@ export function AknRenderer({
         className
       )}
     >
-      {parsedContent}
+      <div className="akn-act">
+        {parsed.meta && <ActHeader meta={parsed.meta} />}
+        {parsed.body && <Body element={parsed.body} />}
+        {parsed.attachments && <Attachments element={parsed.attachments} />}
+      </div>
     </div>
   );
 }

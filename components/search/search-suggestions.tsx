@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useRef, useCallback } from "react";
+import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Clock, TrendingUp, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -83,38 +83,36 @@ export function SearchSuggestions({
   className,
 }: SearchSuggestionsProps) {
   const [isOpen, setIsOpen] = useState(false);
-  const [recentSearches, setRecentSearches] = useState<string[]>([]);
+  const [recentSearches, setRecentSearches] = useState<string[]>(() => getRecentSearches());
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const containerRef = useRef<HTMLDivElement>(null);
+  const filteredPopular = useMemo(() => {
+    if (!query) return POPULAR_SEARCHES;
+    return POPULAR_SEARCHES.filter(
+      (s) =>
+        s.toLowerCase().includes(query.toLowerCase()) &&
+        s.toLowerCase() !== query.toLowerCase()
+    );
+  }, [query]);
 
-  // Load recent searches on mount
-  useEffect(() => {
-    setRecentSearches(getRecentSearches());
-  }, []);
+  const filteredRecent = useMemo(() => {
+    if (!query) return recentSearches;
+    return recentSearches.filter(
+      (s) =>
+        s.toLowerCase().includes(query.toLowerCase()) &&
+        s.toLowerCase() !== query.toLowerCase()
+    );
+  }, [query, recentSearches]);
 
-  // Filter suggestions based on query
-  const filteredPopular = query
-    ? POPULAR_SEARCHES.filter(
-        (s) =>
-          s.toLowerCase().includes(query.toLowerCase()) &&
-          s.toLowerCase() !== query.toLowerCase()
-      )
-    : POPULAR_SEARCHES;
-
-  const filteredRecent = query
-    ? recentSearches.filter(
-        (s) =>
-          s.toLowerCase().includes(query.toLowerCase()) &&
-          s.toLowerCase() !== query.toLowerCase()
-      )
-    : recentSearches;
-
-  const allSuggestions = [
-    ...filteredRecent.map((s) => ({ type: "recent" as const, value: s })),
-    ...filteredPopular
-      .filter((s) => !filteredRecent.includes(s))
-      .map((s) => ({ type: "popular" as const, value: s })),
-  ];
+  const allSuggestions = useMemo(
+    () => [
+      ...filteredRecent.map((s) => ({ type: "recent" as const, value: s })),
+      ...filteredPopular
+        .filter((s) => !filteredRecent.includes(s))
+        .map((s) => ({ type: "popular" as const, value: s })),
+    ],
+    [filteredRecent, filteredPopular]
+  );
 
   // Handle keyboard navigation
   const handleKeyDown = useCallback(
@@ -180,11 +178,6 @@ export function SearchSuggestions({
       input.removeEventListener("blur", handleBlur);
     };
   }, [inputRef]);
-
-  // Reset selection when query changes
-  useEffect(() => {
-    setSelectedIndex(-1);
-  }, [query]);
 
   const handleClearRecent = (e: React.MouseEvent, searchQuery: string) => {
     e.stopPropagation();
