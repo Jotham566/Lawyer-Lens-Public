@@ -47,11 +47,19 @@ export interface EntitlementsData {
   period_end: string;
 }
 
+export type RefreshOptions = {
+  /** Force foreground loading state (used on auth changes) */
+  forceLoading?: boolean;
+  /** Clear existing entitlements before refetching (prevents stale flashes) */
+  reset?: boolean;
+};
+
 export interface EntitlementsContextValue {
   entitlements: EntitlementsData | null;
   loading: boolean;
+  isRefreshing: boolean; // True during background refresh (not initial load)
   error: string | null;
-  refresh: () => Promise<void>;
+  refresh: (options?: RefreshOptions) => Promise<void>;
   hasFeature: (featureKey: string) => boolean;
   canUse: (usageKey: string, amount?: number) => boolean;
   getUsage: (usageKey: string) => UsageData | null;
@@ -62,6 +70,7 @@ export interface EntitlementsContextValue {
 const defaultContext: EntitlementsContextValue = {
   entitlements: null,
   loading: true,
+  isRefreshing: false,
   error: null,
   refresh: async () => {},
   hasFeature: () => false,
@@ -80,17 +89,26 @@ export function useEntitlements(): EntitlementsContextValue {
 export function useEntitlementsProvider(): EntitlementsContextValue {
   const [entitlements, setEntitlements] = useState<EntitlementsData | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Track if this is the initial load - use ref to avoid callback recreation
   // Only show loading skeleton on initial load, not on refresh
   const isInitialLoadRef = useRef(true);
 
-  const refresh = useCallback(async () => {
+  const refresh = useCallback(async (options: RefreshOptions = {}) => {
+    const { forceLoading = false, reset = false } = options;
+
     try {
-      // Only set loading=true on initial load to avoid unmounting children in FeatureGate
-      // This prevents ResearchContent from losing state when refreshEntitlements is called
-      if (isInitialLoadRef.current) {
+      // Allow callers to force a loading state (e.g., on auth changes) and optionally clear stale data
+      if (reset) {
+        setEntitlements(null);
+      }
+
+      if (isInitialLoadRef.current || forceLoading) {
         setLoading(true);
+      } else {
+        // Track background refresh separately for components like GlobalUsageAlert
+        setIsRefreshing(true);
       }
       setError(null);
 
@@ -160,6 +178,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       });
     } finally {
       setLoading(false);
+      setIsRefreshing(false);
       isInitialLoadRef.current = false;
     }
   }, []);
@@ -218,6 +237,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
   return {
     entitlements,
     loading,
+    isRefreshing,
     error,
     refresh,
     hasFeature,

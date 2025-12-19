@@ -192,14 +192,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
     // Refresh 2 minutes before expiry
     const refreshTime = expiry - Date.now() - 120000;
 
-    if (refreshTime <= 0) {
-      refreshSession();
-      return;
-    }
-
     const timeout = setTimeout(() => {
-      refreshSession();
-    }, refreshTime);
+      void refreshSession();
+    }, Math.max(0, refreshTime));
 
     return () => clearTimeout(timeout);
   }, [state.isAuthenticated, refreshSession]);
@@ -329,6 +324,7 @@ export function useAuth() {
 
 /**
  * Hook for protected routes - redirects to login if not authenticated
+ * Preserves full URL including query params (e.g., /chat?q=search+term)
  */
 export function useRequireAuth(redirectTo = "/login") {
   const { isAuthenticated, isLoading } = useAuth();
@@ -337,8 +333,11 @@ export function useRequireAuth(redirectTo = "/login") {
 
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      // Store the intended destination
-      const returnUrl = encodeURIComponent(pathname);
+      // Store the intended destination including query params
+      // Use window.location.search to capture query string (e.g., ?q=search+term)
+      const searchParams = typeof window !== "undefined" ? window.location.search : "";
+      const fullPath = pathname + searchParams;
+      const returnUrl = encodeURIComponent(fullPath);
       router.push(`${redirectTo}?returnUrl=${returnUrl}`);
     }
   }, [isLoading, isAuthenticated, router, pathname, redirectTo]);

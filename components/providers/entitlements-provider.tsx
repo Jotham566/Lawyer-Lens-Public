@@ -14,7 +14,8 @@ export function EntitlementsProvider({ children }: EntitlementsProviderProps) {
 
   // Refresh entitlements when auth state changes
   useEffect(() => {
-    entitlements.refresh();
+    // Force a foreground load and clear stale entitlements when auth context changes
+    void entitlements.refresh({ forceLoading: true, reset: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isAuthenticated, accessToken]);
 
