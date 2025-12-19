@@ -5,6 +5,7 @@ import { useState, useEffect, useCallback } from "react";
 export interface OnlineStatus {
   isOnline: boolean;
   wasOffline: boolean; // True if was offline and just came back online
+  isHydrated: boolean; // True after initial client-side hydration
 }
 
 /**
@@ -13,13 +14,11 @@ export interface OnlineStatus {
  * @returns Current online status and whether user was previously offline
  */
 export function useOnlineStatus(): OnlineStatus {
-  const [isOnline, setIsOnline] = useState(true);
+  // Start with true to prevent flash during SSR/hydration
+  // The actual status will be set after hydration in useEffect
+  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [wasOffline, setWasOffline] = useState(false);
-
-  // Initialize with actual status (SSR-safe)
-  useEffect(() => {
-    setIsOnline(navigator.onLine);
-  }, []);
+  const [isHydrated, setIsHydrated] = useState(false);
 
   const handleOnline = useCallback(() => {
     setIsOnline(true);
@@ -35,6 +34,10 @@ export function useOnlineStatus(): OnlineStatus {
   }, []);
 
   useEffect(() => {
+    // Set the actual online status after hydration
+    setIsOnline(navigator.onLine);
+    setIsHydrated(true);
+
     window.addEventListener("online", handleOnline);
     window.addEventListener("offline", handleOffline);
 
@@ -44,5 +47,5 @@ export function useOnlineStatus(): OnlineStatus {
     };
   }, [handleOnline, handleOffline]);
 
-  return { isOnline, wasOffline };
+  return { isOnline, wasOffline, isHydrated };
 }

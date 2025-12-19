@@ -27,13 +27,16 @@ describe("useOnlineStatus", () => {
     });
   });
 
-  it("should return isOnline as true when navigator.onLine is true", () => {
+  it("should return isOnline as true initially (pre-hydration)", () => {
     const { result } = renderHook(() => useOnlineStatus());
+    // Before useEffect runs, should default to true to prevent flash
     expect(result.current.isOnline).toBe(true);
     expect(result.current.wasOffline).toBe(false);
+    // After hydration
+    expect(result.current.isHydrated).toBe(true);
   });
 
-  it("should return isOnline as false when navigator.onLine is false", () => {
+  it("should return isOnline as false when navigator.onLine is false after hydration", () => {
     Object.defineProperty(navigator, "onLine", {
       value: false,
       writable: true,
@@ -41,7 +44,9 @@ describe("useOnlineStatus", () => {
     });
 
     const { result } = renderHook(() => useOnlineStatus());
+    // After useEffect, should reflect actual status
     expect(result.current.isOnline).toBe(false);
+    expect(result.current.isHydrated).toBe(true);
   });
 
   it("should update isOnline when offline event fires", () => {

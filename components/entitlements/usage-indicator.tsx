@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useEntitlements, USAGE_TYPES } from "@/hooks/use-entitlements";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
@@ -254,12 +254,26 @@ export function UsageLimitWarning({ usageKey, threshold = 80 }: UsageLimitWarnin
 /**
  * Global usage alert banner that monitors all usage types.
  * Shows a dismissible banner when any usage type is at 80%+ or at limit.
+ * Hides during both initial loading and background refresh to prevent flash.
  */
 export function GlobalUsageAlert() {
-  const { entitlements, loading } = useEntitlements();
+  const { entitlements, loading, isRefreshing } = useEntitlements();
   const [dismissed, setDismissed] = useState<string[]>([]);
+  const [isStable, setIsStable] = useState(false);
 
-  if (loading || !entitlements) return null;
+  // Add delay after loading completes to prevent flash during transitions
+  useEffect(() => {
+    if (!loading && !isRefreshing && entitlements) {
+      // Wait a bit after data loads to ensure it's stable
+      const timeout = setTimeout(() => setIsStable(true), 100);
+      return () => clearTimeout(timeout);
+    } else {
+      setIsStable(false);
+    }
+  }, [loading, isRefreshing, entitlements]);
+
+  // Hide during initial load, background refresh, or transition period
+  if (loading || isRefreshing || !entitlements || !isStable) return null;
 
   // Find usage items that are at 80%+ and not dismissed
   const warningItems = Object.entries(entitlements.usage)

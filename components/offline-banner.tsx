@@ -9,10 +9,11 @@ import { cn } from "@/lib/utils";
  * Shows "back online" message briefly when connectivity is restored
  */
 export function OfflineBanner() {
-  const { isOnline, wasOffline } = useOnlineStatus();
+  const { isOnline, wasOffline, isHydrated } = useOnlineStatus();
 
-  // Don't render anything if online and wasn't just offline
-  if (isOnline && !wasOffline) {
+  // Don't render anything until hydrated (prevents SSR mismatch)
+  // Don't render if online and wasn't just offline
+  if (!isHydrated || (isOnline && !wasOffline)) {
     return null;
   }
 
