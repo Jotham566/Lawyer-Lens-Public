@@ -257,34 +257,17 @@ export function UsageLimitWarning({ usageKey, threshold = 80 }: UsageLimitWarnin
  * Hides during both initial loading and background refresh to prevent flash.
  */
 export function GlobalUsageAlert() {
-  const { entitlements, loading, isRefreshing } = useEntitlements();
+  const { entitlements, loading, isRefreshing, hasInitialized } = useEntitlements();
   const [dismissed, setDismissed] = useState<string[]>([]);
-  const [isStable, setIsStable] = useState(false);
-  const [isMounted, setIsMounted] = useState(false);
 
-  // Track client-side mount to prevent SSR mismatch
-  useEffect(() => {
-    setIsMounted(true);
-  }, []);
-
-  // Stability tracking: only show after data has been stable for a period
-  useEffect(() => {
-    // Reset stability when loading states change or data changes
-    if (loading || isRefreshing || !entitlements) {
-      setIsStable(false);
-      return;
-    }
-
-    // Data is loaded, start stability timer
-    const timeout = setTimeout(() => {
-      setIsStable(true);
-    }, 200); // 200ms delay to handle page refresh transitions
-    
-    return () => clearTimeout(timeout);
-  }, [loading, isRefreshing, entitlements]);
-
-  // Don't render anything until: mounted, done loading, not refreshing, has data, and is stable
-  if (!isMounted || loading || isRefreshing || !entitlements || !isStable) {
+  // CRITICAL: Only render after the entitlements system has fully initialized.
+  // This prevents the banner from flashing during:
+  // - Initial page load
+  // - Page refresh when logged in
+  // - Auth state transitions
+  // The hasInitialized flag is set by the entitlements hook only after
+  // the first successful data fetch completes AND a brief stabilization delay.
+  if (!hasInitialized || loading || isRefreshing || !entitlements) {
     return null;
   }
 

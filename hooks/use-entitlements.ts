@@ -58,6 +58,8 @@ export interface EntitlementsContextValue {
   entitlements: EntitlementsData | null;
   loading: boolean;
   isRefreshing: boolean; // True during background refresh (not initial load)
+  /** True only after the first successful load completes - use this for UI that shouldn't flash */
+  hasInitialized: boolean;
   error: string | null;
   refresh: (options?: RefreshOptions) => Promise<void>;
   hasFeature: (featureKey: string) => boolean;
@@ -71,6 +73,7 @@ const defaultContext: EntitlementsContextValue = {
   entitlements: null,
   loading: true,
   isRefreshing: false,
+  hasInitialized: false,
   error: null,
   refresh: async () => {},
   hasFeature: () => false,
@@ -90,6 +93,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
   const [entitlements, setEntitlements] = useState<EntitlementsData | null>(null);
   const [loading, setLoading] = useState(true);
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [hasInitialized, setHasInitialized] = useState(false);
   const [error, setError] = useState<string | null>(null);
   // Track if this is the initial load - use ref to avoid callback recreation
   // Only show loading skeleton on initial load, not on refresh
@@ -179,6 +183,11 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
     } finally {
       setLoading(false);
       setIsRefreshing(false);
+      // Mark as initialized after first successful load (even if it failed with fallback data)
+      if (isInitialLoadRef.current) {
+        // Delay setting hasInitialized to ensure React has finished state updates
+        setTimeout(() => setHasInitialized(true), 50);
+      }
       isInitialLoadRef.current = false;
     }
   }, []);
@@ -245,6 +254,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
     getUsage,
     isAtLimit,
     getUsagePercentage,
+    hasInitialized,
   };
 }
 
