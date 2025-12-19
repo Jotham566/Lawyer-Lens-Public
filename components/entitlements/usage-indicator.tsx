@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useEntitlements, USAGE_TYPES } from "@/hooks/use-entitlements";
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
