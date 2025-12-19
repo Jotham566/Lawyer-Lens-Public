@@ -106,6 +106,12 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       // Allow callers to force a loading state (e.g., on auth changes) and optionally clear stale data
       if (reset) {
         setEntitlements(null);
+        // CRITICAL: Reset the initialization flag when clearing data
+        // This prevents GlobalUsageAlert from rendering with stale hasInitialized=true
+        // while entitlements data is being refetched after an auth change
+        setHasInitialized(false);
+        // Also mark this as a fresh initial load so the flag gets set properly after fetch
+        isInitialLoadRef.current = true;
       }
 
       if (isInitialLoadRef.current || forceLoading) {
