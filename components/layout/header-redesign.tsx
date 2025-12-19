@@ -34,6 +34,7 @@ import { UserMenu } from "./user-menu";
 import { OrgSwitcher } from "./org-switcher";
 import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
 
 interface HeaderRedesignProps {
   className?: string;
@@ -71,6 +72,7 @@ export function HeaderRedesign({
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { entitlements } = useEntitlements();
+  const { openLogin } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
 
   // Only show org switcher for team/enterprise tiers
@@ -217,7 +219,16 @@ export function HeaderRedesign({
               isActive("/chat") && "bg-accent text-accent-foreground"
             )}
           >
-            <Link href="/chat">
+            <Link
+              href="/chat"
+              onClick={(e) => {
+                if (!isAuthenticated) {
+                  e.preventDefault();
+                  // Trigger login modal and preserve intended chat destination
+                  openLogin("/chat");
+                }
+              }}
+            >
               <MessageSquareText className="h-4 w-4" />
               <span className="hidden xl:inline">Legal Assistant</span>
             </Link>

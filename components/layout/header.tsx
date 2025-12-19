@@ -68,7 +68,7 @@ export function Header({ className }: HeaderProps) {
             </div>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/settings/notifications" className="text-xs text-center w-full justify-center">
+              <Link href="/settings/preferences" className="text-xs text-center w-full justify-center">
                 Notification Settings
               </Link>
             </DropdownMenuItem>

@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
+import { useWatch } from "react-hook-form";
 import {
   Eye,
   EyeOff,
@@ -416,13 +417,13 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
   const {
     register,
     handleSubmit,
-    watch,
+    control,
     formState: { errors, isSubmitting },
   } = useForm<RegisterFormData>({
     resolver: zodResolver(registerSchema),
   });
 
-  const password = watch("password", "");
+  const password = useWatch({ control, name: "password" });
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);

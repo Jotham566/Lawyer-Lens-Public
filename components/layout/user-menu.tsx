@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import {
   User,
   LogOut,
@@ -74,9 +75,11 @@ export function UserMenu() {
         <Button variant="ghost" size="sm" className="gap-2">
           <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium">
             {user.avatar_url ? (
-              <img
+              <Image
                 src={user.avatar_url}
                 alt={user.full_name}
+                width={28}
+                height={28}
                 className="h-full w-full rounded-full object-cover"
               />
             ) : (

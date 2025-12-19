@@ -157,7 +157,7 @@ export function Breadcrumbs({
   }
 
   // Generate or use custom items
-  let items = customItems || generateBreadcrumbs(pathname, documentTitle);
+  const items = customItems || generateBreadcrumbs(pathname, documentTitle);
 
   // Collapse middle segments if too many
   const shouldCollapse = items.length > maxSegments;
