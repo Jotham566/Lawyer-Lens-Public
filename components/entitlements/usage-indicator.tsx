@@ -260,20 +260,33 @@ export function GlobalUsageAlert() {
   const { entitlements, loading, isRefreshing } = useEntitlements();
   const [dismissed, setDismissed] = useState<string[]>([]);
   const [isStable, setIsStable] = useState(false);
+  const [isMounted, setIsMounted] = useState(false);
 
-  // Add delay after loading completes to prevent flash during transitions
+  // Track client-side mount to prevent SSR mismatch
   useEffect(() => {
-    if (!loading && !isRefreshing && entitlements) {
-      // Wait a bit after data loads to ensure it's stable
-      const timeout = setTimeout(() => setIsStable(true), 100);
-      return () => clearTimeout(timeout);
-    } else {
+    setIsMounted(true);
+  }, []);
+
+  // Stability tracking: only show after data has been stable for a period
+  useEffect(() => {
+    // Reset stability when loading states change or data changes
+    if (loading || isRefreshing || !entitlements) {
       setIsStable(false);
+      return;
     }
+
+    // Data is loaded, start stability timer
+    const timeout = setTimeout(() => {
+      setIsStable(true);
+    }, 200); // 200ms delay to handle page refresh transitions
+    
+    return () => clearTimeout(timeout);
   }, [loading, isRefreshing, entitlements]);
 
-  // Hide during initial load, background refresh, or transition period
-  if (loading || isRefreshing || !entitlements || !isStable) return null;
+  // Don't render anything until: mounted, done loading, not refreshing, has data, and is stable
+  if (!isMounted || loading || isRefreshing || !entitlements || !isStable) {
+    return null;
+  }
 
   // Find usage items that are at 80%+ and not dismissed
   const warningItems = Object.entries(entitlements.usage)
