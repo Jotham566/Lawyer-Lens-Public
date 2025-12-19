@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   Copy,
@@ -55,17 +55,7 @@ export function ContractBrowser({
   const [searchQuery, setSearchQuery] = useState("");
   const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  useEffect(() => {
-    if (open) {
-      loadContracts();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    filterContracts();
-  }, [contracts, searchQuery, typeFilter]);
-
-  const loadContracts = async () => {
+  const loadContracts = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getMyContracts();
@@ -75,9 +65,9 @@ export function ContractBrowser({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterContracts = () => {
+  const filterContracts = useCallback(() => {
     let filtered = contracts;
 
     if (searchQuery) {
@@ -95,7 +85,17 @@ export function ContractBrowser({
     }
 
     setFilteredContracts(filtered);
-  };
+  }, [contracts, searchQuery, typeFilter]);
+
+  useEffect(() => {
+    if (open) {
+      loadContracts();
+    }
+  }, [open, loadContracts]);
+
+  useEffect(() => {
+    filterContracts();
+  }, [contracts, searchQuery, typeFilter, filterContracts]);
 
   const handleSelect = (contract: ContractListItem) => {
     onSelect(contract);

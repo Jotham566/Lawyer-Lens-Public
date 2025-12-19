@@ -65,7 +65,7 @@ export function APIKeyForm({ open, onOpenChange, onSuccess }: APIKeyFormProps) {
     if (open && scopes.length === 0) {
       loadScopes();
     }
-  }, [open]);
+  }, [open, scopes.length]);
 
   const loadScopes = async () => {
     setLoadingScopes(true);
@@ -73,6 +73,7 @@ export function APIKeyForm({ open, onOpenChange, onSuccess }: APIKeyFormProps) {
       const response = await getAvailableScopes();
       setScopes(response.scopes);
     } catch (err) {
+      console.error("Failed to load available scopes:", err);
       setError("Failed to load available scopes");
     } finally {
       setLoadingScopes(false);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import {
   Search,
   FileText,
@@ -68,17 +68,7 @@ export function TemplateBrowser({
   const [typeFilter, setTypeFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
 
-  useEffect(() => {
-    if (open) {
-      loadTemplates();
-    }
-  }, [open]);
-
-  useEffect(() => {
-    filterTemplates();
-  }, [templates, searchQuery, typeFilter, sourceFilter]);
-
-  const loadTemplates = async () => {
+  const loadTemplates = useCallback(async () => {
     setIsLoading(true);
     try {
       const data = await getEnhancedTemplates();
@@ -88,9 +78,9 @@ export function TemplateBrowser({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
-  const filterTemplates = () => {
+  const filterTemplates = useCallback(() => {
     let filtered = templates;
 
     if (searchQuery) {
@@ -111,7 +101,17 @@ export function TemplateBrowser({
     }
 
     setFilteredTemplates(filtered);
-  };
+  }, [templates, searchQuery, sourceFilter, typeFilter]);
+
+  useEffect(() => {
+    if (open) {
+      loadTemplates();
+    }
+  }, [open, loadTemplates]);
+
+  useEffect(() => {
+    filterTemplates();
+  }, [templates, searchQuery, typeFilter, sourceFilter, filterTemplates]);
 
   const handleSelect = (template: EnhancedTemplate) => {
     onSelect(template);

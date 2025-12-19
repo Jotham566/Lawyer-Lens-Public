@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { FileText, Trash2, RefreshCw, Search, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -64,7 +64,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
 
   const pageSize = 10;
 
-  const loadDocuments = async () => {
+  const loadDocuments = useCallback(async () => {
     if (!accessToken) return;
 
     setLoading(true);
@@ -84,11 +84,11 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [accessToken, page, pageSize, statusFilter]);
 
   useEffect(() => {
     loadDocuments();
-  }, [accessToken, page, statusFilter, refreshTrigger]);
+  }, [loadDocuments, refreshTrigger]);
 
   const handleDelete = async (documentId: string, title: string) => {
     if (!accessToken) return;
@@ -317,7 +317,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
                             <AlertDialogHeader>
                               <AlertDialogTitle>Delete Document</AlertDialogTitle>
                               <AlertDialogDescription>
-                                Are you sure you want to delete "{doc.title}"?
+                                Are you sure you want to delete &quot;{doc.title}&quot;?
                                 This action cannot be undone.
                               </AlertDialogDescription>
                             </AlertDialogHeader>

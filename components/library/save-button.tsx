@@ -11,7 +11,7 @@ import {
 import { useLibraryStore } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
-import { useState, useEffect } from "react";
+import { useMemo } from "react";
 
 interface SaveButtonProps {
   document: {
@@ -38,17 +38,11 @@ export function SaveButton({
   showLabel = true,
   className,
 }: SaveButtonProps) {
-  const [mounted, setMounted] = useState(false);
   const saveDocument = useLibraryStore((s) => s.saveDocument);
   const unsaveDocument = useLibraryStore((s) => s.unsaveDocument);
   const isDocumentSaved = useLibraryStore((s) => s.isDocumentSaved);
-
-  // Handle hydration mismatch
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const isSaved = mounted && isDocumentSaved(document.id);
+  const isClient = useMemo(() => typeof window !== "undefined", []);
+  const isSaved = isClient && isDocumentSaved(document.id);
 
   const handleToggle = () => {
     if (isSaved) {
@@ -58,7 +52,7 @@ export function SaveButton({
     }
   };
 
-  if (!mounted) {
+  if (!isClient) {
     return (
       <Button variant={variant} size={size} disabled className={className}>
         <Loader2 className={cn("h-4 w-4 animate-spin", showLabel && "mr-2")} />

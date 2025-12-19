@@ -172,7 +172,7 @@ export function SearchInternal() {
             <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
             <p>
               Enter a search query to find relevant content in your
-              organization's documents
+              organization&apos;s documents
             </p>
           </div>
         )}
