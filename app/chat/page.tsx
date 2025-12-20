@@ -70,12 +70,16 @@ function ChatContent() {
     removeMessagesFrom,
     setLoading,
     setError,
+    fetchConversations,
+    fetchConversation,
+    replaceConversationId,
   } = useChatStore();
 
   // IMPORTANT: All hooks must be called before any conditional returns
   // to maintain consistent hook order across renders
   const conversations = useActiveConversations();
   const currentConversation = useCurrentConversation();
+
   const [input, setInput] = useState(initialQuery || "");
   const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -99,6 +103,7 @@ function ChatContent() {
   const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const editInputRef = useRef<HTMLTextAreaElement>(null);
+  const fetchingConversationRef = useRef<Set<string>>(new Set());
 
   // Upgrade modal for feature gating
   const {
@@ -152,6 +157,28 @@ function ChatContent() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
+
+  // Fetch conversation history on mount/auth
+  useEffect(() => {
+    if (accessToken) {
+      fetchConversations(accessToken);
+    }
+  }, [accessToken, fetchConversations]);
+
+  // Auto-fetch conversation details when selecting a conversation with empty messages
+  useEffect(() => {
+    if (!currentConversationId || !accessToken) return;
+    if (fetchingConversationRef.current.has(currentConversationId)) return;
+
+    // Check conversation state directly to avoid dependency issues
+    const conv = useChatStore.getState().conversations.find(c => c.id === currentConversationId);
+    if (conv && conv.messages.length === 0) {
+      fetchingConversationRef.current.add(currentConversationId);
+      fetchConversation(currentConversationId, accessToken).finally(() => {
+        fetchingConversationRef.current.delete(currentConversationId);
+      });
+    }
+  }, [currentConversationId, accessToken, fetchConversation]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setInput(e.target.value);
@@ -211,6 +238,15 @@ function ChatContent() {
             case "error":
               setError(event.message);
               break;
+            case "conversation_id":
+              // Backend assigned a persistent ID - update local state if different
+              if (activeConvId !== event.id) {
+                // Update the store with the new ID
+                replaceConversationId(activeConvId, event.id);
+                // Update local ref/variable for subsequent updates in this loop
+                activeConvId = event.id; // Crucial: update loop variable so subsequent message updates use new ID
+              }
+              break;
             case "done":
               if (sources.length === 0) {
                 updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions(), verification, confidenceInfo);
@@ -219,7 +255,6 @@ function ChatContent() {
           }
         }
       } catch (err) {
-        console.error("Chat error:", err);
         setError(err instanceof Error ? err.message : "Failed to get response");
       } finally {
         setLoading(false);
@@ -272,7 +307,9 @@ function ChatContent() {
       const text = message || input.trim();
       const convId = conversationId || currentConversationId;
 
-      if (!text) return;
+      if (!text) {
+        return;
+      }
 
       // Handle Deep Research tool
       if (selectedTool === "deep-research") {
@@ -323,15 +360,15 @@ function ChatContent() {
           setActiveToolExecution((prev) =>
             prev
               ? {
-                  ...prev,
-                  progress: {
-                    phase: session.status === "clarifying" ? "clarifying" : "researching",
-                    message:
-                      session.status === "clarifying"
-                        ? "This query requires clarification. Please use the full research interface."
-                        : "Research in progress...",
-                  },
-                }
+                ...prev,
+                progress: {
+                  phase: session.status === "clarifying" ? "clarifying" : "researching",
+                  message:
+                    session.status === "clarifying"
+                      ? "This query requires clarification. Please use the full research interface."
+                      : "Research in progress...",
+                },
+              }
               : null
           );
 
@@ -516,10 +553,10 @@ function ChatContent() {
     }, 100);
   }, [isLoading, currentConversationId, currentConversation, removeMessagesFrom, regenerateForMessage]);
 
-  const handleSelectConversation = (id: string) => {
+  const handleSelectConversation = useCallback((id: string) => {
     setCurrentConversation(id);
     setMobileHistoryOpen(false);
-  };
+  }, [setCurrentConversation]);
 
   const handleSelectQuestion = (question: string) => {
     setInput(question);
@@ -537,116 +574,116 @@ function ChatContent() {
         <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
           {/* Desktop Sidebar */}
           <ConversationSidebar
-          conversations={conversations}
-          currentConversationId={currentConversationId}
-          onSelectConversation={handleSelectConversation}
-          onDeleteConversation={handleDeleteClick}
-          onNewConversation={handleNewConversation}
-        />
+            conversations={conversations}
+            currentConversationId={currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onDeleteConversation={handleDeleteClick}
+            onNewConversation={handleNewConversation}
+          />
 
-        {/* Chat Area */}
-        <div className="flex flex-1 flex-col">
-          {/* Mobile Header */}
-          <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
-            <div className="flex items-center gap-2">
-              <Sparkles className="h-5 w-5 text-primary" />
-              <h1 className="font-semibold">Legal Assistant</h1>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8"
-                onClick={handleNewConversation}
-                aria-label="New conversation"
-              >
-                <Plus className="h-4 w-4" />
-              </Button>
-              <MobileHistorySheet
-                open={mobileHistoryOpen}
-                onOpenChange={setMobileHistoryOpen}
-                conversations={conversations}
-                currentConversationId={currentConversationId}
-                onSelectConversation={handleSelectConversation}
-                onDeleteConversation={handleDeleteClick}
-              />
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div className="flex-1 overflow-hidden" role="region" aria-label="Chat messages">
-            {!currentConversation || currentConversation.messages.length === 0 ? (
-              <div className="mx-auto max-w-3xl px-4 py-6">
-                <EmptyState
-                  selectedTool={selectedTool}
-                  onClearTool={() => setSelectedTool("chat")}
-                  onSelectQuestion={handleSelectQuestion}
+          {/* Chat Area */}
+          <div className="flex flex-1 flex-col">
+            {/* Mobile Header */}
+            <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
+              <div className="flex items-center gap-2">
+                <Sparkles className="h-5 w-5 text-primary" />
+                <h1 className="font-semibold">Legal Assistant</h1>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="h-8 w-8"
+                  onClick={handleNewConversation}
+                  aria-label="New conversation"
+                >
+                  <Plus className="h-4 w-4" />
+                </Button>
+                <MobileHistorySheet
+                  open={mobileHistoryOpen}
+                  onOpenChange={setMobileHistoryOpen}
+                  conversations={conversations}
+                  currentConversationId={currentConversationId}
+                  onSelectConversation={handleSelectConversation}
+                  onDeleteConversation={handleDeleteClick}
                 />
               </div>
-            ) : (
-              <VirtualizedMessageList
-                messages={currentConversation.messages}
-                isLoading={isLoading}
-                error={error}
-                editingIndex={editingIndex}
-                copiedId={copiedId}
-                onStartEdit={handleStartEdit}
-                onCancelEdit={handleCancelEdit}
-                onEditSubmit={handleEditSubmit}
-                onCopy={copyMessage}
-                onRegenerate={handleRegenerate}
-                onSelectFollowup={handleSelectQuestion}
-                editInputRef={editInputRef}
-              />
-            )}
+            </div>
+
+            {/* Messages */}
+            <div className="flex-1 overflow-hidden" role="region" aria-label="Chat messages">
+              {!currentConversation || currentConversation.messages.length === 0 ? (
+                <div className="mx-auto max-w-3xl px-4 py-6">
+                  <EmptyState
+                    selectedTool={selectedTool}
+                    onClearTool={() => setSelectedTool("chat")}
+                    onSelectQuestion={handleSelectQuestion}
+                  />
+                </div>
+              ) : (
+                <VirtualizedMessageList
+                  messages={currentConversation.messages}
+                  isLoading={isLoading}
+                  error={error}
+                  editingIndex={editingIndex}
+                  copiedId={copiedId}
+                  onStartEdit={handleStartEdit}
+                  onCancelEdit={handleCancelEdit}
+                  onEditSubmit={handleEditSubmit}
+                  onCopy={copyMessage}
+                  onRegenerate={handleRegenerate}
+                  onSelectFollowup={handleSelectQuestion}
+                  editInputRef={editInputRef}
+                />
+              )}
+            </div>
+
+            {/* Input Area */}
+            <ChatInput
+              ref={inputRef}
+              value={input}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onSubmit={() => handleSend()}
+              isLoading={isLoading}
+              selectedTool={selectedTool}
+              onSelectTool={setSelectedTool}
+            />
           </div>
 
-          {/* Input Area */}
-          <ChatInput
-            ref={inputRef}
-            value={input}
-            onChange={handleInputChange}
-            onKeyDown={handleKeyDown}
-            onSubmit={() => handleSend()}
-            isLoading={isLoading}
-            selectedTool={selectedTool}
-            onSelectTool={setSelectedTool}
+          {/* Delete Confirmation Dialog */}
+          <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+            <AlertDialogContent>
+              <AlertDialogHeader>
+                <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
+                <AlertDialogDescription>
+                  This action cannot be undone. This will permanently delete this conversation and all
+                  its messages.
+                </AlertDialogDescription>
+              </AlertDialogHeader>
+              <AlertDialogFooter>
+                <AlertDialogCancel>Cancel</AlertDialogCancel>
+                <AlertDialogAction
+                  onClick={handleConfirmDelete}
+                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                >
+                  Delete
+                </AlertDialogAction>
+              </AlertDialogFooter>
+            </AlertDialogContent>
+          </AlertDialog>
+
+          {/* Upgrade Required Modal for Feature Gating */}
+          <UpgradeRequiredModal
+            open={upgradeModalOpen}
+            onClose={hideUpgradeModal}
+            details={upgradeDetails}
           />
+
+          {/* Citation Side Panel / Bottom Sheet */}
+          <ResponsiveSourceView />
         </div>
-
-        {/* Delete Confirmation Dialog */}
-        <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This action cannot be undone. This will permanently delete this conversation and all
-                its messages.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction
-                onClick={handleConfirmDelete}
-                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-              >
-                Delete
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-
-        {/* Upgrade Required Modal for Feature Gating */}
-        <UpgradeRequiredModal
-          open={upgradeModalOpen}
-          onClose={hideUpgradeModal}
-          details={upgradeDetails}
-        />
-
-        {/* Citation Side Panel / Bottom Sheet */}
-        <ResponsiveSourceView />
-      </div>
-    </TooltipProvider>
+      </TooltipProvider>
     </CitationProvider>
   );
 }

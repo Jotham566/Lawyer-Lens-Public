@@ -14,6 +14,7 @@ import type {
   VerificationStatus,
   ConfidenceInfo,
 } from "@/lib/api/types";
+import { getConversations, getConversation } from "@/lib/api/chat";
 
 export interface Conversation {
   id: string;
@@ -64,6 +65,11 @@ interface ChatState {
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearConversations: () => void;
+
+  // API Integration
+  fetchConversations: (accessToken?: string | null) => Promise<void>;
+  fetchConversation: (id: string, accessToken?: string | null) => Promise<void>;
+  replaceConversationId: (oldId: string, newId: string) => void;
 }
 
 const generateId = () => Math.random().toString(36).substring(2, 15);
@@ -228,6 +234,27 @@ export const useChatStore = create<ChatState>()(
 
       addMessage: (conversationId, message) => {
         set((state) => {
+          // Check if conversation exists
+          const existingConv = state.conversations.find(c => c.id === conversationId);
+
+          if (!existingConv) {
+            // Conversation doesn't exist - create it first
+            const now = new Date().toISOString();
+            const newConversation: Conversation = {
+              id: conversationId,
+              title: message.role === "user" ? generateTitle(message.content) : "New Conversation",
+              messages: [message],
+              createdAt: now,
+              updatedAt: now,
+              isArchived: false,
+              isStarred: false,
+            };
+            return {
+              conversations: [newConversation, ...state.conversations],
+            };
+          }
+
+          // Conversation exists - update it
           const conversations = state.conversations.map((conv) => {
             if (conv.id !== conversationId) return conv;
 
@@ -343,6 +370,117 @@ export const useChatStore = create<ChatState>()(
           conversations: [],
           currentConversationId: null,
         }),
+
+      fetchConversations: async (accessToken?: string | null) => {
+        set({ isLoading: true, error: null });
+        try {
+          const response = await getConversations(50, 0, accessToken);
+
+          set((state) => {
+            // Create a map of backend conversations
+            const backendMap = new Map(response.conversations.map(c => [c.id, c]));
+
+            // 1. Update existing conversations that match backend
+            // 2. Add new conversations from backend
+            let mergedConversations = state.conversations.map(localConv => {
+              const backendConv = backendMap.get(localConv.id);
+              if (backendConv) {
+                backendMap.delete(localConv.id); // Mark as handled
+                return {
+                  ...localConv, // Keep local state (messages)
+                  title: backendConv.title || localConv.title,
+                  updatedAt: backendConv.updated_at,
+                  // Don't overwrite messages if we have them locally and they might be newer/optimistic
+                  // But if we have no messages locally and backend does (unlikely for list endpoint), 
+                  // we'll fetch them in detail later.
+                };
+              }
+              return localConv; // Keep local-only conversations (optimistic creations)
+            });
+
+            // Add remaining backend conversations (that weren't in local state)
+            const newBackendConversations = Array.from(backendMap.values()).map(summary => ({
+              id: summary.id,
+              title: summary.title || "New Conversation",
+              messages: [],
+              createdAt: summary.created_at,
+              updatedAt: summary.updated_at,
+              isArchived: false,
+              isStarred: false,
+            }));
+
+            mergedConversations = [...newBackendConversations, ...mergedConversations];
+
+            // Sort by updatedAt desc
+            mergedConversations.sort((a, b) =>
+              new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime()
+            );
+
+            return {
+              conversations: mergedConversations,
+              isLoading: false
+            };
+          });
+        } catch (error) {
+          console.error("Failed to fetch conversations:", error);
+          set({ isLoading: false, error: "Failed to load history" });
+        }
+      },
+
+      fetchConversation: async (id: string, accessToken?: string | null) => {
+        // Don't set global loading as this might be background or specific
+        try {
+          const detail = await getConversation(id, accessToken);
+
+          set((state) => {
+            const conversations = state.conversations.map(c => {
+              if (c.id !== id) return c;
+
+              // Map backend messages to store ChatMessage format
+              const messages: ChatMessage[] = detail.messages.map(msg => ({
+                id: msg.id,
+                role: msg.role,
+                content: msg.content,
+                timestamp: msg.timestamp,
+                sources: msg.citations, // Type compat handled by interface match or we map explicitly if needed
+                verification: msg.verification || undefined,
+                confidence_info: msg.confidence_info || undefined,
+                provider: msg.provider || undefined,
+                tokens_used: msg.tokens_used
+              }));
+
+              return {
+                ...c,
+                title: detail.title || c.title,
+                updatedAt: detail.updated_at,
+                messages: messages
+              };
+            });
+
+            return { conversations };
+          });
+        } catch (error) {
+          console.error(`Failed to fetch conversation ${id}:`, error);
+          // Don't error globally, just log
+        }
+      },
+
+      replaceConversationId: (oldId: string, newId: string) => {
+        set((state) => {
+          const conversations = state.conversations.map((c) => {
+            if (c.id !== oldId) return c;
+            return { ...c, id: newId };
+          });
+
+          return {
+            conversations,
+            currentConversationId:
+              state.currentConversationId === oldId
+                ? newId
+                : state.currentConversationId,
+          };
+        });
+      },
     }),
     {
       name: "law-lens-chat",

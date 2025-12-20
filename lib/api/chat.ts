@@ -11,6 +11,8 @@ import type {
   ChatSource,
   VerificationStatus,
   ConfidenceInfo,
+  ConversationListResponse,
+  ConversationDetail,
 } from "./types";
 
 /**
@@ -41,6 +43,39 @@ export async function getChatHealth(): Promise<ChatHealthResponse> {
 }
 
 /**
+ * Get user's conversation history
+ */
+export async function getConversations(
+  limit: number = 50,
+  offset: number = 0,
+  accessToken?: string | null
+): Promise<ConversationListResponse> {
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiGet<ConversationListResponse>(
+    `/chat/conversations?limit=${limit}&offset=${offset}`,
+    headers
+  );
+}
+
+/**
+ * Get full conversation details
+ */
+export async function getConversation(
+  conversationId: string,
+  accessToken?: string | null
+): Promise<ConversationDetail> {
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  return apiGet<ConversationDetail>(`/chat/conversations/${conversationId}`, headers);
+}
+
+
+/**
  * Verification data from the stream
  */
 export interface StreamVerificationData {
@@ -56,6 +91,7 @@ export type StreamEvent =
   | { type: "content_update"; fullContent: string }
   | { type: "citations"; citations: ChatSource[] }
   | { type: "verification"; data: StreamVerificationData }
+  | { type: "conversation_id"; id: string }
   | { type: "done" }
   | { type: "error"; message: string };
 
@@ -89,6 +125,7 @@ export async function* streamChatWithTypewriter(
   let citations: ChatSource[] | null = null;
   let contentUpdatePending: string | null = null;
   let verificationData: StreamVerificationData | null = null;
+  let conversationId: string | null = null;
 
   // Start the stream
   const streamPromise = (async () => {
@@ -102,6 +139,8 @@ export async function* streamChatWithTypewriter(
         citations = event.citations;
       } else if (event.type === "verification") {
         verificationData = event.data;
+      } else if (event.type === "conversation_id") {
+        conversationId = event.id;
       } else if (event.type === "done") {
         isStreaming = false;
       } else if (event.type === "error") {
@@ -141,6 +180,11 @@ export async function* streamChatWithTypewriter(
   // Send verification data if available (for trust indicators)
   if (verificationData) {
     yield { type: "verification", data: verificationData };
+  }
+
+  // Send conversation ID update if we have one
+  if (conversationId) {
+    yield { type: "conversation_id", id: conversationId };
   }
 
   yield { type: "done" };
@@ -254,6 +298,12 @@ export async function* streamChatMessage(
             } catch (e) {
               console.error("Failed to parse verification data:", e);
             }
+            continue;
+          }
+
+          if (content.startsWith("[CONVERSATION_ID]")) {
+            const id = content.slice(17); // Remove "[CONVERSATION_ID]" prefix
+            yield { type: "conversation_id", id };
             continue;
           }
 

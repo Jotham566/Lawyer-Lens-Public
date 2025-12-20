@@ -305,6 +305,40 @@ export interface DocumentTypeCount {
   count: number;
 }
 
+export interface ConversationSummary {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  message_count: number;
+}
+
+export interface ConversationListResponse {
+  conversations: ConversationSummary[];
+}
+
+export interface ConversationDetail {
+  id: string;
+  title: string | null;
+  created_at: string;
+  updated_at: string;
+  messages: Array<{
+    id: string;
+    role: "user" | "assistant";
+    content: string;
+    citations: ChatSource[]; // Backend returns citations, distinct from ChatSource? 
+    // Backend uses CitationResponse which matches ChatSource mostly but let's check.
+    // Backend CitationResponse: document_id, title...
+    // Frontend ChatSource: document_id, title...
+    // They are compatible.
+    tokens_used: number;
+    timestamp: string;
+    provider: string | null;
+    verification: VerificationStatus | null;
+    confidence_info: ConfidenceInfo | null;
+  }>;
+}
+
 export interface RepositoryStats {
   total_documents: number;
   by_type: DocumentTypeCount[];
