@@ -170,6 +170,14 @@ function ChatContent() {
     if (!currentConversationId || !accessToken) return;
     if (fetchingConversationRef.current.has(currentConversationId)) return;
 
+    // Only fetch if it's a valid UUID (server-persisted conversation)
+    // Local conversations use short random IDs like "abc123def456"
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+    if (!uuidRegex.test(currentConversationId)) {
+      // Skip fetch for local conversations - they haven't been persisted to server yet
+      return;
+    }
+
     // Check conversation state directly to avoid dependency issues
     const conv = useChatStore.getState().conversations.find(c => c.id === currentConversationId);
     if (conv && conv.messages.length === 0) {
