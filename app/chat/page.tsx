@@ -613,12 +613,14 @@ function ChatContent() {
             {/* Messages */}
             <div className="flex-1 overflow-hidden" role="region" aria-label="Chat messages">
               {!currentConversation || currentConversation.messages.length === 0 ? (
-                <div className="mx-auto max-w-3xl px-4 py-6">
-                  <EmptyState
-                    selectedTool={selectedTool}
-                    onClearTool={() => setSelectedTool("chat")}
-                    onSelectQuestion={handleSelectQuestion}
-                  />
+                <div className="h-full overflow-y-auto">
+                  <div className="mx-auto max-w-3xl px-4 py-6">
+                    <EmptyState
+                      selectedTool={selectedTool}
+                      onClearTool={() => setSelectedTool("chat")}
+                      onSelectQuestion={handleSelectQuestion}
+                    />
+                  </div>
                 </div>
               ) : (
                 <VirtualizedMessageList
