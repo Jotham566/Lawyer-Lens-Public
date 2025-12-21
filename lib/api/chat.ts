@@ -92,6 +92,7 @@ export type StreamEvent =
   | { type: "citations"; citations: ChatSource[] }
   | { type: "verification"; data: StreamVerificationData }
   | { type: "conversation_id"; id: string }
+  | { type: "followups"; questions: string[] }
   | { type: "done" }
   | { type: "error"; message: string };
 
@@ -119,44 +120,50 @@ export async function* streamChatWithTypewriter(
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const { charsPerTick = 10, tickDelay = 10 } = config;
 
-  let contentBuffer = "";
-  let revealedLength = 0;
-  let isStreaming = true;
-  let citations: ChatSource[] | null = null;
-  let contentUpdatePending: string | null = null;
-  let verificationData: StreamVerificationData | null = null;
-  let conversationId: string | null = null;
+  // Use an object wrapper to avoid TypeScript closure inference issues
+  const state = {
+    contentBuffer: "",
+    revealedLength: 0,
+    isStreaming: true,
+    citations: null as ChatSource[] | null,
+    contentUpdatePending: null as string | null,
+    verificationData: null as StreamVerificationData | null,
+    conversationId: null as string | null,
+    followups: null as string[] | null,
+  };
 
   // Start the stream
   const streamPromise = (async () => {
     for await (const event of streamChatMessage(request, accessToken)) {
       if (event.type === "content") {
-        contentBuffer += event.text;
+        state.contentBuffer += event.text;
       } else if (event.type === "content_update") {
         // Backend sends sanitized content - queue it to replace buffer after reveal
-        contentUpdatePending = event.fullContent;
+        state.contentUpdatePending = event.fullContent;
       } else if (event.type === "citations") {
-        citations = event.citations;
+        state.citations = event.citations;
       } else if (event.type === "verification") {
-        verificationData = event.data;
+        state.verificationData = event.data;
       } else if (event.type === "conversation_id") {
-        conversationId = event.id;
+        state.conversationId = event.id;
+      } else if (event.type === "followups") {
+        state.followups = event.questions;
       } else if (event.type === "done") {
-        isStreaming = false;
+        state.isStreaming = false;
       } else if (event.type === "error") {
-        isStreaming = false;
+        state.isStreaming = false;
         throw new Error(event.message);
       }
     }
-    isStreaming = false;
+    state.isStreaming = false;
   })();
 
   // Reveal content gradually
-  while (isStreaming || revealedLength < contentBuffer.length) {
-    if (revealedLength < contentBuffer.length) {
-      const nextLength = Math.min(revealedLength + charsPerTick, contentBuffer.length);
-      const newText = contentBuffer.slice(revealedLength, nextLength);
-      revealedLength = nextLength;
+  while (state.isStreaming || state.revealedLength < state.contentBuffer.length) {
+    if (state.revealedLength < state.contentBuffer.length) {
+      const nextLength = Math.min(state.revealedLength + charsPerTick, state.contentBuffer.length);
+      const newText = state.contentBuffer.slice(state.revealedLength, nextLength);
+      state.revealedLength = nextLength;
       yield { type: "content", text: newText };
     }
 
@@ -168,23 +175,28 @@ export async function* streamChatWithTypewriter(
   await streamPromise;
 
   // If there's a content update (sanitized version), send it to replace the content
-  if (contentUpdatePending !== null) {
-    yield { type: "content_update", fullContent: contentUpdatePending };
+  if (state.contentUpdatePending !== null) {
+    yield { type: "content_update", fullContent: state.contentUpdatePending };
   }
 
   // Send citations if we have them
-  if (citations) {
-    yield { type: "citations", citations };
+  if (state.citations) {
+    yield { type: "citations", citations: state.citations };
   }
 
   // Send verification data if available (for trust indicators)
-  if (verificationData) {
-    yield { type: "verification", data: verificationData };
+  if (state.verificationData) {
+    yield { type: "verification", data: state.verificationData };
   }
 
   // Send conversation ID update if we have one
-  if (conversationId) {
-    yield { type: "conversation_id", id: conversationId };
+  if (state.conversationId) {
+    yield { type: "conversation_id", id: state.conversationId };
+  }
+
+  // Send follow-up suggestions if we have them
+  if (state.followups && state.followups.length > 0) {
+    yield { type: "followups", questions: state.followups };
   }
 
   yield { type: "done" };
@@ -304,6 +316,17 @@ export async function* streamChatMessage(
           if (content.startsWith("[CONVERSATION_ID]")) {
             const id = content.slice(17); // Remove "[CONVERSATION_ID]" prefix
             yield { type: "conversation_id", id };
+            continue;
+          }
+
+          if (content.startsWith("[FOLLOWUPS]")) {
+            try {
+              const followupsJson = content.slice(11); // Remove "[FOLLOWUPS]" prefix
+              const questions = JSON.parse(followupsJson) as string[];
+              yield { type: "followups", questions };
+            } catch (e) {
+              console.error("Failed to parse follow-up suggestions:", e);
+            }
             continue;
           }
 

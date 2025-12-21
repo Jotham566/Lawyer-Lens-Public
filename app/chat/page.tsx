@@ -210,6 +210,7 @@ function ChatContent() {
         let sources: ChatSource[] = [];
         let verification: VerificationStatus | undefined;
         let confidenceInfo: ConfidenceInfo | undefined;
+        let followups: string[] = []; // AI-generated follow-up suggestions
 
         const stream = streamChatWithTypewriter(
           {
@@ -232,16 +233,21 @@ function ChatContent() {
               break;
             case "content_update":
               fullContent = event.fullContent;
-              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              updateLastMessage(activeConvId, fullContent, sources, followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
               break;
             case "citations":
               sources = event.citations;
-              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              updateLastMessage(activeConvId, fullContent, sources, followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
               break;
             case "verification":
               verification = event.data.verification;
               confidenceInfo = event.data.confidence_info;
-              updateLastMessage(activeConvId, fullContent, sources, getSuggestedQuestions(), verification, confidenceInfo);
+              updateLastMessage(activeConvId, fullContent, sources, followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
+              break;
+            case "followups":
+              followups = event.questions;
+              // Update message with AI-generated follow-ups
+              updateLastMessage(activeConvId, fullContent, sources, followups, verification, confidenceInfo);
               break;
             case "error":
               setError(event.message);
@@ -257,7 +263,7 @@ function ChatContent() {
               break;
             case "done":
               if (sources.length === 0) {
-                updateLastMessage(activeConvId, fullContent, [], getSuggestedQuestions(), verification, confidenceInfo);
+                updateLastMessage(activeConvId, fullContent, [], followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
               }
               break;
           }
