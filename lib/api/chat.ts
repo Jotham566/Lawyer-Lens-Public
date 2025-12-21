@@ -130,6 +130,7 @@ export async function* streamChatWithTypewriter(
     verificationData: null as StreamVerificationData | null,
     conversationId: null as string | null,
     followups: null as string[] | null,
+    errorMessage: null as string | null,  // Store error to yield later
   };
 
   // Start the stream
@@ -152,7 +153,7 @@ export async function* streamChatWithTypewriter(
         state.isStreaming = false;
       } else if (event.type === "error") {
         state.isStreaming = false;
-        throw new Error(event.message);
+        state.errorMessage = event.message;  // Store error instead of throwing
       }
     }
     state.isStreaming = false;
@@ -199,6 +200,11 @@ export async function* streamChatWithTypewriter(
     yield { type: "followups", questions: state.followups };
   }
 
+  // Send error if one occurred (yield instead of throw to avoid dev overlay)
+  if (state.errorMessage) {
+    yield { type: "error", message: state.errorMessage };
+  }
+
   yield { type: "done" };
 }
 
@@ -229,25 +235,26 @@ export async function* streamChatMessage(
   });
 
   if (!response.ok) {
-    // Handle specific error cases
+    // Handle specific error cases - yield error events instead of throwing
+    // to prevent Next.js dev error overlay
     if (response.status === 429) {
       try {
         const errorData = await response.json();
         if (errorData.detail?.error === "usage_limit_exceeded") {
-          throw new Error(
-            `You've reached your monthly limit of ${errorData.detail.limit} AI queries. ` +
-            `Upgrade your plan for more queries.`
-          );
+          yield {
+            type: "error",
+            message: `You've reached your monthly limit of ${errorData.detail.limit} AI queries. Upgrade your plan for more queries.`
+          };
+          return;
         }
-      } catch (e) {
-        // If parsing fails, throw generic rate limit error
-        if (e instanceof Error && e.message.includes("monthly limit")) {
-          throw e;
-        }
+      } catch {
+        // If parsing fails, yield generic rate limit error
       }
-      throw new Error("Rate limit exceeded. Please try again later.");
+      yield { type: "error", message: "Rate limit exceeded. Please try again later." };
+      return;
     }
-    throw new Error(`Chat stream error: ${response.status}`);
+    yield { type: "error", message: `Chat stream error: ${response.status}` };
+    return;
   }
 
   const reader = response.body?.getReader();

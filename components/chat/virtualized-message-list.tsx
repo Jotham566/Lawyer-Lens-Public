@@ -4,6 +4,7 @@ import { useRef, useEffect, useCallback, useState } from "react";
 import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChatMessage } from "./chat-message";
 import { AlertCircle } from "lucide-react";
+import { RateLimitError, isRateLimitError } from "./rate-limit-error";
 import type { ChatMessage as ChatMessageType } from "@/lib/api/types";
 
 interface VirtualizedMessageListProps {
@@ -164,14 +165,18 @@ export function VirtualizedMessageList({
             ))}
 
             {error && (
-              <div className="flex gap-4" role="alert" aria-live="assertive">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
-                  <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+              isRateLimitError(error) ? (
+                <RateLimitError message={error} />
+              ) : (
+                <div className="flex gap-4" role="alert" aria-live="assertive">
+                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
+                    <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                  </div>
+                  <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                    {error}
+                  </div>
                 </div>
-                <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                  {error}
-                </div>
-              </div>
+              )
             )}
           </div>
         </div>
@@ -211,13 +216,19 @@ export function VirtualizedMessageList({
                   transform: `translateY(${virtualItem.start}px)`,
                 }}
               >
-                <div className="flex gap-4 py-3" role="alert" aria-live="assertive">
-                  <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
-                    <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
-                  </div>
-                  <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
-                    {error}
-                  </div>
+                <div className="py-3">
+                  {isRateLimitError(error) ? (
+                    <RateLimitError message={error} />
+                  ) : (
+                    <div className="flex gap-4" role="alert" aria-live="assertive">
+                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-destructive/10 border border-destructive/20">
+                        <AlertCircle className="h-5 w-5 text-destructive" aria-hidden="true" />
+                      </div>
+                      <div className="rounded-2xl bg-destructive/10 px-4 py-3 text-sm text-destructive">
+                        {error}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
             );
