@@ -203,13 +203,6 @@ export function SourceCitation({
   const [openDialogIdx, setOpenDialogIdx] = React.useState<number | null>(null);
   const citationContext = useCitationOptional();
 
-  // Update context with sources when they change
-  React.useEffect(() => {
-    if (citationContext && sources.length > 0) {
-      citationContext.setAllSources(sources);
-    }
-  }, [citationContext, sources]);
-
   // Get the relevant sources (1-indexed to 0-indexed)
   const relevantSources = numbers
     .map((n) => sources[n - 1])
@@ -223,10 +216,11 @@ export function SourceCitation({
     return <span className="text-primary font-medium">{displayText}</span>;
   }
 
-  // Handle click - open panel if context available, otherwise dialog
+  // Handle click - set sources and open panel if context available, otherwise dialog
   const handleClick = (source: ChatSource, number: number, dialogIdx: number) => {
     if (citationContext) {
-      citationContext.openPanel(source, number);
+      // Pass sources to openPanel to set atomically and avoid stale closure
+      citationContext.openPanel(source, number, sources);
     } else {
       setOpenDialogIdx(dialogIdx);
     }
@@ -271,14 +265,14 @@ export function SourceCitation({
               <QualityDot score={source.relevance_score} />
             </span>
           </TooltipTrigger>
-            <TooltipContent
-              side="top"
-              sideOffset={5}
-              className={cn(
-                "max-w-sm p-3 text-left",
-                "bg-popover text-popover-foreground border border-border shadow-lg"
-              )}
-            >
+          <TooltipContent
+            side="top"
+            sideOffset={5}
+            className={cn(
+              "max-w-sm p-3 text-left",
+              "bg-popover text-popover-foreground border border-border shadow-lg"
+            )}
+          >
             {(source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)) && (
               <span className="block text-xs font-semibold text-primary mb-1">
                 {source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)}
@@ -319,7 +313,7 @@ export function SourceCitation({
             <span className="block mt-2 text-[10px] text-primary font-medium">
               {tableInfo.isTable ? "Click to view full table →" : "Click for full details →"}
             </span>
-            </TooltipContent>
+          </TooltipContent>
         </Tooltip>
 
         <SourceDetailDialog
@@ -409,7 +403,7 @@ export function SourceCitation({
               </span>
             );
           })}
-          </TooltipContent>
+        </TooltipContent>
       </Tooltip>
 
       {/* Dialogs for each source - fallback when no context */}

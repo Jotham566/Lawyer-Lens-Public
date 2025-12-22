@@ -104,6 +104,8 @@ interface CitationHoverPreviewProps {
   citationNumber: number;
   /** The source data */
   source: ChatSource;
+  /** All sources in the current message (for context) */
+  sources: ChatSource[];
   /** Child elements (the citation text like [1]) */
   children: React.ReactNode;
   /** Callback when "View in Panel" is clicked */
@@ -121,6 +123,7 @@ interface CitationHoverPreviewProps {
 export function CitationHoverPreview({
   citationNumber,
   source,
+  sources,
   children,
   onOpenPanel,
   highlightText,
@@ -152,7 +155,8 @@ export function CitationHoverPreview({
     if (onOpenPanel) {
       onOpenPanel();
     } else if (citationContext) {
-      citationContext.openPanel(source, citationNumber);
+      // Pass sources to avoid stale closure issues
+      citationContext.openPanel(source, citationNumber, sources);
     }
   };
 

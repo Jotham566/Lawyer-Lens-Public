@@ -25,7 +25,7 @@ import {
   VirtualizedMessageList,
   type ToolMode,
 } from "@/components/chat";
-import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
+import { CitationProvider, ResponsiveSourceView, useCitationOptional } from "@/components/citations";
 import { useChatStore, useCurrentConversation, useActiveConversations } from "@/lib/stores";
 import {
   streamChatWithTypewriter,
@@ -79,6 +79,9 @@ function ChatContent() {
   // to maintain consistent hook order across renders
   const conversations = useActiveConversations();
   const currentConversation = useCurrentConversation();
+
+  // Get citation reset function - may be null before CitationProvider wraps us
+  const citationContext = useCitationOptional();
 
   const [input, setInput] = useState(initialQuery || "");
   const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
@@ -164,6 +167,12 @@ function ChatContent() {
       fetchConversations(accessToken);
     }
   }, [accessToken, fetchConversations]);
+
+  // Reset citation state when switching between conversations
+  // This prevents stale citations from previous conversations from showing
+  useEffect(() => {
+    citationContext?.resetCitations();
+  }, [currentConversationId, citationContext]);
 
   // Auto-fetch conversation details when selecting a conversation with empty messages
   useEffect(() => {

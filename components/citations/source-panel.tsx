@@ -328,8 +328,11 @@ export function SourcePanel() {
     htmlContent: string | null;
   } | null>(null);
 
-  // Source key for tracking
-  const sourceKey = activeSource ? `${activeSource.document_id}-${activeSource.section_id || ''}` : null;
+  // Source key for tracking - must include section (not just section_id) to differentiate
+  // citations from the same document but different sections
+  const sourceKey = activeSource
+    ? `${activeSource.document_id}-${activeSource.section_id || ''}-${activeSource.section || ''}-${activeSource.excerpt?.substring(0, 50) || ''}`
+    : null;
 
   // Check if cached content matches current source
   const cachedForCurrentSource = contentCache?.sourceKey === sourceKey;
@@ -388,7 +391,7 @@ export function SourcePanel() {
             const sectionStart = section.content?.slice(0, 100).toLowerCase().replace(/\s+/g, " ") || "";
             const excerptWords = excerptStart.split(" ").slice(0, 5).join(" ");
             const contentMatches = sectionStart.includes(excerptWords) ||
-                                   section.content?.toLowerCase().includes(excerptWords);
+              section.content?.toLowerCase().includes(excerptWords);
 
             if (contentMatches) {
               newSectionData = section;

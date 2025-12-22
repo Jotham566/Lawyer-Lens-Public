@@ -17,7 +17,7 @@ interface CitationContextValue {
 
   // Panel state
   isPanelOpen: boolean;
-  openPanel: (source: ChatSource, number: number) => void;
+  openPanel: (source: ChatSource, number: number, sources: ChatSource[]) => void;
   closePanel: () => void;
 
   // Navigation
@@ -41,6 +41,9 @@ interface CitationContextValue {
   toggleCompareMode: () => void;
   toggleCompareSelection: (index: number) => void;
   clearCompareSelection: () => void;
+
+  // Reset function for conversation switches
+  resetCitations: () => void;
 }
 
 const CitationContext = React.createContext<CitationContextValue | null>(null);
@@ -87,20 +90,33 @@ export function CitationProvider({ children }: CitationProviderProps) {
     }
   }, [allSources]);
 
-  // Panel controls
-  const openPanel = React.useCallback((source: ChatSource, number: number) => {
+  // Panel controls - accepts sources to avoid stale closure issues
+  const openPanel = React.useCallback((source: ChatSource, number: number, sources: ChatSource[]) => {
+    // Set all state atomically to avoid stale closure issues
+    setAllSources(sources);
     setActiveSourceState(source);
     setActiveCitationNumber(number);
     setIsPanelOpen(true);
-    // Find index
+    // Set index based on provided sources, not closure allSources
     const idx = number - 1;
-    if (idx >= 0 && idx < allSources.length) {
+    if (idx >= 0 && idx < sources.length) {
       setCurrentIndex(idx);
     }
-  }, [allSources]);
+  }, []);
 
   const closePanel = React.useCallback(() => {
     setIsPanelOpen(false);
+  }, []);
+
+  // Reset all citation state - called when switching conversations
+  const resetCitations = React.useCallback(() => {
+    setActiveSourceState(null);
+    setActiveCitationNumber(null);
+    setAllSources([]);
+    setIsPanelOpen(false);
+    setCurrentIndex(0);
+    setIsCompareMode(false);
+    setSelectedForCompare([]);
   }, []);
 
   // Navigation
@@ -227,6 +243,7 @@ export function CitationProvider({ children }: CitationProviderProps) {
     toggleCompareMode,
     toggleCompareSelection,
     clearCompareSelection,
+    resetCitations,
   }), [
     activeSource,
     activeCitationNumber,
@@ -248,6 +265,7 @@ export function CitationProvider({ children }: CitationProviderProps) {
     toggleCompareMode,
     toggleCompareSelection,
     clearCompareSelection,
+    resetCitations,
   ]);
 
   return (
