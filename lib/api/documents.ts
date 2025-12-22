@@ -173,15 +173,18 @@ export async function getDocumentSection(
  * @param documentId - The UUID of the document
  * @param excerpt - The partial excerpt to expand
  * @param section - Optional section reference
+ * @param chunkId - Optional chunk ID for precise lookup (most accurate)
  */
 export async function expandSource(
   documentId: string,
   excerpt: string,
-  section?: string
+  section?: string,
+  chunkId?: string
 ): Promise<ExpandedSourceResponse> {
   const params: Record<string, string | undefined> = {
     excerpt,
     section,
+    chunk_id: chunkId,
   };
   return apiGet<ExpandedSourceResponse>(
     `/public/documents/${documentId}/expand-source`,

@@ -132,56 +132,156 @@ function formatSectionFromData(sectionData: SectionResponse | null): string | nu
   return null;
 }
 
-// Parse table from text
-function parseTableFromText(text: string): { headers: string[]; rows: string[][] } | null {
-  const pipeCount = (text.match(/\|/g) || []).length;
-  if (pipeCount < 2) return null;
+// Parse table from text - handles various formats from legal documents
+function parseTableFromText(text: string): { headers: string[]; rows: string[][]; title?: string } | null {
+  let tableTitle: string | undefined;
+  let contentToParse = text;
 
-  const lines = text.split(/\n/).filter(line => line.trim());
-  if (lines.length < 2) return null;
+  // Extract and remove Schedule/section metadata prefix (e.g., "[Schedule: (Sections 2(1), 3(1)...)]")
+  const metadataMatch = text.match(/^\s*\[([^\]]+)\]\s*/);
+  if (metadataMatch) {
+    tableTitle = metadataMatch[1];
+    contentToParse = text.slice(metadataMatch[0].length);
+  }
 
-  const parsedRows = lines.map(line =>
-    line.split('|').map(cell => cell.trim()).filter(Boolean)
-  ).filter(row => row.length > 0);
+  // Detect delimiter: semicolons are more common in legal tables, pipes as fallback
+  const semicolonCount = (contentToParse.match(/;/g) || []).length;
+  const pipeCount = (contentToParse.match(/\|/g) || []).length;
 
-  if (parsedRows.length < 2) return null;
+  // Need at least 2 delimiters for a table
+  if (semicolonCount < 2 && pipeCount < 2) return null;
 
-  const firstRow = parsedRows[0];
-  const isFirstRowHeader = !firstRow[0].match(/^\d+\.?\s*$/);
+  const delimiter = semicolonCount >= pipeCount ? ';' : '|';
 
-  const headers = isFirstRowHeader
-    ? firstRow
-    : Array.from({ length: Math.max(...parsedRows.map(r => r.length)) }, (_, i) => `Column ${i + 1}`);
+  // Check for "Table columns:" header format
+  // e.g., "Table columns: Description of instrument, Stamp duty"
+  const tableColumnsMatch = contentToParse.match(/^Table columns:\s*([^\n]+)\n/i);
+  let explicitHeaders: string[] = [];
+  if (tableColumnsMatch) {
+    explicitHeaders = tableColumnsMatch[1].split(',').map(h => h.trim()).filter(Boolean);
+    contentToParse = contentToParse.slice(tableColumnsMatch[0].length);
+  }
 
-  const dataRows = isFirstRowHeader ? parsedRows.slice(1) : parsedRows;
+  // Split into lines
+  const lines = contentToParse.split(/\n/).filter(line => line.trim());
+  if (lines.length < 1) return null;
 
-  return { headers, rows: dataRows };
+  // Parse rows based on delimiter
+  const parsedRows: string[][] = [];
+
+  for (const line of lines) {
+    // Skip lines without the delimiter
+    if (!line.includes(delimiter)) continue;
+
+    // Handle semicolon format with column prefix pattern: "ColumnName: RowNum.; Value1; Value2"
+    // e.g., "Description of instrument: 1.; Acknowledgement of a debt exceeding shs 100,000; 25 currency points."
+    if (delimiter === ';') {
+      let processedLine = line;
+
+      // Check for "ColumnName: RowNum.;" pattern at the start
+      const colPrefixMatch = line.match(/^([^:]+):\s*(\d+)\.\s*;/);
+      if (colPrefixMatch) {
+        // Extract row number and the rest of the cells
+        const rowNum = colPrefixMatch[2];
+        processedLine = line.slice(colPrefixMatch[0].length);
+        const cells = processedLine.split(';').map(c => c.trim()).filter(Boolean);
+        parsedRows.push([rowNum, ...cells]);
+      } else {
+        // Regular semicolon split
+        const cells = line.split(';').map(c => c.trim()).filter(Boolean);
+        if (cells.length > 0) {
+          parsedRows.push(cells);
+        }
+      }
+    } else {
+      // Pipe delimiter
+      const cells = line.split('|')
+        .map(cell => cell.trim())
+        .filter((cell, idx, arr) => {
+          if (idx === 0 && !cell) return false;
+          if (idx === arr.length - 1 && !cell) return false;
+          return true;
+        });
+
+      if (cells.length > 0) {
+        parsedRows.push(cells);
+      }
+    }
+  }
+
+  if (parsedRows.length < 1) return null;
+
+  // Determine headers
+  let headers: string[];
+  let dataRows: string[][];
+
+  if (explicitHeaders.length > 0) {
+    // Use explicit headers from "Table columns:" - may need to add "#" column
+    const maxCols = Math.max(...parsedRows.map(r => r.length));
+    if (maxCols > explicitHeaders.length) {
+      // First column is row number, prepend "#"
+      headers = ['#', ...explicitHeaders];
+    } else {
+      headers = explicitHeaders;
+    }
+    dataRows = parsedRows;
+  } else {
+    // Check if first row looks like a header (not starting with a number)
+    const firstRow = parsedRows[0];
+    const isFirstRowData = firstRow.length > 0 && /^\d+\.?\s*$/.test(firstRow[0]);
+
+    if (isFirstRowData) {
+      // Generate headers based on column count
+      const maxCols = Math.max(...parsedRows.map(r => r.length));
+      if (maxCols === 2) {
+        headers = ['#', 'Description'];
+      } else if (maxCols === 3) {
+        headers = ['#', 'Description', 'Amount'];
+      } else {
+        headers = ['#', ...Array.from({ length: maxCols - 1 }, (_, i) => `Column ${i + 1}`)];
+      }
+      dataRows = parsedRows;
+    } else {
+      // First row is header
+      headers = firstRow;
+      dataRows = parsedRows.slice(1);
+    }
+  }
+
+  if (headers.length === 0) return null;
+
+  return { headers, rows: dataRows, title: tableTitle };
 }
 
 // Table display component
-function TableDisplay({ headers, rows }: { headers: string[]; rows: string[][] }) {
+function TableDisplay({ headers, rows, title }: { headers: string[]; rows: string[][]; title?: string }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
-      <table className="w-full text-sm">
-        <thead>
-          <tr className="bg-muted/50 border-b border-border">
-            {headers.map((header, idx) => (
-              <th key={idx} className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap">
-                {header}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody className="divide-y divide-border">
-          {rows.map((row, rowIdx) => (
-            <tr key={rowIdx} className="hover:bg-muted/30 transition-colors">
-              {row.map((cell, cellIdx) => (
-                <td key={cellIdx} className="px-3 py-2 text-foreground">{cell}</td>
+    <div className="space-y-2">
+      {title && (
+        <p className="text-xs font-medium text-muted-foreground px-1">{title}</p>
+      )}
+      <div className="overflow-x-auto rounded-lg border border-border">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="bg-muted/50 border-b border-border">
+              {headers.map((header, idx) => (
+                <th key={idx} className="px-3 py-2 text-left font-semibold text-foreground whitespace-nowrap">
+                  {header}
+                </th>
               ))}
             </tr>
-          ))}
-        </tbody>
-      </table>
+          </thead>
+          <tbody className="divide-y divide-border">
+            {rows.map((row, rowIdx) => (
+              <tr key={rowIdx} className="hover:bg-muted/30 transition-colors">
+                {row.map((cell, cellIdx) => (
+                  <td key={cellIdx} className="px-3 py-2 text-foreground">{cell}</td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
     </div>
   );
 }
@@ -381,22 +481,42 @@ export function SourcePanel() {
         let newSectionData: SectionResponse | null = null;
         let newHtmlContent: string | null = null;
 
+        // Detect if excerpt is likely table/schedule data (should NOT use section lookup)
+        const excerptLower = activeSource.excerpt.toLowerCase();
+        const isLikelyTableData =
+          activeSource.excerpt.includes('|') || // Table separator
+          excerptLower.includes('[schedule') || // Schedule header
+          excerptLower.includes('table columns:') || // Table indicator
+          /\d+\.\s*\|/.test(activeSource.excerpt); // Numbered table rows
+
         const isFullEId = activeSource.section_id && (
           activeSource.section_id.includes("__") ||
           activeSource.section_id.startsWith("sec_") ||
           activeSource.section_id.startsWith("part_")
         );
 
-        if (activeSource.section_id && isFullEId) {
+        // Only try section lookup if NOT table data and has a valid eId
+        if (activeSource.section_id && isFullEId && !isLikelyTableData) {
           try {
             const section = await getDocumentSection(activeSource.document_id, activeSource.section_id);
             if (cancelled) return;
 
-            const excerptStart = activeSource.excerpt.slice(0, 50).toLowerCase().replace(/\s+/g, " ");
-            const sectionStart = section.content?.slice(0, 100).toLowerCase().replace(/\s+/g, " ") || "";
-            const excerptWords = excerptStart.split(" ").slice(0, 5).join(" ");
-            const contentMatches = sectionStart.includes(excerptWords) ||
-              section.content?.toLowerCase().includes(excerptWords);
+            // STRICT content matching - require significant overlap
+            // Extract first meaningful 80 chars of excerpt (skip brackets/metadata)
+            const cleanExcerpt = activeSource.excerpt
+              .replace(/^\s*\[.*?\]\s*/g, '') // Remove leading [Schedule:...] etc
+              .slice(0, 80)
+              .toLowerCase()
+              .replace(/\s+/g, ' ')
+              .trim();
+
+            const sectionContentLower = (section.content || '').toLowerCase().replace(/\s+/g, ' ');
+
+            // Stricter match: Check if first 40 chars of clean excerpt appear in section content
+            // This ensures we're showing the RIGHT section, not just any section with common words
+            const excerptSubstring = cleanExcerpt.slice(0, 40);
+            const contentMatches = excerptSubstring.length > 10 &&
+              sectionContentLower.includes(excerptSubstring);
 
             if (contentMatches) {
               newSectionData = section;
@@ -413,10 +533,12 @@ export function SourcePanel() {
               setIsExpanding(false);
               return;
             }
+            // Content doesn't match - fall through to expandSource
           } catch {
             // Fall through to expand-source
           }
         }
+
 
         if (cancelled) return;
 
@@ -424,7 +546,8 @@ export function SourcePanel() {
           const response = await expandSource(
             activeSource.document_id,
             activeSource.excerpt,
-            activeSource.section || undefined
+            activeSource.section || undefined,
+            activeSource.chunk_id  // Pass chunk_id for precise lookup
           );
 
           if (cancelled) return;
@@ -654,7 +777,7 @@ export function SourcePanel() {
 
               {/* Parsed table */}
               {!htmlContent && !showRaw && expandedTables.length === 0 && hasTable && tableData && (
-                <TableDisplay headers={tableData.headers} rows={tableData.rows} />
+                <TableDisplay headers={tableData.headers} rows={tableData.rows} title={tableData.title} />
               )}
 
               {/* Plain text - shows immediately with basic excerpt, updates when expanded content loads */}
