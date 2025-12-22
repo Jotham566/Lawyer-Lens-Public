@@ -147,6 +147,7 @@
 
   /* Reduced motion support for accessibility */
   @media (prefers-reduced-motion: reduce) {
+
     *,
     *::before,
     *::after {
@@ -162,6 +163,7 @@
     :root {
       --border: 0 0% 20%;
     }
+
     .dark {
       --border: 0 0% 80%;
     }
@@ -195,6 +197,7 @@
 }
 
 @layer components {
+
   /* Document type badges */
   .badge-act {
     @apply bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-300;
@@ -250,11 +253,11 @@
     @apply mb-8;
   }
 
-  .akn-part > .akn-num {
+  .akn-part>.akn-num {
     @apply text-xl font-bold text-primary block mb-1;
   }
 
-  .akn-part > .akn-heading {
+  .akn-part>.akn-heading {
     @apply text-xl font-bold text-primary block mb-4;
   }
 
@@ -263,11 +266,11 @@
     @apply mb-6;
   }
 
-  .akn-chapter > .akn-num {
+  .akn-chapter>.akn-num {
     @apply text-lg font-bold block mb-1;
   }
 
-  .akn-chapter > .akn-heading {
+  .akn-chapter>.akn-heading {
     @apply text-lg font-bold block mb-3;
   }
 
@@ -276,11 +279,11 @@
     @apply mb-4 pl-0;
   }
 
-  .akn-section > .akn-num {
+  .akn-section>.akn-num {
     @apply font-semibold text-primary;
   }
 
-  .akn-section > .akn-heading {
+  .akn-section>.akn-heading {
     @apply font-semibold;
   }
 
@@ -289,7 +292,7 @@
     @apply pl-6 my-2;
   }
 
-  .akn-subsection > .akn-num {
+  .akn-subsection>.akn-num {
     @apply font-medium text-muted-foreground;
   }
 
@@ -298,7 +301,7 @@
     @apply pl-8 my-2;
   }
 
-  .akn-paragraph > .akn-num {
+  .akn-paragraph>.akn-num {
     @apply font-medium text-muted-foreground mr-2;
   }
 
@@ -307,7 +310,7 @@
     @apply pl-10 my-1;
   }
 
-  .akn-subparagraph > .akn-num {
+  .akn-subparagraph>.akn-num {
     @apply text-muted-foreground mr-2;
   }
 
@@ -316,7 +319,7 @@
     @apply pl-12 my-1;
   }
 
-  .akn-point > .akn-num {
+  .akn-point>.akn-num {
     @apply text-muted-foreground mr-2;
   }
 
@@ -325,7 +328,7 @@
     @apply mt-1;
   }
 
-  .akn-content > .akn-p {
+  .akn-content>.akn-p {
     @apply my-2;
   }
 
@@ -343,7 +346,7 @@
     @apply my-1 flex;
   }
 
-  .akn-item > .akn-num {
+  .akn-item>.akn-num {
     @apply flex-shrink-0 mr-2 text-muted-foreground min-w-[2rem];
   }
 
@@ -427,9 +430,39 @@
       page-break-inside: avoid;
     }
   }
+
+  /* Section highlight animation for TOC navigation */
+  .section-highlighted {
+    @apply relative pl-4 rounded-r-lg border-l-4 border-solid border-primary bg-primary/10;
+    margin-left: -1rem !important;
+    animation: highlight-pulse 0.6s ease-out;
+  }
+
+  /* Initial pulse animation when navigating */
+  @keyframes highlight-pulse {
+    0% {
+      background: linear-gradient(to right,
+          hsl(var(--primary) / 0.30),
+          hsl(var(--primary) / 0.15) 50%,
+          transparent 100%) !important;
+    }
+
+    100% {
+      background: linear-gradient(to right,
+          hsl(var(--primary) / 0.15),
+          hsl(var(--primary) / 0.05) 50%,
+          transparent 100%) !important;
+    }
+  }
+
+  /* Citation excerpt highlight in source panel */
+  .citation-excerpt-highlight {
+    @apply bg-primary/10 border-l-2 border-primary pl-3 py-1 rounded-r;
+  }
 }
 
 @layer utilities {
+
   /* Hide scrollbar but allow scrolling */
   .scrollbar-hide {
     -ms-overflow-style: none;
@@ -585,6 +618,7 @@
   * {
     @apply border-border outline-ring/50;
   }
+
   body {
     @apply bg-background text-foreground;
   }

@@ -170,9 +170,17 @@ function ChatContent() {
 
   // Reset citation state when switching between conversations
   // This prevents stale citations from previous conversations from showing
+  // Note: We use a ref pattern to avoid dependency on citationContext object
+  // which would cause infinite re-renders
+  const resetCitationsRef = useRef(citationContext?.resetCitations);
   useEffect(() => {
-    citationContext?.resetCitations();
-  }, [currentConversationId, citationContext]);
+    resetCitationsRef.current = citationContext?.resetCitations;
+  }, [citationContext?.resetCitations]);
+
+  useEffect(() => {
+    resetCitationsRef.current?.();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentConversationId]);
 
   // Auto-fetch conversation details when selecting a conversation with empty messages
   useEffect(() => {

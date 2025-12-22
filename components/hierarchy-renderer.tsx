@@ -1,5 +1,6 @@
 "use client";
 
+import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { HierarchicalNode } from "@/lib/api/types";
 
@@ -15,8 +16,12 @@ interface HierarchyRendererProps {
     commencement_date?: string;
   };
   fontSize?: "small" | "medium" | "large";
+  highlightedSectionId?: string | null;
   className?: string;
 }
+
+// Context for passing highlight state down the component tree
+const HighlightContext = React.createContext<string | null>(null);
 
 /**
  * Hierarchical Structure Renderer
@@ -28,28 +33,31 @@ export function HierarchyRenderer({
   node,
   document,
   fontSize = "medium",
+  highlightedSectionId = null,
   className,
 }: HierarchyRendererProps) {
   return (
-    <div
-      className={cn(
-        "hierarchy-document leading-relaxed",
-        fontSize === "small" && "text-sm",
-        fontSize === "medium" && "text-base",
-        fontSize === "large" && "text-lg",
-        className
-      )}
-    >
-      {/* Document Header using actual metadata */}
-      {document && <DocumentHeader document={document} />}
+    <HighlightContext.Provider value={highlightedSectionId}>
+      <div
+        className={cn(
+          "hierarchy-document leading-relaxed",
+          fontSize === "small" && "text-sm",
+          fontSize === "medium" && "text-base",
+          fontSize === "large" && "text-lg",
+          className
+        )}
+      >
+        {/* Document Header using actual metadata */}
+        {document && <DocumentHeader document={document} />}
 
-      {/* Document Body */}
-      <div className="hierarchy-body">
-        {node.children?.map((child, index) => (
-          <RenderNode key={index} node={child} depth={0} />
-        ))}
+        {/* Document Body */}
+        <div className="hierarchy-body">
+          {node.children?.map((child, index) => (
+            <RenderNode key={index} node={child} depth={0} />
+          ))}
+        </div>
       </div>
-    </div>
+    </HighlightContext.Provider>
   );
 }
 
@@ -158,8 +166,17 @@ function RenderNode({ node, depth }: RenderNodeProps) {
 
 function Part({ node }: { node: HierarchicalNode }) {
   const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
   return (
-    <section id={id} data-toc-id={id} className="mt-10 first:mt-0 scroll-mt-4">
+    <section
+      id={id}
+      data-toc-id={id}
+      className={cn(
+        "mt-10 first:mt-0 scroll-mt-4",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <h2 className="text-center font-bold text-lg mb-6">
         {node.identifier && <span>PART {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -174,8 +191,17 @@ function Part({ node }: { node: HierarchicalNode }) {
 
 function Chapter({ node }: { node: HierarchicalNode }) {
   const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
   return (
-    <section id={id} data-toc-id={id} className="mt-8 scroll-mt-4">
+    <section
+      id={id}
+      data-toc-id={id}
+      className={cn(
+        "mt-8 scroll-mt-4",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <h3 className="text-center font-bold mb-4">
         {node.identifier && <span>Chapter {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -190,8 +216,17 @@ function Chapter({ node }: { node: HierarchicalNode }) {
 
 function Section({ node }: { node: HierarchicalNode }) {
   const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
   return (
-    <section id={id} data-toc-id={id} className="mt-6 scroll-mt-4">
+    <section
+      id={id}
+      data-toc-id={id}
+      className={cn(
+        "mt-6 scroll-mt-4",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <div className="font-bold mb-2">
         {node.identifier && <span>{node.identifier}. </span>}
         {node.title && <span>{node.title}</span>}
@@ -250,8 +285,17 @@ function Subparagraph({ node }: { node: HierarchicalNode }) {
 
 function Schedule({ node }: { node: HierarchicalNode }) {
   const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
   return (
-    <section id={id} data-toc-id={id} className="mt-10 pt-8 border-t-2 border-border scroll-mt-4">
+    <section
+      id={id}
+      data-toc-id={id}
+      className={cn(
+        "mt-10 pt-8 border-t-2 border-border scroll-mt-4",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <h2 className="text-center font-bold text-lg mb-6">
         {node.identifier && <span>Schedule {node.identifier}</span>}
         {node.identifier && node.title && <span> – </span>}
@@ -266,8 +310,17 @@ function Schedule({ node }: { node: HierarchicalNode }) {
 
 function Article({ node }: { node: HierarchicalNode }) {
   const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
   return (
-    <section id={id} data-toc-id={id} className="mt-6 scroll-mt-4">
+    <section
+      id={id}
+      data-toc-id={id}
+      className={cn(
+        "mt-6 scroll-mt-4",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <div className="font-bold mb-2">
         {node.identifier && <span>Article {node.identifier}. </span>}
         {node.title && <span>{node.title}</span>}

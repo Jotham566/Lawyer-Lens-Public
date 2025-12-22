@@ -37,15 +37,30 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
 function getTypeBadgeColor(type: DocumentType) {
   switch (type) {
     case "act":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
+      return {
+        badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
+        borderLeft: "border-l-blue-500 dark:border-l-blue-400",
+      };
     case "judgment":
-      return "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300";
+      return {
+        badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300",
+        borderLeft: "border-l-purple-500 dark:border-l-purple-400",
+      };
     case "regulation":
-      return "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300";
+      return {
+        badge: "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
+        borderLeft: "border-l-green-500 dark:border-l-green-400",
+      };
     case "constitution":
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300";
+      return {
+        badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
+        borderLeft: "border-l-amber-500 dark:border-l-amber-400",
+      };
     default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300";
+      return {
+        badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
+        borderLeft: "border-l-gray-500 dark:border-l-gray-400",
+      };
   }
 }
 
@@ -135,6 +150,7 @@ export function CitationHoverPreview({
   const Icon = documentIconMap[source.document_type] || FileText;
   const sectionRef = formatSectionRef(source);
   const tableInfo = detectTableInfo(source.excerpt);
+  const typeColors = getTypeBadgeColor(source.document_type);
 
   // Copy citation to clipboard
   const handleCopy = async (e: React.MouseEvent) => {
@@ -202,7 +218,7 @@ export function CitationHoverPreview({
             </div>
             <span className={cn(
               "text-[10px] px-1.5 py-0.5 rounded capitalize shrink-0",
-              getTypeBadgeColor(source.document_type)
+              typeColors.badge
             )}>
               {source.document_type}
             </span>
@@ -214,7 +230,10 @@ export function CitationHoverPreview({
         {/* Excerpt preview */}
         <div className="p-3">
           {tableInfo.isTable ? (
-            <div className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
+            <div className={cn(
+              "flex items-center gap-2 p-2 rounded-md border-l-4 bg-muted/50 border border-border",
+              typeColors.borderLeft
+            )}>
               <Table2 className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-xs text-foreground">
                 <span className="font-medium">Table Data</span>
@@ -224,12 +243,17 @@ export function CitationHoverPreview({
               </span>
             </div>
           ) : (
-            <HighlightedExcerptCompact
-              excerpt={source.excerpt}
-              highlightText={highlightText}
-              maxLength={250}
-              className="text-foreground/80"
-            />
+            <div className={cn(
+              "rounded-md border-l-4 bg-muted/30 border border-border p-2",
+              typeColors.borderLeft
+            )}>
+              <HighlightedExcerptCompact
+                excerpt={source.excerpt}
+                highlightText={highlightText}
+                maxLength={250}
+                className="text-foreground/80"
+              />
+            </div>
           )}
         </div>
 

@@ -87,6 +87,7 @@ function DocumentContent({ id }: { id: string }) {
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "medium"
   );
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
   const addToHistory = useLibraryStore((s) => s.addToHistory);
 
   // Add to reading history when document loads
@@ -245,27 +246,27 @@ function DocumentContent({ id }: { id: string }) {
               {(document.document_type === "act" ||
                 document.document_type === "regulation" ||
                 document.document_type === "constitution") && (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="outline" size="sm">
-                      <Download className="mr-2 h-4 w-4" />
-                      Download
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent>
-                    <DropdownMenuItem asChild>
-                      <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="outline" size="sm">
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent>
+                      <DropdownMenuItem asChild>
+                        <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                          <FileText className="mr-2 h-4 w-4" />
+                          PDF
+                        </a>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem disabled>
                         <FileText className="mr-2 h-4 w-4" />
-                        PDF
-                      </a>
-                    </DropdownMenuItem>
-                    <DropdownMenuItem disabled>
-                      <FileText className="mr-2 h-4 w-4" />
-                      AKN XML (coming soon)
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              )}
+                        AKN XML (coming soon)
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                )}
 
               <Button variant="outline" size="sm" onClick={copyLink}>
                 {copied ? (
@@ -340,106 +341,108 @@ function DocumentContent({ id }: { id: string }) {
             {(document.document_type === "act" ||
               document.document_type === "regulation" ||
               document.document_type === "constitution") && (
-              <>
-                {/* Font Size Controls */}
-                <div className="mb-4 flex items-center justify-end gap-1">
-                  <span className="mr-2 text-sm text-muted-foreground">
-                    Text size:
-                  </span>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={fontSize === "small" ? "secondary" : "ghost"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setFontSize("small")}
-                      >
-                        <span className="text-xs">A</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Small text</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={fontSize === "medium" ? "secondary" : "ghost"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setFontSize("medium")}
-                      >
-                        <span className="text-sm">A</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Medium text</TooltipContent>
-                  </Tooltip>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <Button
-                        variant={fontSize === "large" ? "secondary" : "ghost"}
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setFontSize("large")}
-                      >
-                        <span className="text-base">A</span>
-                      </Button>
-                    </TooltipTrigger>
-                    <TooltipContent>Large text</TooltipContent>
-                  </Tooltip>
-                </div>
+                <>
+                  {/* Font Size Controls */}
+                  <div className="mb-4 flex items-center justify-end gap-1">
+                    <span className="mr-2 text-sm text-muted-foreground">
+                      Text size:
+                    </span>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={fontSize === "small" ? "secondary" : "ghost"}
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setFontSize("small")}
+                        >
+                          <span className="text-xs">A</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Small text</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={fontSize === "medium" ? "secondary" : "ghost"}
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setFontSize("medium")}
+                        >
+                          <span className="text-sm">A</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Medium text</TooltipContent>
+                    </Tooltip>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button
+                          variant={fontSize === "large" ? "secondary" : "ghost"}
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => setFontSize("large")}
+                        >
+                          <span className="text-base">A</span>
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent>Large text</TooltipContent>
+                    </Tooltip>
+                  </div>
 
-                {/* Main content with ToC sidebar */}
-                <div className="flex gap-6">
-                  {/* Table of Contents - sticky sidebar */}
-                  {document.hierarchical_structure && (
-                    <div className="hidden lg:block sticky top-4 self-start">
-                      <TableOfContents
-                        node={document.hierarchical_structure}
-                        className="shadow-sm"
-                      />
-                    </div>
-                  )}
-
-                  {/* Document content */}
-                  <Card className="flex-1 min-w-0">
-                    <CardContent className="py-8 px-6 md:px-10">
-                      {/* Render hierarchical structure if available */}
-                      {document.hierarchical_structure ? (
-                        <HierarchyRenderer
+                  {/* Main content with ToC sidebar */}
+                  <div className="flex gap-6">
+                    {/* Table of Contents - sticky sidebar */}
+                    {document.hierarchical_structure && (
+                      <div className="hidden lg:block sticky top-4 self-start">
+                        <TableOfContents
                           node={document.hierarchical_structure}
-                          document={{
-                            title: document.title,
-                            short_title: document.short_title,
-                            jurisdiction: document.jurisdiction,
-                            act_year: document.act_year,
-                            chapter: document.chapter,
-                            publication_date: document.publication_date,
-                            commencement_date: document.commencement_date,
-                          }}
-                          fontSize={fontSize}
+                          onSectionSelect={setHighlightedSectionId}
+                          className="shadow-sm"
                         />
-                      ) : (
-                        <div className="text-center py-8">
-                          <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                          <p className="mt-4 text-muted-foreground">
-                            Document content is not available in structured format.
-                          </p>
-                          <Button className="mt-4" asChild>
-                            <a
-                              href={pdfUrl}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              <ExternalLink className="mr-2 h-4 w-4" />
-                              View PDF instead
-                            </a>
-                          </Button>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </div>
-              </>
-            )}
+                      </div>
+                    )}
+
+                    {/* Document content */}
+                    <Card className="flex-1 min-w-0">
+                      <CardContent className="py-8 px-6 md:px-10">
+                        {/* Render hierarchical structure if available */}
+                        {document.hierarchical_structure ? (
+                          <HierarchyRenderer
+                            node={document.hierarchical_structure}
+                            document={{
+                              title: document.title,
+                              short_title: document.short_title,
+                              jurisdiction: document.jurisdiction,
+                              act_year: document.act_year,
+                              chapter: document.chapter,
+                              publication_date: document.publication_date,
+                              commencement_date: document.commencement_date,
+                            }}
+                            fontSize={fontSize}
+                            highlightedSectionId={highlightedSectionId}
+                          />
+                        ) : (
+                          <div className="text-center py-8">
+                            <FileText className="mx-auto h-12 w-12 text-muted-foreground/50" />
+                            <p className="mt-4 text-muted-foreground">
+                              Document content is not available in structured format.
+                            </p>
+                            <Button className="mt-4" asChild>
+                              <a
+                                href={pdfUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                <ExternalLink className="mr-2 h-4 w-4" />
+                                View PDF instead
+                              </a>
+                            </Button>
+                          </div>
+                        )}
+                      </CardContent>
+                    </Card>
+                  </div>
+                </>
+              )}
 
             {/* Metadata */}
             <Card className="mt-6">

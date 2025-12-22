@@ -18,6 +18,7 @@ interface TocItem {
 
 interface TableOfContentsProps {
   node: HierarchicalNode;
+  onSectionSelect?: (id: string) => void;
   className?: string;
 }
 
@@ -210,7 +211,7 @@ function TocItemComponent({
  * Table of Contents component
  * Extracts structure from hierarchical node and provides navigation
  */
-export function TableOfContents({ node, className }: TableOfContentsProps) {
+export function TableOfContents({ node, onSectionSelect, className }: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -223,6 +224,8 @@ export function TableOfContents({ node, className }: TableOfContentsProps) {
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveId(id);
+      // Notify parent of selection for highlighting
+      onSectionSelect?.(id);
     }
   };
 
