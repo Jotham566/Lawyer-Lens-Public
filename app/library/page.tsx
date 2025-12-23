@@ -1,404 +1,196 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
-import {
-  Library,
-  Bookmark,
-  Clock,
-  FileText,
-  Gavel,
-  ScrollText,
-  BookOpen,
-  Trash2,
-  ArrowRight,
-  Search,
-} from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Plus, Book, FileText, Loader2, FolderOpen, Calendar, ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog";
-import { Skeleton } from "@/components/ui/skeleton";
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
+import { collectionsApi, type Collection } from "@/lib/api/collections";
+import { toast } from "sonner";
 import { cn } from "@/lib/utils";
-import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
-import {
-  useSavedDocuments,
-  useReadingHistory,
-  useLibraryStore,
-  type SavedDocument,
-  type ReadingHistoryEntry,
-} from "@/lib/stores";
-import type { DocumentType } from "@/lib/api/types";
-import { useRequireAuth } from "@/components/providers";
-import { formatDistanceToNow } from "date-fns";
-
-const documentTypeConfig: Record<
-  DocumentType,
-  { icon: typeof FileText; color: string; bgColor: string; label: string }
-> = {
-  act: {
-    icon: FileText,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
-    label: "Act",
-  },
-  judgment: {
-    icon: Gavel,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
-    label: "Judgment",
-  },
-  regulation: {
-    icon: ScrollText,
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
-    label: "Regulation",
-  },
-  constitution: {
-    icon: BookOpen,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
-    label: "Constitution",
-  },
-};
-
-function SavedDocumentCard({ doc }: { doc: SavedDocument }) {
-  const unsaveDocument = useLibraryStore((s) => s.unsaveDocument);
-  const config = documentTypeConfig[doc.documentType];
-  const DocIcon = config.icon;
-
-  return (
-    <Card className="group relative transition-colors hover:border-primary/50 hover:bg-muted/30">
-      <Link href={`/document/${doc.id}`} className="block">
-        <CardHeader className="pb-2">
-          <div className="flex items-start gap-3">
-            <div
-              className={cn(
-                "flex h-10 w-10 shrink-0 items-center justify-center rounded-lg",
-                config.bgColor
-              )}
-            >
-              <DocIcon className={cn("h-5 w-5", config.color)} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <CardTitle className="text-sm font-medium leading-tight line-clamp-2">
-                {doc.title}
-              </CardTitle>
-              <div className="mt-1 flex flex-wrap items-center gap-2">
-                <Badge variant="secondary" className="text-xs">
-                  {config.label}
-                </Badge>
-                {doc.actYear && (
-                  <span className="text-xs text-muted-foreground">
-                    {doc.actYear}
-                  </span>
-                )}
-                {doc.caseNumber && (
-                  <span className="text-xs text-muted-foreground">
-                    {doc.caseNumber}
-                  </span>
-                )}
-              </div>
-            </div>
-          </div>
-        </CardHeader>
-        {doc.notes && (
-          <CardContent className="pt-0 pb-3">
-            <p className="text-xs text-muted-foreground line-clamp-2">
-              {doc.notes}
-            </p>
-          </CardContent>
-        )}
-      </Link>
-      <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
-        <AlertDialog>
-          <AlertDialogTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-8 w-8"
-              onClick={(e) => e.preventDefault()}
-            >
-              <Trash2 className="h-4 w-4 text-muted-foreground hover:text-destructive" />
-            </Button>
-          </AlertDialogTrigger>
-          <AlertDialogContent>
-            <AlertDialogHeader>
-              <AlertDialogTitle>Remove from library?</AlertDialogTitle>
-              <AlertDialogDescription>
-                This will remove &quot;{doc.title}&quot; from your saved documents.
-                You can always save it again later.
-              </AlertDialogDescription>
-            </AlertDialogHeader>
-            <AlertDialogFooter>
-              <AlertDialogCancel>Cancel</AlertDialogCancel>
-              <AlertDialogAction onClick={() => unsaveDocument(doc.id)}>
-                Remove
-              </AlertDialogAction>
-            </AlertDialogFooter>
-          </AlertDialogContent>
-        </AlertDialog>
-      </div>
-    </Card>
-  );
-}
-
-function HistoryEntryCard({ entry }: { entry: ReadingHistoryEntry }) {
-  const config = documentTypeConfig[entry.documentType];
-  const DocIcon = config.icon;
-
-  const relativeTime = useMemo(
-    () => formatDistanceToNow(new Date(entry.lastAccessedAt), { addSuffix: true }),
-    [entry.lastAccessedAt]
-  );
-
-  return (
-    <Link href={`/document/${entry.documentId}`}>
-      <Card className="transition-colors hover:border-primary/50 hover:bg-muted/30">
-        <CardHeader className="py-3">
-          <div className="flex items-center gap-3">
-            <div
-              className={cn(
-                "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                config.bgColor
-              )}
-            >
-              <DocIcon className={cn("h-4 w-4", config.color)} />
-            </div>
-            <div className="min-w-0 flex-1">
-              <h3 className="text-sm font-medium leading-tight line-clamp-1">
-                {entry.title}
-              </h3>
-              <div className="flex items-center gap-2 mt-0.5">
-                <Badge variant="outline" className="text-xs">
-                  {config.label}
-                </Badge>
-                <span className="text-xs text-muted-foreground">{relativeTime}</span>
-                {entry.accessCount > 1 && (
-                  <span className="text-xs text-muted-foreground">
-                    ({entry.accessCount} views)
-                  </span>
-                )}
-              </div>
-            </div>
-            <ArrowRight className="h-4 w-4 text-muted-foreground shrink-0" />
-          </div>
-        </CardHeader>
-      </Card>
-    </Link>
-  );
-}
 
 export default function LibraryPage() {
-  // Require authentication - redirects to login if not authenticated
-  const { isLoading: authLoading } = useRequireAuth();
-  const savedDocuments = useSavedDocuments();
-  const readingHistory = useReadingHistory();
-  const clearHistory = useLibraryStore((s) => s.clearHistory);
-  const [activeTab, setActiveTab] = useState("saved");
+  const [collections, setCollections] = useState<Collection[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [createOpen, setCreateOpen] = useState(false);
+  const [creating, setCreating] = useState(false);
+  const [newName, setNewName] = useState("");
+  const [newDesc, setNewDesc] = useState("");
 
-  // Show loading while checking auth
-  if (authLoading) {
+  useEffect(() => {
+    loadCollections();
+  }, []);
+
+  const loadCollections = async () => {
+    try {
+      const data = await collectionsApi.getAll();
+      setCollections(data);
+    } catch (error) {
+      console.error("Failed to load collections:", error);
+      toast.error("Failed to load collections");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleCreate = async () => {
+    if (!newName.trim()) {
+      toast.error("Collection name is required");
+      return;
+    }
+
+    setCreating(true);
+    try {
+      const newCollection = await collectionsApi.create({
+        name: newName.trim(),
+        description: newDesc.trim() || undefined,
+        is_public: false,
+      });
+      setCollections([newCollection, ...collections]);
+      setCreateOpen(false);
+      setNewName("");
+      setNewDesc("");
+      toast.success("Collection created");
+    } catch (error) {
+      console.error("Failed to create collection:", error);
+      toast.error("Failed to create collection");
+    } finally {
+      setCreating(false);
+    }
+  };
+
+  if (loading) {
     return (
-      <div className="container mx-auto px-4 py-6 max-w-6xl">
-        <Skeleton className="h-8 w-32 mb-6" />
-        <div className="mb-8">
-          <div className="flex items-center gap-3 mb-4">
-            <Skeleton className="h-12 w-12 rounded-xl" />
-            <div>
-              <Skeleton className="h-8 w-48 mb-2" />
-              <Skeleton className="h-4 w-32" />
-            </div>
-          </div>
-        </div>
-        <Skeleton className="h-64 w-full" />
+      <div className="flex h-[50vh] items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
       </div>
     );
   }
 
-  // Group saved documents by type
-  const savedByType = savedDocuments.reduce(
-    (acc, doc) => {
-      acc[doc.documentType] = (acc[doc.documentType] || 0) + 1;
-      return acc;
-    },
-    {} as Record<DocumentType, number>
-  );
-
   return (
-    <div className="container mx-auto px-4 py-6 max-w-6xl">
-      <Breadcrumbs className="mb-6" />
-
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-indigo-50 dark:bg-indigo-950/50">
-            <Library className="h-6 w-6 text-indigo-600 dark:text-indigo-400" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              My Library
-            </h1>
-            <p className="text-muted-foreground">
-              {savedDocuments.length} saved document
-              {savedDocuments.length !== 1 ? "s" : ""}
-            </p>
-          </div>
+    <div className="container py-8 mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">My Library</h1>
+          <p className="text-muted-foreground mt-2">
+            Manage your saved documents and research collections
+          </p>
         </div>
+        <Dialog open={createOpen} onOpenChange={setCreateOpen}>
+          <DialogTrigger asChild>
+            <Button>
+              <Plus className="mr-2 h-4 w-4" />
+              New Collection
+            </Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Create New Collection</DialogTitle>
+              <DialogDescription>
+                Create a collection to organize your research and saved documents.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="grid gap-4 py-4">
+              <div className="grid gap-2">
+                <Label htmlFor="name">Name</Label>
+                <Input
+                  id="name"
+                  value={newName}
+                  onChange={(e) => setNewName(e.target.value)}
+                  placeholder="e.g., Constitutional Law Research"
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label htmlFor="description">Description (optional)</Label>
+                <Textarea
+                  id="description"
+                  value={newDesc}
+                  onChange={(e) => setNewDesc(e.target.value)}
+                  placeholder="What is this collection for?"
+                />
+              </div>
+            </div>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setCreateOpen(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleCreate} disabled={creating}>
+                {creating && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                Create
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
 
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="saved" className="gap-2">
-            <Bookmark className="h-4 w-4" />
-            Saved
-            {savedDocuments.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {savedDocuments.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-          <TabsTrigger value="history" className="gap-2">
-            <Clock className="h-4 w-4" />
-            History
-            {readingHistory.length > 0 && (
-              <Badge variant="secondary" className="ml-1">
-                {readingHistory.length}
-              </Badge>
-            )}
-          </TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="saved" className="mt-0">
-          {savedDocuments.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Bookmark className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mt-4 text-lg font-medium">No saved documents</h3>
-                <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-                  Start building your library by saving documents you want to
-                  reference later. Click the bookmark icon on any document to
-                  save it.
-                </p>
-                <div className="mt-6 flex flex-wrap justify-center gap-3">
-                  <Button variant="outline" asChild>
-                    <Link href="/legislation/acts">
-                      <FileText className="mr-2 h-4 w-4" />
-                      Browse Acts
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="/judgments">
-                      <Gavel className="mr-2 h-4 w-4" />
-                      Browse Judgments
-                    </Link>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <Link href="/search">
-                      <Search className="mr-2 h-4 w-4" />
-                      Search
-                    </Link>
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Summary badges */}
-              <div className="flex flex-wrap gap-2 mb-6">
-                {Object.entries(savedByType).map(([type, count]) => {
-                  const config = documentTypeConfig[type as DocumentType];
-                  return (
-                    <Badge
-                      key={type}
-                      variant="secondary"
-                      className={cn("gap-1", config.bgColor)}
-                    >
-                      {config.label}: {count}
-                    </Badge>
-                  );
-                })}
-              </div>
-
-              {/* Document grid */}
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {savedDocuments.map((doc) => (
-                  <SavedDocumentCard key={doc.id} doc={doc} />
-                ))}
-              </div>
-            </>
-          )}
-        </TabsContent>
-
-        <TabsContent value="history" className="mt-0">
-          {readingHistory.length === 0 ? (
-            <Card>
-              <CardContent className="py-12 text-center">
-                <Clock className="mx-auto h-12 w-12 text-muted-foreground/50" />
-                <h3 className="mt-4 text-lg font-medium">No reading history</h3>
-                <p className="mt-1 text-sm text-muted-foreground max-w-md mx-auto">
-                  Documents you view will appear here for quick access. Your
-                  history is stored locally and is private to you.
-                </p>
-                <Button variant="outline" className="mt-6" asChild>
-                  <Link href="/search">
-                    <Search className="mr-2 h-4 w-4" />
-                    Search Documents
-                  </Link>
-                </Button>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              <div className="flex items-center justify-between mb-4">
-                <p className="text-sm text-muted-foreground">
-                  Recently viewed documents
-                </p>
-                <AlertDialog>
-                  <AlertDialogTrigger asChild>
-                    <Button variant="ghost" size="sm">
-                      <Trash2 className="mr-2 h-4 w-4" />
-                      Clear History
-                    </Button>
-                  </AlertDialogTrigger>
-                  <AlertDialogContent>
-                    <AlertDialogHeader>
-                      <AlertDialogTitle>Clear reading history?</AlertDialogTitle>
-                      <AlertDialogDescription>
-                        This will remove all items from your reading history.
-                        This action cannot be undone.
-                      </AlertDialogDescription>
-                    </AlertDialogHeader>
-                    <AlertDialogFooter>
-                      <AlertDialogCancel>Cancel</AlertDialogCancel>
-                      <AlertDialogAction onClick={clearHistory}>
-                        Clear History
-                      </AlertDialogAction>
-                    </AlertDialogFooter>
-                  </AlertDialogContent>
-                </AlertDialog>
-              </div>
-
-              <div className="space-y-2">
-                {readingHistory.map((entry) => (
-                  <HistoryEntryCard key={entry.documentId} entry={entry} />
-                ))}
-              </div>
-            </>
-          )}
-        </TabsContent>
-      </Tabs>
+      {collections.length === 0 ? (
+        <Card className="border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="rounded-full bg-muted p-4">
+              <Book className="h-8 w-8 text-muted-foreground" />
+            </div>
+            <h3 className="mt-4 text-lg font-semibold">No collections yet</h3>
+            <p className="mb-4 mt-2 text-sm text-muted-foreground max-w-sm">
+              Create a collection to start saving documents, sections, and excerpts for your research.
+            </p>
+            <Button onClick={() => setCreateOpen(true)}>
+              <Plus className="mr-2 h-4 w-4" />
+              Create Collection
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+          {collections.map((collection) => (
+            <Link key={collection.id} href={`/library/${collection.id}`} className="group block h-full">
+              <Card className="h-full transition-all group-hover:border-primary/50 group-hover:shadow-md">
+                <CardHeader>
+                  <CardTitle className="flex items-start justify-between gap-2">
+                    <span className="truncate">{collection.name}</span>
+                    <FolderOpen className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                  </CardTitle>
+                  <CardDescription className="line-clamp-2">
+                    {collection.description || "No description"}
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-4 text-sm text-muted-foreground">
+                    <div className="flex items-center gap-1">
+                      <FileText className="h-4 w-4" />
+                      <span>{collection.item_count || 0} items</span>
+                    </div>
+                  </div>
+                </CardContent>
+                <CardFooter className="text-xs text-muted-foreground border-t pt-4 mt-2">
+                  <div className="flex items-center gap-1">
+                    <Calendar className="h-3 w-3" />
+                    <span>Updated {new Date(collection.updated_at).toLocaleDateString()}</span>
+                  </div>
+                </CardFooter>
+              </Card>
+            </Link>
+          ))}
+        </div>
+      )}
     </div>
   );
 }

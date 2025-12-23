@@ -40,7 +40,7 @@ import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
-import { SaveButton } from "@/components/library/save-button";
+import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { useLibraryStore } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
 
@@ -328,17 +328,15 @@ function DocumentContent({ id }: { id: string }) {
             {/* Actions */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
               {/* Save to Library */}
-              <SaveButton
-                document={{
-                  id: document.id,
-                  humanReadableId: document.human_readable_id,
+              <SaveToCollectionButton
+                documentId={document.id}
+                itemType="document"
+                meta={{
                   title: document.title,
-                  documentType: document.document_type,
-                  shortTitle: document.short_title,
-                  actYear: document.act_year,
-                  caseNumber: document.case_number,
-                  courtLevel: document.court_level,
-                  publicationDate: document.publication_date,
+                  short_title: document.short_title,
+                  document_type: document.document_type,
+                  act_year: document.act_year,
+                  chapter: document.chapter,
                 }}
                 size="sm"
               />
@@ -517,6 +515,7 @@ function DocumentContent({ id }: { id: string }) {
                         {/* Render hierarchical structure if available */}
                         {document.hierarchical_structure ? (
                           <HierarchyRenderer
+                            documentId={document.id}
                             node={document.hierarchical_structure}
                             document={{
                               title: document.title,

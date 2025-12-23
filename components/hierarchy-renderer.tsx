@@ -3,6 +3,7 @@
 import * as React from "react";
 import { cn } from "@/lib/utils";
 import type { HierarchicalNode } from "@/lib/api/types";
+import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 
 interface HierarchyRendererProps {
   node: HierarchicalNode;
@@ -18,10 +19,25 @@ interface HierarchyRendererProps {
   fontSize?: "small" | "medium" | "large";
   highlightedSectionId?: string | null;
   className?: string;
+  documentId?: string;
 }
 
-// Context for passing highlight state down the component tree
+// Context for passing highlight state and document ID down
 const HighlightContext = React.createContext<string | null>(null);
+interface DocumentContextType {
+  documentId: string | null;
+  documentTitle?: string;
+  documentShortTitle?: string;
+}
+const DocumentContext = React.createContext<DocumentContextType>({ documentId: null });
+
+// Context for tracking ancestor path (for building full hierarchical labels)
+interface AncestorInfo {
+  type: string;
+  identifier?: string;
+  title?: string;
+}
+const AncestorPathContext = React.createContext<AncestorInfo[]>([]);
 
 /**
  * Hierarchical Structure Renderer
@@ -35,29 +51,142 @@ export function HierarchyRenderer({
   fontSize = "medium",
   highlightedSectionId = null,
   className,
+  documentId,
 }: HierarchyRendererProps) {
   return (
-    <HighlightContext.Provider value={highlightedSectionId}>
-      <div
-        className={cn(
-          "hierarchy-document leading-relaxed",
-          fontSize === "small" && "text-sm",
-          fontSize === "medium" && "text-base",
-          fontSize === "large" && "text-lg",
-          className
-        )}
-      >
-        {/* Document Header using actual metadata */}
-        {document && <DocumentHeader document={document} />}
+    <DocumentContext.Provider value={{
+      documentId: documentId || null,
+      documentTitle: document?.title,
+      documentShortTitle: document?.short_title,
+    }}>
+      <HighlightContext.Provider value={highlightedSectionId}>
+        <div
+          className={cn(
+            "hierarchy-document leading-relaxed",
+            fontSize === "small" && "text-sm",
+            fontSize === "medium" && "text-base",
+            fontSize === "large" && "text-lg",
+            className
+          )}
+        >
+          {/* Document Header using actual metadata */}
+          {document && <DocumentHeader document={document} />}
 
-        {/* Document Body */}
-        <div className="hierarchy-body">
-          {node.children?.map((child, index) => (
-            <RenderNode key={index} node={child} depth={0} />
-          ))}
+          {/* Document Body */}
+          <div className="hierarchy-body">
+            {node.children?.map((child, index) => (
+              <RenderNode key={index} node={child} depth={0} />
+            ))}
+          </div>
         </div>
-      </div>
-    </HighlightContext.Provider>
+      </HighlightContext.Provider>
+    </DocumentContext.Provider>
+  );
+}
+
+function NodeSaveButton({ node, className }: { node: HierarchicalNode; className?: string }) {
+  const { documentId, documentTitle, documentShortTitle } = React.useContext(DocumentContext) || {};
+  const ancestorPath = React.useContext(AncestorPathContext);
+
+  if (!documentId) return null;
+
+  // Use the same ID generation as the DOM element for scroll linking
+  const sectionId = getNodeId(node);
+  const itemType = "section";
+
+  // Build full hierarchical path label
+  // Format: "Document Title - Part II Section 3(2)(a). Title"
+  const formatAncestor = (a: AncestorInfo): string => {
+    const typeLabel = a.type.charAt(0).toUpperCase() + a.type.slice(1);
+    // For parts, use "Part II" format; for sections use "Section 3" etc.
+    if (a.type === 'part') return `Part ${a.identifier || ''}`;
+    if (a.type === 'chapter') return `Chapter ${a.identifier || ''}`;
+    if (a.type === 'section') return `Section ${a.identifier || ''}`;
+    if (a.type === 'subsection') return `(${a.identifier || ''})`;
+    if (a.type === 'paragraph') return `(${a.identifier || ''})`;
+    if (a.type === 'subparagraph') return `(${a.identifier || ''})`;
+    return `${typeLabel} ${a.identifier || ''}`;
+  };
+
+  // Format the current node
+  const formatCurrentNode = (): string => {
+    const type = node.type?.toLowerCase() || '';
+    if (type === 'part') return `Part ${node.identifier || ''}`;
+    if (type === 'chapter') return `Chapter ${node.identifier || ''}`;
+    if (type === 'section') return `Section ${node.identifier || ''}`;
+    if (type === 'subsection') return `(${node.identifier || ''})`;
+    if (type === 'paragraph') return `(${node.identifier || ''})`;
+    if (type === 'subparagraph') return `(${node.identifier || ''})`;
+    const typeLabel = type.charAt(0).toUpperCase() + type.slice(1);
+    return `${typeLabel} ${node.identifier || ''}`;
+  };
+
+  // Build path: ancestors + current node
+  const pathParts: string[] = [];
+
+  // Add ancestors (skip connecting between section and subsection with space)
+  for (let i = 0; i < ancestorPath.length; i++) {
+    const a = ancestorPath[i];
+    const formatted = formatAncestor(a);
+    if (pathParts.length > 0) {
+      const prev = ancestorPath[i - 1]?.type;
+      // If we're transitioning from section-level to sub-level, don't add space
+      if (['subsection', 'paragraph', 'subparagraph'].includes(a.type) &&
+        ['section', 'subsection', 'paragraph'].includes(prev || '')) {
+        // Append without separator
+        pathParts[pathParts.length - 1] += formatted;
+      } else {
+        pathParts.push(formatted);
+      }
+    } else {
+      pathParts.push(formatted);
+    }
+  }
+
+  // Add current node
+  const currentFormatted = formatCurrentNode();
+  if (pathParts.length > 0) {
+    const lastAncestorType = ancestorPath[ancestorPath.length - 1]?.type;
+    const currentType = node.type?.toLowerCase() || '';
+    // If transitioning to sub-level, concatenate
+    if (['subsection', 'paragraph', 'subparagraph'].includes(currentType) &&
+      ['section', 'subsection', 'paragraph'].includes(lastAncestorType || '')) {
+      pathParts[pathParts.length - 1] += currentFormatted;
+    } else {
+      pathParts.push(currentFormatted);
+    }
+  } else {
+    pathParts.push(currentFormatted);
+  }
+
+  // Join with spaces
+  const hierarchicalPath = pathParts.join(' ');
+
+  // Add title if present
+  const fullLabel = node.title
+    ? `${hierarchicalPath}. ${node.title}`
+    : hierarchicalPath;
+
+  const docName = documentShortTitle || documentTitle || '';
+  const snippetLabel = docName ? `${docName} - ${fullLabel}` : fullLabel;
+
+  return (
+    <SaveToCollectionButton
+      documentId={documentId}
+      sectionId={sectionId}
+      itemType={itemType}
+      meta={{
+        snippet_label: snippetLabel,
+        section_title: node.title,
+        section_identifier: node.identifier,
+        section_type: node.type,
+        hierarchical_path: hierarchicalPath,
+      }}
+      variant="ghost"
+      size="icon"
+      className={cn("h-6 w-6 opacity-0 group-hover/node:opacity-100 transition-opacity focus:opacity-100", className)}
+      showLabel={false}
+    />
   );
 }
 
@@ -173,15 +302,18 @@ function Part({ node }: { node: HierarchicalNode }) {
       id={id}
       data-toc-id={id}
       className={cn(
-        "mt-10 first:mt-0 scroll-mt-4",
+        "mt-10 first:mt-0 scroll-mt-4 group/node relative",
         isHighlighted && "section-highlighted"
       )}
     >
-      <h2 className="text-center font-bold text-lg mb-6">
-        {node.identifier && <span>PART {node.identifier}</span>}
-        {node.identifier && node.title && <span> – </span>}
-        {node.title && <span>{node.title}</span>}
-      </h2>
+      <div className="flex items-center justify-center gap-2 mb-6">
+        <h2 className="text-center font-bold text-lg">
+          {node.identifier && <span>PART {node.identifier}</span>}
+          {node.identifier && node.title && <span> – </span>}
+          {node.title && <span>{node.title}</span>}
+        </h2>
+        <NodeSaveButton node={node} />
+      </div>
       <NodeContent node={node} />
       <NodeTables node={node} />
       <NodeChildren node={node} />
@@ -198,15 +330,18 @@ function Chapter({ node }: { node: HierarchicalNode }) {
       id={id}
       data-toc-id={id}
       className={cn(
-        "mt-8 scroll-mt-4",
+        "mt-8 scroll-mt-4 group/node relative",
         isHighlighted && "section-highlighted"
       )}
     >
-      <h3 className="text-center font-bold mb-4">
-        {node.identifier && <span>Chapter {node.identifier}</span>}
-        {node.identifier && node.title && <span> – </span>}
-        {node.title && <span>{node.title}</span>}
-      </h3>
+      <div className="flex items-center justify-center gap-2 mb-4">
+        <h3 className="text-center font-bold">
+          {node.identifier && <span>Chapter {node.identifier}</span>}
+          {node.identifier && node.title && <span> – </span>}
+          {node.title && <span>{node.title}</span>}
+        </h3>
+        <NodeSaveButton node={node} />
+      </div>
       <NodeContent node={node} />
       <NodeTables node={node} />
       <NodeChildren node={node} />
@@ -224,13 +359,16 @@ function Section({ node }: { node: HierarchicalNode }) {
       data-toc-id={id}
       data-section-title={node.title || node.identifier}
       className={cn(
-        "mt-6 scroll-mt-4",
+        "mt-6 scroll-mt-4 group/node relative",
         isHighlighted && "section-highlighted"
       )}
     >
-      <div className="font-bold mb-2">
-        {node.identifier && <span>{node.identifier}. </span>}
-        {node.title && <span>{node.title}</span>}
+      <div className="font-bold mb-2 flex items-center gap-2">
+        <span>
+          {node.identifier && <span>{node.identifier}. </span>}
+          {node.title && <span>{node.title}</span>}
+        </span>
+        <NodeSaveButton node={node} />
       </div>
       <NodeContent node={node} />
       <NodeTables node={node} />
@@ -249,12 +387,13 @@ function Subsection({ node }: { node: HierarchicalNode }) {
       id={id}
       data-section-title={node.title || node.identifier}
       className={cn(
-        "flex mt-2 scroll-mt-24", // Increased scroll margin for sticky header safety
+        "flex mt-2 scroll-mt-24 group/node relative", // Increased scroll margin for sticky header safety
         isHighlighted && "section-highlighted"
       )}
     >
-      <div className="w-10 flex-shrink-0">
+      <div className="w-10 flex-shrink-0 flex items-start gap-1">
         {node.identifier && <span>({node.identifier})</span>}
+        <NodeSaveButton node={node} className="w-4 h-4 -ml-1 mt-1 absolute -left-5" />
       </div>
       <div className="flex-1 min-w-0">
         <NodeContent node={node} />
@@ -410,14 +549,26 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
 }
 
 function NodeChildren({ node }: { node: HierarchicalNode }) {
+  const currentAncestors = React.useContext(AncestorPathContext);
+
   if (!node.children || node.children.length === 0) return null;
 
+  // Add current node to ancestor path for children
+  const newAncestorPath: AncestorInfo[] = [
+    ...currentAncestors,
+    {
+      type: node.type?.toLowerCase() || 'unknown',
+      identifier: node.identifier,
+      title: node.title,
+    }
+  ];
+
   return (
-    <>
+    <AncestorPathContext.Provider value={newAncestorPath}>
       {node.children.map((child, index) => (
         <RenderNode key={index} node={child} depth={1} />
       ))}
-    </>
+    </AncestorPathContext.Provider>
   );
 }
 
