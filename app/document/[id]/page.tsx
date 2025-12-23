@@ -2,6 +2,7 @@
 
 import { use, useState, useEffect, Suspense } from "react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
@@ -83,12 +84,121 @@ interface PageProps {
 
 function DocumentContent({ id }: { id: string }) {
   const { data: document, isLoading, error } = useDocument(id);
+  const searchParams = useSearchParams();
+  const initialSectionId = searchParams.get("section");
+
   const [copied, setCopied] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "medium"
   );
-  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(null);
+  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(initialSectionId);
   const addToHistory = useLibraryStore((s) => s.addToHistory);
+
+  // Update highlighted section if URL param changes
+  useEffect(() => {
+    if (initialSectionId) {
+      setHighlightedSectionId(initialSectionId);
+    }
+  }, [initialSectionId]);
+
+  // Scroll to highlighted section when document loads and structure is ready
+  useEffect(() => {
+    if (document && highlightedSectionId) {
+      let cancelled = false;
+
+      // Small delay to ensure DOM is rendered
+      // Polling mechanism to wait for element to appear
+      const checkAndScroll = (attempts = 0) => {
+        if (cancelled) return;
+
+        if (attempts > 50) { // Give up after 5 seconds (50 * 100ms)
+          return;
+        }
+
+        let element = window.document.getElementById(highlightedSectionId);
+
+        // Strategy 1: exact match
+
+        // Strategy 2: Legacy format "section-12"
+        if (!element && highlightedSectionId.startsWith("sec_")) {
+          const num = highlightedSectionId.replace("sec_", "");
+          element = window.document.getElementById(`section-${num}`);
+        }
+
+        // Strategy 3: Handle merged IDs (strip suffix) and find best localized parent
+        if (!element && highlightedSectionId.includes("__")) {
+          let cleanId = highlightedSectionId;
+          if (cleanId.endsWith("__merged")) {
+            cleanId = cleanId.replace("__merged", "");
+          }
+
+          // Try the cleaned exact ID first
+          element = window.document.getElementById(cleanId);
+
+          // If not found, try progressively finding the parent container
+          // e.g. part_V__sec_9__subsec_5__para_a -> try part_V__sec_9__subsec_5 -> part_V__sec_9
+          if (!element) {
+            const parts = cleanId.split("__");
+            // Try from most specific to least specific
+            for (let i = parts.length - 1; i >= 0; i--) {
+              const partialId = parts.slice(0, i + 1).join("__");
+              element = window.document.getElementById(partialId);
+
+              // Also try legacy format for the primary section part if it's the first one
+              if (!element && i === 0 && partialId.startsWith("sec_")) {
+                element = window.document.getElementById(`section-${partialId.replace("sec_", "")}`);
+              }
+
+              if (element) {
+                break;
+              }
+            }
+          }
+        }
+
+        // Strategy 4: Fallback to section title search (using data attribute)
+        if (!element) {
+          const sectionTitleParam = new URLSearchParams(window.location.search).get("sectionTitle");
+          if (sectionTitleParam) {
+            // Try exact match first
+            element = window.document.querySelector(`[data-section-title="${CSS.escape(sectionTitleParam)}"]`) as HTMLElement;
+
+            if (!element) {
+              // Try loose matching on title
+              const nodes = window.document.querySelectorAll('[data-section-title]');
+              for (const node of nodes) {
+                const title = node.getAttribute('data-section-title') || '';
+                if (title.toLowerCase().includes(sectionTitleParam.toLowerCase()) ||
+                  sectionTitleParam.toLowerCase().includes(title.toLowerCase())) {
+                  element = node as HTMLElement;
+                  break;
+                }
+              }
+            }
+          }
+        }
+
+        if (element) {
+          element.scrollIntoView({ behavior: "smooth", block: "start" });
+          element.classList.add("section-highlighted");
+          setTimeout(() => {
+            element?.classList.remove("section-highlighted");
+          }, 2000);
+        } else {
+          // Retry
+          if (!cancelled) {
+            setTimeout(() => checkAndScroll(attempts + 1), 100);
+          }
+        }
+      };
+
+      checkAndScroll();
+
+      return () => {
+        cancelled = true;
+      };
+    }
+  }, [document, highlightedSectionId]);
 
   // Add to reading history when document loads
   useEffect(() => {

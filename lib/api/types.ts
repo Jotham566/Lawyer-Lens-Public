@@ -390,6 +390,7 @@ export interface ExpandedSourceResponse {
   document_type: DocumentType;
   full_excerpt: string; // Complete text, not truncated
   section: string | null;
+  section_id?: string | null;
   tables: ExpandedTable[]; // Complete tables from hierarchical structure
   adjacent_chunks: string[]; // Adjacent content for context
 }
@@ -399,4 +400,5 @@ export interface ExpandedTable {
   header_rows?: number[];
   identifier?: string;
   section?: string;
+  section_id?: string;
 }

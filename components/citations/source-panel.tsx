@@ -279,6 +279,7 @@ export function SourcePanel() {
     expandedTables: ExpandedTable[];
     sectionData: SectionResponse | null;
     htmlContent: string | null;
+    sectionId: string | null;
   } | null>(null);
 
   // Source key for tracking - must include section (not just section_id) to differentiate
@@ -328,6 +329,7 @@ export function SourcePanel() {
         let newExpandedTables: ExpandedTable[] = [];
         let newSectionData: SectionResponse | null = null;
         let newHtmlContent: string | null = null;
+        let newSectionId: string | null = null;
 
         // Detect if excerpt is likely table/schedule data (should NOT use section lookup)
         const excerptLower = activeSource.excerpt.toLowerCase();
@@ -377,6 +379,7 @@ export function SourcePanel() {
                 expandedTables: newExpandedTables,
                 sectionData: newSectionData,
                 htmlContent: newHtmlContent,
+                sectionId: null, // Legacy/direct content match doesn't give us ID usually, unless we parse it?
               });
               setIsExpanding(false);
               return;
@@ -406,8 +409,11 @@ export function SourcePanel() {
           if (response.tables && response.tables.length > 0) {
             newExpandedTables = response.tables;
           }
+          if (response.section_id) {
+            newSectionId = response.section_id;
+          } else {
+          }
         } catch (err) {
-          console.warn("Could not expand source:", err);
         }
 
         if (!cancelled) {
@@ -417,6 +423,7 @@ export function SourcePanel() {
             expandedTables: newExpandedTables,
             sectionData: newSectionData,
             htmlContent: newHtmlContent,
+            sectionId: newSectionId,
           });
           setIsExpanding(false);
         }
@@ -684,7 +691,19 @@ export function SourcePanel() {
               </Button>
             )}
             <Button size="sm" asChild>
-              <Link href={`/document/${activeSource.document_id}`} className="flex items-center gap-2">
+              <Link
+                href={`/document/${activeSource.document_id}${contentCache?.sectionId
+                  ? `?section=${contentCache.sectionId}`
+                  : activeSource.section_id
+                    ? `?section=${activeSource.section_id}`
+                    : activeSource.section
+                      ? `?sectionTitle=${encodeURIComponent(activeSource.section)}`
+                      : ''
+                  }`}
+                className="flex items-center gap-2"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 View Document
                 <ExternalLink className="h-3.5 w-3.5" />
               </Link>

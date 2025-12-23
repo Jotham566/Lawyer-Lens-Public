@@ -222,6 +222,7 @@ function Section({ node }: { node: HierarchicalNode }) {
     <section
       id={id}
       data-toc-id={id}
+      data-section-title={node.title || node.identifier}
       className={cn(
         "mt-6 scroll-mt-4",
         isHighlighted && "section-highlighted"
@@ -239,8 +240,19 @@ function Section({ node }: { node: HierarchicalNode }) {
 }
 
 function Subsection({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
+
   return (
-    <div className="flex mt-2">
+    <div
+      id={id}
+      data-section-title={node.title || node.identifier}
+      className={cn(
+        "flex mt-2 scroll-mt-24", // Increased scroll margin for sticky header safety
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <div className="w-10 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
@@ -254,8 +266,19 @@ function Subsection({ node }: { node: HierarchicalNode }) {
 }
 
 function Paragraph({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
+
   return (
-    <div className="flex mt-1.5 ml-10">
+    <div
+      id={id}
+      data-section-title={node.title || node.identifier}
+      className={cn(
+        "flex mt-1.5 ml-10 scroll-mt-24",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <div className="w-8 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
@@ -269,8 +292,19 @@ function Paragraph({ node }: { node: HierarchicalNode }) {
 }
 
 function Subparagraph({ node }: { node: HierarchicalNode }) {
+  const id = getNodeId(node);
+  const highlightedId = React.useContext(HighlightContext);
+  const isHighlighted = highlightedId === id;
+
   return (
-    <div className="flex mt-1 ml-8">
+    <div
+      id={id}
+      data-section-title={node.title || node.identifier}
+      className={cn(
+        "flex mt-1 ml-8 scroll-mt-24",
+        isHighlighted && "section-highlighted"
+      )}
+    >
       <div className="w-8 flex-shrink-0">
         {node.identifier && <span>({node.identifier})</span>}
       </div>
