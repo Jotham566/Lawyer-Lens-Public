@@ -11,7 +11,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import type { ChatSource } from "@/lib/api/types";
 
-type ExportFormat = "legal" | "academic" | "bibtex";
+type ExportFormat = "legal" | "academic" | "bibtex" | "bluebook" | "oscola";
 
 interface CitationExportProps {
   source: ChatSource;
@@ -126,6 +126,77 @@ function formatBibTeXCitation(source: ChatSource, sectionRef?: string | null): s
 }
 
 /**
+ * Formats a citation in Bluebook style (US legal citation)
+ * Bluebook format: Title, Volume Source Page (Court Year).
+ * For statutes: Title § Section (Year).
+ */
+function formatBluebookCitation(source: ChatSource, sectionRef?: string | null): string {
+  const yearMatch = source.human_readable_id?.match(/\b(19|20)\d{2}\b/);
+  const year = yearMatch ? yearMatch[0] : "";
+
+  if (source.document_type === "judgment") {
+    // Case citation format: Case Name, Case Number (Court Year)
+    const parts: string[] = [source.title];
+    if (source.human_readable_id) {
+      parts.push(source.human_readable_id);
+    }
+    if (year) {
+      parts.push(`(${year})`);
+    }
+    return parts.join(", ");
+  } else {
+    // Statute citation format: Title § Section (Year)
+    let citation = source.title;
+    const section = sectionRef || source.legal_reference || source.section;
+    if (section) {
+      // Convert to Bluebook section symbol format
+      const sectionNum = section.replace(/^(section|sec\.?)\s*/i, "");
+      citation += ` § ${sectionNum}`;
+    }
+    if (year) {
+      citation += ` (${year})`;
+    }
+    return citation;
+  }
+}
+
+/**
+ * Formats a citation in OSCOLA style (UK legal citation)
+ * OSCOLA format for statutes: Title Year, section (if applicable)
+ * OSCOLA format for cases: Case Name [Year] Court Reference
+ */
+function formatOSCOLACitation(source: ChatSource, sectionRef?: string | null): string {
+  const yearMatch = source.human_readable_id?.match(/\b(19|20)\d{2}\b/);
+  const year = yearMatch ? yearMatch[0] : "";
+
+  if (source.document_type === "judgment") {
+    // Case citation format: Case Name [Year] Court Reference
+    let citation = source.title;
+    if (year) {
+      citation += ` [${year}]`;
+    }
+    if (source.human_readable_id) {
+      // Extract court abbreviation if present
+      citation += ` ${source.human_readable_id.replace(/\s*\d{4}\s*/, " ").trim()}`;
+    }
+    return citation;
+  } else {
+    // Statute citation format: Title Year, s Section
+    let citation = source.title;
+    if (year && !citation.includes(year)) {
+      citation += ` ${year}`;
+    }
+    const section = sectionRef || source.legal_reference || source.section;
+    if (section) {
+      // Convert to OSCOLA section format (s 1, s 2(1)(a), etc.)
+      const sectionNum = section.replace(/^(section|sec\.?)\s*/i, "");
+      citation += `, s ${sectionNum}`;
+    }
+    return citation;
+  }
+}
+
+/**
  * Citation Export component - allows exporting citations in various formats
  */
 export function CitationExport({ source, sectionRef, className }: CitationExportProps) {
@@ -136,6 +207,14 @@ export function CitationExport({ source, sectionRef, className }: CitationExport
     legal: {
       label: "Legal Citation",
       format: () => formatLegalCitation(source, sectionRef),
+    },
+    bluebook: {
+      label: "Bluebook (US)",
+      format: () => formatBluebookCitation(source, sectionRef),
+    },
+    oscola: {
+      label: "OSCOLA (UK)",
+      format: () => formatOSCOLACitation(source, sectionRef),
     },
     academic: {
       label: "Academic (APA)",

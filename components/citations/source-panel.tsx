@@ -19,6 +19,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
@@ -595,11 +596,28 @@ export function SourcePanel() {
                 </div>
               </div>
 
-              {/* Loading indicator - shown alongside content, not replacing it */}
+              {/* Skeleton loading state - shown while content is loading */}
               {isExpanding && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground mb-2">
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  <span>Loading full content...</span>
+                <div className="space-y-4 mb-4">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    <span>Loading full content...</span>
+                  </div>
+                  {/* Skeleton placeholder for content */}
+                  <div className="rounded-lg border-l-4 border bg-muted/30 p-4 space-y-3">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-4 w-full" />
+                    <Skeleton className="h-4 w-5/6" />
+                    <div className="pt-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-4/5 mt-2" />
+                      <Skeleton className="h-4 w-2/3 mt-2" />
+                    </div>
+                    <div className="pt-2">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-3/4 mt-2" />
+                    </div>
+                  </div>
                 </div>
               )}
 
