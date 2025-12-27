@@ -16,13 +16,7 @@ import {
     Gavel
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-    Card,
-    CardContent,
-    CardHeader,
-    CardTitle,
-    CardDescription,
-} from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import {
     DropdownMenu,
     DropdownMenuContent,
@@ -42,7 +36,7 @@ import {
     AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 import { Badge } from "@/components/ui/badge";
-import { collectionsApi, type Collection, type CollectionItem } from "@/lib/api/collections";
+import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 

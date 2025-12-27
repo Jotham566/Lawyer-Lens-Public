@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { Plus, Book, FileText, Loader2, FolderOpen, Calendar, ArrowRight } from "lucide-react";
+import { Plus, Book, FileText, Loader2, FolderOpen, Calendar } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -26,7 +26,6 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 export default function LibraryPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
