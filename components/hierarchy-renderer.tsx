@@ -2,8 +2,31 @@
 
 import * as React from "react";
 import { cn } from "@/lib/utils";
-import type { HierarchicalNode } from "@/lib/api/types";
+import type { HierarchicalNode, AmendmentMarker, FootnoteEntry, TextFragment } from "@/lib/api/types";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
+
+// ============ Amendment Helper Functions ============
+
+/**
+ * Get Tailwind CSS classes for amendment type styling.
+ */
+function getAmendmentClasses(amendment?: AmendmentMarker | null): string {
+  if (!amendment || amendment.amendment_type === "active") return "";
+
+  switch (amendment.amendment_type) {
+    case "insertion":
+      return "font-bold italic";
+    case "repealed":
+      return "italic text-muted-foreground line-through";
+    case "substituted_old":
+      return "text-muted-foreground bg-muted/50";
+    case "substituted_new":
+      return "font-bold";
+    default:
+      return "";
+  }
+}
+
 
 interface HierarchyRendererProps {
   node: HierarchicalNode;
@@ -78,9 +101,48 @@ export function HierarchyRenderer({
               <RenderNode key={index} node={child} depth={0} />
             ))}
           </div>
+
+          {/* Footnotes Section */}
+          {node.footnotes && node.footnotes.length > 0 && (
+            <FootnotesSection footnotes={node.footnotes} />
+          )}
         </div>
       </HighlightContext.Provider>
     </DocumentContext.Provider>
+  );
+}
+
+/**
+ * Footnotes Section Component
+ *
+ * Renders document footnotes at the bottom of the document.
+ */
+function FootnotesSection({ footnotes }: { footnotes: FootnoteEntry[] }) {
+  if (!footnotes || footnotes.length === 0) return null;
+
+  return (
+    <div className="footnotes-section mt-12 pt-6 border-t-2 border-border">
+      <h3 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-4">
+        Footnotes
+      </h3>
+      <ol className="list-none space-y-2 text-sm">
+        {footnotes.map((footnote) => (
+          <li key={footnote.footnote_id} className="flex items-start">
+            <sup className="text-blue-600 font-bold mr-2 mt-0.5 min-w-[1.5rem] text-right">
+              {footnote.marker}
+            </sup>
+            <div className="flex-1">
+              <span className="text-foreground">{footnote.content}</span>
+              {footnote.amending_act_title && (
+                <span className="ml-2 text-muted-foreground text-xs">
+                  [{footnote.amending_act_title}]
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+      </ol>
+    </div>
   );
 }
 
@@ -535,6 +597,22 @@ function GenericNode({ node, depth }: { node: HierarchicalNode; depth: number })
 // ============ Content Helpers ============
 
 function NodeContent({ node }: { node: HierarchicalNode }) {
+  // Use styled_text if available for amendment-aware rendering
+  if (node.styled_text && node.styled_text.length > 0) {
+    return (
+      <div className="node-content">
+        {node.styled_text.map((block, blockIdx) => (
+          <p key={blockIdx} className={blockIdx === 0 ? "mt-0 mb-1" : "my-1"}>
+            {block.fragments.map((fragment, fragIdx) => (
+              <StyledFragment key={fragIdx} fragment={fragment} />
+            ))}
+          </p>
+        ))}
+      </div>
+    );
+  }
+
+  // Fallback to plain text
   if (!node.text || node.text.length === 0) return null;
 
   return (
@@ -545,6 +623,51 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
         </p>
       ))}
     </div>
+  );
+}
+
+/**
+ * Render a styled text fragment with amendment formatting.
+ */
+function StyledFragment({ fragment }: { fragment: TextFragment }) {
+  // Build CSS classes
+  const classes: string[] = [];
+
+  // Apply text styles
+  if (fragment.styles?.includes("bold")) classes.push("font-bold");
+  if (fragment.styles?.includes("italic")) classes.push("italic");
+
+  // Apply amendment styling
+  if (fragment.amendment) {
+    classes.push(getAmendmentClasses(fragment.amendment));
+  }
+
+  // Apply superscript
+  if (fragment.is_superscript) {
+    return (
+      <sup className={cn(classes, "text-blue-600")}>
+        {fragment.text}
+      </sup>
+    );
+  }
+
+  // Apply color if specified
+  const style = fragment.color ? { color: fragment.color } : undefined;
+
+  return (
+    <span className={cn(classes)} style={style}>
+      {fragment.text}
+      {/* Render footnote references as superscript */}
+      {fragment.footnote_refs?.map((ref, refIdx) => (
+        <sup
+          key={refIdx}
+          className="text-blue-600 cursor-pointer hover:underline ml-0.5"
+          title={`Footnote ${ref.marker}`}
+        >
+          {ref.marker}
+        </sup>
+      ))}
+    </span>
   );
 }
 

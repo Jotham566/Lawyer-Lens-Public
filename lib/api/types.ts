@@ -25,10 +25,51 @@ export interface HierarchicalTable {
   page?: number;
 }
 
+// Amendment type enumeration
+export type AmendmentType =
+  | "active"
+  | "insertion"
+  | "repealed"
+  | "substituted_old"
+  | "substituted_new";
+
+// Amendment marker for tracking modifications
+export interface AmendmentMarker {
+  amendment_type: AmendmentType;
+  confidence: number;
+  amending_act_ref?: string | null;
+  amending_act_title?: string | null;
+  footnote_ref?: string | null;
+  effective_date?: string | null;
+  detected_by: "ocr" | "ai" | "manual";
+  manually_verified: boolean;
+}
+
+// Footnote reference in text
+export interface FootnoteReference {
+  marker: string;
+  position: number;
+  footnote_id: string;
+}
+
+// Footnote entry from document
+export interface FootnoteEntry {
+  footnote_id: string;
+  marker: string;
+  content: string;
+  page?: number | null;
+  amending_act_ref?: string | null;
+  amending_act_title?: string | null;
+}
+
 // Text fragment with styling information
 export interface TextFragment {
   text: string;
   styles: string[]; // e.g., ["bold"], ["italic"], ["bold", "italic"]
+  color?: string | null;
+  is_superscript?: boolean;
+  amendment?: AmendmentMarker | null;
+  footnote_refs?: FootnoteReference[];
 }
 
 // Styled text block with fragments
@@ -51,6 +92,10 @@ export interface HierarchicalNode {
   akn_eid?: string;
   legal_reference?: string;
   hierarchy_path?: HierarchyPathItem[];
+  // Amendment tracking fields
+  amendment?: AmendmentMarker | null;
+  amendment_history?: AmendmentMarker[];
+  footnotes?: FootnoteEntry[]; // Document-level footnotes (stored at root)
 }
 
 // Main document interface
