@@ -326,32 +326,29 @@ export function TrustIndicatorInline({
 }
 
 /**
- * Confidence factor labels for display
+ * Confidence factor labels for display.
+ * Each factor contributes to the overall confidence score with specific weights.
  */
 const FACTOR_LABELS: Record<string, { label: string; description: string }> = {
+  source_quality: {
+    label: "Source Quality",
+    description: "How relevant are the retrieved documents to your question. Higher means the sources closely match your query.",
+  },
   source_coverage: {
     label: "Source Coverage",
-    description: "How well the response is backed by legal sources",
+    description: "Whether enough sources were found to support the response. More sources means better cross-verification.",
   },
-  claim_specificity: {
-    label: "Claim Specificity",
-    description: "How specific and precise the legal claims are",
+  source_consensus: {
+    label: "Source Consensus",
+    description: "Whether multiple independent documents agree on the answer. Higher when different sources confirm the same information.",
   },
-  citation_quality: {
-    label: "Citation Quality",
-    description: "Quality and relevance of cited legal documents",
+  source_recency: {
+    label: "Source Recency",
+    description: "How recent are the legal authorities cited. Important because laws may be amended over time.",
   },
-  legal_accuracy: {
-    label: "Legal Accuracy",
-    description: "Consistency with established legal principles",
-  },
-  context_match: {
-    label: "Context Match",
-    description: "How well the response addresses your specific question",
-  },
-  source_authority: {
-    label: "Source Authority",
-    description: "Weight of cited sources (Constitution, Acts, etc.)",
+  hallucination_score: {
+    label: "Grounding Check",
+    description: "Whether the response is actually supported by the sources. Verifies that cited sections and claims appear in the retrieved documents.",
   },
 };
 
