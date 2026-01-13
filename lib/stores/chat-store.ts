@@ -14,7 +14,7 @@ import type {
   VerificationStatus,
   ConfidenceInfo,
 } from "@/lib/api/types";
-import { getConversations, getConversation } from "@/lib/api/chat";
+import { getConversations, getConversation, deleteConversation as deleteConversationApi } from "@/lib/api/chat";
 
 export interface Conversation {
   id: string;
@@ -42,6 +42,7 @@ interface ChatState {
   setCurrentConversation: (id: string | null) => void;
   createConversation: () => string;
   deleteConversation: (id: string) => void;
+  deleteConversationAsync: (id: string, accessToken?: string | null) => Promise<void>;
   renameConversation: (id: string, title: string) => void;
   archiveConversation: (id: string) => void;
   unarchiveConversation: (id: string) => void;
@@ -176,6 +177,39 @@ export const useChatStore = create<ChatState>()(
                 : state.currentConversationId,
           };
         });
+      },
+
+      deleteConversationAsync: async (id, accessToken) => {
+        try {
+          // Call API to delete from backend
+          await deleteConversationApi(id, accessToken);
+
+          // On success, update local state
+          set((state) => {
+            const filtered = state.conversations.filter((c) => c.id !== id);
+            return {
+              conversations: filtered,
+              currentConversationId:
+                state.currentConversationId === id
+                  ? filtered.find((c) => !c.isArchived)?.id || null
+                  : state.currentConversationId,
+            };
+          });
+        } catch (error) {
+          console.error("Failed to delete conversation:", error);
+          // Still remove from local state even if API fails
+          // (conversation may have been local-only / not yet synced)
+          set((state) => {
+            const filtered = state.conversations.filter((c) => c.id !== id);
+            return {
+              conversations: filtered,
+              currentConversationId:
+                state.currentConversationId === id
+                  ? filtered.find((c) => !c.isArchived)?.id || null
+                  : state.currentConversationId,
+            };
+          });
+        }
       },
 
       renameConversation: (id, title) => {

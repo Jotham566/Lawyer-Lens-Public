@@ -4,7 +4,7 @@
  * Functions for Legal Assistant interactions.
  */
 
-import { apiPost, apiGet, getApiBaseUrl } from "./client";
+import { apiFetch, apiPost, apiGet, getApiBaseUrl } from "./client";
 import type {
   ChatRequest,
   ChatResponse,
@@ -72,6 +72,23 @@ export async function getConversation(
     headers.Authorization = `Bearer ${accessToken}`;
   }
   return apiGet<ConversationDetail>(`/chat/conversations/${conversationId}`, headers);
+}
+
+/**
+ * Delete a conversation and all its messages
+ */
+export async function deleteConversation(
+  conversationId: string,
+  accessToken?: string | null
+): Promise<void> {
+  const headers: Record<string, string> = {};
+  if (accessToken) {
+    headers.Authorization = `Bearer ${accessToken}`;
+  }
+  await apiFetch<void>(`/chat/conversations/${conversationId}`, {
+    method: "DELETE",
+    headers,
+  });
 }
 
 

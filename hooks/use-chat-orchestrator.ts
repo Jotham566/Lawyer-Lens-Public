@@ -35,7 +35,7 @@ export function useChatOrchestrator() {
         error,
         setCurrentConversation,
         createConversation,
-        deleteConversation,
+        deleteConversationAsync,
         addMessage,
         updateLastMessage,
         editMessageAndTruncate,
@@ -484,9 +484,9 @@ export function useChatOrchestrator() {
         setDeleteDialogOpen(true);
     };
 
-    const handleConfirmDelete = () => {
+    const handleConfirmDelete = async () => {
         if (conversationToDelete) {
-            deleteConversation(conversationToDelete);
+            await deleteConversationAsync(conversationToDelete, accessToken);
         }
         setDeleteDialogOpen(false);
         setConversationToDelete(null);
