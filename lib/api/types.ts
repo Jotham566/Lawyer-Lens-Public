@@ -37,6 +37,16 @@ export interface StyledTextBlock {
   fragments: TextFragment[];
 }
 
+// Content item in hierarchical node (for Docling-style table storage)
+export interface HierarchicalContentItem {
+  type: string; // "table", "text", etc.
+  kind?: string; // For text content kind
+  rows?: string[][]; // For table content
+  header_rows?: number[]; // For table content
+  text?: string; // For text content
+  value?: { text: string }; // Alternative text format
+}
+
 // Hierarchical structure for document content
 export interface HierarchicalNode {
   type: string;
@@ -46,6 +56,7 @@ export interface HierarchicalNode {
   text?: string[];
   styled_text?: StyledTextBlock[]; // Text with formatting (bold, italic, etc.)
   tables?: HierarchicalTable[];
+  content?: HierarchicalContentItem[]; // Docling stores tables in content array
   children?: HierarchicalNode[];
   // AKN enrichment fields (added by backend HierarchyEnricher)
   akn_eid?: string;

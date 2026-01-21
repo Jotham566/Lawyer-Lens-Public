@@ -608,11 +608,33 @@ function NodeChildren({ node }: { node: HierarchicalNode }) {
 }
 
 function NodeTables({ node }: { node: HierarchicalNode }) {
-  if (!node.tables || node.tables.length === 0) return null;
+  // Collect tables from both sources:
+  // 1. node.tables[] - standard table storage
+  // 2. node.content[] - Docling stores tables here with type: "table"
+  const allTables: TableData[] = [];
+
+  // Add tables from standard tables array
+  if (node.tables && node.tables.length > 0) {
+    allTables.push(...node.tables);
+  }
+
+  // Add tables from content array (Docling format)
+  if (node.content && Array.isArray(node.content)) {
+    for (const item of node.content) {
+      if (item.type === "table" && item.rows && item.rows.length > 0) {
+        allTables.push({
+          rows: item.rows,
+          header_rows: item.header_rows,
+        });
+      }
+    }
+  }
+
+  if (allTables.length === 0) return null;
 
   return (
     <div className="node-tables">
-      {node.tables.map((table, index) => (
+      {allTables.map((table, index) => (
         <TableRenderer key={index} table={table} />
       ))}
     </div>
