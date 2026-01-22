@@ -34,7 +34,10 @@ const deleteAccountSchema = z.object({
   ),
 });
 
-type DeleteAccountFormData = z.infer<typeof deleteAccountSchema>;
+type DeleteAccountFormData = {
+  password: string;
+  confirmation: string;
+};
 
 interface DeleteAccountDialogProps {
   trigger?: React.ReactNode;

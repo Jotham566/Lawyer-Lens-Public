@@ -1,6 +1,6 @@
 "use client"
 
-import React, { type ReactNode } from "react"
+import { type ReactNode } from "react"
 import { ErrorBoundary as ReactErrorBoundary, type FallbackProps } from "react-error-boundary"
 import * as Sentry from "@sentry/nextjs"
 import { AlertCircle, RefreshCw, Home, MessageSquare, CreditCard } from "lucide-react"
@@ -12,6 +12,7 @@ import Link from "next/link"
  * Generic error fallback component
  */
 function GenericErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const errorMessage = error instanceof Error ? error.message : "An unexpected error occurred. Please try again."
   return (
     <div role="alert" className="flex items-center justify-center min-h-[400px] p-6">
       <Card className="max-w-md w-full border-destructive/50">
@@ -22,7 +23,7 @@ function GenericErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
             </div>
             <h2 className="mt-4 text-lg font-semibold">Something went wrong</h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              {error.message || "An unexpected error occurred. Please try again."}
+              {errorMessage}
             </p>
             <div className="mt-6 flex gap-3">
               <Button onClick={resetErrorBoundary} variant="default">
@@ -47,6 +48,7 @@ function GenericErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
  * Chat-specific error fallback
  */
 export function ChatErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
   return (
     <div role="alert" className="flex items-center justify-center min-h-[400px] p-6">
       <Card className="max-w-md w-full">
@@ -61,7 +63,7 @@ export function ChatErrorFallback({ error, resetErrorBoundary }: FallbackProps) 
             </p>
             {process.env.NODE_ENV === "development" && (
               <pre className="mt-4 p-3 bg-muted rounded text-xs text-left overflow-auto max-w-full">
-                {error.message}
+                {errorMessage}
               </pre>
             )}
             <div className="mt-6 flex gap-3">
@@ -147,6 +149,7 @@ export function DocumentErrorFallback({ resetErrorBoundary }: FallbackProps) {
  * Billing-specific error fallback
  */
 export function BillingErrorFallback({ error, resetErrorBoundary }: FallbackProps) {
+  const errorMessage = error instanceof Error ? error.message : String(error)
   return (
     <div role="alert" className="flex items-center justify-center min-h-[400px] p-6">
       <Card className="max-w-md w-full">
@@ -159,9 +162,9 @@ export function BillingErrorFallback({ error, resetErrorBoundary }: FallbackProp
             <p className="mt-2 text-sm text-muted-foreground">
               We encountered an issue loading your billing information. Your subscription and payment data are safe.
             </p>
-            {process.env.NODE_ENV === "development" && error && (
+            {process.env.NODE_ENV === "development" && errorMessage && (
               <pre className="mt-4 p-3 bg-muted rounded text-xs text-left overflow-auto max-w-full">
-                {error.message}
+                {errorMessage}
               </pre>
             )}
             <div className="mt-6 flex gap-3">
@@ -207,13 +210,14 @@ export function PageErrorBoundary({
     billing: BillingErrorFallback,
   }[fallback]
 
-  const handleError = (error: Error, info: React.ErrorInfo) => {
+  const handleError = (error: unknown, info: { componentStack?: string | null }) => {
     // Log error to console in development
     console.error("Error caught by boundary:", error)
     console.error("Component stack:", info.componentStack)
 
     // Report to Sentry in production
-    Sentry.captureException(error, {
+    const errorToReport = error instanceof Error ? error : new Error(String(error))
+    Sentry.captureException(errorToReport, {
       extra: {
         componentStack: info.componentStack,
         fallbackType: fallback,
@@ -230,7 +234,8 @@ export function PageErrorBoundary({
       onError={handleError}
       onReset={onReset}
     >
-      {children}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {children as any}
     </ReactErrorBoundary>
   )
 }
@@ -265,7 +270,8 @@ export function InlineErrorBoundary({
         </div>
       )}
     >
-      {children}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {children as any}
     </ReactErrorBoundary>
   )
 }

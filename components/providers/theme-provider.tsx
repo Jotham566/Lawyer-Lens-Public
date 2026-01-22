@@ -27,7 +27,8 @@ export function ThemeProvider({
       disableTransitionOnChange={disableTransitionOnChange}
       {...props}
     >
-      {children}
+      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
+      {children as any}
     </NextThemesProvider>
   );
 }
