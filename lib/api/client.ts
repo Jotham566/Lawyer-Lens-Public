@@ -5,7 +5,19 @@
  * Compatible with backend APIError format (error_code, message, details, trace_id).
  */
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+// API Base URL configuration
+// - NEXT_PUBLIC_API_URL: Used for client-side (browser) requests (baked in at build time)
+// - INTERNAL_API_URL: Used for server-side requests in Docker (runtime env var)
+const getApiBase = () => {
+  // Server-side: use INTERNAL_API_URL if available (for Docker networking)
+  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
+    return process.env.INTERNAL_API_URL;
+  }
+  // Client-side or fallback: use NEXT_PUBLIC_API_URL or default
+  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+};
+
+const API_BASE = getApiBase();
 
 // ============================================================================
 // 401 Event Handling for Auto-Logout

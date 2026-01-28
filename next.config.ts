@@ -1,6 +1,9 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Enable standalone output for Docker deployment
+  output: "standalone",
+
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
@@ -13,6 +16,11 @@ const nextConfig: NextConfig = {
         port: "8003",
         pathname: "/api/v1/**",
       },
+      {
+        protocol: "https",
+        hostname: "api.ug.lawlens.io",
+        pathname: "/api/v1/**",
+      },
     ],
   },
 
@@ -22,7 +30,10 @@ const nextConfig: NextConfig = {
   },
 
   // Turbopack configuration (Next.js 16+ default bundler)
-  turbopack: {},
+  // Root must be set explicitly for monorepo Docker builds
+  turbopack: {
+    root: "..",
+  },
 };
 
 export default nextConfig;
