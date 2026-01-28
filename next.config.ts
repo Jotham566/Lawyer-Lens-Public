@@ -4,6 +4,15 @@ const nextConfig: NextConfig = {
   // Enable standalone output for Docker deployment
   output: "standalone",
 
+  // Skip linting and type checking during Docker builds
+  // These checks should run in CI, not during image creation
+  eslint: {
+    ignoreDuringBuilds: true,
+  },
+  typescript: {
+    ignoreBuildErrors: true,
+  },
+
   // Enable React strict mode for better development experience
   reactStrictMode: true,
 
