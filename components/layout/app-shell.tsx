@@ -31,7 +31,7 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   return (
-    <div className="relative min-h-screen flex flex-col">
+    <div className="fixed inset-0 flex flex-col bg-background">
       {/* Screen reader announcements */}
       <ScreenReaderAnnouncer />
 
@@ -55,7 +55,8 @@ export function AppShell({ children }: AppShellProps) {
         id="main-content"
         role="main"
         tabIndex={-1}
-        className="flex-1 pb-16 lg:pb-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        className={`flex-1 pb-16 lg:pb-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset ${pathname?.startsWith("/chat") ? "overflow-hidden" : "overflow-auto"
+          }`}
         aria-label="Main content"
       >
         {children}

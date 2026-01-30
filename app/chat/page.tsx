@@ -44,7 +44,7 @@ function ChatContent() {
   return (
     <CitationProvider>
       <TooltipProvider delayDuration={200}>
-        <div className="flex h-[calc(100vh-4rem-4rem)] flex-col md:h-[calc(100vh-4rem)] md:flex-row lg:h-[calc(100vh-4rem)]">
+        <div className="flex h-full flex-col md:flex-row">
           {/* Desktop Sidebar */}
           <ConversationSidebar
             conversations={state.conversations}
@@ -55,7 +55,7 @@ function ChatContent() {
           />
 
           {/* Chat Area */}
-          <div className="flex flex-1 flex-col">
+          <div className="flex flex-1 flex-col min-h-0">
             {/* Mobile Header */}
             <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
               <div className="flex items-center gap-2">
@@ -84,7 +84,7 @@ function ChatContent() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-hidden" role="region" aria-label="Chat messages">
+            <div className="flex-1 overflow-hidden min-h-0" role="region" aria-label="Chat messages">
               {!state.currentConversation || state.currentConversation.messages.length === 0 ? (
                 <div className="h-full overflow-y-auto">
                   <div className="mx-auto max-w-3xl px-4 py-6">
@@ -168,7 +168,7 @@ export default function ChatPage() {
     <PageErrorBoundary fallback="chat">
       <Suspense
         fallback={
-          <div className="flex h-[calc(100vh-4rem)] items-center justify-center">
+          <div className="flex h-full items-center justify-center">
             <div className="space-y-4 text-center">
               <div className="relative mx-auto">
                 <div className="absolute inset-0 rounded-full bg-primary/10 blur-xl" />

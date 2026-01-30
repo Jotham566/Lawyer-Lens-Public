@@ -135,6 +135,11 @@
     scroll-behavior: smooth;
   }
 
+  html,
+  body {
+    height: 100%;
+  }
+
   /* Focus styles for accessibility */
   :focus-visible {
     @apply outline-none ring-2 ring-ring ring-offset-2 ring-offset-background;
