@@ -64,26 +64,30 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
             <label htmlFor="chat-input" className="sr-only">
               Type your legal question
             </label>
-            <textarea
-              id="chat-input"
-              ref={ref}
-              value={value}
-              onChange={onChange}
-              onKeyDown={onKeyDown}
-              placeholder={getToolPlaceholder(selectedTool)}
-              rows={1}
-              aria-label="Chat message input"
-              className="min-h-[44px] max-h-[200px] flex-1 resize-none rounded-lg border bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            />
-            <Button
-              type="submit"
-              size="icon"
-              className="h-[44px] w-[44px] shrink-0"
-              disabled={!value.trim() || isLoading}
-              aria-label="Send message"
-            >
-              <ArrowUp className="h-5 w-5" />
-            </Button>
+            <div className="relative flex-1">
+              <textarea
+                id="chat-input"
+                ref={ref}
+                value={value}
+                onChange={onChange}
+                onKeyDown={onKeyDown}
+                placeholder={getToolPlaceholder(selectedTool)}
+                rows={1}
+                aria-label="Chat message input"
+                className="min-h-[52px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-5 pr-14 py-3.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
+              />
+              <div className="absolute right-1.5 bottom-1.5">
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-10 w-10 rounded-full"
+                  disabled={!value.trim() || isLoading}
+                  aria-label="Send message"
+                >
+                  <ArrowUp className="h-5 w-5" />
+                </Button>
+              </div>
+            </div>
           </form>
         </div>
         <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">

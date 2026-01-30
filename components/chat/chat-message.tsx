@@ -93,25 +93,46 @@ export const MessageEditForm = forwardRef<
 
 interface UserMessageActionsProps {
   onEdit: () => void;
+  onCopy: () => void;
+  copied: boolean;
   disabled: boolean;
 }
 
-function UserMessageActions({ onEdit, disabled }: UserMessageActionsProps) {
+function UserMessageActions({ onEdit, onCopy, copied, disabled }: UserMessageActionsProps) {
   return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className="h-7 w-7"
-          onClick={onEdit}
-          disabled={disabled}
-        >
-          <Pencil className="h-3.5 w-3.5" />
-        </Button>
-      </TooltipTrigger>
-      <TooltipContent>Edit message</TooltipContent>
-    </Tooltip>
+    <>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onCopy}
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-green-500" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>{copied ? "Copied!" : "Copy"}</TooltipContent>
+      </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onEdit}
+            disabled={disabled}
+          >
+            <Pencil className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit message</TooltipContent>
+      </Tooltip>
+    </>
   );
 }
 
@@ -223,7 +244,7 @@ function ChatMessageComponent({
               onCancel={onCancelEdit}
             />
           ) : (
-            <div className="inline-block rounded-2xl bg-slate-200 dark:bg-slate-700 px-4 py-3 text-sm text-slate-900 dark:text-slate-100 shadow-sm selection:bg-slate-400/30 dark:selection:bg-slate-500/30 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+            <div className="inline-block rounded-3xl bg-slate-200 dark:bg-slate-700 px-5 py-3.5 text-sm text-slate-900 dark:text-slate-100 shadow-sm selection:bg-slate-400/30 dark:selection:bg-slate-500/30 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
               <MarkdownRenderer
                 content={message.content}
                 className="text-slate-900 dark:text-slate-100 [&_p]:text-slate-900 dark:[&_p]:text-slate-100 [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100 [&_a]:text-slate-700 dark:[&_a]:text-slate-300 [&_a]:underline"
@@ -233,9 +254,11 @@ function ChatMessageComponent({
 
           {/* User Message Actions */}
           {!isEditing && message.content && (
-            <div className="flex justify-end gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+            <div className="flex justify-end gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100 px-2">
               <UserMessageActions
                 onEdit={() => onStartEdit(index, message.content)}
+                onCopy={() => onCopy(`${index}-user`, message.content)}
+                copied={copiedId === `${index}-user`}
                 disabled={isLoading}
               />
             </div>
