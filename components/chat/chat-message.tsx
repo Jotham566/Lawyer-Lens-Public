@@ -356,7 +356,7 @@ export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => 
     prevProps.message.sources === nextProps.message.sources &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.isLastMessage === nextProps.isLastMessage &&
-    (prevProps.isLoading === nextProps.isLoading || !nextProps.isLastMessage) &&
+    prevProps.isLoading === nextProps.isLoading &&
     prevProps.copiedId === nextProps.copiedId
   );
 });
