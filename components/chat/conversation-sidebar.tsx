@@ -29,7 +29,12 @@ export const stripMarkdownFromTitle = (title: string): string => {
 };
 
 export function formatRelativeTime(timestamp: string): string {
-  const date = new Date(timestamp);
+  // Ensure we treat the timestamp as UTC if it doesn't have timezone info
+  const timeStr = timestamp.endsWith("Z") || timestamp.includes("+")
+    ? timestamp
+    : `${timestamp}Z`;
+
+  const date = new Date(timeStr);
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
   const diffMins = Math.floor(diffMs / 60000);
