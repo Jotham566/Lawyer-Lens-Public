@@ -34,7 +34,8 @@ COPY packages/ ./packages/
 COPY frontend-public/ ./frontend-public/
 
 # Set build-time environment variables
-ARG NEXT_PUBLIC_API_URL=https://api.ug.lawlens.io
+# Note: NEXT_PUBLIC_API_URL must include /api/v1 as the api-client uses it as the base URL
+ARG NEXT_PUBLIC_API_URL=https://api.ug.lawlens.io/api/v1
 ARG NEXT_PUBLIC_ENVIRONMENT=production
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL
@@ -78,9 +79,8 @@ USER nextjs
 # Expose port
 EXPOSE 3001
 
-# Health check
-HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
-    CMD wget --no-verbose --tries=1 --spider http://localhost:3001/api/health || exit 1
+# Note: Container health check removed - using ALB target group health checks instead
+# Alpine images don't have curl/wget, and Node-based checks have escaping issues
 
 # Start the application
 WORKDIR /app/frontend-public

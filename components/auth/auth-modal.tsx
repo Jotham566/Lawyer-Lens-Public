@@ -183,12 +183,13 @@ type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 // Password Strength Indicator
 // ============================================================================
 
-function PasswordStrength({ password }: { password: string }) {
+function PasswordStrength({ password }: { password: string | undefined }) {
+  const pwd = password ?? "";
   const checks = [
-    { label: "8+ characters", valid: password.length >= 8 },
-    { label: "Uppercase", valid: /[A-Z]/.test(password) },
-    { label: "Lowercase", valid: /[a-z]/.test(password) },
-    { label: "Number", valid: /\d/.test(password) },
+    { label: "8+ characters", valid: pwd.length >= 8 },
+    { label: "Uppercase", valid: /[A-Z]/.test(pwd) },
+    { label: "Lowercase", valid: /[a-z]/.test(pwd) },
+    { label: "Number", valid: /\d/.test(pwd) },
   ];
 
   return (
