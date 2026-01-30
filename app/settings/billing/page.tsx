@@ -21,6 +21,7 @@ import {
 import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, PageLoading } from "@/components/common";
+import { fetchSubscription, fetchUsage, fetchInvoices } from "@/lib/api/billing";
 
 interface Subscription {
   tier: string;
@@ -65,9 +66,9 @@ export default function BillingPage() {
     async function fetchBillingData() {
       try {
         const [subRes, usageRes, invoicesRes] = await Promise.all([
-          fetch("/api/billing/subscription"),
-          fetch("/api/billing/usage"),
-          fetch("/api/billing/invoices"),
+          fetchSubscription(),
+          fetchUsage(),
+          fetchInvoices(),
         ]);
 
         if (subRes.ok) {

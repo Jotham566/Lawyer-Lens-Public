@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { PricingTierCard, PricingTier, PricingFAQ } from "@/components/pricing";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
+import { fetchSubscription } from "@/lib/api/billing";
 
 export default function PricingPage() {
   const router = useRouter();
@@ -30,7 +31,7 @@ export default function PricingPage() {
 
     async function fetchCurrentSubscription() {
       try {
-        const response = await fetch("/api/billing/subscription");
+        const response = await fetchSubscription();
         if (response.ok) {
           const data = await response.json();
           if (data.subscription?.tier) {

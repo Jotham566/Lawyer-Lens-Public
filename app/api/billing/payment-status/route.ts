@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+
+import { getAuthHeader } from "../_auth";
 
 const ADMIN_API_URL = process.env.ADMIN_API_URL || "http://localhost:8001";
 
 export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const token = cookieStore.get("auth_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!token) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Authentication required" },
         { status: 401 }
@@ -30,7 +30,7 @@ export async function GET(request: NextRequest) {
       `${ADMIN_API_URL}/api/v1/billing/payment-status?reference=${reference}`,
       {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: authHeader,
         },
       }
     );

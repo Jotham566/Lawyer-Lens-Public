@@ -46,6 +46,12 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { SeatManagement } from "@/components/billing/seat-management";
+import {
+  fetchSubscription,
+  fetchPricing,
+  updateSubscription,
+  cancelSubscription,
+} from "@/lib/api/billing";
 
 interface Subscription {
   id: string;
@@ -112,8 +118,8 @@ export default function SubscriptionPage() {
     async function fetchData() {
       try {
         const [subRes, tiersRes] = await Promise.all([
-          fetch("/api/billing/subscription"),
-          fetch("/api/billing/pricing"),
+          fetchSubscription(),
+          fetchPricing(),
         ]);
 
         if (subRes.ok) {
@@ -138,13 +144,11 @@ export default function SubscriptionPage() {
   const handleCancel = async () => {
     setCancelling(true);
     try {
-      const response = await fetch("/api/billing/subscription", {
-        method: "DELETE",
-      });
+      const response = await cancelSubscription();
 
       if (response.ok) {
         // Refresh subscription data
-        const subRes = await fetch("/api/billing/subscription");
+        const subRes = await fetchSubscription();
         if (subRes.ok) {
           const data = await subRes.json();
           setSubscription(data.subscription);
@@ -160,14 +164,10 @@ export default function SubscriptionPage() {
   const handleReactivate = async () => {
     setReactivating(true);
     try {
-      const response = await fetch("/api/billing/subscription", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cancel_at_period_end: false }),
-      });
+      const response = await updateSubscription({ cancel_at_period_end: false });
 
       if (response.ok) {
-        const subRes = await fetch("/api/billing/subscription");
+        const subRes = await fetchSubscription();
         if (subRes.ok) {
           const data = await subRes.json();
           setSubscription(data.subscription);
@@ -224,14 +224,10 @@ export default function SubscriptionPage() {
     setChangeError(null);
 
     try {
-      const response = await fetch("/api/billing/subscription", {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          new_tier: selectedTier.tier,
-          downgrade_reason: downgradeReason,
-          downgrade_feedback: downgradeFeedback || undefined,
-        }),
+      const response = await updateSubscription({
+        new_tier: selectedTier.tier,
+        downgrade_reason: downgradeReason,
+        downgrade_feedback: downgradeFeedback || undefined,
       });
 
       if (!response.ok) {
@@ -240,7 +236,7 @@ export default function SubscriptionPage() {
       }
 
       // Refresh subscription data
-      const subRes = await fetch("/api/billing/subscription");
+      const subRes = await fetchSubscription();
       if (subRes.ok) {
         const data = await subRes.json();
         setSubscription(data.subscription);
@@ -406,13 +402,9 @@ export default function SubscriptionPage() {
                 canModify: !subscription.cancelAtPeriodEnd && subscription.status === "active",
               }}
               onUpdateSeats={async (newTotal, proratedAmount) => {
-                const response = await fetch("/api/billing/subscription", {
-                  method: "PATCH",
-                  headers: { "Content-Type": "application/json" },
-                  body: JSON.stringify({
-                    seats: newTotal,
-                    prorated_amount: proratedAmount,
-                  }),
+                const response = await updateSubscription({
+                  seats: newTotal,
+                  prorated_amount: proratedAmount,
                 });
 
                 if (!response.ok) {
@@ -421,7 +413,7 @@ export default function SubscriptionPage() {
                 }
 
                 // Refresh subscription data
-                const subRes = await fetch("/api/billing/subscription");
+                const subRes = await fetchSubscription();
                 if (subRes.ok) {
                   const data = await subRes.json();
                   setSubscription(data.subscription);

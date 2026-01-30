@@ -21,6 +21,7 @@ import {
   Crown,
 } from "lucide-react";
 import Link from "next/link";
+import { fetchSubscription, fetchUsage } from "@/lib/api/billing";
 
 interface UsageData {
   tier: string;
@@ -84,18 +85,18 @@ export default function BillingPage() {
       try {
         setLoading(true);
 
-        // Fetch usage data
-        const usageRes = await fetch("/api/billing/usage");
+        // Fetch usage data (with auth)
+        const usageRes = await fetchUsage();
         if (usageRes.ok) {
           const usageData = await usageRes.json();
           setUsage(usageData);
         }
 
-        // Fetch subscription data
-        const subRes = await fetch("/api/billing/subscription");
+        // Fetch subscription data (with auth)
+        const subRes = await fetchSubscription();
         if (subRes.ok) {
           const subData = await subRes.json();
-          setSubscription(subData);
+          setSubscription(subData.subscription || subData);
         }
       } catch (err) {
         setError("Failed to load billing information");

@@ -1,14 +1,14 @@
-import { NextResponse } from "next/server";
-import { cookies } from "next/headers";
+import { NextRequest, NextResponse } from "next/server";
+
+import { getAuthHeader } from "../_auth";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8003";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -17,7 +17,7 @@ export async function GET() {
 
     const response = await fetch(`${BACKEND_URL}/api/v1/billing/usage`, {
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
     });

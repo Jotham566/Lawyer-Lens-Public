@@ -1,26 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+
+import { getAuthHeader } from "../_auth";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8003";
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+    // For unauthenticated users, return null subscription (not 401)
+    // This allows the pricing page to work for both logged-in and anonymous users
+    if (!authHeader) {
+      return NextResponse.json({ subscription: null });
     }
 
     const response = await fetch(`${BACKEND_URL}/api/v1/billing/subscription`, {
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
     });
+
+    if (response.status === 401 || response.status === 403) {
+      return NextResponse.json({ subscription: null });
+    }
 
     const data = await response.json();
     return NextResponse.json(data, { status: response.status });
@@ -35,10 +38,9 @@ export async function GET() {
 
 export async function POST(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -50,7 +52,7 @@ export async function POST(request: NextRequest) {
     const response = await fetch(`${BACKEND_URL}/api/v1/billing/subscription`, {
       method: "POST",
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -69,10 +71,9 @@ export async function POST(request: NextRequest) {
 
 export async function PATCH(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -84,7 +85,7 @@ export async function PATCH(request: NextRequest) {
     const response = await fetch(`${BACKEND_URL}/api/v1/billing/subscription`, {
       method: "PATCH",
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),
@@ -103,10 +104,9 @@ export async function PATCH(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -118,7 +118,7 @@ export async function DELETE(request: NextRequest) {
     const response = await fetch(`${BACKEND_URL}/api/v1/billing/subscription`, {
       method: "DELETE",
       headers: {
-        Authorization: `Bearer ${sessionToken}`,
+        Authorization: authHeader,
         "Content-Type": "application/json",
       },
       body: JSON.stringify(body),

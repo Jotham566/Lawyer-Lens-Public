@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
-import { cookies } from "next/headers";
+
+import { getAuthHeader } from "../../_auth";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8003";
 
 export async function DELETE(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const cookieStore = await cookies();
-    const sessionToken = cookieStore.get("session_token")?.value;
+    const authHeader = await getAuthHeader(request);
 
-    if (!sessionToken) {
+    if (!authHeader) {
       return NextResponse.json(
         { error: "Unauthorized" },
         { status: 401 }
@@ -25,7 +25,7 @@ export async function DELETE(
       {
         method: "DELETE",
         headers: {
-          Authorization: `Bearer ${sessionToken}`,
+          Authorization: authHeader,
           "Content-Type": "application/json",
         },
       }
