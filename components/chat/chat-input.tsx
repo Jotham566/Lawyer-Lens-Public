@@ -5,7 +5,6 @@ import { ArrowUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ToolsDropdown,
-  ActiveToolIndicator,
   getToolPlaceholder,
   type ToolMode,
 } from "./tools-dropdown";
@@ -36,21 +35,6 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     return (
       <div className="border-t p-4">
         <div className="mx-auto max-w-3xl">
-          {/* Tool Selection Row */}
-          <div className="flex items-center gap-2 mb-3">
-            <ToolsDropdown
-              selectedTool={selectedTool}
-              onSelectTool={onSelectTool}
-              disabled={isLoading}
-            />
-            {selectedTool !== "chat" && (
-              <ActiveToolIndicator
-                tool={selectedTool}
-                onClear={() => onSelectTool("chat")}
-              />
-            )}
-          </div>
-
           {/* Input Form */}
           <form
             onSubmit={(e) => {
@@ -65,6 +49,15 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               Type your legal question
             </label>
             <div className="relative flex-1">
+              <div className="absolute left-3 bottom-3 z-10">
+                <ToolsDropdown
+                  selectedTool={selectedTool}
+                  onSelectTool={onSelectTool}
+                  disabled={isLoading}
+                  showLabel={false}
+                  className="h-10 w-10 p-0 rounded-full border-0 hover:bg-muted"
+                />
+              </div>
               <textarea
                 id="chat-input"
                 ref={ref}
@@ -74,9 +67,9 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 placeholder={getToolPlaceholder(selectedTool)}
                 rows={1}
                 aria-label="Chat message input"
-                className="min-h-[52px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-5 pr-14 py-3.5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
+                className="min-h-[80px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-14 pr-14 py-5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
               />
-              <div className="absolute right-1.5 bottom-1.5">
+              <div className="absolute right-3 bottom-3">
                 <Button
                   type="submit"
                   size="icon"

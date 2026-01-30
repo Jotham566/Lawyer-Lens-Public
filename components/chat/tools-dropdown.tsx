@@ -56,7 +56,9 @@ export function ToolsDropdown({
   selectedTool,
   onSelectTool,
   disabled = false,
-}: ToolsDropdownProps) {
+  className,
+  showLabel = true,
+}: ToolsDropdownProps & { className?: string; showLabel?: boolean }) {
   const activeTool = tools.find((t) => t.id === selectedTool);
 
   return (
@@ -71,12 +73,13 @@ export function ToolsDropdown({
                 "h-9 gap-2 px-3 rounded-full border",
                 selectedTool !== "chat"
                   ? "bg-primary/10 border-primary/30 hover:bg-primary/20"
-                  : "hover:bg-muted"
+                  : "hover:bg-muted",
+                className
               )}
               disabled={disabled}
             >
               <Wrench className="h-4 w-4" />
-              <span className="hidden sm:inline">Tools</span>
+              {showLabel && <span className="hidden sm:inline">Tools</span>}
               {selectedTool !== "chat" && activeTool && (
                 <Badge
                   variant="secondary"
@@ -101,6 +104,28 @@ export function ToolsDropdown({
           AI Tools
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => onSelectTool("chat")}
+          className={cn(
+            "flex items-start gap-3 p-3 cursor-pointer",
+            selectedTool === "chat" && "bg-accent"
+          )}
+        >
+          <div
+            className={cn(
+              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
+              selectedTool === "chat" ? "bg-primary/20" : "bg-muted"
+            )}
+          >
+            <Sparkles className="h-5 w-5 text-primary" />
+          </div>
+          <div className="flex flex-col gap-0.5">
+            <span className="font-medium">Standard Chat</span>
+            <span className="text-xs text-muted-foreground">
+              General legal Q&A
+            </span>
+          </div>
+        </DropdownMenuItem>
         {tools.map((tool) => {
           const Icon = tool.icon;
           const isSelected = selectedTool === tool.id;
