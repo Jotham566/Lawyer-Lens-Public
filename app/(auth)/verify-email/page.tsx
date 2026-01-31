@@ -15,7 +15,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useAuth } from "@/components/providers";
-import { verifyEmail, resendVerificationEmail } from "@/lib/api/auth";
+import { verifyEmail } from "@/lib/api/auth";
+import { useResendVerification } from "@/lib/hooks";
 import { APIError } from "@/lib/api/client";
 
 type VerifyState = "verifying" | "success" | "error" | "pending";
@@ -31,9 +32,15 @@ function VerifyEmailContent() {
   const [state, setState] = useState<VerifyState>(
     token ? "verifying" : isPending ? "pending" : "error"
   );
-  const [error, setError] = useState<string | null>(null);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
+  const [verificationError, setVerificationError] = useState<string | null>(null);
+
+  const {
+    resend,
+    isSending: resendLoading,
+    cooldown,
+    success: resendSuccess,
+    error: resendError,
+  } = useResendVerification(accessToken);
 
   // Verify the email token
   useEffect(() => {
@@ -49,14 +56,14 @@ function VerifyEmailContent() {
         setState("error");
         if (err instanceof APIError) {
           if (err.errorCode === "TOKEN_EXPIRED" || err.errorCode === "TOKEN_INVALID") {
-            setError("This verification link has expired or is invalid. Please request a new one.");
+            setVerificationError("This verification link has expired or is invalid. Please request a new one.");
           } else if (err.errorCode === "ALREADY_VERIFIED") {
             setState("success");
           } else {
-            setError(err.message || "Failed to verify email. Please try again.");
+            setVerificationError(err.message || "Failed to verify email. Please try again.");
           }
         } else {
-          setError("An unexpected error occurred. Please try again.");
+          setVerificationError("An unexpected error occurred. Please try again.");
         }
       }
     }
@@ -71,22 +78,7 @@ function VerifyEmailContent() {
       router.push("/login");
       return;
     }
-
-    setResendLoading(true);
-    setResendSuccess(false);
-
-    try {
-      await resendVerificationEmail(accessToken);
-      setResendSuccess(true);
-    } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to resend verification email.");
-      } else {
-        setError("An unexpected error occurred.");
-      }
-    } finally {
-      setResendLoading(false);
-    }
+    await resend();
   };
 
   // Verifying state (loading)
@@ -150,10 +142,10 @@ function VerifyEmailContent() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          {error && (
+          {(verificationError || resendError) && (
             <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
               <AlertCircle className="h-4 w-4 flex-shrink-0" />
-              <p>{error}</p>
+              <p>{verificationError || resendError}</p>
             </div>
           )}
 
@@ -179,13 +171,15 @@ function VerifyEmailContent() {
             variant="outline"
             className="w-full"
             onClick={handleResendVerification}
-            disabled={resendLoading || !accessToken}
+            disabled={resendLoading || cooldown > 0 || !accessToken}
           >
             {resendLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Sending...
               </>
+            ) : cooldown > 0 ? (
+              `Resend in ${cooldown}s`
             ) : (
               "Resend verification email"
             )}
@@ -208,11 +202,17 @@ function VerifyEmailContent() {
         </div>
         <CardTitle className="text-2xl font-bold text-center">Verification failed</CardTitle>
         <CardDescription className="text-center">
-          {error || "This verification link is invalid or has expired."}
+          {verificationError || "This verification link is invalid or has expired."}
         </CardDescription>
       </CardHeader>
 
       <CardContent className="space-y-4">
+        {resendError && (
+          <div className="flex items-center gap-2 rounded-lg border border-destructive/50 bg-destructive/10 p-3 text-sm text-destructive">
+            <AlertCircle className="h-4 w-4 flex-shrink-0" />
+            <p>{resendError}</p>
+          </div>
+        )}
         {resendSuccess && (
           <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600 dark:text-green-400">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
@@ -227,13 +227,15 @@ function VerifyEmailContent() {
             variant="outline"
             className="w-full"
             onClick={handleResendVerification}
-            disabled={resendLoading}
+            disabled={resendLoading || cooldown > 0}
           >
             {resendLoading ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Sending...
               </>
+            ) : cooldown > 0 ? (
+              `Request new link in ${cooldown}s`
             ) : (
               "Request new verification email"
             )}

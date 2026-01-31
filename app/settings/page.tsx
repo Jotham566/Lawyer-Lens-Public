@@ -18,10 +18,11 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useRequireAuth } from "@/components/providers";
-import { updateProfile, resendVerificationEmail } from "@/lib/api/auth";
+import { updateProfile } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { PageHeader, AlertBanner, PageLoading, StatusBadge } from "@/components/common";
 import { AvatarUpload, DeleteAccountDialog } from "@/components/profile";
+import { useResendVerification } from "@/lib/hooks";
 
 const profileSchema = z.object({
   full_name: z
@@ -38,8 +39,14 @@ export default function SettingsPage() {
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
-  const [resendLoading, setResendLoading] = useState(false);
-  const [resendSuccess, setResendSuccess] = useState(false);
+  const {
+    resend,
+    isSending: resendLoading,
+    cooldown,
+    success: resendSuccess,
+    error: resendError,
+    clearError: clearResendError,
+  } = useResendVerification(accessToken);
 
   const {
     register,
@@ -80,21 +87,7 @@ export default function SettingsPage() {
   };
 
   const handleResendVerification = async () => {
-    if (!accessToken) return;
-
-    setResendLoading(true);
-    setResendSuccess(false);
-
-    try {
-      await resendVerificationEmail(accessToken);
-      setResendSuccess(true);
-    } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message);
-      }
-    } finally {
-      setResendLoading(false);
-    }
+    await resend();
   };
 
   if (authLoading || !user) {
@@ -113,23 +106,31 @@ export default function SettingsPage() {
         <AlertBanner
           variant="warning"
           title="Verify your email address"
-          message="Please verify your email to access all features."
+          message={
+            resendSuccess
+              ? "Verification email sent. Please check your inbox to access all features."
+              : "Please verify your email to access all features."
+          }
           action={{
             label: resendLoading
               ? "Sending..."
-              : resendSuccess
-              ? "Verification email sent!"
+              : cooldown > 0
+              ? `Resend in ${cooldown}s`
               : "Resend verification",
             onClick: handleResendVerification,
+            disabled: resendLoading || cooldown > 0,
           }}
         />
       )}
 
-      {error && (
+      {(error || resendError) && (
         <AlertBanner
           variant="error"
-          message={error}
-          onDismiss={() => setError(null)}
+          message={error || resendError || "An unexpected error occurred"}
+          onDismiss={() => {
+            setError(null);
+            clearResendError();
+          }}
         />
       )}
 

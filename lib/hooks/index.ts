@@ -18,6 +18,7 @@ export {
   getModifierKey,
 } from "./use-keyboard-shortcuts";
 export { useOnlineStatus, type OnlineStatus } from "./use-online-status";
+export { useResendVerification } from "./use-resend-verification";
 export {
   useFocusRestore,
   useFocusTrap,

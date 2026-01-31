@@ -15,6 +15,7 @@ interface AlertBannerProps {
   action?: {
     label: string;
     onClick: () => void;
+    disabled?: boolean;
   };
 }
 
@@ -107,6 +108,7 @@ export function AlertBanner({
             size="sm"
             className={cn("h-auto p-0 mt-2", config.messageClass)}
             onClick={action.onClick}
+            disabled={action.disabled}
           >
             {action.label}
           </Button>

@@ -30,6 +30,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers";
+import { useResendVerification } from "@/lib/hooks";
 import { forgotPassword, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
@@ -225,11 +226,19 @@ interface LoginViewProps {
 }
 
 function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
-  const router = useRouter();
-  const { login } = useAuth();
+  const { login, accessToken } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [needsVerification, setNeedsVerification] = useState(false);
+
+  const {
+    resend,
+    isSending: resendLoading,
+    cooldown,
+    success: resendSuccess,
+    error: resendError,
+  } = useResendVerification(accessToken);
 
   const {
     register,
@@ -252,8 +261,8 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
       const result = await login(data);
 
       if (result.requiresVerification) {
-        router.push("/verify-email?pending=true");
-        onSuccess();
+        setNeedsVerification(true);
+        return;
       } else {
         onSuccess();
       }
@@ -273,6 +282,48 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
       }
     }
   };
+
+  if (needsVerification) {
+    return (
+      <>
+        <DialogHeader className="space-y-2 pb-4">
+          <DialogTitle className="text-xl">Verify your email</DialogTitle>
+          <DialogDescription>
+            You&apos;re signed in, but you need to verify your email to unlock all features.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-4">
+          <AlertBanner
+            variant="warning"
+            title="Email verification required"
+            message={
+              resendSuccess
+                ? "Verification email sent. Please check your inbox."
+                : "Please verify your email to unlock all features."
+            }
+            action={{
+              label: resendLoading
+                ? "Sending..."
+                : cooldown > 0
+                ? `Resend in ${cooldown}s`
+                : "Resend verification email",
+              onClick: resend,
+              disabled: resendLoading || cooldown > 0,
+            }}
+          />
+
+          {resendError && (
+            <AlertBanner variant="error" message={resendError} />
+          )}
+
+          <Button className="w-full" onClick={onSuccess}>
+            Continue to Law Lens
+          </Button>
+        </div>
+      </>
+    );
+  }
 
   return (
     <>

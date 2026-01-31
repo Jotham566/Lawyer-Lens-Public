@@ -7,6 +7,7 @@ import { MobileNav, MobileBottomNav } from "./mobile-nav";
 import { SkipLink } from "@/components/skip-link";
 import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
 import { ScreenReaderAnnouncer } from "@/components/accessibility";
+import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -46,6 +47,9 @@ export function AppShell({ children }: AppShellProps) {
 
       {/* Global usage warning banner */}
       <GlobalUsageAlert />
+
+      {/* Email verification banner */}
+      <EmailVerificationBanner />
 
       {/* Mobile navigation sheet */}
       <MobileNav open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
