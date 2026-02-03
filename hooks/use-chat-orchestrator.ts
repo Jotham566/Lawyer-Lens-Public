@@ -123,17 +123,6 @@ export function useChatOrchestrator() {
         return () => document.removeEventListener("keydown", handleKeyDown);
     }, [createConversation, editingIndex, mobileHistoryOpen, deleteDialogOpen]);
 
-    // Initial Query Handler
-    useEffect(() => {
-        if (initialQuery && !currentConversationId) {
-            const id = createConversation();
-            setInput(initialQuery);
-            // Small timeout to ensure state updates propagate
-            setTimeout(() => handleSend(initialQuery, id), 100);
-        }
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [initialQuery]);
-
     // Fetch Conversations on Auth
     useEffect(() => {
         if (accessToken) {
@@ -388,6 +377,16 @@ export function useChatOrchestrator() {
         },
         [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom, accessToken]
     );
+
+    // Initial Query Handler
+    useEffect(() => {
+        if (initialQuery && !currentConversationId) {
+            const id = createConversation();
+            setInput(initialQuery);
+            // Small timeout to ensure state updates propagate
+            setTimeout(() => handleSend(initialQuery, id), 100);
+        }
+    }, [initialQuery, currentConversationId, createConversation, handleSend]);
 
 
     // 4. Regenerate / Edit Wrappers
