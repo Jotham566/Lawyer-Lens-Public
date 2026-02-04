@@ -26,6 +26,7 @@ import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { BetaAnnouncementBanner, BetaAccessModal } from "@/components/beta";
 
 const searchModes = [
   {
@@ -134,6 +135,7 @@ export default function HomePage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
+  const [showBetaModal, setShowBetaModal] = useState(false);
 
   useEffect(() => {
     getRepositoryStats()
@@ -185,6 +187,9 @@ export default function HomePage() {
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
+      {/* Beta Announcement Banner */}
+      <BetaAnnouncementBanner onJoinClick={() => setShowBetaModal(true)} />
+
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
         <div className="w-full max-w-3xl mx-auto text-center">
@@ -397,6 +402,9 @@ export default function HomePage() {
           </div>
         </div>
       </footer>
+
+      {/* Beta Access Modal */}
+      <BetaAccessModal open={showBetaModal} onOpenChange={setShowBetaModal} />
     </div>
   );
 }
