@@ -58,6 +58,7 @@ export interface RegisterRequest {
   email: string;
   password: string;
   full_name: string;
+  invitation_token?: string;
 }
 
 export interface LoginRequest {

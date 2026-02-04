@@ -16,6 +16,7 @@ function RegisterContent() {
   const { openRegister, setReturnUrl } = useAuthModal();
 
   const returnUrl = searchParams.get("returnUrl");
+  const inviteToken = searchParams.get("invite");
 
   useEffect(() => {
     // If already authenticated, redirect to return URL or dashboard
@@ -27,18 +28,23 @@ function RegisterContent() {
 
     // If not loading and not authenticated, open the modal and go home
     if (!isLoading && !isAuthenticated) {
+      console.log('[RegisterPage] Opening registration modal with invite token:', inviteToken ? 'present' : 'none');
+
       // Store returnUrl if provided
       if (returnUrl) {
         setReturnUrl(decodeURIComponent(returnUrl));
       }
 
-      router.replace("/");
-      // Small delay to ensure navigation completes
+      // Open modal FIRST (this stores the invitation token in sessionStorage)
+      openRegister(undefined, inviteToken || undefined);
+
+      // Then redirect to home (modal state persists)
       setTimeout(() => {
-        openRegister();
-      }, 100);
+        console.log('[RegisterPage] Redirecting to home, modal should stay open');
+        router.replace("/");
+      }, 50);
     }
-  }, [isLoading, isAuthenticated, router, openRegister, returnUrl, setReturnUrl]);
+  }, [isLoading, isAuthenticated, router, openRegister, returnUrl, inviteToken, setReturnUrl]);
 
   return (
     <div className="flex items-center justify-center min-h-[300px]">

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -30,10 +30,12 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers";
+import { useAuthModal } from "./auth-modal-provider";
 import { useResendVerification } from "@/lib/hooks";
 import { forgotPassword, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
+import { BetaAccessModal } from "@/components/beta";
 
 // ============================================================================
 // Social Login Icons
@@ -461,10 +463,16 @@ interface RegisterViewProps {
 function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
   const router = useRouter();
   const { register: registerUser } = useAuth();
+  const { getInvitationToken } = useAuthModal();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showBetaModal, setShowBetaModal] = useState(false);
+
+  // Check if invitation token is present
+  const invitationToken = getInvitationToken();
+  const hasInvitation = !!invitationToken;
 
   const {
     register,
@@ -481,10 +489,18 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
     setError(null);
 
     try {
+      // Get invitation token if present
+      const invitationToken = getInvitationToken();
+      console.log('[RegisterView] Submitting registration', {
+        email: data.email,
+        hasToken: !!invitationToken
+      });
+
       const result = await registerUser({
         email: data.email,
         password: data.password,
         full_name: data.full_name,
+        invitation_token: invitationToken || undefined,
       });
 
       if (result.emailSent) {
@@ -497,6 +513,10 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
       if (err instanceof APIError) {
         if (err.errorCode === "USER_EXISTS") {
           setError("An account with this email already exists.");
+        } else if (err.errorCode === "beta_access_required" || err.message?.includes("invite-only")) {
+          // Show beta access modal instead of error
+          setShowBetaModal(true);
+          setError(null);
         } else {
           setError(err.message || "Registration failed. Please try again.");
         }
@@ -514,6 +534,20 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           Get started with Law Lens for free
         </DialogDescription>
       </DialogHeader>
+
+      {hasInvitation && (
+        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+          <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+              Beta Invitation Detected
+            </p>
+            <p className="text-xs text-blue-700 dark:text-blue-300">
+              You'll receive early adopter perks after registration
+            </p>
+          </div>
+        </div>
+      )}
 
       <div className="space-y-4">
         {error && (
@@ -653,6 +687,8 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           </button>
         </p>
       </form>
+
+      <BetaAccessModal open={showBetaModal} onOpenChange={setShowBetaModal} />
     </>
   );
 }
@@ -820,6 +856,14 @@ export function AuthModal({
   onSuccess,
 }: AuthModalProps) {
   const [view, setView] = useState<AuthView>(defaultView);
+
+  // Sync view with defaultView when it changes
+  useEffect(() => {
+    if (open) {
+      console.log('[AuthModal] Modal opened with defaultView:', defaultView);
+      setView(defaultView);
+    }
+  }, [open, defaultView]);
 
   // Reset view when modal opens
   const handleOpenChange = (newOpen: boolean) => {
