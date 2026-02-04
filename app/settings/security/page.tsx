@@ -47,6 +47,7 @@ import {
   type UserSession,
 } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
+import { formatDateTime } from "@/lib/utils/date-formatter";
 
 const passwordSchema = z
   .object({
@@ -467,16 +468,7 @@ export default function SecuritySettingsPage() {
                         )}
                         {session.last_activity_at && (
                           <span>
-                            Last active{" "}
-                            {new Date(session.last_activity_at).toLocaleDateString(
-                              "en-UG",
-                              {
-                                month: "short",
-                                day: "numeric",
-                                hour: "numeric",
-                                minute: "2-digit",
-                              }
-                            )}
+                            Last active {formatDateTime(session.last_activity_at)}
                           </span>
                         )}
                       </div>

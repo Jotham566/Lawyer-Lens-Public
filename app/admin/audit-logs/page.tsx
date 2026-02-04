@@ -47,6 +47,7 @@ import {
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { getCurrentOrganization, type Organization } from "@/lib/api/organizations";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
+import { formatRelativeTime, formatDateTime } from "@/lib/utils/date-formatter";
 
 // Audit log event types
 type AuditEventType =
@@ -115,21 +116,6 @@ const EVENT_LABELS: Record<AuditEventType, { label: string; icon: React.ElementT
 
 function getEventCategory(eventType: AuditEventType): keyof typeof EVENT_CATEGORIES {
   return eventType.split(".")[0] as keyof typeof EVENT_CATEGORIES;
-}
-
-function formatRelativeTime(timestamp: string): string {
-  const now = new Date();
-  const date = new Date(timestamp);
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / (1000 * 60));
-  const diffHours = Math.floor(diffMs / (1000 * 60 * 60));
-  const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
 }
 
 // Generate mock audit logs for demo
@@ -442,7 +428,7 @@ function AuditLogsContent() {
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-2" align="end">
                           <p className="text-sm">
-                            {new Date(log.created_at).toLocaleString()}
+                            {formatDateTime(log.created_at)}
                           </p>
                         </PopoverContent>
                       </Popover>
