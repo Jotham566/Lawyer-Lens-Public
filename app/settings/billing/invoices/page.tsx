@@ -25,6 +25,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface Invoice {
   id: string;
@@ -157,11 +158,10 @@ export default function InvoicesPage() {
                       {invoice.invoiceNumber}
                     </TableCell>
                     <TableCell>
-                      {new Date(invoice.createdAt).toLocaleDateString()}
+                      {formatDateOnly(invoice.createdAt)}
                     </TableCell>
                     <TableCell className="text-sm text-muted-foreground">
-                      {new Date(invoice.periodStart).toLocaleDateString()} -{" "}
-                      {new Date(invoice.periodEnd).toLocaleDateString()}
+                      {formatDateOnly(invoice.periodStart)} - {formatDateOnly(invoice.periodEnd)}
                     </TableCell>
                     <TableCell>
                       ${invoice.total.toFixed(2)} {invoice.currency}

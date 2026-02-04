@@ -55,6 +55,7 @@ import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 // Map backend status values to UI labels
 const statusLabels: Record<string, { label: string; description: string }> = {
@@ -427,11 +428,7 @@ function ResearchContent() {
         <body>
           <h1>${report.title}</h1>
           <div class="metadata">
-            Generated: ${new Date(report.generated_at).toLocaleDateString('en-US', {
-              year: 'numeric',
-              month: 'long',
-              day: 'numeric'
-            })} | ${report.citations?.length || 0} citations
+            Generated: ${formatDateOnly(report.generated_at)} | ${report.citations?.length || 0} citations
           </div>
 
           <div class="executive-summary">

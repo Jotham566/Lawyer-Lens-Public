@@ -69,6 +69,7 @@ import {
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 const phaseLabels: Record<string, { label: string; description: string }> = {
   requirements: {
@@ -1083,11 +1084,7 @@ function ContractsContent() {
                       {session.draft.title}
                     </h1>
                     <p className="mt-2 text-sm text-muted-foreground">
-                      Generated {new Date(session.created_at).toLocaleDateString("en-US", {
-                        year: "numeric",
-                        month: "long",
-                        day: "numeric",
-                      })}
+                      Generated {formatDateOnly(session.created_at)}
                     </p>
                   </div>
 

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { fetchSubscription, fetchUsage } from "@/lib/api/billing";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface UsageData {
   tier: string;
@@ -124,14 +125,6 @@ export default function BillingPage() {
     );
   }
 
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    });
-  };
-
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       <div className="flex items-center justify-between mb-8">
@@ -206,7 +199,7 @@ export default function BillingPage() {
                     <div>
                       <p className="text-sm text-slate-500">Billing Period</p>
                       <p className="font-medium">
-                        {formatDate(subscription.current_period_start)} - {formatDate(subscription.current_period_end)}
+                        {formatDateOnly(subscription.current_period_start)} - {formatDateOnly(subscription.current_period_end)}
                       </p>
                     </div>
                     {subscription.tier === "team" && (
@@ -255,7 +248,7 @@ export default function BillingPage() {
                   Usage This Period
                 </CardTitle>
                 <CardDescription>
-                  {formatDate(usage.period_start)} - {formatDate(usage.period_end)}
+                  {formatDateOnly(usage.period_start)} - {formatDateOnly(usage.period_end)}
                 </CardDescription>
               </CardHeader>
               <CardContent>

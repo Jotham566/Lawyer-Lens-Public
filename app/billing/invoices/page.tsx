@@ -32,6 +32,7 @@ import {
   XCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface Invoice {
   id: string;
@@ -114,14 +115,6 @@ export default function InvoicesPage() {
     } catch (err) {
       console.error("Failed to download invoice:", err);
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
   };
 
   const formatCurrency = (amount: number, currency: string) => {
@@ -315,7 +308,7 @@ export default function InvoicesPage() {
                       <TableCell className="font-medium">
                         {invoice.invoice_number}
                       </TableCell>
-                      <TableCell>{formatDate(invoice.created_at)}</TableCell>
+                      <TableCell>{formatDateOnly(invoice.created_at)}</TableCell>
                       <TableCell className="max-w-[200px] truncate">
                         {invoice.description}
                       </TableCell>

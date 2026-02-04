@@ -52,6 +52,7 @@ import {
   updateSubscription,
   cancelSubscription,
 } from "@/lib/api/billing";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface Subscription {
   id: string;
@@ -320,8 +321,7 @@ export default function SubscriptionPage() {
                     Current period
                   </div>
                   <p className="font-medium">
-                    {new Date(subscription.currentPeriodStart).toLocaleDateString()} -{" "}
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                    {formatDateOnly(subscription.currentPeriodStart)} - {formatDateOnly(subscription.currentPeriodEnd)}
                   </p>
                 </div>
                 <div>
@@ -329,7 +329,7 @@ export default function SubscriptionPage() {
                   <p className="font-medium">
                     {subscription.cancelAtPeriodEnd
                       ? "Subscription ends"
-                      : new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                      : formatDateOnly(subscription.currentPeriodEnd)}
                   </p>
                 </div>
               </div>
@@ -337,7 +337,7 @@ export default function SubscriptionPage() {
               {subscription.trialEnd && new Date(subscription.trialEnd) > new Date() && (
                 <div className="p-3 bg-blue-50 text-blue-800 rounded-md">
                   <p className="text-sm font-medium">
-                    Trial ends on {new Date(subscription.trialEnd).toLocaleDateString()}
+                    Trial ends on {formatDateOnly(subscription.trialEnd)}
                   </p>
                 </div>
               )}
@@ -347,8 +347,7 @@ export default function SubscriptionPage() {
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm">
-                      Your subscription will end on{" "}
-                      {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                      Your subscription will end on {formatDateOnly(subscription.currentPeriodEnd)}
                     </span>
                   </div>
                   <Button
@@ -442,8 +441,7 @@ export default function SubscriptionPage() {
                       <AlertDialogHeader>
                         <AlertDialogTitle>Cancel subscription?</AlertDialogTitle>
                         <AlertDialogDescription>
-                          Your subscription will remain active until{" "}
-                          {new Date(subscription.currentPeriodEnd).toLocaleDateString()}.
+                          Your subscription will remain active until {formatDateOnly(subscription.currentPeriodEnd)}.
                           You can reactivate anytime before then.
                         </AlertDialogDescription>
                       </AlertDialogHeader>

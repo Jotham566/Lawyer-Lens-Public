@@ -43,6 +43,7 @@ import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { useLibraryStore } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -592,7 +593,7 @@ function DocumentContent({ id }: { id: string }) {
                         Publication Date:
                       </dt>
                       <dd>
-                        {new Date(document.publication_date).toLocaleDateString()}
+                        {formatDateOnly(document.publication_date)}
                       </dd>
                     </div>
                   )}
@@ -602,9 +603,7 @@ function DocumentContent({ id }: { id: string }) {
                         Commencement Date:
                       </dt>
                       <dd>
-                        {new Date(
-                          document.commencement_date
-                        ).toLocaleDateString()}
+                        {formatDateOnly(document.commencement_date)}
                       </dd>
                     </div>
                   )}

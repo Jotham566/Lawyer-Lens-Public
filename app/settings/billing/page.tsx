@@ -22,6 +22,7 @@ import { Progress } from "@/components/ui/progress";
 import { Badge } from "@/components/ui/badge";
 import { PageHeader, PageLoading } from "@/components/common";
 import { fetchSubscription, fetchUsage, fetchInvoices } from "@/lib/api/billing";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface Subscription {
   tier: string;
@@ -162,8 +163,7 @@ export default function BillingPage() {
                 <div className="flex items-center gap-2 p-3 bg-yellow-50 text-yellow-800 rounded-md">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">
-                    Your subscription will be cancelled on{" "}
-                    {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                    Your subscription will be cancelled on {formatDateOnly(subscription.currentPeriodEnd)}
                   </span>
                 </div>
               )}

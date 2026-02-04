@@ -28,6 +28,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useDocumentsByType } from "@/lib/hooks";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import type { LucideIcon } from "lucide-react";
@@ -302,7 +303,7 @@ function CourtJudgmentsContent() {
                   {viewMode === "list" && judgment.publication_date && (
                     <div className="flex items-center gap-3 text-xs text-muted-foreground mt-1">
                       <span>
-                        {new Date(judgment.publication_date).toLocaleDateString()}
+                        {formatDateOnly(judgment.publication_date)}
                       </span>
                     </div>
                   )}

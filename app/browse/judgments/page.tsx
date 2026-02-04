@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDocumentsByType } from "@/lib/hooks";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 const courtLevels = [
   { value: "all", label: "All Courts" },
@@ -179,7 +180,7 @@ function JudgmentsContent() {
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
                       {judgment.publication_date && (
                         <span>
-                          {new Date(judgment.publication_date).toLocaleDateString()}
+                          {formatDateOnly(judgment.publication_date)}
                         </span>
                       )}
                     </div>

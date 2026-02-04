@@ -39,6 +39,7 @@ import { Badge } from "@/components/ui/badge";
 import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 // Helper to determine icon based on doc type
 const getIconForType = (type?: string) => {
@@ -136,7 +137,7 @@ export default function CollectionDetailPage(props: PageProps) {
                         <div className="flex items-center gap-4 mt-4 text-sm text-muted-foreground">
                             <div className="flex items-center gap-1">
                                 <Calendar className="h-4 w-4" />
-                                <span>Created {new Date(collection.created_at).toLocaleDateString()}</span>
+                                <span>Created {formatDateOnly(collection.created_at)}</span>
                             </div>
                             <div>•</div>
                             <div>{collection.items?.length || 0} items</div>

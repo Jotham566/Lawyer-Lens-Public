@@ -23,6 +23,7 @@ import { APIError } from "@/lib/api/client";
 import { PageHeader, AlertBanner, PageLoading, StatusBadge } from "@/components/common";
 import { AvatarUpload, DeleteAccountDialog } from "@/components/profile";
 import { useResendVerification } from "@/lib/hooks";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 const profileSchema = z.object({
   full_name: z
@@ -248,11 +249,7 @@ export default function SettingsPage() {
                 Account Created
               </dt>
               <dd className="text-sm">
-                {new Date(user.created_at).toLocaleDateString("en-UG", {
-                  year: "numeric",
-                  month: "long",
-                  day: "numeric",
-                })}
+                {formatDateOnly(user.created_at)}
               </dd>
             </div>
           </dl>

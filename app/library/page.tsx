@@ -26,6 +26,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 export default function LibraryPage() {
   const [collections, setCollections] = useState<Collection[]>([]);
@@ -182,7 +183,7 @@ export default function LibraryPage() {
                 <CardFooter className="text-xs text-muted-foreground border-t pt-4 mt-2">
                   <div className="flex items-center gap-1">
                     <Calendar className="h-3 w-3" />
-                    <span>Updated {new Date(collection.updated_at).toLocaleDateString()}</span>
+                    <span>Updated {formatDateOnly(collection.updated_at)}</span>
                   </div>
                 </CardFooter>
               </Card>

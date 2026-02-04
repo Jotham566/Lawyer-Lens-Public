@@ -79,6 +79,7 @@ import {
 } from "@/lib/api/organizations";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { AlertBanner, RoleBadge } from "@/components/common";
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 function TeamManagementContent() {
   const { accessToken, user } = useAuth();
@@ -501,11 +502,11 @@ function TeamManagementContent() {
                       </Badge>
                     </TableCell>
                     <TableCell className="text-muted-foreground">
-                      {new Date(member.joined_at).toLocaleDateString()}
+                      {formatDateOnly(member.joined_at)}
                     </TableCell>
                     <TableCell className="text-muted-foreground">
                       {member.last_active_at
-                        ? new Date(member.last_active_at).toLocaleDateString()
+                        ? formatDateOnly(member.last_active_at)
                         : "—"}
                     </TableCell>
                     <TableCell className="text-right">

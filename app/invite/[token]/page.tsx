@@ -29,14 +29,7 @@ import {
   type OrganizationInvitation,
 } from "@/lib/api/organizations";
 import { APIError } from "@/lib/api/client";
-
-function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-UG", {
-    year: "numeric",
-    month: "long",
-    day: "numeric",
-  });
-}
+import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 export default function InvitationPage({
   params,
@@ -206,7 +199,7 @@ export default function InvitationPage({
               <span className="text-sm text-muted-foreground">Expires</span>
               <span className="text-sm flex items-center gap-1">
                 <Clock className="h-3 w-3" />
-                {invitation?.expires_at && formatDate(invitation.expires_at)}
+                {invitation?.expires_at && formatDateOnly(invitation.expires_at)}
               </span>
             </div>
           </div>
