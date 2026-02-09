@@ -56,13 +56,13 @@ function StatCard({
 }
 
 function KnowledgeBaseContent() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState<KnowledgeBaseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
 
   const loadStats = useCallback(async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     try {
       const data = await getKnowledgeBaseStats();
@@ -72,11 +72,11 @@ function KnowledgeBaseContent() {
     } finally {
       setLoading(false);
     }
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   useEffect(() => {
     loadStats();
-  }, [accessToken, refreshTrigger, loadStats]);
+  }, [isAuthenticated, refreshTrigger, loadStats]);
 
   const handleUploadComplete = () => {
     setRefreshTrigger((t) => t + 1);

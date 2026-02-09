@@ -156,28 +156,18 @@ export interface ApproveBriefRequest {
  * Create a new research session
  */
 export async function createResearchSession(
-  request: CreateResearchRequest,
-  accessToken?: string | null
+  request: CreateResearchRequest
 ): Promise<ResearchSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ResearchSession>("/research", request, headers);
+  return apiPost<ResearchSession>("/research", request);
 }
 
 /**
  * Get research session status
  */
 export async function getResearchSession(
-  sessionId: string,
-  accessToken?: string | null
+  sessionId: string
 ): Promise<ResearchSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiGet<ResearchSession>(`/research/${sessionId}`, headers);
+  return apiGet<ResearchSession>(`/research/${sessionId}`);
 }
 
 /**
@@ -185,16 +175,11 @@ export async function getResearchSession(
  */
 export async function submitClarifyingAnswers(
   sessionId: string,
-  answers: ClarifyAnswers,
-  accessToken?: string | null
+  answers: ClarifyAnswers
 ): Promise<ResearchSession> {
   // Backend expects responses as a list of strings
   const responses = Object.values(answers);
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ResearchSession>(`/research/${sessionId}/clarify`, { responses }, headers);
+  return apiPost<ResearchSession>(`/research/${sessionId}/clarify`, { responses });
 }
 
 /**
@@ -202,28 +187,18 @@ export async function submitClarifyingAnswers(
  */
 export async function approveResearchBrief(
   sessionId: string,
-  request: ApproveBriefRequest,
-  accessToken?: string | null
+  request: ApproveBriefRequest
 ): Promise<ResearchSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request, headers);
+  return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request);
 }
 
 /**
  * Get final research report
  */
 export async function getResearchReport(
-  sessionId: string,
-  accessToken?: string | null
+  sessionId: string
 ): Promise<ResearchReport> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiGet<ResearchReport>(`/research/${sessionId}/report`, headers);
+  return apiGet<ResearchReport>(`/research/${sessionId}/report`);
 }
 
 /**
@@ -239,7 +214,7 @@ export function streamResearchProgress(
   onError: (error: string) => void
 ): () => void {
   const url = `${getApiBaseUrl()}/research/${sessionId}/stream`;
-  const eventSource = new EventSource(url);
+  const eventSource = new EventSource(url, { withCredentials: true });
 
   // Listen for named "progress" events from backend
   // Backend sends: event: progress\ndata: {...}

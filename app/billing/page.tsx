@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { fetchSubscription, fetchUsage } from "@/lib/api/billing";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 interface UsageData {
@@ -76,6 +78,8 @@ const usageIcons: Record<string, React.ReactNode> = {
 };
 
 export default function BillingPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const [usage, setUsage] = useState<UsageData | null>(null);
   const [subscription, setSubscription] = useState<SubscriptionData | null>(null);
   const [loading, setLoading] = useState(true);
@@ -84,6 +88,10 @@ export default function BillingPage() {
   useEffect(() => {
     async function fetchBillingData() {
       try {
+        if (!isAuthenticated) {
+          setLoading(false);
+          return;
+        }
         setLoading(true);
 
         // Fetch usage data (with auth)
@@ -97,7 +105,12 @@ export default function BillingPage() {
         const subRes = await fetchSubscription();
         if (subRes.ok) {
           const subData = await subRes.json();
-          setSubscription(subData.subscription || subData);
+          const normalized = subData?.subscription || subData;
+          if (normalized?.tier) {
+            setSubscription(normalized);
+          } else {
+            setSubscription(null);
+          }
         }
       } catch (err) {
         setError("Failed to load billing information");
@@ -108,7 +121,11 @@ export default function BillingPage() {
     }
 
     fetchBillingData();
-  }, []);
+  }, [isAuthenticated]);
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   if (loading) {
     return (
@@ -134,7 +151,7 @@ export default function BillingPage() {
             Manage your subscription, view usage, and update payment methods
           </p>
         </div>
-        <Link href="/billing/plans">
+        <Link href="/pricing">
           <Button variant="outline" className="gap-2">
             <Crown className="h-4 w-4" />
             View Plans
@@ -169,10 +186,10 @@ export default function BillingPage() {
                   </CardTitle>
                   <CardDescription>Your subscription details</CardDescription>
                 </div>
-                {subscription && (
+                {subscription?.tier && (
                   <Badge className={tierColors[subscription.tier] || tierColors.free}>
                     <span className="flex items-center gap-1">
-                      {tierIcons[subscription.tier]}
+                      {tierIcons[subscription.tier] || tierIcons.free}
                       {subscription.tier.charAt(0).toUpperCase() + subscription.tier.slice(1)}
                     </span>
                   </Badge>
@@ -218,7 +235,7 @@ export default function BillingPage() {
                   </div>
 
                   <div className="flex gap-3 pt-4 border-t">
-                    <Link href="/billing/plans">
+                    <Link href="/pricing">
                       <Button>
                         {subscription.tier === "free" ? "Upgrade Plan" : "Change Plan"}
                       </Button>
@@ -231,7 +248,7 @@ export default function BillingPage() {
               ) : (
                 <div className="text-center py-8">
                   <p className="text-slate-500 mb-4">You&apos;re currently on the Free plan</p>
-                  <Link href="/billing/plans">
+                  <Link href="/pricing">
                     <Button>Upgrade Now</Button>
                   </Link>
                 </div>

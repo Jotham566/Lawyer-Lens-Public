@@ -61,7 +61,7 @@ import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 function TeamMembersContent() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { user, accessToken } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
@@ -75,12 +75,12 @@ function TeamMembersContent() {
   // Load organization and members
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
         const [org, membersData] = await Promise.all([
-          getCurrentOrganization(accessToken),
-          listMembers(accessToken),
+          getCurrentOrganization(),
+          listMembers(),
         ]);
         setOrganization(org);
         setMembers(membersData.items);
@@ -91,20 +91,20 @@ function TeamMembersContent() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       loadData();
     }
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   const handleRoleChange = async (member: OrganizationMember, newRole: OrganizationRole) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setActionLoading(member.id);
     setError(null);
     setSuccess(null);
 
     try {
-      const updated = await updateMember(accessToken, member.user_id, { role: newRole });
+      const updated = await updateMember(member.user_id, { role: newRole });
       setMembers((prev) =>
         prev.map((m) => (m.id === member.id ? { ...m, role: updated.role } : m))
       );
@@ -121,14 +121,14 @@ function TeamMembersContent() {
   };
 
   const handleRemoveMember = async () => {
-    if (!accessToken || !memberToRemove) return;
+    if (!isAuthenticated || !memberToRemove) return;
 
     setActionLoading(memberToRemove.id);
     setError(null);
     setSuccess(null);
 
     try {
-      await removeMember(accessToken, memberToRemove.user_id);
+      await removeMember(memberToRemove.user_id);
       setMembers((prev) => prev.filter((m) => m.id !== memberToRemove.id));
       setSuccess(`${memberToRemove.full_name} has been removed from the team`);
     } catch (err) {

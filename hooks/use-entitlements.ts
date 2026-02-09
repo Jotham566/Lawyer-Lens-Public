@@ -52,6 +52,8 @@ export type RefreshOptions = {
   forceLoading?: boolean;
   /** Clear existing entitlements before refetching (prevents stale flashes) */
   reset?: boolean;
+  /** Clear state without issuing a fetch (used on logout) */
+  skipFetch?: boolean;
 };
 
 export interface EntitlementsContextValue {
@@ -105,7 +107,7 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
   const abortControllerRef = useRef<AbortController | null>(null);
 
   const refresh = useCallback(async (options: RefreshOptions = {}) => {
-    const { forceLoading = false, reset = false } = options;
+    const { forceLoading = false, reset = false, skipFetch = false } = options;
 
     // Abort any in-flight request to prevent race conditions
     if (abortControllerRef.current) {
@@ -140,18 +142,13 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       }
       setError(null);
 
-      // Get access token from localStorage (must match auth-provider.tsx key)
-      const accessToken = typeof window !== "undefined"
-        ? localStorage.getItem("auth_access_token")
-        : null;
-
-      const headers: Record<string, string> = {};
-      if (accessToken) {
-        headers.Authorization = `Bearer ${accessToken}`;
+      if (skipFetch) {
+        setLoading(false);
+        setIsRefreshing(false);
+        return;
       }
 
       const response = await fetch("/api/billing/entitlements", { 
-        headers,
         signal: abortController.signal,
       });
       
@@ -185,50 +182,55 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
       }
       
       setError(err instanceof Error ? err.message : "Unknown error");
-      // Set default free tier entitlements on error (match API route defaults)
-      setEntitlements({
-        tier: "free",
-        features: {},
-        usage: {
-          ai_query: {
-            display_name: "AI Queries",
-            current: 0,
-            limit: 50,
-            is_unlimited: false,
-            remaining: 50,
-            percentage: 0,
-            is_at_limit: false,
+      // Preserve last-known entitlements on transient errors.
+      setEntitlements((prev) => {
+        if (prev) {
+          return prev;
+        }
+        return {
+          tier: "free",
+          features: {},
+          usage: {
+            ai_query: {
+              display_name: "AI Queries",
+              current: 0,
+              limit: 50,
+              is_unlimited: false,
+              remaining: 50,
+              percentage: 0,
+              is_at_limit: false,
+            },
+            deep_research: {
+              display_name: "Deep Research",
+              current: 0,
+              limit: 0,
+              is_unlimited: false,
+              remaining: 0,
+              percentage: 0,
+              is_at_limit: true,
+            },
+            contract_draft: {
+              display_name: "Contract Drafts",
+              current: 0,
+              limit: 0,
+              is_unlimited: false,
+              remaining: 0,
+              percentage: 0,
+              is_at_limit: true,
+            },
+            storage_gb: {
+              display_name: "Storage (GB)",
+              current: 0,
+              limit: 1,
+              is_unlimited: false,
+              remaining: 1,
+              percentage: 0,
+              is_at_limit: false,
+            },
           },
-          deep_research: {
-            display_name: "Deep Research",
-            current: 0,
-            limit: 0,
-            is_unlimited: false,
-            remaining: 0,
-            percentage: 0,
-            is_at_limit: true,
-          },
-          contract_draft: {
-            display_name: "Contract Drafts",
-            current: 0,
-            limit: 0,
-            is_unlimited: false,
-            remaining: 0,
-            percentage: 0,
-            is_at_limit: true,
-          },
-          storage_gb: {
-            display_name: "Storage (GB)",
-            current: 0,
-            limit: 1,
-            is_unlimited: false,
-            remaining: 1,
-            percentage: 0,
-            is_at_limit: false,
-          },
-        },
-        period_start: new Date().toISOString(),
-        period_end: new Date().toISOString(),
+          period_start: new Date().toISOString(),
+          period_end: new Date().toISOString(),
+        };
       });
     } finally {
       // Only update loading state if this is still the latest request

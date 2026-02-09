@@ -4,7 +4,7 @@
  * Functions for Legal Assistant interactions.
  */
 
-import { apiFetch, apiPost, apiGet, getApiBaseUrl } from "./client";
+import { apiFetch, apiPost, apiGet, getApiBaseUrl, getCsrfToken } from "./client";
 import type {
   ChatRequest,
   ChatResponse,
@@ -47,16 +47,10 @@ export async function getChatHealth(): Promise<ChatHealthResponse> {
  */
 export async function getConversations(
   limit: number = 50,
-  offset: number = 0,
-  accessToken?: string | null
+  offset: number = 0
 ): Promise<ConversationListResponse> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
   return apiGet<ConversationListResponse>(
-    `/chat/conversations?limit=${limit}&offset=${offset}`,
-    headers
+    `/chat/conversations?limit=${limit}&offset=${offset}`
   );
 }
 
@@ -64,30 +58,19 @@ export async function getConversations(
  * Get full conversation details
  */
 export async function getConversation(
-  conversationId: string,
-  accessToken?: string | null
+  conversationId: string
 ): Promise<ConversationDetail> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiGet<ConversationDetail>(`/chat/conversations/${conversationId}`, headers);
+  return apiGet<ConversationDetail>(`/chat/conversations/${conversationId}`);
 }
 
 /**
  * Delete a conversation and all its messages
  */
 export async function deleteConversation(
-  conversationId: string,
-  accessToken?: string | null
+  conversationId: string
 ): Promise<void> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
   await apiFetch<void>(`/chat/conversations/${conversationId}`, {
     method: "DELETE",
-    headers,
   });
 }
 
@@ -132,8 +115,7 @@ interface TypewriterConfig {
  */
 export async function* streamChatWithTypewriter(
   request: ChatRequest,
-  config: TypewriterConfig = {},
-  accessToken?: string | null
+  config: TypewriterConfig = {}
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const { charsPerTick = 10, tickDelay = 10 } = config;
 
@@ -152,7 +134,7 @@ export async function* streamChatWithTypewriter(
 
   // Start the stream
   const streamPromise = (async () => {
-    for await (const event of streamChatMessage(request, accessToken)) {
+    for await (const event of streamChatMessage(request)) {
       if (event.type === "content") {
         state.contentBuffer += event.text;
       } else if (event.type === "content_update") {
@@ -232,8 +214,7 @@ export async function* streamChatWithTypewriter(
  * @param accessToken - Optional access token for authenticated requests (enables usage tracking)
  */
 export async function* streamChatMessage(
-  request: ChatRequest,
-  accessToken?: string | null
+  request: ChatRequest
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
 
@@ -241,14 +222,16 @@ export async function* streamChatMessage(
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
   }
 
   const response = await fetch(`${API_BASE}/chat/stream`, {
     method: "POST",
     headers,
     body: JSON.stringify(request),
+    credentials: "include",
   });
 
   if (!response.ok) {

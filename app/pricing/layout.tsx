@@ -53,7 +53,7 @@ const pricingJsonLd = {
   name: "Pricing - Law Lens Legal Intelligence",
   description:
     "Choose the perfect plan for AI-powered legal research in Uganda",
-  url: "https://legalintelligence.com/pricing",
+  url: "https://lawlens.io/pricing",
   mainEntity: {
     "@type": "ItemList",
     itemListElement: [

@@ -19,6 +19,24 @@ const getApiBase = () => {
 
 const API_BASE = getApiBase();
 
+const CSRF_COOKIE_NAME = process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "csrf_token";
+
+function getCookieValue(name: string): string | null {
+  if (typeof document === "undefined") {
+    return null;
+  }
+  const match = document.cookie.match(new RegExp(`(?:^|; )${name}=([^;]*)`));
+  return match ? decodeURIComponent(match[1]) : null;
+}
+
+export function getCsrfToken(): string | null {
+  return getCookieValue(CSRF_COOKIE_NAME);
+}
+
+function requiresCsrf(method: string): boolean {
+  return ["POST", "PUT", "PATCH", "DELETE"].includes(method.toUpperCase());
+}
+
 // ============================================================================
 // 401 Event Handling for Auto-Logout
 // ============================================================================
@@ -274,12 +292,23 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    ...(options?.headers as Record<string, string> | undefined),
+  };
+
+  const method = options?.method ?? "GET";
+  if (requiresCsrf(method) && !headers["X-CSRF-Token"]) {
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
+  }
+
   const response = await fetch(url, {
     ...options,
-    headers: {
-      "Content-Type": "application/json",
-      ...options?.headers,
-    },
+    headers,
+    credentials: "include",
   });
 
   if (!response.ok) {
@@ -395,11 +424,16 @@ export async function apiUpload<T>(
   if (accessToken) {
     headers.Authorization = `Bearer ${accessToken}`;
   }
+  const csrfToken = getCsrfToken();
+  if (csrfToken) {
+    headers["X-CSRF-Token"] = csrfToken;
+  }
 
   const response = await fetch(url, {
     method: "POST",
     headers,
     body: formData,
+    credentials: "include",
   });
 
   if (!response.ok) {

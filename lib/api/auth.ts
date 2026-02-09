@@ -40,6 +40,12 @@ export interface AuthTokens {
   expires_in: number;
 }
 
+export interface RefreshTokenResponse {
+  access_token: string;
+  refresh_token: string;
+  expires_at: string;
+}
+
 export interface LoginResponse {
   user: User;
   tokens: AuthTokens;
@@ -91,8 +97,9 @@ export interface VerifyEmailRequest {
   token: string;
 }
 
-export interface RefreshTokenRequest {
-  refresh_token: string;
+
+export interface CsrfTokenResponse {
+  csrf_token: string;
 }
 
 // Auth API functions
@@ -120,22 +127,27 @@ export async function login(data: LoginRequest): Promise<LoginResponse> {
 /**
  * Logout current session
  */
-export async function logout(accessToken: string): Promise<void> {
+export async function logout(): Promise<void> {
   await apiFetch<void>("/auth/logout", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
 /**
  * Refresh access token
  */
-export async function refreshToken(data: RefreshTokenRequest): Promise<AuthTokens> {
-  return apiFetch<AuthTokens>("/auth/refresh", {
+export async function refreshToken(): Promise<RefreshTokenResponse> {
+  return apiFetch<RefreshTokenResponse>("/auth/refresh", {
     method: "POST",
-    body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Issue CSRF token for cookie-based auth
+ */
+export async function issueCsrfToken(): Promise<CsrfTokenResponse> {
+  return apiFetch<CsrfTokenResponse>("/auth/csrf", {
+    method: "GET",
   });
 }
 
@@ -152,12 +164,9 @@ export async function verifyEmail(data: VerifyEmailRequest): Promise<{ message: 
 /**
  * Resend verification email
  */
-export async function resendVerificationEmail(accessToken: string): Promise<{ message: string }> {
+export async function resendVerificationEmail(): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/resend-verification", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
@@ -184,15 +193,9 @@ export async function resetPassword(data: ResetPasswordRequest): Promise<{ messa
 /**
  * Change password (authenticated)
  */
-export async function changePassword(
-  accessToken: string,
-  data: ChangePasswordRequest
-): Promise<{ message: string }> {
+export async function changePassword(data: ChangePasswordRequest): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/change-password", {
     method: "POST",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -200,27 +203,18 @@ export async function changePassword(
 /**
  * Get current user profile
  */
-export async function getCurrentUser(accessToken: string): Promise<User> {
+export async function getCurrentUser(): Promise<User> {
   return apiFetch<User>("/auth/me", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
 /**
  * Update user profile
  */
-export async function updateProfile(
-  accessToken: string,
-  data: UpdateProfileRequest
-): Promise<User> {
+export async function updateProfile(data: UpdateProfileRequest): Promise<User> {
   return apiFetch<User>("/auth/me", {
     method: "PATCH",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: JSON.stringify(data),
   });
 }
@@ -228,12 +222,9 @@ export async function updateProfile(
 /**
  * Get active sessions
  */
-export async function getSessions(accessToken: string): Promise<UserSession[]> {
+export async function getSessions(): Promise<UserSession[]> {
   const response = await apiFetch<{ sessions: UserSession[] }>("/auth/sessions", {
     method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
   return response.sessions;
 }
@@ -241,27 +232,18 @@ export async function getSessions(accessToken: string): Promise<UserSession[]> {
 /**
  * Revoke a specific session
  */
-export async function revokeSession(
-  accessToken: string,
-  sessionId: string
-): Promise<{ message: string }> {
+export async function revokeSession(sessionId: string): Promise<{ message: string }> {
   return apiFetch<{ message: string }>(`/auth/sessions/${sessionId}`, {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
 /**
  * Revoke all other sessions
  */
-export async function revokeAllSessions(accessToken: string): Promise<{ message: string; revoked_count: number }> {
+export async function revokeAllSessions(): Promise<{ message: string; revoked_count: number }> {
   return apiFetch<{ message: string; revoked_count: number }>("/auth/sessions", {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
@@ -276,22 +258,16 @@ export interface AvatarUploadResponse {
 /**
  * Upload avatar image
  */
-export async function uploadAvatar(
-  accessToken: string,
-  file: File
-): Promise<AvatarUploadResponse> {
-  return apiUpload<AvatarUploadResponse>("/auth/avatar", file, "avatar", accessToken);
+export async function uploadAvatar(file: File): Promise<AvatarUploadResponse> {
+  return apiUpload<AvatarUploadResponse>("/auth/avatar", file, "avatar");
 }
 
 /**
  * Delete avatar image
  */
-export async function deleteAvatar(accessToken: string): Promise<{ message: string }> {
+export async function deleteAvatar(): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/avatar", {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
   });
 }
 
@@ -307,15 +283,9 @@ export interface DeleteAccountRequest {
 /**
  * Delete user account (requires password confirmation)
  */
-export async function deleteAccount(
-  accessToken: string,
-  data: DeleteAccountRequest
-): Promise<{ message: string }> {
+export async function deleteAccount(data: DeleteAccountRequest): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/account", {
     method: "DELETE",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
     body: JSON.stringify(data),
   });
 }

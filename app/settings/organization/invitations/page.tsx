@@ -87,7 +87,7 @@ function formatTimeRemaining(expiresAt: string): string {
 
 function InvitationsContent() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
@@ -117,12 +117,12 @@ function InvitationsContent() {
   // Load organization and invitations
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
         const [org, invitationsData] = await Promise.all([
-          getCurrentOrganization(accessToken),
-          listInvitations(accessToken),
+          getCurrentOrganization(),
+          listInvitations(),
         ]);
         setOrganization(org);
         setInvitations(invitationsData.items);
@@ -133,19 +133,19 @@ function InvitationsContent() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       loadData();
     }
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   const onSubmitInvite = async (data: InviteFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setError(null);
     setSuccess(null);
 
     try {
-      const invitation = await createInvitation(accessToken, {
+      const invitation = await createInvitation({
         email: data.email,
         role: data.role as OrganizationRole,
       });
@@ -163,14 +163,14 @@ function InvitationsContent() {
   };
 
   const handleCancelInvitation = async (invitation: OrganizationInvitation) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setCancellingId(invitation.id);
     setError(null);
     setSuccess(null);
 
     try {
-      await cancelInvitation(accessToken, invitation.id);
+      await cancelInvitation(invitation.id);
       setInvitations((prev) => prev.filter((i) => i.id !== invitation.id));
       setSuccess(`Invitation to ${invitation.email} has been cancelled`);
     } catch (err) {

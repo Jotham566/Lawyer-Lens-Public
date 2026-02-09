@@ -44,15 +44,11 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
         source: "landing_page",
       };
 
-      console.log("Sending waitlist request:", { url: `${apiUrl}/beta/waitlist`, payload });
-
       const response = await fetch(`${apiUrl}/beta/waitlist`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      console.log("Response status:", response.status, response.statusText);
 
       if (!response.ok) {
         // Try to get response text first

@@ -40,6 +40,8 @@ import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 // Helper to determine icon based on doc type
 const getIconForType = (type?: string) => {
@@ -59,15 +61,22 @@ interface PageProps {
 export default function CollectionDetailPage(props: PageProps) {
     const params = use(props.params);
     const router = useRouter();
+    const { isLoading: authLoading } = useRequireAuth();
+    const { isAuthenticated } = useAuth();
     const [collection, setCollection] = useState<Collection | null>(null);
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
 
     useEffect(() => {
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
         loadCollection();
-    }, [params.id]);
+    }, [params.id, isAuthenticated]);
 
     const loadCollection = async () => {
+        setLoading(true);
         try {
             const data = await collectionsApi.get(params.id);
             setCollection(data);
@@ -105,6 +114,10 @@ export default function CollectionDetailPage(props: PageProps) {
             toast.error("Failed to remove item");
         }
     };
+
+    if (authLoading || !isAuthenticated) {
+        return <PageLoading message="Redirecting to login..." />;
+    }
 
     if (loading) {
         return (

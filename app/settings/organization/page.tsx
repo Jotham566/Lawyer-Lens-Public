@@ -41,6 +41,7 @@ import {
   RoleBadge,
   TierBadge,
 } from "@/components/common";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 const orgSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
@@ -49,9 +50,9 @@ const orgSchema = z.object({
 
 type OrgFormData = z.infer<typeof orgSchema>;
 
-export default function OrganizationSettingsPage() {
+function OrganizationSettingsContent() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
@@ -70,10 +71,10 @@ export default function OrganizationSettingsPage() {
   // Load organization
   useEffect(() => {
     async function loadOrganization() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
-        const org = await getCurrentOrganization(accessToken);
+        const org = await getCurrentOrganization();
         setOrganization(org);
         reset({
           name: org.name,
@@ -87,19 +88,19 @@ export default function OrganizationSettingsPage() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       loadOrganization();
     }
-  }, [accessToken, reset]);
+  }, [isAuthenticated, reset]);
 
   const onSubmit = async (data: OrgFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setError(null);
     setSuccess(null);
 
     try {
-      const updated = await updateOrganization(accessToken, {
+      const updated = await updateOrganization({
         name: data.name,
         description: data.description || undefined,
       });
@@ -320,5 +321,17 @@ export default function OrganizationSettingsPage() {
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+export default function OrganizationSettingsPage() {
+  return (
+    <FeatureGate
+      feature="team_management"
+      requiredTier="team"
+      featureName="Organization Management"
+    >
+      <OrganizationSettingsContent />
+    </FeatureGate>
   );
 }

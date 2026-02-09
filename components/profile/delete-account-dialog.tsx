@@ -45,7 +45,7 @@ interface DeleteAccountDialogProps {
 
 export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
   const router = useRouter();
-  const { accessToken, logout, user } = useAuth();
+  const { isAuthenticated, logout, user } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -71,12 +71,12 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
   };
 
   const onSubmit = async (data: DeleteAccountFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setError(null);
 
     try {
-      await deleteAccount(accessToken, {
+      await deleteAccount({
         password: data.password,
         confirmation: data.confirmation,
       });

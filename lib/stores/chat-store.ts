@@ -42,7 +42,7 @@ interface ChatState {
   setCurrentConversation: (id: string | null) => void;
   createConversation: () => string;
   deleteConversation: (id: string) => void;
-  deleteConversationAsync: (id: string, accessToken?: string | null) => Promise<void>;
+  deleteConversationAsync: (id: string) => Promise<void>;
   renameConversation: (id: string, title: string) => void;
   archiveConversation: (id: string) => void;
   unarchiveConversation: (id: string) => void;
@@ -68,8 +68,8 @@ interface ChatState {
   clearConversations: () => void;
 
   // API Integration
-  fetchConversations: (accessToken?: string | null) => Promise<void>;
-  fetchConversation: (id: string, accessToken?: string | null) => Promise<void>;
+  fetchConversations: () => Promise<void>;
+  fetchConversation: (id: string) => Promise<void>;
   replaceConversationId: (oldId: string, newId: string) => void;
 }
 
@@ -179,10 +179,10 @@ export const useChatStore = create<ChatState>()(
         });
       },
 
-      deleteConversationAsync: async (id, accessToken) => {
+      deleteConversationAsync: async (id) => {
         try {
           // Call API to delete from backend
-          await deleteConversationApi(id, accessToken);
+          await deleteConversationApi(id);
 
           // On success, update local state
           set((state) => {
@@ -405,10 +405,10 @@ export const useChatStore = create<ChatState>()(
           currentConversationId: null,
         }),
 
-      fetchConversations: async (accessToken?: string | null) => {
+      fetchConversations: async () => {
         set({ isLoading: true, error: null });
         try {
-          const response = await getConversations(50, 0, accessToken);
+          const response = await getConversations(50, 0);
 
           set((state) => {
             // Create a map of backend conversations
@@ -461,10 +461,10 @@ export const useChatStore = create<ChatState>()(
         }
       },
 
-      fetchConversation: async (id: string, accessToken?: string | null) => {
+      fetchConversation: async (id: string) => {
         // Don't set global loading as this might be background or specific
         try {
-          const detail = await getConversation(id, accessToken);
+          const detail = await getConversation(id);
 
           set((state) => {
             const conversations = state.conversations.map(c => {

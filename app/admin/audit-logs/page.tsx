@@ -164,7 +164,7 @@ function generateMockAuditLogs(): AuditLogEntry[] {
 }
 
 function AuditLogsContent() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [logs, setLogs] = useState<AuditLogEntry[]>([]);
   const [loading, setLoading] = useState(true);
@@ -176,10 +176,10 @@ function AuditLogsContent() {
 
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
-        const org = await getCurrentOrganization(accessToken);
+        const org = await getCurrentOrganization();
         setOrganization(org);
 
         // In production, this would fetch from audit log API
@@ -193,7 +193,7 @@ function AuditLogsContent() {
     }
 
     loadData();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   // Filter logs
   const filteredLogs = logs.filter((log) => {

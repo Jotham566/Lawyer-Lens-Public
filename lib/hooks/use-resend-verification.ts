@@ -6,7 +6,10 @@ import { resendVerificationEmail } from "@/lib/api/auth";
 
 const DEFAULT_COOLDOWN_SECONDS = 60;
 
-export function useResendVerification(accessToken: string | null, cooldownSeconds = DEFAULT_COOLDOWN_SECONDS) {
+export function useResendVerification(
+  isAuthenticated: boolean,
+  cooldownSeconds = DEFAULT_COOLDOWN_SECONDS
+) {
   const [cooldown, setCooldown] = useState(0);
   const [isSending, setIsSending] = useState(false);
   const [success, setSuccess] = useState(false);
@@ -19,7 +22,7 @@ export function useResendVerification(accessToken: string | null, cooldownSecond
   }, [cooldown]);
 
   const resend = useCallback(async () => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       setError("Please sign in to resend the verification email.");
       return false;
     }
@@ -30,7 +33,7 @@ export function useResendVerification(accessToken: string | null, cooldownSecond
     setSuccess(false);
 
     try {
-      await resendVerificationEmail(accessToken);
+      await resendVerificationEmail();
       setSuccess(true);
       setCooldown(cooldownSeconds);
       return true;
@@ -44,7 +47,7 @@ export function useResendVerification(accessToken: string | null, cooldownSecond
     } finally {
       setIsSending(false);
     }
-  }, [accessToken, cooldown, isSending, cooldownSeconds]);
+  }, [isAuthenticated, cooldown, isSending, cooldownSeconds]);
 
   const clearError = useCallback(() => setError(null), []);
   const clearSuccess = useCallback(() => setSuccess(false), []);

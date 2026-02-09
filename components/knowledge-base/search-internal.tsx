@@ -14,14 +14,14 @@ import {
 import { toast } from "sonner";
 
 export function SearchInternal() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<DocumentSearchResult[]>([]);
   const [searching, setSearching] = useState(false);
   const [hasSearched, setHasSearched] = useState(false);
 
   const handleSearch = async () => {
-    if (!accessToken || !query.trim()) return;
+    if (!isAuthenticated || !query.trim()) return;
 
     setSearching(true);
     setHasSearched(true);

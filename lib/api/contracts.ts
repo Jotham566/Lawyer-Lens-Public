@@ -168,28 +168,18 @@ export async function getContractTemplate(
  * Create a new contract session
  */
 export async function createContractSession(
-  request: CreateContractRequest,
-  accessToken?: string | null
+  request: CreateContractRequest
 ): Promise<ContractSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ContractSession>("/contracts", request, headers);
+  return apiPost<ContractSession>("/contracts", request);
 }
 
 /**
  * Get contract session status
  */
 export async function getContractSession(
-  sessionId: string,
-  accessToken?: string | null
+  sessionId: string
 ): Promise<ContractSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiGet<ContractSession>(`/contracts/${sessionId}`, headers);
+  return apiGet<ContractSession>(`/contracts/${sessionId}`);
 }
 
 /**
@@ -197,14 +187,9 @@ export async function getContractSession(
  */
 export async function submitContractRequirements(
   sessionId: string,
-  requirements: ContractRequirements,
-  accessToken?: string | null
+  requirements: ContractRequirements
 ): Promise<ContractSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ContractSession>(`/contracts/${sessionId}/requirements`, requirements, headers);
+  return apiPost<ContractSession>(`/contracts/${sessionId}/requirements`, requirements);
 }
 
 /**
@@ -212,14 +197,9 @@ export async function submitContractRequirements(
  */
 export async function submitContractReview(
   sessionId: string,
-  review: ContractReview,
-  accessToken?: string | null
+  review: ContractReview
 ): Promise<ContractSession> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ContractSession>(`/contracts/${sessionId}/review`, review, headers);
+  return apiPost<ContractSession>(`/contracts/${sessionId}/review`, review);
 }
 
 /**
@@ -242,7 +222,7 @@ export function streamContractProgress(
   onError: (error: string) => void
 ): () => void {
   const url = `${getApiBaseUrl()}/contracts/${sessionId}/stream`;
-  const eventSource = new EventSource(url);
+  const eventSource = new EventSource(url, { withCredentials: true });
 
   eventSource.onmessage = (event) => {
     try {
@@ -281,8 +261,7 @@ export async function getMyContracts(
     phase?: string;
     limit?: number;
     offset?: number;
-  },
-  accessToken?: string | null
+  }
 ): Promise<ContractListItem[]> {
   const params = new URLSearchParams();
   if (options?.contract_type) params.append("contract_type", options.contract_type);
@@ -290,13 +269,8 @@ export async function getMyContracts(
   if (options?.limit) params.append("limit", options.limit.toString());
   if (options?.offset) params.append("offset", options.offset.toString());
 
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-
   const query = params.toString();
-  return apiGet<ContractListItem[]>(`/contracts/my-contracts${query ? `?${query}` : ""}`, headers);
+  return apiGet<ContractListItem[]>(`/contracts/my-contracts${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -307,21 +281,15 @@ export async function getEnhancedTemplates(
     contract_type?: string;
     source?: string;
     search?: string;
-  },
-  accessToken?: string | null
+  }
 ): Promise<EnhancedTemplate[]> {
   const params = new URLSearchParams();
   if (options?.contract_type) params.append("contract_type", options.contract_type);
   if (options?.source) params.append("source", options.source);
   if (options?.search) params.append("search", options.search);
 
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-
   const query = params.toString();
-  return apiGet<EnhancedTemplate[]>(`/contracts/templates/enhanced${query ? `?${query}` : ""}`, headers);
+  return apiGet<EnhancedTemplate[]>(`/contracts/templates/enhanced${query ? `?${query}` : ""}`);
 }
 
 /**
@@ -329,12 +297,7 @@ export async function getEnhancedTemplates(
  */
 export async function saveContractAsTemplate(
   sessionId: string,
-  request: SaveAsTemplateRequest,
-  accessToken?: string | null
+  request: SaveAsTemplateRequest
 ): Promise<ContractTemplate> {
-  const headers: Record<string, string> = {};
-  if (accessToken) {
-    headers.Authorization = `Bearer ${accessToken}`;
-  }
-  return apiPost<ContractTemplate>(`/contracts/${sessionId}/save-as-template`, request, headers);
+  return apiPost<ContractTemplate>(`/contracts/${sessionId}/save-as-template`, request);
 }

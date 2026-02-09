@@ -54,6 +54,7 @@ const jetbrainsMono = localFont({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"),
   title: {
     default: "Law Lens - Uganda Legal Intelligence Platform",
     template: "%s | Law Lens",

@@ -38,6 +38,8 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface PaymentMethod {
   id: string;
@@ -50,6 +52,8 @@ interface PaymentMethod {
 }
 
 export default function PaymentMethodsPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -60,8 +64,11 @@ export default function PaymentMethodsPage() {
   const [mobileProvider, setMobileProvider] = useState("mtn");
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     fetchPaymentMethods();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchPaymentMethods = async () => {
     try {
@@ -176,6 +183,10 @@ export default function PaymentMethodsPage() {
         return provider;
     }
   };
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   if (loading) {
     return (

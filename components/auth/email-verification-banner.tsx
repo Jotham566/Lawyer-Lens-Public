@@ -5,8 +5,8 @@ import { AlertBanner } from "@/components/common";
 import { useResendVerification } from "@/lib/hooks";
 
 export function EmailVerificationBanner() {
-  const { user, accessToken } = useAuth();
-  const { resend, isSending, cooldown, success } = useResendVerification(accessToken);
+  const { user, isAuthenticated } = useAuth();
+  const { resend, isSending, cooldown, success } = useResendVerification(isAuthenticated);
 
   if (!user || user.email_verified) {
     return null;

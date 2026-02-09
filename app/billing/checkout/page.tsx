@@ -20,6 +20,8 @@ import {
   CheckCircle2,
 } from "lucide-react";
 import Link from "next/link";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 import {
   validateUgandaPhone,
   detectProvider,
@@ -69,6 +71,7 @@ const planDetails: Record<string, PlanDetails> = {
 type PaymentMethod = "mobile_money" | "card";
 
 function CheckoutContent() {
+  const { isLoading: authLoading } = useRequireAuth();
   const searchParams = useSearchParams();
   const router = useRouter();
   const planId = searchParams.get("plan");
@@ -125,6 +128,10 @@ function CheckoutContent() {
     }
   };
 
+  if (authLoading) {
+    return <PageLoading message="Loading checkout..." />;
+  }
+
   if (!plan) {
     return (
       <div className="container mx-auto py-8 px-4 max-w-4xl">
@@ -132,7 +139,7 @@ function CheckoutContent() {
           <AlertCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
           <h2 className="text-xl font-semibold mb-2">Invalid Plan</h2>
           <p className="text-muted-foreground mb-6">The selected plan is not valid.</p>
-          <Link href="/billing/plans">
+          <Link href="/pricing">
             <Button>View Available Plans</Button>
           </Link>
         </div>
@@ -208,7 +215,7 @@ function CheckoutContent() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
-        <Link href="/billing/plans" className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
+        <Link href="/pricing" className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Plans
         </Link>

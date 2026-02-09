@@ -53,6 +53,8 @@ import {
   cancelSubscription,
 } from "@/lib/api/billing";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface Subscription {
   id: string;
@@ -99,6 +101,7 @@ const DOWNGRADE_REASONS = [
 ];
 
 export default function SubscriptionPage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -257,6 +260,10 @@ export default function SubscriptionPage() {
 
   const currentTier = tiers.find((t) => t.tier === subscription?.tier);
   const availableTiers = tiers.filter((t) => t.tier !== subscription?.tier && t.tier !== "enterprise");
+
+  if (authLoading) {
+    return <PageLoading message="Loading subscription..." />;
+  }
 
   if (loading) {
     return (

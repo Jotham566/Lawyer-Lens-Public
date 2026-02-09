@@ -42,6 +42,8 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface PaymentMethod {
   id: string;
@@ -55,6 +57,7 @@ interface PaymentMethod {
 }
 
 export default function PaymentMethodsPage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>([]);
@@ -177,6 +180,10 @@ export default function PaymentMethodsPage() {
     }
     return pm.type;
   };
+
+  if (authLoading) {
+    return <PageLoading message="Loading payment methods..." />;
+  }
 
   if (loading) {
     return (

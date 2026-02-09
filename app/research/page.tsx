@@ -53,7 +53,7 @@ import {
 import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
 import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useAuth, useRequireAuth } from "@/components/providers";
+import { useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
@@ -104,7 +104,6 @@ function getDefaultProgressMessage(status: string): string {
 function ResearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { accessToken } = useAuth();
   const { refresh: refreshEntitlements } = useEntitlements();
   const initialQuery = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
@@ -159,7 +158,7 @@ function ResearchContent() {
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
     try {
-      const sessionData = await getResearchSession(sessionId, accessToken);
+      const sessionData = await getResearchSession(sessionId);
 
       // Use status (not phase) to determine what to show
       // Check for redirect cases first - these are "complete" but have no report
@@ -173,7 +172,7 @@ function ResearchContent() {
         // For complete status, fetch report FIRST to avoid flickering
         let reportData = sessionData.report;
         if (!reportData) {
-          reportData = await getResearchReport(sessionId, accessToken);
+          reportData = await getResearchReport(sessionId);
         }
         // Set report before session to avoid "complete but no report" flicker
         setReport(reportData);
@@ -202,7 +201,7 @@ function ResearchContent() {
       setIsLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [accessToken, addSession, refreshEntitlements, updateStoredSession]);
+  }, [addSession, refreshEntitlements, updateStoredSession]);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -226,7 +225,7 @@ function ResearchContent() {
     setError(null);
 
     try {
-      const newSession = await createResearchSession({ query: query.trim() }, accessToken);
+      const newSession = await createResearchSession({ query: query.trim() });
       setSession(newSession);
 
       // Track new session in store
@@ -256,8 +255,7 @@ function ResearchContent() {
     try {
       const updatedSession = await submitClarifyingAnswers(
         session.session_id,
-        clarifyAnswers,
-        accessToken
+        clarifyAnswers
       );
       setSession(updatedSession);
     } catch (err) {
@@ -298,7 +296,7 @@ function ResearchContent() {
         },
       };
 
-      const updatedSession = await approveResearchBrief(session.session_id, briefRequest, accessToken);
+      const updatedSession = await approveResearchBrief(session.session_id, briefRequest);
       setSession(updatedSession);
       setIsEditingBrief(false);
       startProgressStream(session.session_id);
@@ -493,7 +491,7 @@ function ResearchContent() {
     // Poll every 3 seconds
     pollingRef.current = setInterval(async () => {
       try {
-        const sessionData = await getResearchSession(sessionId, accessToken);
+        const sessionData = await getResearchSession(sessionId);
 
         // Check for completion FIRST - don't update session until report is ready
         if (sessionData.status === "complete") {
@@ -502,7 +500,7 @@ function ResearchContent() {
           // Fetch report first, then update all state together
           let reportData = sessionData.report;
           if (!reportData) {
-            reportData = await getResearchReport(sessionId, accessToken);
+            reportData = await getResearchReport(sessionId);
           }
 
           // Update both report and session together to avoid flickering
@@ -537,7 +535,7 @@ function ResearchContent() {
         // Don't stop polling on transient errors
       }
     }, 3000);
-  }, [accessToken, stopPolling, updateStoredSession, refreshEntitlements]);
+  }, [stopPolling, updateStoredSession, refreshEntitlements]);
 
   const startProgressStream = useCallback((sessionId: string) => {
     let sseCleanup: (() => void) | null = null;
@@ -559,9 +557,9 @@ function ResearchContent() {
         // On complete, fetch the report
         stopPolling();
         try {
-          const reportData = await getResearchReport(sessionId, accessToken);
+          const reportData = await getResearchReport(sessionId);
           setReport(reportData);
-          const sessionData = await getResearchSession(sessionId, accessToken);
+          const sessionData = await getResearchSession(sessionId);
           setSession(sessionData);
 
           // Update stored session with completion status
@@ -581,7 +579,6 @@ function ResearchContent() {
         // SSE failed - fall back to polling instead of showing error
         if (!usePolling) {
           usePolling = true;
-          console.log("SSE stream failed, falling back to polling");
           setProgress({
             phase: "researching",
             message: "Research in progress...",
@@ -596,7 +593,7 @@ function ResearchContent() {
       if (sseCleanup) sseCleanup();
       stopPolling();
     };
-  }, [accessToken, refreshEntitlements, startPolling, stopPolling, updateStoredSession]);
+  }, [refreshEntitlements, startPolling, stopPolling, updateStoredSession]);
 
   const renderPhaseIndicator = () => {
     if (!session) return null;

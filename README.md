@@ -16,6 +16,27 @@ bun dev
 
 Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
+### Environment Variables
+
+Create `frontend-public/.env.local` from `frontend-public/.env.example` and set:
+
+```env
+NEXT_PUBLIC_APP_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:8003/api/v1
+BACKEND_URL=http://localhost:8003
+```
+
+### Auth Cookies
+
+The public frontend uses httpOnly cookies from the admin API (no localStorage tokens).
+Set these in the backend `.env`/`.env.example` for production deployments:
+
+```env
+AUTH_COOKIE_DOMAIN=.lawlens.io
+AUTH_COOKIE_SAMESITE=lax
+AUTH_COOKIE_SECURE=true
+```
+
 You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
 
 This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.

@@ -57,7 +57,7 @@ const usageTypeIcons: Record<string, React.ElementType> = {
 
 function ActivityContent() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const [activities, setActivities] = useState<ActivityRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -68,13 +68,13 @@ function ActivityContent() {
   // Load activity history
   useEffect(() => {
     async function loadActivity() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       setLoading(true);
       setError(null);
 
       try {
-        const data = await getActivityHistory(accessToken, {
+        const data = await getActivityHistory({
           usageType: filter === "all" ? undefined : filter,
           days,
         });
@@ -86,19 +86,19 @@ function ActivityContent() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       loadActivity();
     }
-  }, [accessToken, filter, days]);
+  }, [isAuthenticated, filter, days]);
 
   const handleRefresh = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setLoading(true);
     setError(null);
 
     try {
-      const data = await getActivityHistory(accessToken, {
+      const data = await getActivityHistory({
         usageType: filter === "all" ? undefined : filter,
         days,
       });

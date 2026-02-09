@@ -11,11 +11,19 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 function FailedContent() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const reason = searchParams.get("reason") || "Your payment could not be processed";
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
@@ -58,8 +66,8 @@ function FailedContent() {
 
           <p className="text-xs text-center text-muted-foreground">
             Need help? Contact us at{" "}
-            <a href="mailto:support@legalintelligence.com" className="underline">
-              support@legalintelligence.com
+            <a href="mailto:support@lawlens.io" className="underline">
+              support@lawlens.io
             </a>
           </p>
         </CardContent>

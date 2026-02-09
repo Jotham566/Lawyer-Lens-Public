@@ -2,29 +2,9 @@
  * Billing API client
  *
  * Provides authenticated API calls for billing endpoints.
- * Uses the same token storage as auth-provider.tsx.
  */
 
 const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
-
-// Token storage key - must match auth-provider.tsx
-const ACCESS_TOKEN_KEY = "auth_access_token";
-
-/**
- * Get auth headers for billing API calls
- */
-function getAuthHeaders(): Record<string, string> {
-  const headers: Record<string, string> = {};
-
-  if (typeof window !== "undefined") {
-    const accessToken = localStorage.getItem(ACCESS_TOKEN_KEY);
-    if (accessToken) {
-      headers.Authorization = `Bearer ${accessToken}`;
-    }
-  }
-
-  return headers;
-}
 
 // =============================================================================
 // Subscription API
@@ -35,7 +15,7 @@ function getAuthHeaders(): Record<string, string> {
  */
 export async function fetchSubscription(): Promise<Response> {
   return fetch("/api/billing/subscription", {
-    headers: getAuthHeaders(),
+    credentials: "same-origin",
   });
 }
 
@@ -48,9 +28,9 @@ export async function updateSubscription(
   return fetch("/api/billing/subscription", {
     method: "PATCH",
     headers: {
-      ...getAuthHeaders(),
       "Content-Type": "application/json",
     },
+    credentials: "same-origin",
     body: JSON.stringify(body),
   });
 }
@@ -61,7 +41,7 @@ export async function updateSubscription(
 export async function cancelSubscription(): Promise<Response> {
   return fetch("/api/billing/subscription", {
     method: "DELETE",
-    headers: getAuthHeaders(),
+    credentials: "same-origin",
   });
 }
 
@@ -74,7 +54,7 @@ export async function cancelSubscription(): Promise<Response> {
  */
 export async function fetchUsage(): Promise<Response> {
   return fetch("/api/billing/usage", {
-    headers: getAuthHeaders(),
+    credentials: "same-origin",
   });
 }
 
@@ -83,7 +63,7 @@ export async function fetchUsage(): Promise<Response> {
  */
 export async function fetchInvoices(): Promise<Response> {
   return fetch("/api/billing/invoices", {
-    headers: getAuthHeaders(),
+    credentials: "same-origin",
   });
 }
 
@@ -91,7 +71,7 @@ export async function fetchInvoices(): Promise<Response> {
  * Fetch pricing tiers (no auth required)
  */
 export async function fetchPricing(): Promise<Response> {
-  return fetch("/api/billing/pricing");
+  return fetch("/api/billing/pricing", { credentials: "same-origin" });
 }
 
 // =============================================================================
@@ -116,7 +96,6 @@ export interface UsageHistory {
  * Get activity history for the organization.
  */
 export async function getActivityHistory(
-  accessToken: string,
   options: {
     usageType?: string;
     days?: number;
@@ -135,9 +114,9 @@ export async function getActivityHistory(
 
   const response = await fetch(url, {
     headers: {
-      Authorization: `Bearer ${accessToken}`,
       "Content-Type": "application/json",
     },
+    credentials: "include",
   });
 
   if (!response.ok) {

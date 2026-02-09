@@ -31,7 +31,7 @@ interface OrgSwitcherProps {
 }
 
 export function OrgSwitcher({ className }: OrgSwitcherProps) {
-  const { accessToken, isAuthenticated } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   const [open, setOpen] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -42,11 +42,11 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
   // Load organizations
   useEffect(() => {
     async function loadOrganizations() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       setLoading(true);
       try {
-        const data = await listOrganizations(accessToken);
+        const data = await listOrganizations();
         setOrganizations(data.items);
         // Select first org by default if none selected
         if (data.items.length > 0 && !selectedOrg) {
@@ -59,20 +59,20 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
       }
     }
 
-    if (accessToken && isAuthenticated) {
+    if (isAuthenticated) {
       loadOrganizations();
     }
-  }, [accessToken, isAuthenticated, selectedOrg]);
+  }, [isAuthenticated, selectedOrg]);
 
   const handleSelectOrg = async (org: Organization) => {
-    if (!accessToken || org.id === selectedOrg?.id) {
+    if (org.id === selectedOrg?.id) {
       setOpen(false);
       return;
     }
 
     setSwitching(true);
     try {
-      const response = await switchOrganization(accessToken, org.id);
+      const response = await switchOrganization(org.id);
       setSelectedOrg(response.organization);
       setOpen(false);
       // Store in localStorage for persistence

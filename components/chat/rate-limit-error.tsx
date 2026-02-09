@@ -38,7 +38,7 @@ export function RateLimitError({ message }: RateLimitErrorProps) {
 
                 <div className="flex items-center gap-3">
                     <Button asChild size="sm" className="gap-2">
-                        <Link href="/billing/plans">
+                        <Link href="/pricing">
                             <Zap className="h-4 w-4" />
                             Upgrade Plan
                         </Link>

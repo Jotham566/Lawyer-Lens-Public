@@ -82,7 +82,7 @@ import { AlertBanner, RoleBadge } from "@/components/common";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 function TeamManagementContent() {
-  const { accessToken, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [invitations, setInvitations] = useState<OrganizationInvitation[]>([]);
@@ -115,13 +115,13 @@ function TeamManagementContent() {
 
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
         const [org, membersData, invitationsData] = await Promise.all([
-          getCurrentOrganization(accessToken),
-          listMembers(accessToken),
-          listInvitations(accessToken),
+          getCurrentOrganization(),
+          listMembers(),
+          listInvitations(),
         ]);
         setOrganization(org);
         setMembers(membersData.items);
@@ -134,7 +134,7 @@ function TeamManagementContent() {
     }
 
     loadData();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   // Filter members
   const filteredMembers = members.filter((member) => {
@@ -150,12 +150,12 @@ function TeamManagementContent() {
   });
 
   const handleRoleChange = async (member: OrganizationMember, newRole: OrganizationRole) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
     setActionLoading(member.id);
     setError(null);
 
     try {
-      await updateMember(accessToken, member.user_id, { role: newRole });
+      await updateMember(member.user_id, { role: newRole });
       setMembers((prev) =>
         prev.map((m) => (m.id === member.id ? { ...m, role: newRole } : m))
       );
@@ -168,13 +168,13 @@ function TeamManagementContent() {
   };
 
   const handleSuspend = async () => {
-    if (!accessToken || !memberToSuspend) return;
+    if (!isAuthenticated || !memberToSuspend) return;
     setActionLoading(memberToSuspend.id);
     setError(null);
 
     try {
       const newStatus = !memberToSuspend.is_active;
-      await updateMember(accessToken, memberToSuspend.user_id, { is_active: newStatus });
+      await updateMember(memberToSuspend.user_id, { is_active: newStatus });
       setMembers((prev) =>
         prev.map((m) => (m.id === memberToSuspend.id ? { ...m, is_active: newStatus } : m))
       );
@@ -192,12 +192,12 @@ function TeamManagementContent() {
   };
 
   const handleRemove = async () => {
-    if (!accessToken || !memberToRemove) return;
+    if (!isAuthenticated || !memberToRemove) return;
     setActionLoading(memberToRemove.id);
     setError(null);
 
     try {
-      await removeMember(accessToken, memberToRemove.user_id);
+      await removeMember(memberToRemove.user_id);
       setMembers((prev) => prev.filter((m) => m.id !== memberToRemove.id));
       setSuccess(`Removed ${memberToRemove.full_name || memberToRemove.email} from the team`);
     } catch {
@@ -209,7 +209,7 @@ function TeamManagementContent() {
   };
 
   const handleBulkInvite = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
     setBulkInviting(true);
     setError(null);
 
@@ -229,7 +229,7 @@ function TeamManagementContent() {
 
     for (const email of emails) {
       try {
-        await createInvitation(accessToken, { email, role: bulkRole });
+        await createInvitation({ email, role: bulkRole });
         successCount++;
       } catch {
         failCount++;
@@ -238,7 +238,7 @@ function TeamManagementContent() {
 
     if (successCount > 0) {
       // Refresh invitations
-      const invitationsData = await listInvitations(accessToken);
+      const invitationsData = await listInvitations();
       setInvitations(invitationsData.items);
       setSuccess(
         `Sent ${successCount} invitation${successCount > 1 ? "s" : ""}${
@@ -255,7 +255,7 @@ function TeamManagementContent() {
   };
 
   const handleTransferOwnership = async () => {
-    if (!accessToken || !newOwnerId) return;
+    if (!isAuthenticated || !newOwnerId) return;
     setTransferring(true);
     setError(null);
 
@@ -268,14 +268,14 @@ function TeamManagementContent() {
       // Change current owner to admin
       const currentOwner = members.find((m) => m.role === "owner");
       if (currentOwner) {
-        await updateMember(accessToken, currentOwner.user_id, { role: "admin" });
+        await updateMember(currentOwner.user_id, { role: "admin" });
       }
 
       // Change new owner
-      await updateMember(accessToken, newOwnerId, { role: "owner" });
+      await updateMember(newOwnerId, { role: "owner" });
 
       // Refresh members
-      const membersData = await listMembers(accessToken);
+      const membersData = await listMembers();
       setMembers(membersData.items);
 
       setSuccess(`Transferred ownership to ${newOwner.full_name || newOwner.email}`);

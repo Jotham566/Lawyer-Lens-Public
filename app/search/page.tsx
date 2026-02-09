@@ -34,6 +34,8 @@ import { useSearch, type SearchMode } from "@/lib/hooks";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { SearchSuggestions, saveRecentSearch } from "@/components/search";
 import type { DocumentType, SearchResult, SemanticResult, HybridResult } from "@/lib/api/types";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -75,9 +77,13 @@ const documentTypeConfig: Record<
 
 
 function SearchContent() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
-  const { query, mode, page, filters, data, isLoading, error } = useSearch();
+  const { query, mode, page, filters, data, isLoading, error } = useSearch({
+    enabled: isAuthenticated,
+  });
   const [inputValue, setInputValue] = useState(query);
   const inputRef = useRef<HTMLInputElement>(null);
 
@@ -113,6 +119,10 @@ function SearchContent() {
     saveRecentSearch(suggestion);
     updateSearchParams({ q: suggestion, page: "1" });
   };
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   const handleTypeFilter = (type: DocumentType | "all") => {
     updateSearchParams({

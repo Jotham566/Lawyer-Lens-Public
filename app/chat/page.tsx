@@ -84,7 +84,7 @@ function ChatContent() {
             </div>
 
             {/* Messages */}
-            <div className="flex-1 overflow-hidden min-h-0" role="region" aria-label="Chat messages">
+            <div className="flex-1 overflow-hidden min-h-0" role="region" aria-label="Chat messages" aria-live="polite">
               {!state.currentConversation || state.currentConversation.messages.length === 0 ? (
                 <div className="h-full overflow-y-auto">
                   <div className="mx-auto max-w-3xl px-4 py-6">

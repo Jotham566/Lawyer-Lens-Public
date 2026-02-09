@@ -4,9 +4,16 @@ import { useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { UsageDashboard } from "@/components/billing/usage-dashboard";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 export default function UsagePage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
+
+  if (authLoading) {
+    return <PageLoading message="Loading usage..." />;
+  }
 
   return (
     <div className="space-y-6">

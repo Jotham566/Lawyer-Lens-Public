@@ -49,7 +49,7 @@ interface DocumentListProps {
 }
 
 export function DocumentList({ refreshTrigger }: DocumentListProps) {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [documents, setDocuments] = useState<OrgDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
@@ -65,7 +65,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
   const pageSize = 10;
 
   const loadDocuments = useCallback(async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setLoading(true);
     try {
@@ -84,14 +84,14 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
     } finally {
       setLoading(false);
     }
-  }, [accessToken, page, pageSize, statusFilter]);
+  }, [isAuthenticated, page, pageSize, statusFilter]);
 
   useEffect(() => {
     loadDocuments();
   }, [loadDocuments, refreshTrigger]);
 
   const handleDelete = async (documentId: string, title: string) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setDeleting(documentId);
     try {

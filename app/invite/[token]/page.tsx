@@ -38,7 +38,7 @@ export default function InvitationPage({
 }) {
   const { token } = use(params);
   const router = useRouter();
-  const { user, isAuthenticated, isLoading: authLoading, accessToken } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
 
   const [invitation, setInvitation] = useState<OrganizationInvitation | null>(null);
   const [loading, setLoading] = useState(true);
@@ -78,13 +78,13 @@ export default function InvitationPage({
   }, [token]);
 
   const handleAccept = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setAccepting(true);
     setError(null);
 
     try {
-      await acceptInvitation(accessToken, token);
+      await acceptInvitation(token);
       setAccepted(true);
     } catch (err) {
       if (err instanceof APIError) {

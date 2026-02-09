@@ -26,7 +26,7 @@ const ACCEPTED_FILE_TYPES = {
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [isDragging, setIsDragging] = useState(false);
   const [file, setFile] = useState<File | null>(null);
   const [title, setTitle] = useState("");
@@ -106,7 +106,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
   };
 
   const handleUpload = async () => {
-    if (!file || !accessToken || !title.trim()) {
+    if (!file || !isAuthenticated || !title.trim()) {
       toast.error("Please select a file and provide a title");
       return;
     }

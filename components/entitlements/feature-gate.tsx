@@ -89,7 +89,7 @@ export function UpgradePrompt({
           This feature requires the {getTierDisplayName(requiredTier)} plan or higher.
           You&apos;re currently on the {getTierDisplayName(currentTier)} plan.
         </p>
-        <Link href="/billing/plans">
+        <Link href="/pricing">
           <Button className="gap-2">
             <Crown className="h-4 w-4" />
             View Upgrade Options
@@ -162,7 +162,7 @@ export function FeatureLockedOverlay({
         <p className="text-sm font-medium text-slate-600 mb-2">
           {featureName || feature} requires {getTierDisplayName(requiredTier)}
         </p>
-        <Link href="/billing/plans">
+        <Link href="/pricing">
           <Button size="sm" variant="outline">
             Upgrade
           </Button>

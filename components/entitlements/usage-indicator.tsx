@@ -134,7 +134,7 @@ export function UsageIndicator({
             <AlertCircle className="h-3 w-3" />
             Limit reached
           </p>
-          <Link href="/billing/plans">
+          <Link href="/pricing">
             <Button size="sm" variant="link" className="text-xs p-0 h-auto">
               Upgrade for more
             </Button>
@@ -241,7 +241,7 @@ export function UsageLimitWarning({ usageKey, threshold = 80 }: UsageLimitWarnin
           </p>
         </div>
       </div>
-      <Link href="/billing/plans">
+      <Link href="/pricing">
         <Button size="sm" variant={isAtLimitNow ? "default" : "outline"}>
           <TrendingUp className="h-4 w-4 mr-1" />
           Upgrade

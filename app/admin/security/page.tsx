@@ -71,7 +71,7 @@ const SSO_PROVIDERS = [
 ];
 
 function SecuritySettingsContent() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -105,10 +105,10 @@ function SecuritySettingsContent() {
 
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
-        const org = await getCurrentOrganization(accessToken);
+        const org = await getCurrentOrganization();
         setOrganization(org);
 
         // In production, load SSO providers and settings from API
@@ -121,7 +121,7 @@ function SecuritySettingsContent() {
     }
 
     loadData();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   const handleCopy = async (text: string, id: string) => {
     await navigator.clipboard.writeText(text);
@@ -220,8 +220,8 @@ function SecuritySettingsContent() {
   }
 
   // Service Provider URLs for SSO setup
-  const spEntityId = `https://app.lawlens.ai/auth/saml/${organization?.slug}`;
-  const spAcsUrl = `https://app.lawlens.ai/auth/saml/${organization?.slug}/callback`;
+  const spEntityId = `https://app.lawlens.io/auth/saml/${organization?.slug}`;
+  const spAcsUrl = `https://app.lawlens.io/auth/saml/${organization?.slug}/callback`;
 
   return (
     <div className="container max-w-4xl py-8 space-y-6">

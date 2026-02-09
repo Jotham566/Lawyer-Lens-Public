@@ -16,6 +16,8 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Separator } from "@/components/ui/separator";
 import { PricingTier } from "@/components/pricing";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 const TIER_NAMES: Record<string, string> = {
   professional: "Professional",
@@ -23,6 +25,8 @@ const TIER_NAMES: Record<string, string> = {
 };
 
 function CheckoutContent() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
 
@@ -44,6 +48,10 @@ function CheckoutContent() {
   useEffect(() => {
     async function fetchTier() {
       try {
+        if (!isAuthenticated) {
+          setLoading(false);
+          return;
+        }
         const response = await fetch("/api/billing/pricing");
         if (response.ok) {
           const data = await response.json();
@@ -64,7 +72,11 @@ function CheckoutContent() {
       }
     }
     fetchTier();
-  }, [tierParam, seats]);
+  }, [tierParam, seats, isAuthenticated]);
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   const calculateTotal = () => {
     if (!tier) return 0;

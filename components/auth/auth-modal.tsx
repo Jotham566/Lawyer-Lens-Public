@@ -228,7 +228,7 @@ interface LoginViewProps {
 }
 
 function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
-  const { login, accessToken } = useAuth();
+  const { login, isAuthenticated } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -240,7 +240,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
     cooldown,
     success: resendSuccess,
     error: resendError,
-  } = useResendVerification(accessToken);
+  } = useResendVerification(isAuthenticated);
 
   const {
     register,
@@ -491,10 +491,6 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
     try {
       // Get invitation token if present
       const invitationToken = getInvitationToken();
-      console.log('[RegisterView] Submitting registration', {
-        email: data.email,
-        hasToken: !!invitationToken
-      });
 
       const result = await registerUser({
         email: data.email,
@@ -860,7 +856,6 @@ export function AuthModal({
   // Sync view with defaultView when it changes
   useEffect(() => {
     if (open) {
-      console.log('[AuthModal] Modal opened with defaultView:', defaultView);
       setView(defaultView);
     }
   }, [open, defaultView]);

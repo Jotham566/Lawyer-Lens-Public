@@ -27,7 +27,7 @@ function VerifyEmailContent() {
   const token = searchParams.get("token");
   const isPending = searchParams.get("pending") === "true";
 
-  const { user, accessToken, refreshSession } = useAuth();
+  const { user, isAuthenticated, refreshSession } = useAuth();
 
   const [state, setState] = useState<VerifyState>(
     token ? "verifying" : isPending ? "pending" : "error"
@@ -40,7 +40,7 @@ function VerifyEmailContent() {
     cooldown,
     success: resendSuccess,
     error: resendError,
-  } = useResendVerification(accessToken);
+  } = useResendVerification(isAuthenticated);
 
   // Verify the email token
   useEffect(() => {
@@ -74,7 +74,7 @@ function VerifyEmailContent() {
   }, [token, refreshSession]);
 
   const handleResendVerification = async () => {
-    if (!accessToken) {
+    if (!isAuthenticated) {
       router.push("/login");
       return;
     }
@@ -171,7 +171,7 @@ function VerifyEmailContent() {
             variant="outline"
             className="w-full"
             onClick={handleResendVerification}
-            disabled={resendLoading || cooldown > 0 || !accessToken}
+            disabled={resendLoading || cooldown > 0 || !isAuthenticated}
           >
             {resendLoading ? (
               <>
@@ -222,7 +222,7 @@ function VerifyEmailContent() {
       </CardContent>
 
       <CardFooter className="flex flex-col gap-4">
-        {accessToken ? (
+        {isAuthenticated ? (
           <Button
             variant="outline"
             className="w-full"

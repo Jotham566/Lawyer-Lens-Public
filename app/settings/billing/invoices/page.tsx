@@ -26,6 +26,8 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface Invoice {
   id: string;
@@ -50,6 +52,7 @@ const statusColors: Record<string, "default" | "secondary" | "destructive" | "ou
 };
 
 export default function InvoicesPage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -94,6 +97,10 @@ export default function InvoicesPage() {
       setDownloading(null);
     }
   };
+
+  if (authLoading) {
+    return <PageLoading message="Loading invoices..." />;
+  }
 
   if (loading) {
     return (

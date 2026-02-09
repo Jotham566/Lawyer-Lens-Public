@@ -122,7 +122,7 @@ function formatSessionInfo(session: UserSession): string {
 
 export default function SecuritySettingsPage() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { user, accessToken } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -152,10 +152,10 @@ export default function SecuritySettingsPage() {
   // Load sessions
   useEffect(() => {
     async function loadSessions() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
-        const data = await getSessions(accessToken);
+        const data = await getSessions();
         setSessions(data);
       } catch (err) {
         console.error("Failed to load sessions:", err);
@@ -165,19 +165,19 @@ export default function SecuritySettingsPage() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       loadSessions();
     }
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setPasswordError(null);
     setPasswordSuccess(null);
 
     try {
-      await changePassword(accessToken, {
+      await changePassword({
         current_password: data.current_password,
         new_password: data.new_password,
       });
@@ -197,13 +197,13 @@ export default function SecuritySettingsPage() {
   };
 
   const handleRevokeSession = async (sessionId: string) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setRevokingSession(sessionId);
     setSessionError(null);
 
     try {
-      await revokeSession(accessToken, sessionId);
+      await revokeSession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
       if (err instanceof APIError) {
@@ -217,13 +217,13 @@ export default function SecuritySettingsPage() {
   };
 
   const handleRevokeAll = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setRevokingAll(true);
     setSessionError(null);
 
     try {
-      await revokeAllSessions(accessToken);
+      await revokeAllSessions();
       setSessions((prev) => prev.filter((s) => s.is_current));
     } catch (err) {
       if (err instanceof APIError) {

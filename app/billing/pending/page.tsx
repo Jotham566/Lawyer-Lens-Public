@@ -12,8 +12,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 function PendingContent() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const reference = searchParams.get("reference");
@@ -24,7 +28,7 @@ function PendingContent() {
   const maxAttempts = 30; // 5 minutes at 10 second intervals
 
   useEffect(() => {
-    if (!reference) return;
+    if (!reference || !isAuthenticated) return;
 
     const checkStatus = async () => {
       try {
@@ -67,7 +71,7 @@ function PendingContent() {
     }, 10000);
 
     return () => clearInterval(interval);
-  }, [reference, router, attempts]);
+  }, [reference, router, attempts, isAuthenticated]);
 
   const handleManualCheck = async () => {
     if (!reference || checking) return;
@@ -89,6 +93,10 @@ function PendingContent() {
       setChecking(false);
     }
   };
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">

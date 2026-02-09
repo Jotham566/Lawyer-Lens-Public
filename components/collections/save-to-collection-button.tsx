@@ -3,6 +3,7 @@
 import * as React from "react";
 import { Bookmark, Plus, Loader2 } from "lucide-react";
 import { toast } from "sonner";
+import { usePathname } from "next/navigation";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -30,6 +31,7 @@ import {
     type CollectionItemMeta,
 } from "@/lib/api/collections";
 import { cn } from "@/lib/utils";
+import { useAuth, useAuthModal } from "@/components/providers";
 
 interface SaveToCollectionButtonProps {
     documentId: string;
@@ -54,6 +56,9 @@ export function SaveToCollectionButton({
     className,
     showLabel = true,
 }: SaveToCollectionButtonProps) {
+    const { isAuthenticated } = useAuth();
+    const { openLogin } = useAuthModal();
+    const pathname = usePathname();
     const [open, setOpen] = React.useState(false);
     const [loading, setLoading] = React.useState(false);
     const [saving, setSaving] = React.useState(false);
@@ -131,8 +136,18 @@ export function SaveToCollectionButton({
         }
     };
 
+    const handleOpenChange = (nextOpen: boolean) => {
+        if (nextOpen && !isAuthenticated) {
+            const search = typeof window !== "undefined" ? window.location.search : "";
+            openLogin(`${pathname}${search}`);
+            setOpen(false);
+            return;
+        }
+        setOpen(nextOpen);
+    };
+
     return (
-        <Dialog open={open} onOpenChange={setOpen}>
+        <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild>
                 {trigger || (
                     <Button variant={variant} size={size} className={className}>

@@ -36,7 +36,7 @@ type ProfileFormData = z.infer<typeof profileSchema>;
 
 export default function SettingsPage() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { user, accessToken, refreshSession } = useAuth();
+  const { user, isAuthenticated, refreshSession } = useAuth();
 
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
@@ -47,7 +47,7 @@ export default function SettingsPage() {
     success: resendSuccess,
     error: resendError,
     clearError: clearResendError,
-  } = useResendVerification(accessToken);
+  } = useResendVerification(isAuthenticated);
 
   const {
     register,
@@ -69,13 +69,13 @@ export default function SettingsPage() {
   }, [user, reset]);
 
   const onSubmit = async (data: ProfileFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setError(null);
     setSuccess(null);
 
     try {
-      await updateProfile(accessToken, { full_name: data.full_name });
+      await updateProfile({ full_name: data.full_name });
       await refreshSession();
       setSuccess("Profile updated successfully");
     } catch (err) {

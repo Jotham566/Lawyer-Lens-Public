@@ -10,14 +10,19 @@ interface EntitlementsProviderProps {
 
 export function EntitlementsProvider({ children }: EntitlementsProviderProps) {
   const entitlements = useEntitlementsProvider();
-  const { isAuthenticated, accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
 
   // Refresh entitlements when auth state changes
   useEffect(() => {
+    if (!isAuthenticated) {
+      void entitlements.refresh({ reset: true, skipFetch: true });
+      return;
+    }
+
     // Force a foreground load and clear stale entitlements when auth context changes
     void entitlements.refresh({ forceLoading: true, reset: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isAuthenticated, accessToken]);
+  }, [isAuthenticated]);
 
   return (
     <EntitlementsContext.Provider value={entitlements}>

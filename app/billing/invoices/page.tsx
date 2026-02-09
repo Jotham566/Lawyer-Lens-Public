@@ -33,6 +33,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface Invoice {
   id: string;
@@ -71,6 +73,8 @@ const statusConfig: Record<string, { icon: React.ReactNode; color: string; label
 };
 
 export default function InvoicesPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -79,8 +83,11 @@ export default function InvoicesPage() {
   const [yearFilter, setYearFilter] = useState<string>("all");
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      return;
+    }
     fetchInvoices();
-  }, []);
+  }, [isAuthenticated]);
 
   const fetchInvoices = async () => {
     try {
@@ -147,6 +154,10 @@ export default function InvoicesPage() {
   const totalPaid = invoices
     .filter((inv) => inv.status === "paid")
     .reduce((sum, inv) => sum + inv.amount, 0);
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   if (loading) {
     return (

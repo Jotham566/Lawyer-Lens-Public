@@ -57,7 +57,7 @@ export function AvatarUpload({
   size = "lg",
   onAvatarChange,
 }: AvatarUploadProps) {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [avatarUrl, setAvatarUrl] = useState<string | null>(currentAvatarUrl ?? null);
@@ -100,13 +100,13 @@ export function AvatarUpload({
   );
 
   const handleUpload = async () => {
-    if (!selectedFile || !accessToken) return;
+    if (!selectedFile || !isAuthenticated) return;
 
     setIsUploading(true);
     setError(null);
 
     try {
-      const response = await uploadAvatar(accessToken, selectedFile);
+      const response = await uploadAvatar(selectedFile);
       setAvatarUrl(response.avatar_url);
       onAvatarChange?.(response.avatar_url);
       setShowConfirmDialog(false);
@@ -123,13 +123,13 @@ export function AvatarUpload({
   };
 
   const handleDelete = async () => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setIsDeleting(true);
     setError(null);
 
     try {
-      await deleteAvatar(accessToken);
+      await deleteAvatar();
       setAvatarUrl(null);
       onAvatarChange?.(null);
     } catch (err) {

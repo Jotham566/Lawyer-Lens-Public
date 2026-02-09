@@ -20,6 +20,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 interface PlanFeature {
   name: string;
@@ -92,8 +94,13 @@ const plans = [
 ];
 
 export default function PlansPage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [annual, setAnnual] = useState(false);
+
+  if (authLoading) {
+    return <PageLoading message="Loading plans..." />;
+  }
 
   const getPrice = (price: number | null) => {
     if (price === null) return "Custom";

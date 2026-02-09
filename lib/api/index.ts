@@ -126,7 +126,6 @@ export {
   type ChangePasswordRequest,
   type UpdateProfileRequest,
   type VerifyEmailRequest,
-  type RefreshTokenRequest,
 } from "./auth";
 
 // Knowledge Base API

@@ -23,7 +23,7 @@ import type { ToolMode } from "@/components/chat";
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
 
 export function useChatOrchestrator() {
-    const { accessToken } = useAuth();
+    const { isAuthenticated } = useAuth();
     const { refresh: refreshEntitlements } = useEntitlements();
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q");
@@ -125,10 +125,10 @@ export function useChatOrchestrator() {
 
     // Fetch Conversations on Auth
     useEffect(() => {
-        if (accessToken) {
-            fetchConversations(accessToken);
+        if (isAuthenticated) {
+            fetchConversations();
         }
-    }, [accessToken, fetchConversations]);
+    }, [isAuthenticated, fetchConversations]);
 
     // Citation Reset Logic
     const resetCitationsRef = useRef(citationContext?.resetCitations);
@@ -143,7 +143,7 @@ export function useChatOrchestrator() {
 
     // Auto-fetch deep conversation details
     useEffect(() => {
-        if (!currentConversationId || !accessToken) return;
+        if (!currentConversationId || !isAuthenticated) return;
         if (fetchingConversationRef.current.has(currentConversationId)) return;
 
         const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
@@ -152,11 +152,11 @@ export function useChatOrchestrator() {
         const conv = useChatStore.getState().conversations.find(c => c.id === currentConversationId);
         if (conv && conv.messages.length === 0) {
             fetchingConversationRef.current.add(currentConversationId);
-            fetchConversation(currentConversationId, accessToken).finally(() => {
+            fetchConversation(currentConversationId).finally(() => {
                 fetchingConversationRef.current.delete(currentConversationId);
             });
         }
-    }, [currentConversationId, accessToken, fetchConversation]);
+    }, [currentConversationId, isAuthenticated, fetchConversation]);
 
     // --- Logic Helpers ---
 
@@ -189,8 +189,7 @@ export function useChatOrchestrator() {
                         max_context_chunks: 10,
                         temperature: 0.3,
                     },
-                    {},
-                    accessToken
+                    {}
                 );
 
                 for await (const event of stream) {
@@ -236,7 +235,7 @@ export function useChatOrchestrator() {
                 refreshEntitlements();
             }
         },
-        [addMessage, updateLastMessage, setLoading, setError, refreshEntitlements, accessToken, replaceConversationId]
+        [addMessage, updateLastMessage, setLoading, setError, refreshEntitlements, replaceConversationId]
     );
 
     // 2. Regular Chat Handler
@@ -294,10 +293,7 @@ export function useChatOrchestrator() {
                 });
 
                 try {
-                    const session = await createResearchSession(
-                        { query: text, force_research: true },
-                        accessToken
-                    );
+                    const session = await createResearchSession({ query: text, force_research: true });
 
                     if (session.current_step === "redirect_to_contract") {
                         setActiveToolExecution(null);
@@ -375,7 +371,7 @@ export function useChatOrchestrator() {
             await handleRegularChat(text, activeConvId, messagesForHistory);
 
         },
-        [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom, accessToken]
+        [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
     );
 
     // Initial Query Handler
@@ -485,7 +481,7 @@ export function useChatOrchestrator() {
 
     const handleConfirmDelete = async () => {
         if (conversationToDelete) {
-            await deleteConversationAsync(conversationToDelete, accessToken);
+            await deleteConversationAsync(conversationToDelete);
         }
         setDeleteDialogOpen(false);
         setConversationToDelete(null);

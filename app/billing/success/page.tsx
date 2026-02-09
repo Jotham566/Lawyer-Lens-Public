@@ -12,8 +12,12 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import confetti from "canvas-confetti";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 function SuccessContent() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const router = useRouter();
   const searchParams = useSearchParams();
   const tier = searchParams.get("tier") || "professional";
@@ -51,6 +55,10 @@ function SuccessContent() {
     team: "Team",
     enterprise: "Enterprise",
   };
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   return (
     <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
@@ -93,8 +101,8 @@ function SuccessContent() {
 
           <p className="text-xs text-center text-muted-foreground">
             Questions? Contact us at{" "}
-            <a href="mailto:support@legalintelligence.com" className="underline">
-              support@legalintelligence.com
+            <a href="mailto:support@lawlens.io" className="underline">
+              support@lawlens.io
             </a>
           </p>
         </CardContent>

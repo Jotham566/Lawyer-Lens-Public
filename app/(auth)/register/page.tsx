@@ -28,8 +28,6 @@ function RegisterContent() {
 
     // If not loading and not authenticated, open the modal and go home
     if (!isLoading && !isAuthenticated) {
-      console.log('[RegisterPage] Opening registration modal with invite token:', inviteToken ? 'present' : 'none');
-
       // Store returnUrl if provided
       if (returnUrl) {
         setReturnUrl(decodeURIComponent(returnUrl));
@@ -40,7 +38,6 @@ function RegisterContent() {
 
       // Then redirect to home (modal state persists)
       setTimeout(() => {
-        console.log('[RegisterPage] Redirecting to home, modal should stay open');
         router.replace("/");
       }, 50);
     }

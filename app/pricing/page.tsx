@@ -50,7 +50,7 @@ export default function PricingPage() {
   const handleSelectTier = (tier: string) => {
     if (tier === "enterprise") {
       // Open contact form or mailto
-      window.location.href = "mailto:sales@legalintelligence.com?subject=Enterprise%20Inquiry";
+      window.location.href = "mailto:sales@lawlens.io?subject=Enterprise%20Inquiry";
       return;
     }
     if (tier === "free") {

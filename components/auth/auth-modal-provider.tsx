@@ -74,7 +74,6 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const openAuthModal = useCallback((view: AuthView = "login", returnUrl?: string) => {
-    console.log('[AuthModal] openAuthModal setting view to:', view);
     if (returnUrl) {
       setReturnUrl(returnUrl);
     }
@@ -96,9 +95,7 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
 
   const openLogin = useCallback((returnUrl?: string) => openAuthModal("login", returnUrl), [openAuthModal]);
   const openRegister = useCallback((returnUrl?: string, invitationToken?: string) => {
-    console.log('[AuthModal] openRegister called', { returnUrl, hasToken: !!invitationToken });
     if (invitationToken) {
-      console.log('[AuthModal] Storing invitation token in sessionStorage');
       setInvitationToken(invitationToken);
     }
     openAuthModal("register", returnUrl);

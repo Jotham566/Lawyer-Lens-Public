@@ -9,6 +9,9 @@ import {
   InvoicesTable,
   PaymentsTable,
 } from "@/components/billing";
+import { useAuth } from "@/components/providers";
+import { getCsrfToken } from "@/lib/api/client";
+import { FeatureGate } from "@/components/entitlements/feature-gate";
 
 interface BillingMetrics {
   mrr: number;
@@ -72,9 +75,10 @@ interface Payment {
   flutterwave_tx_id: string | null;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
 
-export default function AdminBillingPage() {
+function AdminBillingContent() {
+  const { isAuthenticated } = useAuth();
   const [metrics, setMetrics] = useState<BillingMetrics | null>(null);
   const [metricsLoading, setMetricsLoading] = useState(true);
 
@@ -95,7 +99,11 @@ export default function AdminBillingPage() {
   useEffect(() => {
     async function fetchMetrics() {
       try {
-        const res = await fetch(`${BACKEND_URL}/api/v1/admin/billing/metrics`, {
+        if (!isAuthenticated) {
+          setMetricsLoading(false);
+          return;
+        }
+        const res = await fetch(`${API_BASE}/admin/billing/metrics`, {
           credentials: "include",
         });
         if (res.ok) {
@@ -109,12 +117,16 @@ export default function AdminBillingPage() {
       }
     }
     fetchMetrics();
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch subscriptions
   const fetchSubscriptions = useCallback(async () => {
     setSubscriptionsLoading(true);
     try {
+      if (!isAuthenticated) {
+        setSubscriptionsLoading(false);
+        return;
+      }
       const params = new URLSearchParams({
         page: subscriptionsPage.toString(),
         page_size: "20",
@@ -123,7 +135,7 @@ export default function AdminBillingPage() {
       if (tierFilter) params.set("tier", tierFilter);
 
       const res = await fetch(
-        `${BACKEND_URL}/api/v1/admin/billing/subscriptions?${params}`,
+        `${API_BASE}/admin/billing/subscriptions?${params}`,
         { credentials: "include" }
       );
       if (res.ok) {
@@ -136,7 +148,7 @@ export default function AdminBillingPage() {
     } finally {
       setSubscriptionsLoading(false);
     }
-  }, [subscriptionsPage, statusFilter, tierFilter]);
+  }, [subscriptionsPage, statusFilter, tierFilter, isAuthenticated]);
 
   useEffect(() => {
     fetchSubscriptions();
@@ -146,8 +158,12 @@ export default function AdminBillingPage() {
   useEffect(() => {
     async function fetchInvoices() {
       try {
+        if (!isAuthenticated) {
+          setInvoicesLoading(false);
+          return;
+        }
         const res = await fetch(
-          `${BACKEND_URL}/api/v1/admin/billing/invoices?page_size=10`,
+          `${API_BASE}/admin/billing/invoices?page_size=10`,
           { credentials: "include" }
         );
         if (res.ok) {
@@ -161,14 +177,18 @@ export default function AdminBillingPage() {
       }
     }
     fetchInvoices();
-  }, []);
+  }, [isAuthenticated]);
 
   // Fetch payments
   useEffect(() => {
     async function fetchPayments() {
       try {
+        if (!isAuthenticated) {
+          setPaymentsLoading(false);
+          return;
+        }
         const res = await fetch(
-          `${BACKEND_URL}/api/v1/admin/billing/payments?page_size=10`,
+          `${API_BASE}/admin/billing/payments?page_size=10`,
           { credentials: "include" }
         );
         if (res.ok) {
@@ -182,16 +202,19 @@ export default function AdminBillingPage() {
       }
     }
     fetchPayments();
-  }, []);
+  }, [isAuthenticated]);
 
   const handleVoidInvoice = async (invoiceId: string) => {
     if (!confirm("Are you sure you want to void this invoice?")) return;
 
     try {
+      if (!isAuthenticated) return;
+      const csrfToken = getCsrfToken();
       const res = await fetch(
-        `${BACKEND_URL}/api/v1/admin/billing/invoices/${invoiceId}/void`,
+        `${API_BASE}/admin/billing/invoices/${invoiceId}/void`,
         {
           method: "POST",
+          headers: csrfToken ? { "X-CSRF-Token": csrfToken } : undefined,
           credentials: "include",
         }
       );
@@ -213,10 +236,15 @@ export default function AdminBillingPage() {
     if (!reason) return;
 
     try {
-      const res = await fetch(`${BACKEND_URL}/api/v1/admin/billing/refunds`, {
+      if (!isAuthenticated) return;
+      const csrfToken = getCsrfToken();
+      const res = await fetch(`${API_BASE}/admin/billing/refunds`, {
         method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...(csrfToken ? { "X-CSRF-Token": csrfToken } : {}),
+        },
         credentials: "include",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ payment_id: paymentId, reason }),
       });
       if (res.ok) {
@@ -289,5 +317,17 @@ export default function AdminBillingPage() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+export default function AdminBillingPage() {
+  return (
+    <FeatureGate
+      feature="team_management"
+      requiredTier="team"
+      featureName="Billing Admin"
+    >
+      <AdminBillingContent />
+    </FeatureGate>
   );
 }

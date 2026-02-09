@@ -103,7 +103,6 @@ export interface CreateInvitationRequest {
  * List organizations the current user belongs to
  */
 export async function listOrganizations(
-  accessToken: string,
   page = 1,
   pageSize = 20
 ): Promise<OrganizationListResponse> {
@@ -111,7 +110,6 @@ export async function listOrganizations(
     `/organizations?page=${page}&page_size=${pageSize}`,
     {
       method: "GET",
-      headers: { Authorization: `Bearer ${accessToken}` },
     }
   );
 }
@@ -119,13 +117,8 @@ export async function listOrganizations(
 /**
  * Get the current organization
  */
-export async function getCurrentOrganization(
-  accessToken: string,
-  orgId?: string
-): Promise<Organization> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function getCurrentOrganization(orgId?: string): Promise<Organization> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -138,13 +131,9 @@ export async function getCurrentOrganization(
 /**
  * Create a new organization
  */
-export async function createOrganization(
-  accessToken: string,
-  data: CreateOrganizationRequest
-): Promise<Organization> {
+export async function createOrganization(data: CreateOrganizationRequest): Promise<Organization> {
   return apiFetch<Organization>("/organizations", {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify(data),
   });
 }
@@ -153,13 +142,10 @@ export async function createOrganization(
  * Update the current organization
  */
 export async function updateOrganization(
-  accessToken: string,
   data: UpdateOrganizationRequest,
   orgId?: string
 ): Promise<Organization> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -173,13 +159,8 @@ export async function updateOrganization(
 /**
  * Delete the current organization
  */
-export async function deleteOrganization(
-  accessToken: string,
-  orgId?: string
-): Promise<void> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function deleteOrganization(orgId?: string): Promise<void> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -195,14 +176,11 @@ export async function deleteOrganization(
  * List members of the current organization
  */
 export async function listMembers(
-  accessToken: string,
   page = 1,
   pageSize = 20,
   orgId?: string
 ): Promise<MemberListResponse> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -219,14 +197,11 @@ export async function listMembers(
  * Update a member's role or status
  */
 export async function updateMember(
-  accessToken: string,
   userId: string,
   data: UpdateMemberRequest,
   orgId?: string
 ): Promise<OrganizationMember> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -243,14 +218,8 @@ export async function updateMember(
 /**
  * Remove a member from the organization
  */
-export async function removeMember(
-  accessToken: string,
-  userId: string,
-  orgId?: string
-): Promise<void> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function removeMember(userId: string, orgId?: string): Promise<void> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -263,13 +232,8 @@ export async function removeMember(
 /**
  * Leave the current organization
  */
-export async function leaveOrganization(
-  accessToken: string,
-  orgId?: string
-): Promise<void> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function leaveOrganization(orgId?: string): Promise<void> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -285,13 +249,10 @@ export async function leaveOrganization(
  * Create an invitation
  */
 export async function createInvitation(
-  accessToken: string,
   data: CreateInvitationRequest,
   orgId?: string
 ): Promise<OrganizationInvitation> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -308,13 +269,8 @@ export async function createInvitation(
 /**
  * List pending invitations
  */
-export async function listInvitations(
-  accessToken: string,
-  orgId?: string
-): Promise<InvitationListResponse> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function listInvitations(orgId?: string): Promise<InvitationListResponse> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -330,14 +286,8 @@ export async function listInvitations(
 /**
  * Cancel an invitation
  */
-export async function cancelInvitation(
-  accessToken: string,
-  invitationId: string,
-  orgId?: string
-): Promise<void> {
-  const headers: Record<string, string> = {
-    Authorization: `Bearer ${accessToken}`,
-  };
+export async function cancelInvitation(invitationId: string, orgId?: string): Promise<void> {
+  const headers: Record<string, string> = {};
   if (orgId) {
     headers["X-Organization-ID"] = orgId;
   }
@@ -361,13 +311,9 @@ export async function getInvitationByToken(
 /**
  * Accept an invitation
  */
-export async function acceptInvitation(
-  accessToken: string,
-  token: string
-): Promise<Organization> {
+export async function acceptInvitation(token: string): Promise<Organization> {
   return apiFetch<Organization>(`/organizations/invitations/${token}/accept`, {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
   });
 }
 
@@ -383,12 +329,10 @@ interface SwitchOrganizationResponse {
  * Updates the user's default organization and returns the new org details.
  */
 export async function switchOrganization(
-  accessToken: string,
   organizationId: string
 ): Promise<SwitchOrganizationResponse> {
   return apiFetch<SwitchOrganizationResponse>("/organizations/switch", {
     method: "POST",
-    headers: { Authorization: `Bearer ${accessToken}` },
     body: JSON.stringify({ organization_id: organizationId }),
   });
 }

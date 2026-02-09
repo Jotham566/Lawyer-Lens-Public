@@ -53,7 +53,7 @@ type OnboardingStep = "choice" | "create" | "join" | "complete";
 export default function OnboardingPage() {
   const router = useRouter();
   const { isLoading: authLoading } = useRequireAuth();
-  const { accessToken, user } = useAuth();
+  const { isAuthenticated, user } = useAuth();
 
   const [step, setStep] = useState<OnboardingStep>("choice");
   const [existingOrgs, setExistingOrgs] = useState<Organization[]>([]);
@@ -87,10 +87,10 @@ export default function OnboardingPage() {
   // Check if user already has organizations
   useEffect(() => {
     async function checkOrganizations() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
-        const response = await listOrganizations(accessToken);
+        const response = await listOrganizations();
         setExistingOrgs(response.items);
 
         // If user already has organizations, redirect to dashboard
@@ -105,18 +105,18 @@ export default function OnboardingPage() {
       }
     }
 
-    if (accessToken) {
+    if (isAuthenticated) {
       checkOrganizations();
     }
-  }, [accessToken, router]);
+  }, [isAuthenticated, router]);
 
   const onCreateOrg = async (data: CreateOrgFormData) => {
-    if (!accessToken) return;
+    if (!isAuthenticated) return;
 
     setError(null);
 
     try {
-      const org = await createOrganization(accessToken, {
+      const org = await createOrganization({
         name: data.name,
         slug: data.slug,
         description: data.description,

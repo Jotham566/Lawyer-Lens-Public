@@ -67,7 +67,7 @@ import {
   type SourceType,
 } from "@/components/contracts";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useAuth, useRequireAuth } from "@/components/providers";
+import { useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
@@ -104,7 +104,6 @@ const defaultParty: PartyInfo = {
 function ContractsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const { accessToken } = useAuth();
   const { refresh: refreshEntitlements } = useEntitlements();
   const initialDescription = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
@@ -137,14 +136,14 @@ function ContractsContent() {
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
     try {
-      const sessionData = await getContractSession(sessionId, accessToken);
+      const sessionData = await getContractSession(sessionId);
       setSession(sessionData);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to load session");
     } finally {
       setIsLoading(false);
     }
-  }, [accessToken]);
+  }, []);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -162,7 +161,7 @@ function ContractsContent() {
 
     const pollInterval = setInterval(async () => {
       try {
-        const updatedSession = await getContractSession(session.session_id, accessToken);
+        const updatedSession = await getContractSession(session.session_id);
         if (updatedSession.phase !== "drafting") {
           setSession(updatedSession);
           clearInterval(pollInterval);
@@ -178,7 +177,7 @@ function ContractsContent() {
     }, 5000); // Poll every 5 seconds
 
     return () => clearInterval(pollInterval);
-  }, [session?.session_id, session?.phase, session, accessToken, refreshEntitlements]);
+  }, [session?.session_id, session?.phase, session, refreshEntitlements]);
 
   // Infer contract type from description
   const inferContractType = (text: string): string => {
@@ -223,7 +222,7 @@ function ContractsContent() {
         request.source_contract_id = selectedContractData.session_id;
       }
 
-      const newSession = await createContractSession(request, accessToken);
+      const newSession = await createContractSession(request);
       setSession(newSession);
       router.replace(`/contracts?session=${newSession.session_id}`);
     } catch (err) {
@@ -270,8 +269,7 @@ function ContractsContent() {
 
       const updatedSession = await submitContractRequirements(
         session.session_id,
-        requirements,
-        accessToken
+        requirements
       );
       setSession(updatedSession);
     } catch (err) {
@@ -300,8 +298,7 @@ function ContractsContent() {
         {
           approved: true,
           edits: edits.length > 0 ? edits : undefined,
-        },
-        accessToken
+        }
       );
       setSession(updatedSession);
     } catch (err) {

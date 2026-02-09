@@ -23,6 +23,7 @@ import { Badge } from "@/components/ui/badge";
 import { PageHeader, PageLoading } from "@/components/common";
 import { fetchSubscription, fetchUsage, fetchInvoices } from "@/lib/api/billing";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useRequireAuth } from "@/components/providers";
 
 interface Subscription {
   tier: string;
@@ -57,6 +58,7 @@ interface Invoice {
 }
 
 export default function BillingPage() {
+  const { isLoading: authLoading } = useRequireAuth();
   const router = useRouter();
   const [loading, setLoading] = useState(true);
   const [subscription, setSubscription] = useState<Subscription | null>(null);
@@ -102,6 +104,10 @@ export default function BillingPage() {
     team: "Team",
     enterprise: "Enterprise",
   };
+
+  if (authLoading) {
+    return <PageLoading message="Loading billing..." />;
+  }
 
   if (loading) {
     return <PageLoading message="Loading billing information..." />;

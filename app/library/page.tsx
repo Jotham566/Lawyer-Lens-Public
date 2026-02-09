@@ -27,8 +27,12 @@ import { Textarea } from "@/components/ui/textarea";
 import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useAuth, useRequireAuth } from "@/components/providers";
+import { PageLoading } from "@/components/common";
 
 export default function LibraryPage() {
+  const { isLoading: authLoading } = useRequireAuth();
+  const { isAuthenticated } = useAuth();
   const [collections, setCollections] = useState<Collection[]>([]);
   const [loading, setLoading] = useState(true);
   const [createOpen, setCreateOpen] = useState(false);
@@ -37,10 +41,15 @@ export default function LibraryPage() {
   const [newDesc, setNewDesc] = useState("");
 
   useEffect(() => {
+    if (!isAuthenticated) {
+      setLoading(false);
+      return;
+    }
     loadCollections();
-  }, []);
+  }, [isAuthenticated]);
 
   const loadCollections = async () => {
+    setLoading(true);
     try {
       const data = await collectionsApi.getAll();
       setCollections(data);
@@ -77,6 +86,10 @@ export default function LibraryPage() {
       setCreating(false);
     }
   };
+
+  if (authLoading || !isAuthenticated) {
+    return <PageLoading message="Redirecting to login..." />;
+  }
 
   if (loading) {
     return (

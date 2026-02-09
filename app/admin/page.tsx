@@ -22,7 +22,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { useAuth, useRequireAuth } from "@/components/providers";
+import { useAuth } from "@/components/providers";
 import {
   getCurrentOrganization,
   listMembers,
@@ -48,7 +48,7 @@ interface RecentActivity {
   timestamp: string;
 }
 
-const BACKEND_URL = process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000";
+const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
 
 function StatCard({
   title,
@@ -148,7 +148,7 @@ function QuickActionCard({
 }
 
 function AdminDashboardContent() {
-  const { accessToken } = useAuth();
+  const { isAuthenticated } = useAuth();
   const [organization, setOrganization] = useState<Organization | null>(null);
   const [members, setMembers] = useState<OrganizationMember[]>([]);
   const [usageStats, setUsageStats] = useState<UsageStats | null>(null);
@@ -157,21 +157,21 @@ function AdminDashboardContent() {
 
   useEffect(() => {
     async function loadData() {
-      if (!accessToken) return;
+      if (!isAuthenticated) return;
 
       try {
         // Load organization and members
         const [org, membersData] = await Promise.all([
-          getCurrentOrganization(accessToken),
-          listMembers(accessToken),
+          getCurrentOrganization(),
+          listMembers(),
         ]);
         setOrganization(org);
         setMembers(membersData.items);
 
         // Try to load usage stats
         try {
-          const usageRes = await fetch(`${BACKEND_URL}/api/v1/billing/usage`, {
-            headers: { Authorization: `Bearer ${accessToken}` },
+          const usageRes = await fetch(`${API_BASE}/billing/usage`, {
+            credentials: "include",
           });
           if (usageRes.ok) {
             const usage = await usageRes.json();
@@ -219,7 +219,7 @@ function AdminDashboardContent() {
     }
 
     loadData();
-  }, [accessToken]);
+  }, [isAuthenticated]);
 
   // Check if user is admin/owner
   const isAdmin =
@@ -469,8 +469,6 @@ function AdminDashboardContent() {
 }
 
 export default function AdminDashboardPage() {
-  useRequireAuth();
-
   return (
     <FeatureGate
       feature="team_management"

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
+import { getAuthHeader } from "../_auth";
 
 const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8003";
 
@@ -19,6 +20,7 @@ const FREE_TIER_DEFAULTS = {
     role_based_access: false,
     shared_workspaces: false,
     activity_logs: false,
+    audit_logs: false,
     sso_saml: false,
     custom_integrations: false,
     api_access: false,
@@ -68,8 +70,7 @@ const FREE_TIER_DEFAULTS = {
 
 export async function GET(request: NextRequest) {
   try {
-    // Get token from Authorization header
-    const authHeader = request.headers.get("Authorization");
+    const authHeader = await getAuthHeader(request);
 
     if (!authHeader) {
       // Return free tier defaults for unauthenticated users
