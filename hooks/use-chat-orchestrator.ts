@@ -57,7 +57,7 @@ export function useChatOrchestrator() {
     const [copiedId, setCopiedId] = useState<string | null>(null);
 
     // Tool Execution State
-    const [_activeToolExecution, setActiveToolExecution] = useState<{
+    const [, setActiveToolExecution] = useState<{
         tool: ToolMode;
         query: string;
         status: "running" | "complete" | "error";
@@ -138,7 +138,6 @@ export function useChatOrchestrator() {
 
     useEffect(() => {
         resetCitationsRef.current?.();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [currentConversationId]);
 
     // Auto-fetch deep conversation details
@@ -276,7 +275,7 @@ export function useChatOrchestrator() {
                 const toolToUse = selectedTool;
                 setSelectedTool("chat");
 
-                let activeConvId = convId || createConversation();
+                const activeConvId = convId || createConversation();
 
                 const userMessage: ChatMessageType = {
                     role: "user",
@@ -347,7 +346,7 @@ export function useChatOrchestrator() {
             if (selectedTool === "draft-contract") {
                 setInput("");
                 setSelectedTool("chat");
-                let activeConvId = convId || createConversation();
+                const activeConvId = convId || createConversation();
 
                 const userMessage: ChatMessageType = {
                     role: "user",
@@ -366,7 +365,7 @@ export function useChatOrchestrator() {
             }
 
             // Regular Chat
-            let activeConvId = convId || createConversation();
+            const activeConvId = convId || createConversation();
             setInput("");
             await handleRegularChat(text, activeConvId, messagesForHistory);
 
@@ -497,6 +496,14 @@ export function useChatOrchestrator() {
         inputRef.current?.focus();
     };
 
+    const setInputRef = useCallback((node: HTMLTextAreaElement | null) => {
+        inputRef.current = node;
+    }, []);
+
+    const setEditInputRef = useCallback((node: HTMLTextAreaElement | null) => {
+        editInputRef.current = node;
+    }, []);
+
     return {
         state: {
             input,
@@ -514,13 +521,11 @@ export function useChatOrchestrator() {
             upgradeModalOpen,
             upgradeDetails,
         },
-        refs: {
-            inputRef,
-            editInputRef,
-        },
         actions: {
             setInput,
             setSelectedTool,
+            setInputRef,
+            setEditInputRef,
             handleInputChange,
             handleKeyDown,
             handleSend,

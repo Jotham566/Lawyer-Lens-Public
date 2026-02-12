@@ -68,13 +68,7 @@ export function SaveToCollectionButton({
     const [newCollectionName, setNewCollectionName] = React.useState("");
     const [notes, setNotes] = React.useState("");
 
-    React.useEffect(() => {
-        if (open) {
-            loadCollections();
-        }
-    }, [open]);
-
-    const loadCollections = async () => {
+    const loadCollections = React.useCallback(async () => {
         setLoading(true);
         try {
             const data = await collectionsApi.getAll();
@@ -88,7 +82,13 @@ export function SaveToCollectionButton({
         } finally {
             setLoading(false);
         }
-    };
+    }, [selectedCollectionId]);
+
+    React.useEffect(() => {
+        if (open) {
+            loadCollections();
+        }
+    }, [open, loadCollections]);
 
     const handleSave = async () => {
         if (isCreatingNew && !newCollectionName.trim()) {
@@ -210,7 +210,7 @@ export function SaveToCollectionButton({
                                 </div>
                                 {collections.length === 0 && (
                                     <p className="text-sm text-muted-foreground">
-                                        You haven't created any collections yet. Click + to create
+                                        You haven&apos;t created any collections yet. Click + to create
                                         one.
                                     </p>
                                 )}

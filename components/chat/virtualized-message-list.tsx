@@ -19,7 +19,7 @@ interface VirtualizedMessageListProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
-  editInputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
 
 // Minimum height estimate for messages (will be measured dynamically)

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useState } from "react";
+import { useState } from "react";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -109,7 +109,7 @@ export default function PlansPage() {
     return annual ? `$${annualPrice}/year` : `$${price}/mo`;
   };
 
-  const handleSelectPlan = useCallback((planId: string) => {
+  const handleSelectPlan = (planId: string) => {
     if (planId === "enterprise") {
       // Open contact form or redirect to contact page
       router.push("/contact?subject=enterprise");
@@ -117,7 +117,7 @@ export default function PlansPage() {
     }
     // Redirect to checkout with plan and billing preference
     router.push(`/billing/checkout?plan=${planId}&annual=${annual}`);
-  }, [annual, router]);
+  };
 
   return (
     <div className="container mx-auto py-8 px-4 max-w-7xl">

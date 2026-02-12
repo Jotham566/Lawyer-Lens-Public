@@ -58,7 +58,7 @@ export function formatDate(
         minute: '2-digit',
       }),
     })
-  } catch (error) {
+  } catch {
     // Fallback to ISO string if timezone is invalid
     return dateObj.toISOString()
   }

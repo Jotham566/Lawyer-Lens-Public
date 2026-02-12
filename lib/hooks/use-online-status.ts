@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useCallback, useRef, useSyncExternalStore } from "react";
 
 export interface OnlineStatus {
   isOnline: boolean;
@@ -14,38 +14,51 @@ export interface OnlineStatus {
  * @returns Current online status and whether user was previously offline
  */
 export function useOnlineStatus(): OnlineStatus {
-  // Start with true to prevent flash during SSR/hydration
-  // The actual status will be set after hydration in useEffect
-  const [isOnline, setIsOnline] = useState<boolean>(true);
   const [wasOffline, setWasOffline] = useState(false);
-  const [isHydrated, setIsHydrated] = useState(false);
+  const timeoutRef = useRef<number | null>(null);
 
-  const handleOnline = useCallback(() => {
-    setIsOnline(true);
-    // Track that we just came back online (for showing "back online" message)
-    setWasOffline(true);
-    // Reset the "was offline" flag after a brief period
-    setTimeout(() => setWasOffline(false), 3000);
-  }, []);
+  const clearWasOfflineTimeout = () => {
+    if (timeoutRef.current !== null) {
+      window.clearTimeout(timeoutRef.current);
+      timeoutRef.current = null;
+    }
+  };
 
-  const handleOffline = useCallback(() => {
-    setIsOnline(false);
-    setWasOffline(false);
-  }, []);
+  const subscribe = useCallback((onStoreChange: () => void) => {
+    if (typeof window === "undefined") {
+      return () => {};
+    }
 
-  useEffect(() => {
-    // Set the actual online status after hydration
-    setIsOnline(navigator.onLine);
-    setIsHydrated(true);
+    const handleStatusChange = () => {
+      const online = navigator.onLine;
+      if (online) {
+        setWasOffline(true);
+        clearWasOfflineTimeout();
+        timeoutRef.current = window.setTimeout(() => setWasOffline(false), 3000);
+      } else {
+        setWasOffline(false);
+        clearWasOfflineTimeout();
+      }
+      onStoreChange();
+    };
 
-    window.addEventListener("online", handleOnline);
-    window.addEventListener("offline", handleOffline);
+    window.addEventListener("online", handleStatusChange);
+    window.addEventListener("offline", handleStatusChange);
 
     return () => {
-      window.removeEventListener("online", handleOnline);
-      window.removeEventListener("offline", handleOffline);
+      window.removeEventListener("online", handleStatusChange);
+      window.removeEventListener("offline", handleStatusChange);
+      clearWasOfflineTimeout();
     };
-  }, [handleOnline, handleOffline]);
+  }, []);
+
+  const getSnapshot = useCallback(() => {
+    if (typeof navigator === "undefined") return true;
+    return navigator.onLine;
+  }, []);
+
+  const isOnline = useSyncExternalStore(subscribe, getSnapshot, () => true);
+  const isHydrated = useSyncExternalStore(() => () => {}, () => true, () => false);
 
   return { isOnline, wasOffline, isHydrated };
 }

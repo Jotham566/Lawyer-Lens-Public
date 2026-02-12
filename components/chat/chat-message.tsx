@@ -205,7 +205,7 @@ interface ChatMessageProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
-  editInputRef?: React.RefObject<HTMLTextAreaElement | null>;
+  editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
 
 function ChatMessageComponent({
@@ -238,7 +238,7 @@ function ChatMessageComponent({
         >
           {isEditing ? (
             <MessageEditForm
-              ref={editInputRef as React.RefObject<HTMLTextAreaElement>}
+              ref={editInputRef}
               initialContent={message.content}
               onSubmit={(content) => onEditSubmit(index, content)}
               onCancel={onCancelEdit}

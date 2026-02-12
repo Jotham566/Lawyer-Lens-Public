@@ -414,7 +414,7 @@ export function SourcePanel() {
             newSectionId = response.section_id;
           } else {
           }
-        } catch (err) {
+        } catch {
         }
 
         if (!cancelled) {

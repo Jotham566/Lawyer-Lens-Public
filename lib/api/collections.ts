@@ -8,7 +8,7 @@ export interface CollectionItemMeta {
     snippet_label?: string;
     chapter?: string;
     act_year?: string | number;
-    [key: string]: any;
+    [key: string]: unknown;
 }
 
 export interface CollectionItem {

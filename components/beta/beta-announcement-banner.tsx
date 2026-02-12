@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,15 +10,10 @@ interface BetaAnnouncementBannerProps {
 }
 
 export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerProps) {
-  const [isVisible, setIsVisible] = useState(true);
-
-  // Check if user has dismissed the banner in this session
-  useEffect(() => {
-    const dismissed = sessionStorage.getItem("beta-banner-dismissed");
-    if (dismissed === "true") {
-      setIsVisible(false);
-    }
-  }, []);
+  const [isVisible, setIsVisible] = useState(() => {
+    if (typeof window === "undefined") return true;
+    return sessionStorage.getItem("beta-banner-dismissed") !== "true";
+  });
 
   const handleDismiss = () => {
     setIsVisible(false);

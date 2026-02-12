@@ -118,11 +118,11 @@ function BetaAccessRequired() {
             <div className="space-y-2 text-sm text-muted-foreground">
               <p className="flex items-start gap-2">
                 <span className="text-base">📧</span>
-                <span>We're inviting users weekly in order of signup</span>
+                <span>We&apos;re inviting users weekly in order of signup</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-base">⚡</span>
-                <span>You'll receive an invitation email with registration link</span>
+                <span>You&apos;ll receive an invitation email with registration link</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-base">🎯</span>

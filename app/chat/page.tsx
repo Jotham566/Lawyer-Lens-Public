@@ -34,7 +34,28 @@ import { useChatOrchestrator } from "@/hooks/use-chat-orchestrator";
 function ChatContent() {
   // Require authentication to access chat
   const { isLoading: authLoading } = useRequireAuth();
-  const { state, refs, actions } = useChatOrchestrator();
+  const { state, actions } = useChatOrchestrator();
+  const {
+    handleSelectConversation,
+    handleDeleteClick,
+    handleNewConversation,
+    setMobileHistoryOpen,
+    handleSelectQuestion,
+    setSelectedTool,
+    handleInputChange,
+    handleKeyDown,
+    handleSend,
+    handleStartEdit,
+    handleCancelEdit,
+    handleEditSubmit,
+    copyMessage,
+    handleRegenerate,
+    setDeleteDialogOpen,
+    handleConfirmDelete,
+    hideUpgradeModal,
+    setInputRef,
+    setEditInputRef,
+  } = actions;
 
   // Show loading while checking auth
   if (authLoading) {
@@ -46,13 +67,13 @@ function ChatContent() {
       <TooltipProvider delayDuration={200}>
         <div className="flex h-full flex-col md:flex-row">
           {/* Desktop Sidebar */}
-          <ConversationSidebar
-            conversations={state.conversations}
-            currentConversationId={state.currentConversationId}
-            onSelectConversation={actions.handleSelectConversation}
-            onDeleteConversation={actions.handleDeleteClick}
-            onNewConversation={actions.handleNewConversation}
-          />
+            <ConversationSidebar
+              conversations={state.conversations}
+              currentConversationId={state.currentConversationId}
+              onSelectConversation={handleSelectConversation}
+              onDeleteConversation={handleDeleteClick}
+              onNewConversation={handleNewConversation}
+            />
 
           {/* Chat Area */}
           <div className="flex flex-1 flex-col min-h-0">
@@ -67,18 +88,18 @@ function ChatContent() {
                   variant="ghost"
                   size="icon"
                   className="h-8 w-8"
-                  onClick={actions.handleNewConversation}
+                  onClick={handleNewConversation}
                   aria-label="New conversation"
                 >
                   <Plus className="h-4 w-4" />
                 </Button>
                 <MobileHistorySheet
                   open={state.mobileHistoryOpen}
-                  onOpenChange={actions.setMobileHistoryOpen}
+                  onOpenChange={setMobileHistoryOpen}
                   conversations={state.conversations}
                   currentConversationId={state.currentConversationId}
-                  onSelectConversation={actions.handleSelectConversation}
-                  onDeleteConversation={actions.handleDeleteClick}
+                  onSelectConversation={handleSelectConversation}
+                  onDeleteConversation={handleDeleteClick}
                 />
               </div>
             </div>
@@ -90,8 +111,8 @@ function ChatContent() {
                   <div className="mx-auto max-w-3xl px-4 py-6">
                     <EmptyState
                       selectedTool={state.selectedTool}
-                      onClearTool={() => actions.setSelectedTool("chat")}
-                      onSelectQuestion={actions.handleSelectQuestion}
+                      onClearTool={() => setSelectedTool("chat")}
+                      onSelectQuestion={handleSelectQuestion}
                     />
                   </div>
                 </div>
@@ -102,32 +123,32 @@ function ChatContent() {
                   error={state.error}
                   editingIndex={state.editingIndex}
                   copiedId={state.copiedId}
-                  onStartEdit={actions.handleStartEdit}
-                  onCancelEdit={actions.handleCancelEdit}
-                  onEditSubmit={actions.handleEditSubmit}
-                  onCopy={actions.copyMessage}
-                  onRegenerate={actions.handleRegenerate}
-                  onSelectFollowup={actions.handleSelectQuestion}
-                  editInputRef={refs.editInputRef}
+                  onStartEdit={handleStartEdit}
+                  onCancelEdit={handleCancelEdit}
+                  onEditSubmit={handleEditSubmit}
+                  onCopy={copyMessage}
+                  onRegenerate={handleRegenerate}
+                  onSelectFollowup={handleSelectQuestion}
+                  editInputRef={setEditInputRef}
                 />
               )}
             </div>
 
             {/* Input Area */}
             <ChatInput
-              ref={refs.inputRef}
+              ref={setInputRef}
               value={state.input}
-              onChange={actions.handleInputChange}
-              onKeyDown={actions.handleKeyDown}
-              onSubmit={() => actions.handleSend()}
+              onChange={handleInputChange}
+              onKeyDown={handleKeyDown}
+              onSubmit={() => handleSend()}
               isLoading={state.isLoading}
               selectedTool={state.selectedTool}
-              onSelectTool={actions.setSelectedTool}
+              onSelectTool={setSelectedTool}
             />
           </div>
 
           {/* Delete Confirmation Dialog */}
-          <AlertDialog open={state.deleteDialogOpen} onOpenChange={actions.setDeleteDialogOpen}>
+          <AlertDialog open={state.deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
             <AlertDialogContent>
               <AlertDialogHeader>
                 <AlertDialogTitle>Delete conversation?</AlertDialogTitle>
@@ -139,7 +160,7 @@ function ChatContent() {
               <AlertDialogFooter>
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
-                  onClick={actions.handleConfirmDelete}
+                  onClick={handleConfirmDelete}
                   className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
                 >
                   Delete
@@ -151,7 +172,7 @@ function ChatContent() {
           {/* Upgrade Required Modal for Feature Gating */}
           <UpgradeRequiredModal
             open={state.upgradeModalOpen}
-            onClose={actions.hideUpgradeModal}
+            onClose={hideUpgradeModal}
             details={state.upgradeDetails}
           />
 

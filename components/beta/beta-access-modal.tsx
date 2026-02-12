@@ -199,9 +199,9 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
               </div>
 
               <div>
-                <h3 className="text-xl font-semibold mb-2">You're on the list!</h3>
+                <h3 className="text-xl font-semibold mb-2">You&apos;re on the list!</h3>
                 <p className="text-muted-foreground">
-                  We've added you to our beta waitlist.
+                  We&apos;ve added you to our beta waitlist.
                 </p>
               </div>
 
@@ -220,8 +220,8 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
               </Alert>
 
               <div className="text-sm text-muted-foreground space-y-2">
-                <p>📧 We're inviting users weekly</p>
-                <p>⚡ You'll receive an email when your invitation is ready</p>
+                <p>📧 We&apos;re inviting users weekly</p>
+                <p>⚡ You&apos;ll receive an email when your invitation is ready</p>
                 <p>🎁 Beta users get exclusive early adopter perks</p>
               </div>
 

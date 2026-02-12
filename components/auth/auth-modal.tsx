@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -539,7 +539,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
               Beta Invitation Detected
             </p>
             <p className="text-xs text-blue-700 dark:text-blue-300">
-              You'll receive early adopter perks after registration
+              You&apos;ll receive early adopter perks after registration
             </p>
           </div>
         </div>
@@ -852,13 +852,6 @@ export function AuthModal({
   onSuccess,
 }: AuthModalProps) {
   const [view, setView] = useState<AuthView>(defaultView);
-
-  // Sync view with defaultView when it changes
-  useEffect(() => {
-    if (open) {
-      setView(defaultView);
-    }
-  }, [open, defaultView]);
 
   // Reset view when modal opens
   const handleOpenChange = (newOpen: boolean) => {

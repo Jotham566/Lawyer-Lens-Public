@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, use } from "react";
+import { useEffect, useState, use, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -67,15 +67,7 @@ export default function CollectionDetailPage(props: PageProps) {
     const [loading, setLoading] = useState(true);
     const [deleting, setDeleting] = useState(false);
 
-    useEffect(() => {
-        if (!isAuthenticated) {
-            setLoading(false);
-            return;
-        }
-        loadCollection();
-    }, [params.id, isAuthenticated]);
-
-    const loadCollection = async () => {
+    const loadCollection = useCallback(async () => {
         setLoading(true);
         try {
             const data = await collectionsApi.get(params.id);
@@ -87,7 +79,15 @@ export default function CollectionDetailPage(props: PageProps) {
         } finally {
             setLoading(false);
         }
-    };
+    }, [params.id, router]);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            setLoading(false);
+            return;
+        }
+        loadCollection();
+    }, [isAuthenticated, loadCollection]);
 
     const handleDeleteCollection = async () => {
         setDeleting(true);
@@ -183,7 +183,7 @@ export default function CollectionDetailPage(props: PageProps) {
                                     <AlertDialogHeader>
                                         <AlertDialogTitle>Delete collection?</AlertDialogTitle>
                                         <AlertDialogDescription>
-                                            This will permanently delete "{collection.name}" and all saved items within it.
+                                            This will permanently delete &quot;{collection.name}&quot; and all saved items within it.
                                             This action cannot be undone.
                                         </AlertDialogDescription>
                                     </AlertDialogHeader>
@@ -245,7 +245,7 @@ export default function CollectionDetailPage(props: PageProps) {
                                                 </div>
                                                 {item.notes && (
                                                     <div className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md italic">
-                                                        "{item.notes}"
+                                                        &quot;{item.notes}&quot;
                                                     </div>
                                                 )}
                                             </div>

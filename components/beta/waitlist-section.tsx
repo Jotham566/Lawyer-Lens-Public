@@ -95,7 +95,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
             <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
               <CheckCircle2 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
             </div>
-            <CardTitle className="text-3xl">You're on the list! 🎉</CardTitle>
+            <CardTitle className="text-3xl">You&apos;re on the list! 🎉</CardTitle>
             <CardDescription className="text-lg">
               Thank you for joining our beta waitlist
             </CardDescription>
@@ -114,19 +114,19 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
             <Alert>
               <Mail className="h-4 w-4" />
               <AlertDescription>
-                We've sent a confirmation email to <strong>{formData.email}</strong>.
-                You'll hear from us when your invitation is ready!
+                We&apos;ve sent a confirmation email to <strong>{formData.email}</strong>.
+                You&apos;ll hear from us when your invitation is ready!
               </AlertDescription>
             </Alert>
 
             <div className="space-y-3 text-sm text-muted-foreground">
               <p className="flex items-start gap-2">
                 <span className="text-lg">📧</span>
-                <span>We're inviting users weekly in order of signup</span>
+                <span>We&apos;re inviting users weekly in order of signup</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-lg">⚡</span>
-                <span>You'll receive an email when your invitation is ready</span>
+                <span>You&apos;ll receive an email when your invitation is ready</span>
               </p>
               <p className="flex items-start gap-2">
                 <span className="text-lg">🎁</span>
@@ -150,7 +150,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
             Join the Legal Intelligence Beta
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Get early access to Uganda's premier AI-powered legal research platform.
+            Get early access to Uganda&apos;s premier AI-powered legal research platform.
             Limited spots available.
           </p>
         </div>
@@ -291,7 +291,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
               <Shield className="w-12 h-12 mx-auto mb-4 text-blue-600" />
               <h3 className="font-semibold mb-2">Comprehensive Coverage</h3>
               <p className="text-sm text-muted-foreground">
-                Access Uganda's complete legal database with up-to-date legislation and judgments
+                Access Uganda&apos;s complete legal database with up-to-date legislation and judgments
               </p>
             </CardContent>
           </Card>

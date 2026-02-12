@@ -92,15 +92,9 @@ function DocumentContent({ id }: { id: string }) {
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "medium"
   );
-  const [highlightedSectionId, setHighlightedSectionId] = useState<string | null>(initialSectionId);
+  const [manualHighlightId, setManualHighlightId] = useState<string | null>(null);
+  const highlightedSectionId = manualHighlightId ?? initialSectionId;
   const addToHistory = useLibraryStore((s) => s.addToHistory);
-
-  // Update highlighted section if URL param changes
-  useEffect(() => {
-    if (initialSectionId) {
-      setHighlightedSectionId(initialSectionId);
-    }
-  }, [initialSectionId]);
 
   // Scroll to highlighted section when document loads and structure is ready
   useEffect(() => {
@@ -504,7 +498,7 @@ function DocumentContent({ id }: { id: string }) {
                       <div className="hidden lg:block sticky top-4 self-start">
                         <TableOfContents
                           node={document.hierarchical_structure}
-                          onSectionSelect={setHighlightedSectionId}
+                          onSectionSelect={setManualHighlightId}
                           className="shadow-sm"
                         />
                       </div>
@@ -668,4 +662,3 @@ export default function DocumentPage({ params }: PageProps) {
     </PageErrorBoundary>
   );
 }
-
