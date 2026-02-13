@@ -1,15 +1,12 @@
 "use client";
 
 import * as React from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
 import { cn } from "@/lib/utils";
 import {
   SourceCitation,
   parseSourceCitations,
 } from "@/components/citations";
 import type { ChatSource } from "@/lib/api/types";
-import katex from "katex";
 
 interface MarkdownRendererProps {
   content: string;
@@ -151,7 +148,18 @@ const createMarkdownComponents = (
  * Auto-render math expressions in a DOM element.
  * Finds $...$ (inline) and $$...$$ (display) and renders them with KaTeX.
  */
-function renderMathInElement(element: HTMLElement): void {
+type KatexLike = {
+  render: (
+    tex: string,
+    element: HTMLElement,
+    options?: Record<string, unknown>
+  ) => void;
+};
+
+function renderMathInElement(
+  element: HTMLElement,
+  katex: KatexLike
+): void {
   const delimiters = [
     { left: "$$", right: "$$", display: true },
     { left: "$", right: "$", display: false },
@@ -308,17 +316,44 @@ function MarkdownRendererInner({
   isStreaming = false,
 }: MarkdownRendererProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  const [MarkdownComponent, setMarkdownComponent] =
+    React.useState<React.ComponentType<any> | null>(null);
+  const [remarkGfmPlugin, setRemarkGfmPlugin] =
+    React.useState<((...args: any[]) => any) | null>(null);
+
+  React.useEffect(() => {
+    let cancelled = false;
+    void (async () => {
+      const [{ default: ReactMarkdown }, { default: remarkGfm }] = await Promise.all([
+        import("react-markdown"),
+        import("remark-gfm"),
+      ]);
+      if (!cancelled) {
+        setMarkdownComponent(() => ReactMarkdown);
+        setRemarkGfmPlugin(() => remarkGfm);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   // Process math expressions after render, but only when not streaming
   React.useEffect(() => {
     if (!isStreaming && containerRef.current && content.includes("$")) {
-      // Small delay to ensure DOM is fully updated
+      let cancelled = false;
       const timer = setTimeout(() => {
-        if (containerRef.current) {
-          renderMathInElement(containerRef.current);
-        }
+        void (async () => {
+          const { default: katex } = await import("katex");
+          if (!cancelled && containerRef.current) {
+            renderMathInElement(containerRef.current, katex);
+          }
+        })();
       }, 10);
-      return () => clearTimeout(timer);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+      };
     }
   }, [content, isStreaming]);
 
@@ -336,11 +371,23 @@ function MarkdownRendererInner({
     [withCitations]
   );
 
+  if (!MarkdownComponent || !remarkGfmPlugin) {
+    return (
+      <div ref={containerRef} className={cn("markdown-body", className)}>
+        <p className="text-[15px] leading-7 text-foreground whitespace-pre-wrap">
+          {content}
+        </p>
+      </div>
+    );
+  }
+
+  const Markdown = MarkdownComponent;
+
   return (
     <div ref={containerRef} className={cn("markdown-body", className)}>
-      <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
+      <Markdown remarkPlugins={[remarkGfmPlugin]} components={components}>
         {content}
-      </ReactMarkdown>
+      </Markdown>
     </div>
   );
 }

@@ -1,0 +1,102 @@
+import { NextResponse } from "next/server";
+import type { NextRequest } from "next/server";
+
+export function proxy(request: NextRequest) {
+  const isProd = process.env.NODE_ENV === "production";
+  const nonce = generateNonce();
+
+  const apiOrigins = getApiOrigins();
+  const connectSrc = [
+    "'self'",
+    "https:",
+    "http://localhost:*",
+    ...apiOrigins,
+  ].join(" ");
+
+  const strictStyles = process.env.CSP_STRICT_STYLES === "true";
+  const styleSrc = strictStyles
+    ? `style-src 'self' 'nonce-${nonce}'`
+    : "style-src 'self' 'unsafe-inline'";
+  const styleSrcElem = strictStyles
+    ? `style-src-elem 'self' 'nonce-${nonce}'`
+    : "style-src-elem 'self' 'unsafe-inline'";
+
+  const csp = [
+    "default-src 'self'",
+    `script-src 'self' 'nonce-${nonce}'${isProd ? "" : " 'unsafe-eval'"}`,
+    `script-src-elem 'self' 'nonce-${nonce}'${isProd ? "" : " 'unsafe-eval'"}`,
+    styleSrc,
+    styleSrcElem,
+    "img-src 'self' data: blob: https:",
+    "font-src 'self' data:",
+    `connect-src ${connectSrc}`,
+    "frame-src 'none'",
+    "worker-src 'self' blob:",
+    "frame-ancestors 'none'",
+    "base-uri 'self'",
+    "form-action 'self'",
+    "object-src 'none'",
+    ...(isProd ? ["upgrade-insecure-requests", "block-all-mixed-content"] : []),
+  ].join("; ");
+
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-nonce", nonce);
+
+  const response = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+
+  response.headers.set("x-nonce", nonce);
+  response.headers.set("Content-Security-Policy", csp);
+  response.headers.set("X-Frame-Options", "DENY");
+  response.headers.set("X-Content-Type-Options", "nosniff");
+  response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
+  response.headers.set(
+    "Permissions-Policy",
+    "camera=(), microphone=(), geolocation=(), payment=()"
+  );
+
+  if (isProd) {
+    response.headers.set(
+      "Strict-Transport-Security",
+      "max-age=63072000; includeSubDomains; preload"
+    );
+  }
+
+  return response;
+}
+
+export const config = {
+  matcher: ["/((?!_next/static|_next/image|favicon.ico).*)"],
+};
+
+function generateNonce(): string {
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  let binary = "";
+  bytes.forEach((b) => {
+    binary += String.fromCharCode(b);
+  });
+  return btoa(binary);
+}
+
+function getApiOrigins(): string[] {
+  const origins = new Set<string>();
+  const candidates = [
+    process.env.NEXT_PUBLIC_API_URL,
+    process.env.INTERNAL_API_URL,
+    process.env.BACKEND_URL,
+    process.env.ADMIN_API_URL,
+  ].filter(Boolean) as string[];
+
+  for (const value of candidates) {
+    try {
+      const url = new URL(value);
+      origins.add(url.origin);
+    } catch {
+      // ignore invalid URL
+    }
+  }
+
+  return Array.from(origins);
+}
