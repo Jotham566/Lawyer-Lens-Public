@@ -14,7 +14,7 @@ pnpm dev
 bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Open [http://localhost:3001](http://localhost:3001) with your browser to see the result.
 
 ### Environment Variables
 
@@ -24,7 +24,23 @@ Create `frontend-public/.env.local` from `frontend-public/.env.example` and set:
 NEXT_PUBLIC_APP_URL=http://localhost:3001
 NEXT_PUBLIC_API_URL=http://localhost:8003/api/v1
 BACKEND_URL=http://localhost:8003
+# Production (AWS) example:
+# NEXT_PUBLIC_API_URL=https://api.ug.lawlens.io/api/v1
+# BACKEND_URL=https://api.ug.lawlens.io
 ```
+
+### CSP Allowed Origins (Dev/Prod)
+
+The public frontend derives `connect-src` CSP origins from:
+`NEXT_PUBLIC_API_URL`, `INTERNAL_API_URL`, `BACKEND_URL`, `ADMIN_API_URL`.
+
+For strict CSP without `unsafe-inline` styles, set:
+
+```env
+CSP_STRICT_STYLES=true
+```
+
+Note: enabling strict styles may require nonce-based style tags or hashes.
 
 ### Auth Cookies
 

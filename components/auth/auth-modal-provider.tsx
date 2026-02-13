@@ -2,7 +2,13 @@
 
 import { createContext, useContext, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { AuthModal, type AuthView } from "./auth-modal";
+import dynamic from "next/dynamic";
+import type { AuthView } from "./auth-modal";
+
+const AuthModal = dynamic(
+  () => import("./auth-modal").then((mod) => mod.AuthModal),
+  { ssr: false }
+);
 
 // Storage keys
 const RETURN_URL_KEY = "auth_return_url";
@@ -140,12 +146,14 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
       }}
     >
       {children}
-      <AuthModal
-        open={isOpen}
-        onOpenChange={setIsOpen}
-        defaultView={defaultView}
-        onSuccess={handleAuthSuccess}
-      />
+      {isOpen ? (
+        <AuthModal
+          open={isOpen}
+          onOpenChange={setIsOpen}
+          defaultView={defaultView}
+          onSuccess={handleAuthSuccess}
+        />
+      ) : null}
     </AuthModalContext.Provider>
   );
 }

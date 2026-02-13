@@ -2,7 +2,11 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthHeader } from "../_auth";
 
-const ADMIN_API_URL = process.env.ADMIN_API_URL || "http://localhost:8001";
+const ADMIN_API_URL =
+  process.env.ADMIN_API_URL ||
+  (process.env.NODE_ENV === "production"
+    ? "https://api.ug.lawlens.io"
+    : "http://localhost:8003");
 
 export async function GET(request: NextRequest) {
   try {

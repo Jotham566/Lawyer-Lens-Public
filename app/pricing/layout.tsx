@@ -1,4 +1,6 @@
 import type { Metadata } from "next";
+import Script from "next/script";
+import { headers } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Pricing - Law Lens Legal Intelligence | AI Legal Research Plans",
@@ -124,15 +126,19 @@ const pricingJsonLd = {
   },
 };
 
-export default function PricingLayout({
+export default async function PricingLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const nonce = (await headers()).get("x-nonce") || undefined;
+
   return (
     <>
-      <script
+      <Script
+        id="pricing-jsonld"
         type="application/ld+json"
+        nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
       />
       {children}

@@ -4,7 +4,7 @@ import { QueryProvider } from "./query-provider";
 import { ThemeProvider } from "./theme-provider";
 import { EntitlementsProvider } from "./entitlements-provider";
 import { AuthProvider } from "./auth-provider";
-import { AuthModalProvider } from "@/components/auth";
+import { AuthModalProvider } from "@/components/auth/auth-modal-provider";
 import { CommandPalette } from "@/components/command-palette";
 import { OfflineBanner } from "@/components/offline-banner";
 
@@ -39,4 +39,4 @@ export { QueryProvider } from "./query-provider";
 export { ThemeProvider } from "./theme-provider";
 export { EntitlementsProvider } from "./entitlements-provider";
 export { AuthProvider, useAuth, useRequireAuth, useRedirectIfAuthenticated } from "./auth-provider";
-export { useAuthModal } from "@/components/auth";
+export { useAuthModal } from "@/components/auth/auth-modal-provider";
