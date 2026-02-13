@@ -240,7 +240,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
         </div>
 
         {/* Seat status */}
-        <div className="grid grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-lg border p-4 text-center">
             <div className="text-2xl font-semibold text-green-600">{seatInfo.used}</div>
             <p className="text-xs text-muted-foreground mt-1">Active Members</p>

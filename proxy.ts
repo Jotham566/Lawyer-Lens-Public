@@ -21,10 +21,13 @@ export function proxy(request: NextRequest) {
     ? `style-src-elem 'self' 'nonce-${nonce}'`
     : "style-src-elem 'self' 'unsafe-inline'";
 
+  const devInline = isProd ? "" : " 'unsafe-inline'";
+  const scriptNonce = isProd ? ` 'nonce-${nonce}'` : "";
+
   const csp = [
     "default-src 'self'",
-    `script-src 'self' 'nonce-${nonce}'${isProd ? "" : " 'unsafe-eval'"}`,
-    `script-src-elem 'self' 'nonce-${nonce}'${isProd ? "" : " 'unsafe-eval'"}`,
+    `script-src 'self'${scriptNonce}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src-elem 'self'${scriptNonce}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
     styleSrc,
     styleSrcElem,
     "img-src 'self' data: blob: https:",
