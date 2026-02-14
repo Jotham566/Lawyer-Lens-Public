@@ -11,10 +11,12 @@ export function proxy(request: NextRequest) {
   const nonce = generateNonce();
 
   const apiOrigins = getApiOrigins();
+  const umamiOrigin = getUmamiOrigin();
   const connectSrc = [
     "'self'",
     "http://localhost:*",
     ...apiOrigins,
+    ...(umamiOrigin ? [umamiOrigin] : []),
   ].join(" ");
 
   const strictStyles = process.env.CSP_STRICT_STYLES === "true";
@@ -35,10 +37,15 @@ export function proxy(request: NextRequest) {
     ? " 'sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk=' 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-rpFLA0A0bZa5TNfjM1XqirwKzdeQw7T9ftN+4hUm3Gc='"
     : "";
 
+  // Allow unsafe-inline for Umami analytics scripts (they generate dynamic inline scripts)
+  // This is acceptable for analytics and required for Umami to function
+  const umamiInline = umamiOrigin ? " 'unsafe-inline'" : "";
+
+  const scriptOrigins = umamiOrigin ? ` ${umamiOrigin}` : "";
   const csp = [
     "default-src 'self'",
-    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
-    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${umamiInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${umamiInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
     styleSrc,
     styleSrcElem,
     "img-src 'self' data: blob: https:",
@@ -111,4 +118,18 @@ function getApiOrigins(): string[] {
   }
 
   return Array.from(origins);
+}
+
+function getUmamiOrigin(): string | null {
+  const raw = process.env.NEXT_PUBLIC_UMAMI_HOST;
+  if (!raw) {
+    return null;
+  }
+
+  try {
+    const url = new URL(raw);
+    return url.origin;
+  } catch {
+    return null;
+  }
 }
