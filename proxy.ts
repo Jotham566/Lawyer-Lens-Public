@@ -28,10 +28,17 @@ export function proxy(request: NextRequest) {
   const devInline = isProd ? "" : " 'unsafe-inline'";
   const scriptNonce = isProd ? ` 'nonce-${nonce}'` : "";
 
+  // Hashes for Next.js internal inline scripts (hydration bootstrap)
+  // These are stable per build and required because Next.js generates inline scripts
+  // that we can't add nonce to directly
+  const nextjsScriptHashes = isProd
+    ? " 'sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk=' 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-rpFLA0A0bZa5TNfjM1XqirwKzdeQw7T9ftN+4hUm3Gc='"
+    : "";
+
   const csp = [
     "default-src 'self'",
-    `script-src 'self'${scriptNonce}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
-    `script-src-elem 'self'${scriptNonce}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
     styleSrc,
     styleSrcElem,
     "img-src 'self' data: blob: https:",
