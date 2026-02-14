@@ -20,7 +20,7 @@ function isSameOrigin(request: NextRequest): boolean {
   return false;
 }
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const method = request.method.toUpperCase();
   const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
 
