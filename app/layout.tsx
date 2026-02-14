@@ -1,5 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
+import Script from "next/script";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { Providers } from "@/components/providers";
@@ -107,6 +108,17 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const umamiHost = process.env.NEXT_PUBLIC_UMAMI_HOST?.replace(/\/+$/, "");
+  const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID_PUBLIC;
+  const umamiScript =
+    umamiHost && umamiWebsiteId ? (
+      <Script
+        src={`${umamiHost}/script.js`}
+        data-website-id={umamiWebsiteId}
+        strategy="afterInteractive"
+      />
+    ) : null;
+
   return (
     <html lang="en" suppressHydrationWarning>
       <body
@@ -116,6 +128,7 @@ export default function RootLayout({
           <AppShell>{children}</AppShell>
           <Toaster richColors position="top-right" />
         </Providers>
+        {umamiScript}
       </body>
     </html>
   );
