@@ -2,13 +2,17 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 export function proxy(request: NextRequest) {
+  const deployEnv = process.env.NEXT_PUBLIC_ENVIRONMENT;
+  if (deployEnv === "production" && process.env.NODE_ENV !== "production") {
+    throw new Error("NODE_ENV must be 'production' when NEXT_PUBLIC_ENVIRONMENT=production");
+  }
+
   const isProd = process.env.NODE_ENV === "production";
   const nonce = generateNonce();
 
   const apiOrigins = getApiOrigins();
   const connectSrc = [
     "'self'",
-    "https:",
     "http://localhost:*",
     ...apiOrigins,
   ].join(" ");
