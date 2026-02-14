@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { proxy as applySecurityHeaders } from "./proxy";
+import { proxy as applySecurityHeaders } from "./security_headers";
 
 function isSameOrigin(request: NextRequest): boolean {
   const origin = request.headers.get("origin");
