@@ -28,24 +28,31 @@ export function proxy(request: NextRequest) {
     : "style-src-elem 'self' 'unsafe-inline'";
 
   const devInline = isProd ? "" : " 'unsafe-inline'";
-  const scriptNonce = isProd ? ` 'nonce-${nonce}'` : "";
+
+  // When Umami is enabled, we must use 'unsafe-inline' for scripts because Umami
+  // generates dynamic inline scripts. Per CSP spec, 'unsafe-inline' is ignored
+  // when nonce or hash values are present, so we can't use both.
+  // Trade-off: slightly weaker CSP when analytics is enabled, but necessary for Umami.
+  const umamiEnabled = !!umamiOrigin;
+
+  // Only use nonces/hashes when Umami is NOT enabled
+  const scriptNonce = isProd && !umamiEnabled ? ` 'nonce-${nonce}'` : "";
 
   // Hashes for Next.js internal inline scripts (hydration bootstrap)
   // These are stable per build and required because Next.js generates inline scripts
-  // that we can't add nonce to directly
-  const nextjsScriptHashes = isProd
+  // that we can't add nonce to directly. Skip when Umami is enabled.
+  const nextjsScriptHashes = isProd && !umamiEnabled
     ? " 'sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk=' 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-rpFLA0A0bZa5TNfjM1XqirwKzdeQw7T9ftN+4hUm3Gc='"
     : "";
 
-  // Allow unsafe-inline for Umami analytics scripts (they generate dynamic inline scripts)
-  // This is acceptable for analytics and required for Umami to function
-  const umamiInline = umamiOrigin ? " 'unsafe-inline'" : "";
+  // When Umami is enabled in production, use unsafe-inline (since we can't use nonces)
+  const prodInline = isProd && umamiEnabled ? " 'unsafe-inline'" : "";
 
   const scriptOrigins = umamiOrigin ? ` ${umamiOrigin}` : "";
   const csp = [
     "default-src 'self'",
-    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${umamiInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
-    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${umamiInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${prodInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${prodInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
     styleSrc,
     styleSrcElem,
     "img-src 'self' data: blob: https:",
