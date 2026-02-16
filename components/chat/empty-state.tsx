@@ -1,6 +1,7 @@
 "use client";
 
-import { MessageSquare, Sparkles } from "lucide-react";
+import { Sparkles, Search, FileText, MessageSquare } from "lucide-react";
+import { cn } from "@/lib/utils";
 import {
   ActiveToolIndicator,
   getToolEmptyStateTitle,
@@ -12,12 +13,20 @@ import {
 interface EmptyStateProps {
   selectedTool: ToolMode;
   onClearTool: () => void;
+  onSelectTool: (tool: ToolMode) => void;
   onSelectQuestion: (question: string) => void;
 }
+
+const modeCards: { id: ToolMode; icon: typeof Sparkles; label: string; desc: string }[] = [
+  { id: "chat", icon: Sparkles, label: "Standard", desc: "Quick Q&A" },
+  { id: "deep-research", icon: Search, label: "Deep Research", desc: "Comprehensive analysis" },
+  { id: "draft-contract", icon: FileText, label: "Draft Contract", desc: "Generate documents" },
+];
 
 export function EmptyState({
   selectedTool,
   onClearTool,
+  onSelectTool,
   onSelectQuestion,
 }: EmptyStateProps) {
   return (
@@ -44,6 +53,38 @@ export function EmptyState({
         {getToolEmptyStateDescription(selectedTool)}
       </p>
 
+      {/* Mode Selection Cards */}
+      <div className="mt-8 w-full max-w-lg">
+        <p className="mb-3 text-xs font-medium text-muted-foreground uppercase tracking-wide">
+          Choose a mode
+        </p>
+        <div className="grid grid-cols-3 gap-3">
+          {modeCards.map((mode) => (
+            <button
+              key={mode.id}
+              onClick={() => onSelectTool(mode.id)}
+              className={cn(
+                "flex flex-col items-center gap-2 rounded-xl border p-3 md:p-4 text-center transition-all hover:border-primary/30 hover:shadow-sm",
+                selectedTool === mode.id
+                  ? "border-primary bg-primary/5 shadow-sm"
+                  : "bg-card"
+              )}
+            >
+              <mode.icon
+                className={cn(
+                  "h-5 w-5 md:h-6 md:w-6",
+                  selectedTool === mode.id ? "text-primary" : "text-muted-foreground"
+                )}
+              />
+              <span className="text-xs md:text-sm font-medium">{mode.label}</span>
+              <span className="text-[10px] md:text-[11px] text-muted-foreground leading-tight">
+                {mode.desc}
+              </span>
+            </button>
+          ))}
+        </div>
+      </div>
+
       {/* Suggested Questions */}
       <div className="mt-10 w-full max-w-lg">
         <p className="mb-4 text-sm font-medium text-muted-foreground">
@@ -67,6 +108,11 @@ export function EmptyState({
           ))}
         </div>
       </div>
+
+      {/* Disclaimer */}
+      <p className="mt-8 text-center text-xs text-muted-foreground/60 max-w-md">
+        Responses may contain inaccuracies. This is not legal advice. Always verify with a qualified lawyer.
+      </p>
     </div>
   );
 }

@@ -77,6 +77,7 @@ export function useChatOrchestrator() {
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editInputRef = useRef<HTMLTextAreaElement>(null);
     const fetchingConversationRef = useRef<Set<string>>(new Set());
+    const abortControllerRef = useRef<AbortController | null>(null);
 
     // Integration Hooks
     const {
@@ -165,6 +166,10 @@ export function useChatOrchestrator() {
             setLoading(true);
             setError(null);
 
+            // Create AbortController for this stream
+            const controller = new AbortController();
+            abortControllerRef.current = controller;
+
             const aiMessagePlaceholder: ChatMessageType = {
                 role: "assistant",
                 content: "",
@@ -188,7 +193,8 @@ export function useChatOrchestrator() {
                         max_context_chunks: 10,
                         temperature: 0.3,
                     },
-                    {}
+                    {},
+                    controller.signal
                 );
 
                 for await (const event of stream) {
@@ -228,8 +234,14 @@ export function useChatOrchestrator() {
                     }
                 }
             } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to get response");
+                // Don't show error for intentional abort
+                if (err instanceof DOMException && err.name === 'AbortError') {
+                    // Aborted by user — keep partial content, no error
+                } else {
+                    setError(err instanceof Error ? err.message : "Failed to get response");
+                }
             } finally {
+                abortControllerRef.current = null;
                 setLoading(false);
                 refreshEntitlements();
             }
@@ -504,6 +516,12 @@ export function useChatOrchestrator() {
         editInputRef.current = node;
     }, []);
 
+    const handleStop = useCallback(() => {
+        abortControllerRef.current?.abort();
+        abortControllerRef.current = null;
+        setLoading(false);
+    }, [setLoading]);
+
     return {
         state: {
             input,
@@ -542,6 +560,7 @@ export function useChatOrchestrator() {
             setMobileHistoryOpen,
             setDeleteDialogOpen,
             hideUpgradeModal,
+            handleStop,
         }
     };
 }

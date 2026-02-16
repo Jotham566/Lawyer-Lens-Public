@@ -5,6 +5,7 @@ import Image from "next/image";
 import {
   User,
   LogOut,
+  LogIn,
   CreditCard,
   Shield,
   ChevronDown,
@@ -49,10 +50,10 @@ export function UserMenu() {
         <Button
           variant="ghost"
           size="sm"
-          className="hidden sm:flex"
           onClick={() => openLogin()}
         >
-          Sign in
+          <LogIn className="h-4 w-4 sm:hidden" />
+          <span className="hidden sm:inline">Sign in</span>
         </Button>
         <Button size="sm" onClick={() => openRegister()}>
           Get Started

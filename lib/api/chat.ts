@@ -115,7 +115,8 @@ interface TypewriterConfig {
  */
 export async function* streamChatWithTypewriter(
   request: ChatRequest,
-  config: TypewriterConfig = {}
+  config: TypewriterConfig = {},
+  signal?: AbortSignal
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const { charsPerTick = 10, tickDelay = 10 } = config;
 
@@ -134,7 +135,7 @@ export async function* streamChatWithTypewriter(
 
   // Start the stream
   const streamPromise = (async () => {
-    for await (const event of streamChatMessage(request)) {
+    for await (const event of streamChatMessage(request, signal)) {
       if (event.type === "content") {
         state.contentBuffer += event.text;
       } else if (event.type === "content_update") {
@@ -159,7 +160,7 @@ export async function* streamChatWithTypewriter(
   })();
 
   // Reveal content gradually
-  while (state.isStreaming || state.revealedLength < state.contentBuffer.length) {
+  while ((state.isStreaming || state.revealedLength < state.contentBuffer.length) && !signal?.aborted) {
     if (state.revealedLength < state.contentBuffer.length) {
       const nextLength = Math.min(state.revealedLength + charsPerTick, state.contentBuffer.length);
       const newText = state.contentBuffer.slice(state.revealedLength, nextLength);
@@ -214,7 +215,8 @@ export async function* streamChatWithTypewriter(
  * @param accessToken - Optional access token for authenticated requests (enables usage tracking)
  */
 export async function* streamChatMessage(
-  request: ChatRequest
+  request: ChatRequest,
+  signal?: AbortSignal
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
 
@@ -232,6 +234,7 @@ export async function* streamChatMessage(
     headers,
     body: JSON.stringify(request),
     credentials: "include",
+    signal,
   });
 
   if (!response.ok) {
