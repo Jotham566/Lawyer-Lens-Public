@@ -38,9 +38,8 @@ function WaitlistStatusContent() {
 
   const fetchWaitlistStatus = async (emailToCheck: string) => {
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
       const response = await fetch(
-        `${apiUrl}/beta/waitlist/status?email=${encodeURIComponent(emailToCheck)}`
+        `/api/v1/beta/waitlist/status?email=${encodeURIComponent(emailToCheck)}`
       );
 
       if (!response.ok) {
