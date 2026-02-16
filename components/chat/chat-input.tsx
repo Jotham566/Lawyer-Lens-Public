@@ -1,10 +1,11 @@
 "use client";
 
 import { forwardRef } from "react";
-import { ArrowUp } from "lucide-react";
+import { ArrowUp, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ToolsDropdown,
+  ActiveToolIndicator,
   getToolPlaceholder,
   type ToolMode,
 } from "./tools-dropdown";
@@ -15,6 +16,7 @@ interface ChatInputProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
   isLoading: boolean;
+  onStop?: () => void;
   selectedTool: ToolMode;
   onSelectTool: (tool: ToolMode) => void;
 }
@@ -27,14 +29,21 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       onKeyDown,
       onSubmit,
       isLoading,
+      onStop,
       selectedTool,
       onSelectTool,
     },
     ref
   ) {
     return (
-      <div className="border-t p-4">
+      <div className="border-t p-3 md:p-4">
         <div className="mx-auto max-w-3xl">
+          {/* Active tool indicator */}
+          {selectedTool !== "chat" && (
+            <div className="mb-2">
+              <ActiveToolIndicator tool={selectedTool} onClear={() => onSelectTool("chat")} />
+            </div>
+          )}
           {/* Input Form */}
           <form
             onSubmit={(e) => {
@@ -67,26 +76,38 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 placeholder={getToolPlaceholder(selectedTool)}
                 rows={1}
                 aria-label="Chat message input"
-                className="min-h-[80px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-14 pr-14 py-5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
+                className="min-h-[48px] md:min-h-[80px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-14 pr-14 py-5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
               />
               <div className="absolute right-3 bottom-3">
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-10 w-10 rounded-full"
-                  disabled={!value.trim() || isLoading}
-                  aria-label="Send message"
-                >
-                  <ArrowUp className="h-5 w-5" />
-                </Button>
+                {isLoading ? (
+                  <Button
+                    type="button"
+                    size="icon"
+                    className="h-10 w-10 rounded-full bg-destructive hover:bg-destructive/90"
+                    onClick={onStop}
+                    aria-label="Stop generation"
+                  >
+                    <Square className="h-4 w-4 fill-current" />
+                  </Button>
+                ) : (
+                  <Button
+                    type="submit"
+                    size="icon"
+                    className="h-10 w-10 rounded-full"
+                    disabled={!value.trim()}
+                    aria-label="Send message"
+                  >
+                    <ArrowUp className="h-5 w-5" />
+                  </Button>
+                )}
               </div>
             </div>
           </form>
+          {/* Keyboard hint — desktop only */}
+          <p className="hidden md:block mt-1 text-center text-[11px] text-muted-foreground/50">
+            ↵ Enter to send · Shift+Enter for new line
+          </p>
         </div>
-        <p className="mx-auto mt-3 max-w-3xl text-center text-xs text-muted-foreground">
-          Responses may contain inaccuracies. This is not legal advice. Always
-          verify with a qualified lawyer.
-        </p>
       </div>
     );
   }

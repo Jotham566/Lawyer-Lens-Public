@@ -340,12 +340,20 @@ function ResearchContent() {
   const handleExportPdf = useCallback(() => {
     if (!report) return;
 
+    const escapeHtml = (value: string) =>
+      value
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+
     // Create a print-friendly HTML document
     const printContent = `
       <!DOCTYPE html>
       <html>
         <head>
-          <title>${report.title}</title>
+          <title>${escapeHtml(report.title)}</title>
           <style>
             body {
               font-family: 'Times New Roman', Times, serif;
@@ -424,20 +432,26 @@ function ResearchContent() {
           </style>
         </head>
         <body>
-          <h1>${report.title}</h1>
+          <h1>${escapeHtml(report.title)}</h1>
           <div class="metadata">
             Generated: ${formatDateOnly(report.generated_at)} | ${report.citations?.length || 0} citations
           </div>
 
           <div class="executive-summary">
             <h2>Executive Summary</h2>
-            ${report.executive_summary.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+            ${report.executive_summary
+              .split('\n')
+              .map(p => p.trim() ? `<p>${escapeHtml(p)}</p>` : '')
+              .join('')}
           </div>
 
           ${report.sections?.map((section) => `
             <div class="section">
-              <h2>${section.title}</h2>
-              ${section.content.split('\n').map(p => p.trim() ? `<p>${p}</p>` : '').join('')}
+              <h2>${escapeHtml(section.title)}</h2>
+              ${section.content
+                .split('\n')
+                .map(p => p.trim() ? `<p>${escapeHtml(p)}</p>` : '')
+                .join('')}
             </div>
           `).join('') || ''}
 
@@ -446,10 +460,10 @@ function ResearchContent() {
               <h2>Sources & Citations</h2>
               ${report.citations.map((citation) => `
                 <div class="citation">
-                  <span class="citation-type">${citation.source_type}</span>
-                  <span class="citation-title">${citation.title}</span>
-                  ${citation.legal_reference ? `<div class="citation-reference">${citation.legal_reference}</div>` : ''}
-                  ${citation.case_citation ? `<div class="citation-reference">${citation.case_citation}${citation.court ? ` (${citation.court})` : ''}</div>` : ''}
+                  <span class="citation-type">${escapeHtml(citation.source_type)}</span>
+                  <span class="citation-title">${escapeHtml(citation.title)}</span>
+                  ${citation.legal_reference ? `<div class="citation-reference">${escapeHtml(citation.legal_reference)}</div>` : ''}
+                  ${citation.case_citation ? `<div class="citation-reference">${escapeHtml(citation.case_citation)}${citation.court ? ` (${escapeHtml(citation.court)})` : ''}</div>` : ''}
                 </div>
               `).join('')}
             </div>

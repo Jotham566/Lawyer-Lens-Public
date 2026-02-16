@@ -293,8 +293,8 @@ export function HeaderRedesign({
         </div>
       </div>
 
-      {/* Mobile Search Bar */}
-      <div className="container px-4 pb-3 md:hidden">
+      {/* Mobile Search Bar — hidden on chat page where chat input serves as search */}
+      <div className={cn("container px-4 pb-3 md:hidden", pathname.startsWith("/chat") && "hidden")}>
         <form onSubmit={handleSearch}>
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />

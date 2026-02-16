@@ -53,6 +53,7 @@ function ChatContent() {
     setDeleteDialogOpen,
     handleConfirmDelete,
     hideUpgradeModal,
+    handleStop,
     setInputRef,
     setEditInputRef,
   } = actions;
@@ -67,27 +68,27 @@ function ChatContent() {
       <TooltipProvider delayDuration={200}>
         <div className="flex h-full flex-col md:flex-row">
           {/* Desktop Sidebar */}
-            <ConversationSidebar
-              conversations={state.conversations}
-              currentConversationId={state.currentConversationId}
-              onSelectConversation={handleSelectConversation}
-              onDeleteConversation={handleDeleteClick}
-              onNewConversation={handleNewConversation}
-            />
+          <ConversationSidebar
+            conversations={state.conversations}
+            currentConversationId={state.currentConversationId}
+            onSelectConversation={handleSelectConversation}
+            onDeleteConversation={handleDeleteClick}
+            onNewConversation={handleNewConversation}
+          />
 
           {/* Chat Area */}
           <div className="flex flex-1 flex-col min-h-0">
-            {/* Mobile Header */}
-            <div className="flex items-center justify-between border-b px-4 py-3 md:hidden">
+            {/* Mobile Header — Compact for maximum chat space */}
+            <div className="flex items-center justify-between border-b px-3 py-2 md:hidden">
               <div className="flex items-center gap-2">
-                <Sparkles className="h-5 w-5 text-primary" />
-                <h1 className="font-semibold">Legal Assistant</h1>
+                <Sparkles className="h-4 w-4 text-primary" />
+                <h1 className="text-sm font-semibold">Legal Assistant</h1>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-1">
                 <Button
                   variant="ghost"
                   size="icon"
-                  className="h-8 w-8"
+                  className="h-7 w-7"
                   onClick={handleNewConversation}
                   aria-label="New conversation"
                 >
@@ -112,6 +113,7 @@ function ChatContent() {
                     <EmptyState
                       selectedTool={state.selectedTool}
                       onClearTool={() => setSelectedTool("chat")}
+                      onSelectTool={setSelectedTool}
                       onSelectQuestion={handleSelectQuestion}
                     />
                   </div>
@@ -142,6 +144,7 @@ function ChatContent() {
               onKeyDown={handleKeyDown}
               onSubmit={() => handleSend()}
               isLoading={state.isLoading}
+              onStop={handleStop}
               selectedTool={state.selectedTool}
               onSelectTool={setSelectedTool}
             />
