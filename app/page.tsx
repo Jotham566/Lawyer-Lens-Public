@@ -7,21 +7,17 @@ import {
   Search,
   FileText,
   Gavel,
-  ScrollText,
-  Scale,
   ArrowRight,
   Sparkles,
   BookOpen,
   Zap,
   Shield,
   Clock,
-  ChevronRight,
+  Lock,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { cn } from "@/lib/utils";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 import { useAuth } from "@/components/providers";
@@ -31,15 +27,17 @@ import { BetaAnnouncementBanner, BetaAccessModal } from "@/components/beta";
 const searchModes = [
   {
     value: "ai",
-    label: "Smart Search",
-    description: "Get answers with source citations",
+    label: "Ask in Plain English",
+    description: "Get AI-powered answers with exact citations from legislation and case law",
     icon: "sparkles",
+    requiresAuth: true,
   },
   {
     value: "keyword",
-    label: "Keyword Search",
-    description: "Find exact terms in documents",
+    label: "Search Documents",
+    description: "Find specific terms across all acts, judgments, and regulations",
     icon: "search",
+    requiresAuth: false,
   },
 ];
 
@@ -70,63 +68,6 @@ const suggestedQueries = [
   },
 ];
 
-const quickActions = [
-  {
-    title: "Browse Acts",
-    description: "Explore enacted legislation",
-    icon: FileText,
-    href: "/legislation/acts",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
-  },
-  {
-    title: "Find Case Law",
-    description: "Search court judgments",
-    icon: Gavel,
-    href: "/judgments",
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
-  },
-  {
-    title: "View Constitution",
-    description: "The supreme law",
-    icon: Scale,
-    href: "/legislation/constitution",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
-  },
-  {
-    title: "Regulations",
-    description: "Statutory instruments",
-    icon: ScrollText,
-    href: "/legislation/regulations",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
-  },
-];
-
-const features = [
-  {
-    icon: Sparkles,
-    title: "Instant Answers",
-    description: "Get contextual answers with source citations in seconds",
-  },
-  {
-    icon: Zap,
-    title: "10x Faster Research",
-    description: "Search thousands of documents in milliseconds",
-  },
-  {
-    icon: Shield,
-    title: "Authoritative Sources",
-    description: "Official legislation and court judgments",
-  },
-  {
-    icon: Clock,
-    title: "Always Current",
-    description: "Regularly updated legal database",
-  },
-];
 
 export default function HomePage() {
   const router = useRouter();
@@ -204,14 +145,25 @@ export default function HomePage() {
 
           {/* Main Heading */}
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
-            Ask anything about{" "}
-            <span className="text-primary">Uganda&apos;s laws</span>
+            Search Uganda&apos;s Laws{" "}
+            <span className="text-primary">in Plain English</span>
           </h1>
 
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
-            Search legislation, case law, and regulations. Get instant answers
-            with citations to authoritative sources.
+            A semantic search engine connecting Uganda&apos;s entire legal corpus—laws,
+            judgments, and regulations—into one interactive, citation-accurate knowledge base.
           </p>
+
+          {/* Trust Strip */}
+          <div className="mt-4 flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-primary" />Natural Language</span>
+            <span className="text-muted-foreground/40">•</span>
+            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-primary" />99% Traceable</span>
+            <span className="text-muted-foreground/40">•</span>
+            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-primary" />No Hallucinations</span>
+            <span className="text-muted-foreground/40">•</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-primary" />Amendment Detection</span>
+          </div>
 
           {/* Stats Bar - Prominently Visible */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-8">
@@ -246,14 +198,27 @@ export default function HomePage() {
               onValueChange={setSearchMode}
               className="mb-4"
             >
-              <TabsList className="grid w-full max-w-sm mx-auto grid-cols-2 h-10">
+              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-11">
                 {searchModes.map((mode) => (
                   <TabsTrigger
                     key={mode.value}
                     value={mode.value}
-                    className="text-xs sm:text-sm"
+                    className="text-xs sm:text-sm flex items-center gap-1.5"
                   >
-                    {mode.label}
+                    {mode.value === "ai" ? (
+                      <Sparkles className="h-3.5 w-3.5" />
+                    ) : (
+                      <Search className="h-3.5 w-3.5" />
+                    )}
+                    <span>{mode.label}</span>
+                    {mode.requiresAuth && !isAuthenticated && (
+                      <Lock className="h-3 w-3 text-muted-foreground" />
+                    )}
+                    {!mode.requiresAuth && (
+                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                        FREE
+                      </span>
+                    )}
                   </TabsTrigger>
                 ))}
               </TabsList>
@@ -276,8 +241,8 @@ export default function HomePage() {
                   onKeyDown={handleKeyDown}
                   placeholder={
                     searchMode === "keyword"
-                      ? 'Search exact terms like "Income Tax Act"...'
-                      : "Ask a legal question or search for documents..."
+                      ? 'e.g. "Income Tax Act 1997" or "constitutional petition"...'
+                      : "e.g. What are the grounds for divorce in Uganda?"
                   }
                   className="w-full h-14 sm:h-16 rounded-xl border bg-background pl-12 pr-4 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/60"
                 />
@@ -319,67 +284,6 @@ export default function HomePage() {
                 </button>
               ))}
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Quick Actions */}
-      <section className="border-t bg-muted/30 px-4 py-10 md:py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-xl font-semibold">Quick Access</h2>
-            <Button variant="ghost" size="sm" asChild>
-              <Link href="/browse" className="text-muted-foreground">
-                Browse all
-                <ChevronRight className="ml-1 h-4 w-4" />
-              </Link>
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {quickActions.map((action) => (
-              <Link key={action.href} href={action.href}>
-                <Card className="h-full transition-all hover:shadow-md hover:border-primary/30 cursor-pointer group">
-                  <CardContent className="p-4 md:p-5">
-                    <div
-                      className={cn(
-                        "inline-flex h-10 w-10 items-center justify-center rounded-lg mb-3 transition-transform group-hover:scale-105",
-                        action.bgColor
-                      )}
-                    >
-                      <action.icon className={cn("h-5 w-5", action.color)} />
-                    </div>
-                    <h3 className="font-medium text-sm md:text-base">
-                      {action.title}
-                    </h3>
-                    <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                      {action.description}
-                    </p>
-                  </CardContent>
-                </Card>
-              </Link>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Features Section */}
-      <section className="px-4 py-10 md:py-12">
-        <div className="mx-auto max-w-6xl">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6 md:gap-8">
-            {features.map((feature) => (
-              <div key={feature.title} className="text-center">
-                <div className="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 mb-3">
-                  <feature.icon className="h-6 w-6 text-primary" />
-                </div>
-                <h3 className="font-medium text-sm md:text-base">
-                  {feature.title}
-                </h3>
-                <p className="text-xs md:text-sm text-muted-foreground mt-1">
-                  {feature.description}
-                </p>
-              </div>
-            ))}
           </div>
         </div>
       </section>
