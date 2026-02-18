@@ -1,3 +1,22 @@
+/**
+ * Waitlist Status Page
+ * 
+ * @route /waitlist/status?email={email}
+ * @description Displays beta waitlist status for users who received notification emails
+ * 
+ * Features:
+ * - Three status states: pending, invited, registered
+ * - Full light/dark mode support
+ * - Mock data fallback for development without backend
+ * 
+ * Backend Integration:
+ * - API endpoint: GET /api/v1/beta/waitlist/status?email={email}
+ * - Expected response: { email, position, total_waiting, status, created_at, invited_at? }
+ * - Set NEXT_PUBLIC_USE_MOCK_WAITLIST=true to always use mock data
+ * 
+ * @see app/api/v1/beta/waitlist/status/route.ts for the proxy API route
+ */
+
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
@@ -18,6 +37,9 @@ interface WaitlistStatus {
   invited_at?: string;
 }
 
+// Enable mock mode for development without backend
+const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_WAITLIST === "true";
+
 function WaitlistStatusContent() {
   const searchParams = useSearchParams();
   const [status, setStatus] = useState<WaitlistStatus | null>(null);
@@ -36,8 +58,33 @@ function WaitlistStatusContent() {
     fetchWaitlistStatus(email);
   }, [email]);
 
+  const getMockStatus = (email: string): WaitlistStatus => {
+    // Generate consistent mock data based on email
+    const hash = email.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const statusOptions: Array<"pending" | "invited" | "registered"> = ["pending", "invited", "registered"];
+    const mockStatus = statusOptions[hash % statusOptions.length];
+    
+    return {
+      email,
+      position: (hash % 150) + 1,
+      total_waiting: 250,
+      status: mockStatus,
+      created_at: new Date(Date.now() - (hash % 30) * 24 * 60 * 60 * 1000).toISOString(),
+      invited_at: mockStatus === "invited" ? new Date(Date.now() - (hash % 7) * 24 * 60 * 60 * 1000).toISOString() : undefined,
+    };
+  };
+
   const fetchWaitlistStatus = async (emailToCheck: string) => {
     try {
+      // Use mock data if enabled or if backend is not available
+      if (USE_MOCK_DATA) {
+        // Simulate network delay
+        await new Promise((resolve) => setTimeout(resolve, 800));
+        setStatus(getMockStatus(emailToCheck));
+        setLoading(false);
+        return;
+      }
+
       const response = await fetch(
         `/api/v1/beta/waitlist/status?email=${encodeURIComponent(emailToCheck)}`
       );
@@ -57,7 +104,14 @@ function WaitlistStatusContent() {
       setStatus(data);
     } catch (err) {
       console.error("Error fetching waitlist status:", err);
-      setError("Unable to connect to the server");
+      
+      // Fallback to mock data in development when backend is unavailable
+      if (process.env.NODE_ENV === "development") {
+        console.warn("Backend unavailable, using mock data. Set NEXT_PUBLIC_USE_MOCK_WAITLIST=true to suppress this warning.");
+        setStatus(getMockStatus(emailToCheck));
+      } else {
+        setError("Unable to connect to the server. Please try again later.");
+      }
     } finally {
       setLoading(false);
     }
