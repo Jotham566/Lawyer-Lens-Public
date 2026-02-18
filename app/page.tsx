@@ -68,7 +68,7 @@ const suggestedQueries = [
 
 export default function HomePage() {
   const router = useRouter();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const { openLogin } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
   const [searchMode, setSearchMode] = useState("ai");
@@ -80,6 +80,13 @@ export default function HomePage() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  // Chat-first experience: redirect authenticated users to /chat
+  useEffect(() => {
+    if (!isLoading && isAuthenticated) {
+      router.replace("/chat");
+    }
+  }, [isLoading, isAuthenticated, router]);
 
   useEffect(() => {
     getRepositoryStats()
@@ -135,6 +142,18 @@ export default function HomePage() {
     const found = stats.by_type.find((t) => t.document_type === type);
     return found?.count || 0;
   };
+
+  // Show loading state while checking auth or redirecting authenticated users
+  if (isLoading || isAuthenticated) {
+    return (
+      <div className="flex flex-col min-h-[calc(100vh-4rem)] items-center justify-center">
+        <div className="flex flex-col items-center gap-4">
+          <Skeleton className="h-12 w-12 rounded-full" />
+          <Skeleton className="h-4 w-32" />
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex flex-col min-h-[calc(100vh-4rem)]">
