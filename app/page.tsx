@@ -43,28 +43,24 @@ const searchModes = [
 
 const suggestedQueries = [
   {
-    query: "What are the penalties for tax evasion?",
+    query: "What is the excise duty on plastic products?",
     category: "Tax Law",
+    mode: "ai" as const,
   },
   {
-    query: "Employment termination procedures",
-    category: "Employment",
+    query: "Income Tax Act 1997",
+    category: "Tax Law",
+    mode: "keyword" as const,
   },
   {
-    query: "Land registration requirements",
-    category: "Property",
+    query: "What tax rate is applicable to mining business?",
+    category: "Tax Law",
+    mode: "ai" as const,
   },
   {
-    query: "Company incorporation process",
+    query: "Companies Act 2012",
     category: "Corporate",
-  },
-  {
-    query: "Criminal bail conditions",
-    category: "Criminal",
-  },
-  {
-    query: "Child custody rights",
-    category: "Family",
+    mode: "keyword" as const,
   },
 ];
 
@@ -104,13 +100,20 @@ export default function HomePage() {
     }
   };
 
-  const handleSuggestedQuery = (query: string) => {
-    // Suggested queries go to Smart Search (chat), require auth
-    if (!isAuthenticated) {
-      openLogin(`/chat?q=${encodeURIComponent(query)}`);
-      return;
+  const handleSuggestedQuery = (query: string, mode: "ai" | "keyword") => {
+    const encodedQuery = encodeURIComponent(query);
+
+    if (mode === "ai") {
+      // AI queries require authentication
+      if (!isAuthenticated) {
+        openLogin(`/chat?q=${encodedQuery}`);
+        return;
+      }
+      router.push(`/chat?q=${encodedQuery}`);
+    } else {
+      // Keyword queries are free - go directly to search
+      router.push(`/search?q=${encodedQuery}&mode=keyword`);
     }
-    router.push(`/chat?q=${encodeURIComponent(query)}`);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -266,21 +269,30 @@ export default function HomePage() {
 
           {/* Suggested Queries */}
           <div className="mt-8">
-            <p className="text-sm text-muted-foreground mb-3">Try asking:</p>
+            <p className="text-sm text-muted-foreground mb-3">Try these:</p>
             <div className="flex flex-wrap justify-center gap-2">
-              {suggestedQueries.slice(0, 4).map((item) => (
+              {suggestedQueries.map((item) => (
                 <button
                   key={item.query}
-                  onClick={() => handleSuggestedQuery(item.query)}
-                  className="group inline-flex items-center gap-2 rounded-full border bg-background px-4 py-2 text-sm transition-colors hover:bg-muted hover:border-primary/50"
+                  onClick={() => handleSuggestedQuery(item.query, item.mode)}
+                  className="group inline-flex items-center gap-2 rounded-full border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted hover:border-primary/50"
                 >
+                  {item.mode === "ai" ? (
+                    <Sparkles className="h-3 w-3 text-primary" />
+                  ) : (
+                    <Search className="h-3 w-3 text-muted-foreground" />
+                  )}
                   <span className="text-xs text-muted-foreground">
                     {item.category}
                   </span>
-                  <span className="text-muted-foreground">•</span>
                   <span className="text-foreground/80 group-hover:text-foreground">
                     {item.query}
                   </span>
+                  {item.mode === "keyword" && (
+                    <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                      FREE
+                    </span>
+                  )}
                 </button>
               ))}
             </div>
