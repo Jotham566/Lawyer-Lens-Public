@@ -176,7 +176,17 @@ function KnowledgeBaseContent() {
 }
 
 export default function KnowledgeBasePage() {
-  useRequireAuth();
+  const { canShowContent } = useRequireAuth();
+
+  // Show loading while checking auth or redirecting
+  if (!canShowContent) {
+    return (
+      <div className="container max-w-7xl py-8">
+        <Skeleton className="h-8 w-48 mb-8" />
+        <Skeleton className="h-64 w-full" />
+      </div>
+    );
+  }
 
   return (
     <FeatureGate

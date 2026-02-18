@@ -235,6 +235,12 @@ export function useAuth() {
 /**
  * Hook for protected routes - redirects to login if not authenticated
  * Preserves full URL including query params (e.g., /chat?q=search+term)
+ *
+ * Returns:
+ * - isLoading: true while auth state is being determined
+ * - isAuthenticated: true if user is logged in
+ * - canShowContent: true only when auth check complete AND user is authenticated
+ *   (use this to prevent flash of protected content during redirect)
  */
 export function useRequireAuth(redirectTo = "/login") {
   const { isAuthenticated, isLoading } = useAuth();
@@ -252,7 +258,13 @@ export function useRequireAuth(redirectTo = "/login") {
     }
   }, [isLoading, isAuthenticated, router, pathname, redirectTo]);
 
-  return { isAuthenticated, isLoading };
+  // canShowContent prevents flash of protected content:
+  // - false while loading (checking auth)
+  // - false while not authenticated (redirecting to login)
+  // - true only when authenticated
+  const canShowContent = !isLoading && isAuthenticated;
+
+  return { isAuthenticated, isLoading, canShowContent };
 }
 
 /**

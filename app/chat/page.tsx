@@ -33,7 +33,8 @@ import { useChatOrchestrator } from "@/hooks/use-chat-orchestrator";
 
 function ChatContent() {
   // Require authentication to access chat
-  const { isLoading: authLoading } = useRequireAuth();
+  // canShowContent prevents flash of protected content during auth check or redirect
+  const { canShowContent } = useRequireAuth();
   const { state, actions } = useChatOrchestrator();
   const {
     handleSelectConversation,
@@ -58,8 +59,8 @@ function ChatContent() {
     setEditInputRef,
   } = actions;
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading until authenticated - prevents flash of protected content
+  if (!canShowContent) {
     return <PageLoading message="Loading..." />;
   }
 

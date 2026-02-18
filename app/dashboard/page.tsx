@@ -56,7 +56,7 @@ function getGreeting(): string {
 }
 
 export default function DashboardPage() {
-  const { isLoading: authLoading } = useRequireAuth();
+  const { canShowContent } = useRequireAuth();
   const { user } = useAuth();
   const { entitlements, loading: entitlementsLoading, getUsage, refresh: refreshEntitlements } = useEntitlements();
   const recentResearchSessions = useRecentResearchSessions(5);
@@ -98,7 +98,7 @@ export default function DashboardPage() {
     localStorage.setItem("dashboard_onboarding_dismissed", "true");
   };
 
-  if (authLoading || loading || entitlementsLoading) {
+  if (!canShowContent || loading || entitlementsLoading) {
     return <PageLoading message="Loading dashboard..." />;
   }
 

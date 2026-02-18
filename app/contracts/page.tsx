@@ -1452,10 +1452,10 @@ function ContractsContent() {
 
 export default function ContractsPage() {
   // Require authentication - redirects to login if not authenticated
-  const { isLoading: authLoading } = useRequireAuth();
+  const { canShowContent } = useRequireAuth();
 
-  // Show loading while checking auth
-  if (authLoading) {
+  // Show loading while checking auth or redirecting
+  if (!canShowContent) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
         <Skeleton className="h-8 w-48 mb-8" />

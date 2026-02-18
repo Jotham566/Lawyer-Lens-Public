@@ -10,7 +10,6 @@ import {
   Scale,
   Gavel,
   BookMarked,
-  MessageSquareText,
   FileText,
   ScrollText,
   BookOpen,
