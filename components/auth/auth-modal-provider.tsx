@@ -123,8 +123,8 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
     if (returnUrl && returnUrl !== "/" && returnUrl !== "/login" && returnUrl !== "/register") {
       router.push(returnUrl);
     } else {
-      // Default redirect to dashboard for new users
-      router.push("/dashboard");
+      // Default redirect to chat for chat-first experience
+      router.push("/chat");
     }
   }, [router, getReturnUrl, clearReturnUrl, clearInvitationToken]);
 

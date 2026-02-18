@@ -19,9 +19,9 @@ function RegisterContent() {
   const inviteToken = searchParams.get("invite");
 
   useEffect(() => {
-    // If already authenticated, redirect to return URL or dashboard
+    // If already authenticated, redirect to return URL or chat
     if (!isLoading && isAuthenticated) {
-      const destination = returnUrl ? decodeURIComponent(returnUrl) : "/dashboard";
+      const destination = returnUrl ? decodeURIComponent(returnUrl) : "/chat";
       router.replace(destination);
       return;
     }

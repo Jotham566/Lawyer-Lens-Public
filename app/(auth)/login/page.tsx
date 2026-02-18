@@ -18,9 +18,9 @@ function LoginContent() {
   const returnUrl = searchParams.get("returnUrl");
 
   useEffect(() => {
-    // If already authenticated, redirect to return URL or dashboard
+    // If already authenticated, redirect to return URL or chat
     if (!isLoading && isAuthenticated) {
-      const destination = returnUrl ? decodeURIComponent(returnUrl) : "/dashboard";
+      const destination = returnUrl ? decodeURIComponent(returnUrl) : "/chat";
       router.replace(destination);
       return;
     }
