@@ -17,6 +17,7 @@ import {
   Activity,
   Settings,
   Building2,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetDescription } from "@/components/ui/sheet";
@@ -40,10 +41,10 @@ const mainNavItems = [
     icon: Home,
   },
   {
-    title: "Legal Assistant",
+    title: "Ask in Plain English",
     href: "/chat",
-    icon: MessageSquareText,
-    description: "Ask legal questions",
+    icon: Sparkles,
+    description: "AI-powered legal answers",
   },
   {
     title: "Search",

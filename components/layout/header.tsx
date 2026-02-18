@@ -87,17 +87,20 @@ export function Header({ className }: HeaderProps) {
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
-              <Link href="/browse/acts">Browse Acts</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/browse/judgments">Browse Judgments</Link>
-            </DropdownMenuItem>
-            <DropdownMenuItem asChild>
-              <Link href="/browse/regulations">Browse Regulations</Link>
+              <Link href="/chat" className="flex items-center">
+                <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                Ask in Plain English
+              </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
             <DropdownMenuItem asChild>
-              <Link href="/chat">Legal Assistant</Link>
+              <Link href="/legislation/acts">Browse Acts</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/judgments">Browse Judgments</Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link href="/legislation/regulations">Browse Regulations</Link>
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/pricing" className="flex items-center">

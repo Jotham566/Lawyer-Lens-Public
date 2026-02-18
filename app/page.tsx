@@ -314,6 +314,12 @@ export default function HomePage() {
               <Link href="/help" className="hover:text-foreground transition-colors">
                 Help
               </Link>
+              <Link href="/privacy" className="hover:text-foreground transition-colors">
+                Privacy
+              </Link>
+              <Link href="/terms" className="hover:text-foreground transition-colors">
+                Terms
+              </Link>
             </div>
           </div>
         </div>

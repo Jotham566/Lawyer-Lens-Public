@@ -209,7 +209,7 @@ export function HeaderRedesign({
             </Button>
           )}
 
-          {/* Legal Assistant Link */}
+          {/* Ask in Plain English Link */}
           <Button
             variant="ghost"
             size="sm"
@@ -229,8 +229,8 @@ export function HeaderRedesign({
                 }
               }}
             >
-              <MessageSquareText className="h-4 w-4" />
-              <span className="hidden xl:inline">Legal Assistant</span>
+              <Sparkles className="h-4 w-4 text-primary" />
+              <span className="hidden xl:inline">Ask in Plain English</span>
             </Link>
           </Button>
 
