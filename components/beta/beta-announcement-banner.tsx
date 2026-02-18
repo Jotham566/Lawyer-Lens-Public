@@ -25,7 +25,7 @@ export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerPr
   return (
     <div
       className={cn(
-        "sticky top-0 z-50",
+        "relative z-40",
         "border-b border-blue-500/50 bg-blue-50 dark:bg-blue-900/20",
         "transition-all duration-200"
       )}
