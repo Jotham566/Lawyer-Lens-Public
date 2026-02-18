@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -20,6 +20,7 @@ import {
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -73,6 +74,12 @@ export function HeaderRedesign({
   const { entitlements } = useEntitlements();
   const { openLogin } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch with Radix UI NavigationMenu
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Only show org switcher for team/enterprise tiers
   const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";
@@ -102,61 +109,65 @@ export function HeaderRedesign({
           </span>
         </Link>
 
-        {/* Desktop Navigation */}
-        <NavigationMenu className="hidden lg:flex">
-          <NavigationMenuList>
-            {/* Legislation Dropdown */}
-            <NavigationMenuItem>
-              <NavigationMenuTrigger
-                className={cn(
-                  "h-9",
-                  isActive("/legislation") && "bg-accent text-accent-foreground"
-                )}
-              >
-                <FileText className="h-4 w-4 mr-2" />
-                Legislation
-              </NavigationMenuTrigger>
-              <NavigationMenuContent>
-                <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
-                  {legislationItems.map((item) => (
-                    <li key={item.href}>
+        {/* Desktop Navigation - Only render after mount to prevent hydration mismatch */}
+        {mounted ? (
+          <NavigationMenu className="hidden lg:flex">
+            <NavigationMenuList>
+              {/* Legislation Dropdown */}
+              <NavigationMenuItem>
+                <NavigationMenuTrigger
+                  className={cn(
+                    "h-9",
+                    isActive("/legislation") && "bg-accent text-accent-foreground"
+                  )}
+                >
+                  <FileText className="h-4 w-4 mr-2" />
+                  Legislation
+                </NavigationMenuTrigger>
+                <NavigationMenuContent>
+                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                    {legislationItems.map((item) => (
+                      <li key={item.href}>
+                        <NavigationMenuLink asChild>
+                          <Link
+                            href={item.href}
+                            className={cn(
+                              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
+                              pathname === item.href && "bg-accent"
+                            )}
+                          >
+                            <div className="flex items-center gap-2">
+                              <item.icon className="h-4 w-4 text-muted-foreground" />
+                              <div className="text-sm font-medium leading-none">
+                                {item.title}
+                              </div>
+                            </div>
+                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                              {item.description}
+                            </p>
+                          </Link>
+                        </NavigationMenuLink>
+                      </li>
+                    ))}
+                    <li className="col-span-2">
                       <NavigationMenuLink asChild>
                         <Link
-                          href={item.href}
-                          className={cn(
-                            "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                            pathname === item.href && "bg-accent"
-                          )}
+                          href="/legislation"
+                          className="flex items-center gap-2 rounded-md p-3 text-sm font-medium text-primary hover:bg-accent"
                         >
-                          <div className="flex items-center gap-2">
-                            <item.icon className="h-4 w-4 text-muted-foreground" />
-                            <div className="text-sm font-medium leading-none">
-                              {item.title}
-                            </div>
-                          </div>
-                          <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
-                            {item.description}
-                          </p>
+                          View all legislation
+                          <ChevronDown className="h-3 w-3 rotate-[-90deg]" />
                         </Link>
                       </NavigationMenuLink>
                     </li>
-                  ))}
-                  <li className="col-span-2">
-                    <NavigationMenuLink asChild>
-                      <Link
-                        href="/legislation"
-                        className="flex items-center gap-2 rounded-md p-3 text-sm font-medium text-primary hover:bg-accent"
-                      >
-                        View all legislation
-                        <ChevronDown className="h-3 w-3 rotate-[-90deg]" />
-                      </Link>
-                    </NavigationMenuLink>
-                  </li>
-                </ul>
-              </NavigationMenuContent>
-            </NavigationMenuItem>
-          </NavigationMenuList>
-        </NavigationMenu>
+                  </ul>
+                </NavigationMenuContent>
+              </NavigationMenuItem>
+            </NavigationMenuList>
+          </NavigationMenu>
+        ) : (
+          <Skeleton className="hidden lg:flex h-9 w-24" />
+        )}
 
         {/* Direct Case Law Link */}
         <Button

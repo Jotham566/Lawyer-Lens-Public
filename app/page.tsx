@@ -18,6 +18,7 @@ import {
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Skeleton } from "@/components/ui/skeleton";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 import { useAuth } from "@/components/providers";
@@ -73,6 +74,12 @@ export default function HomePage() {
   const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
   const [showBetaModal, setShowBetaModal] = useState(false);
+  const [mounted, setMounted] = useState(false);
+
+  // Prevent hydration mismatch with Radix UI components (Tabs generate random IDs)
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     getRepositoryStats()
@@ -195,37 +202,43 @@ export default function HomePage() {
 
           {/* Search Interface */}
           <div className="mt-8 w-full">
-            {/* Search Mode Tabs */}
-            <Tabs
-              value={searchMode}
-              onValueChange={setSearchMode}
-              className="mb-4"
-            >
-              <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-11">
-                {searchModes.map((mode) => (
-                  <TabsTrigger
-                    key={mode.value}
-                    value={mode.value}
-                    className="text-xs sm:text-sm flex items-center gap-1.5"
-                  >
-                    {mode.value === "ai" ? (
-                      <Sparkles className="h-3.5 w-3.5" />
-                    ) : (
-                      <Search className="h-3.5 w-3.5" />
-                    )}
-                    <span>{mode.label}</span>
-                    {mode.requiresAuth && !isAuthenticated && (
-                      <Lock className="h-3 w-3 text-muted-foreground" />
-                    )}
-                    {!mode.requiresAuth && (
-                      <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
-                        FREE
-                      </span>
-                    )}
-                  </TabsTrigger>
-                ))}
-              </TabsList>
-            </Tabs>
+            {/* Search Mode Tabs - Only render after mount to prevent hydration mismatch */}
+            {mounted ? (
+              <Tabs
+                value={searchMode}
+                onValueChange={setSearchMode}
+                className="mb-4"
+              >
+                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-11">
+                  {searchModes.map((mode) => (
+                    <TabsTrigger
+                      key={mode.value}
+                      value={mode.value}
+                      className="text-xs sm:text-sm flex items-center gap-1.5"
+                    >
+                      {mode.value === "ai" ? (
+                        <Sparkles className="h-3.5 w-3.5" />
+                      ) : (
+                        <Search className="h-3.5 w-3.5" />
+                      )}
+                      <span>{mode.label}</span>
+                      {mode.requiresAuth && !isAuthenticated && (
+                        <Lock className="h-3 w-3 text-muted-foreground" />
+                      )}
+                      {!mode.requiresAuth && (
+                        <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                          FREE
+                        </span>
+                      )}
+                    </TabsTrigger>
+                  ))}
+                </TabsList>
+              </Tabs>
+            ) : (
+              <div className="mb-4">
+                <Skeleton className="h-11 w-full max-w-md mx-auto rounded-lg" />
+              </div>
+            )}
 
             {/* Search Input */}
             <form onSubmit={handleSearch} className="flex items-center gap-2">
@@ -297,6 +310,19 @@ export default function HomePage() {
               ))}
             </div>
           </div>
+        </div>
+      </section>
+
+      {/* Source Attribution */}
+      <section className="border-t px-4 py-6 bg-muted/10">
+        <div className="mx-auto max-w-3xl text-center">
+          <p className="text-sm text-muted-foreground">
+            Powered by Uganda&apos;s official legal publications including the Uganda Gazette,
+            court records from the Judiciary, and statutory instruments.
+          </p>
+          <p className="text-xs text-muted-foreground/70 mt-2">
+            Database updated regularly • All sources verified for accuracy
+          </p>
         </div>
       </section>
 
