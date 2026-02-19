@@ -112,7 +112,7 @@ export function ConversationList({
     groups[label].push(conv);
   });
 
-  const nonEmptyGroups = Object.entries(groups).filter(([_, convs]) => convs.length > 0);
+  const nonEmptyGroups = Object.entries(groups).filter(([, convs]) => convs.length > 0);
 
   return (
     <div className="space-y-4">

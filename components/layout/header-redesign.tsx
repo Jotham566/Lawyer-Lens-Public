@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import {
@@ -35,6 +35,7 @@ import { OrgSwitcher } from "./org-switcher";
 import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 interface HeaderRedesignProps {
   className?: string;
@@ -74,12 +75,9 @@ export function HeaderRedesign({
   const { entitlements } = useEntitlements();
   const { openLogin } = useAuthModal();
   const [searchQuery, setSearchQuery] = useState("");
-  const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch with Radix UI NavigationMenu
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHasMounted();
 
   // Only show org switcher for team/enterprise tiers
   const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";

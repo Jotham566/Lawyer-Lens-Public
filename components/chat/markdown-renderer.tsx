@@ -1,12 +1,66 @@
 "use client";
 
 import * as React from "react";
+import { Copy, Check } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   SourceCitation,
   parseSourceCitations,
 } from "@/components/citations";
 import type { ChatSource } from "@/lib/api/types";
+
+/**
+ * CodeBlock - Code block with copy button
+ * Shows copy button on hover (desktop) or always (mobile via touch)
+ */
+function CodeBlock({ children }: { children?: React.ReactNode }) {
+  const [copied, setCopied] = React.useState(false);
+  const codeRef = React.useRef<HTMLPreElement>(null);
+
+  const handleCopy = async () => {
+    // Extract text content from the code element
+    const codeElement = codeRef.current?.querySelector("code");
+    const text = codeElement?.textContent || codeRef.current?.textContent || "";
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy code:", err);
+    }
+  };
+
+  return (
+    <div className="relative group mb-4">
+      <pre
+        ref={codeRef}
+        className="overflow-x-auto rounded-lg bg-muted p-4 pr-12 font-mono text-sm"
+      >
+        {children}
+      </pre>
+      <button
+        onClick={handleCopy}
+        className={cn(
+          "absolute top-2 right-2 p-2 rounded-md transition-all",
+          "bg-background/80 border border-border/50 shadow-sm",
+          "hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          // Mobile: always visible (opacity-70 for subtle appearance)
+          // Desktop: hidden until hover
+          "opacity-70 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
+        )}
+        aria-label={copied ? "Copied!" : "Copy code"}
+        title={copied ? "Copied!" : "Copy code"}
+      >
+        {copied ? (
+          <Check className="h-4 w-4 text-green-500" />
+        ) : (
+          <Copy className="h-4 w-4 text-muted-foreground" />
+        )}
+      </button>
+    </div>
+  );
+}
 
 interface MarkdownRendererProps {
   content: string;
@@ -104,9 +158,7 @@ const createMarkdownComponents = (
     );
   },
   pre: ({ children }: { children?: React.ReactNode }) => (
-    <pre className="mb-4 overflow-x-auto rounded-lg bg-muted p-4 font-mono text-sm">
-      {children}
-    </pre>
+    <CodeBlock>{children}</CodeBlock>
   ),
 
   // Blockquotes
@@ -316,9 +368,12 @@ function MarkdownRendererInner({
   isStreaming = false,
 }: MarkdownRendererProps) {
   const containerRef = React.useRef<HTMLDivElement>(null);
+  // Dynamic imports require flexible typing - react-markdown types are complex
   const [MarkdownComponent, setMarkdownComponent] =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     React.useState<React.ComponentType<any> | null>(null);
   const [remarkGfmPlugin, setRemarkGfmPlugin] =
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     React.useState<((...args: any[]) => any) | null>(null);
 
   React.useEffect(() => {

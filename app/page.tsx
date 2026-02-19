@@ -24,6 +24,7 @@ import type { RepositoryStats } from "@/lib/api/types";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { BetaAnnouncementBanner, BetaAccessModal } from "@/components/beta";
+import { useHasMounted } from "@/hooks/use-has-mounted";
 
 const searchModes = [
   {
@@ -74,12 +75,9 @@ export default function HomePage() {
   const [searchMode, setSearchMode] = useState("ai");
   const [stats, setStats] = useState<RepositoryStats | null>(null);
   const [showBetaModal, setShowBetaModal] = useState(false);
-  const [mounted, setMounted] = useState(false);
 
   // Prevent hydration mismatch with Radix UI components (Tabs generate random IDs)
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHasMounted();
 
   // Chat-first experience: redirect authenticated users to /chat
   useEffect(() => {

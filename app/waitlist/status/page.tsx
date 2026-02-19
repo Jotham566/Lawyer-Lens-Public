@@ -19,7 +19,7 @@
 
 "use client";
 
-import { useState, useEffect, Suspense } from "react";
+import { useState, useEffect, useCallback, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -48,33 +48,23 @@ function WaitlistStatusContent() {
 
   const email = searchParams.get("email");
 
-  useEffect(() => {
-    if (!email) {
-      setError("No email provided");
-      setLoading(false);
-      return;
-    }
-
-    fetchWaitlistStatus(email);
-  }, [email]);
-
-  const getMockStatus = (email: string): WaitlistStatus => {
+  const getMockStatus = useCallback((emailToCheck: string): WaitlistStatus => {
     // Generate consistent mock data based on email
-    const hash = email.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
+    const hash = emailToCheck.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
     const statusOptions: Array<"pending" | "invited" | "registered"> = ["pending", "invited", "registered"];
     const mockStatus = statusOptions[hash % statusOptions.length];
-    
+
     return {
-      email,
+      email: emailToCheck,
       position: (hash % 150) + 1,
       total_waiting: 250,
       status: mockStatus,
       created_at: new Date(Date.now() - (hash % 30) * 24 * 60 * 60 * 1000).toISOString(),
       invited_at: mockStatus === "invited" ? new Date(Date.now() - (hash % 7) * 24 * 60 * 60 * 1000).toISOString() : undefined,
     };
-  };
+  }, []);
 
-  const fetchWaitlistStatus = async (emailToCheck: string) => {
+  const fetchWaitlistStatus = useCallback(async (emailToCheck: string) => {
     try {
       // Use mock data if enabled or if backend is not available
       if (USE_MOCK_DATA) {
@@ -104,7 +94,7 @@ function WaitlistStatusContent() {
       setStatus(data);
     } catch (err) {
       console.error("Error fetching waitlist status:", err);
-      
+
       // Fallback to mock data in development when backend is unavailable
       if (process.env.NODE_ENV === "development") {
         console.warn("Backend unavailable, using mock data. Set NEXT_PUBLIC_USE_MOCK_WAITLIST=true to suppress this warning.");
@@ -115,7 +105,17 @@ function WaitlistStatusContent() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [getMockStatus]);
+
+  useEffect(() => {
+    if (!email) {
+      setError("No email provided");
+      setLoading(false);
+      return;
+    }
+
+    fetchWaitlistStatus(email);
+  }, [email, fetchWaitlistStatus]);
 
   if (loading) {
     return (
