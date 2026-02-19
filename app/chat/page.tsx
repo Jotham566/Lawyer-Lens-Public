@@ -43,6 +43,8 @@ function ChatContent() {
     handleRenameConversation,
     handleStarConversation,
     handleUnstarConversation,
+    handleArchiveConversation,
+    handleUnarchiveConversation,
     handleDeleteClick,
     handleNewConversation,
     setMobileHistoryOpen,
@@ -78,12 +80,15 @@ function ChatContent() {
           {/* Desktop Sidebar */}
           <ConversationSidebar
             conversations={state.conversations}
+            archivedConversations={state.archivedConversations}
             currentConversationId={state.currentConversationId}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteClick}
             onRenameConversation={handleRenameConversation}
             onStarConversation={handleStarConversation}
             onUnstarConversation={handleUnstarConversation}
+            onArchiveConversation={handleArchiveConversation}
+            onUnarchiveConversation={handleUnarchiveConversation}
             onNewConversation={handleNewConversation}
           />
 
@@ -109,12 +114,15 @@ function ChatContent() {
                   open={state.mobileHistoryOpen}
                   onOpenChange={setMobileHistoryOpen}
                   conversations={state.conversations}
+                  archivedConversations={state.archivedConversations}
                   currentConversationId={state.currentConversationId}
                   onSelectConversation={handleSelectConversation}
                   onDeleteConversation={handleDeleteClick}
                   onRenameConversation={handleRenameConversation}
                   onStarConversation={handleStarConversation}
                   onUnstarConversation={handleUnstarConversation}
+                  onArchiveConversation={handleArchiveConversation}
+                  onUnarchiveConversation={handleUnarchiveConversation}
                 />
               </div>
             </div>

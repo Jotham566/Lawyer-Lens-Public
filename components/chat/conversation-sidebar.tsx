@@ -14,6 +14,10 @@ import {
   X,
   Star,
   Search,
+  Archive,
+  ArchiveRestore,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -82,30 +86,38 @@ function getDayLabel(date: Date): string {
 
 interface ConversationListProps {
   conversations: Conversation[];
+  archivedConversations?: Conversation[];
   currentConversationId: string | null;
   onSelect: (id: string) => void;
   onDelete: (id: string, e: React.MouseEvent) => void;
   onRename: (id: string, newTitle: string) => void;
   onStar: (id: string) => void;
   onUnstar: (id: string) => void;
+  onArchive: (id: string) => void;
+  onUnarchive: (id: string) => void;
   collapsed?: boolean;
   searchQuery?: string;
 }
 
 export function ConversationList({
   conversations,
+  archivedConversations = [],
   currentConversationId,
   onSelect,
   onDelete,
   onRename,
   onStar,
   onUnstar,
+  onArchive,
+  onUnarchive,
   collapsed = false,
   searchQuery = "",
 }: ConversationListProps) {
   // Edit state for inline renaming
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
+  // Archived section expanded state
+  const [archivedExpanded, setArchivedExpanded] = useState(false);
 
   const handleStartEdit = (conv: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -185,6 +197,18 @@ export function ConversationList({
     } else {
       onStar(conv.id);
     }
+  };
+
+  // Handler for archiving
+  const handleArchive = (conv: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onArchive(conv.id);
+  };
+
+  // Handler for unarchiving
+  const handleUnarchive = (conv: Conversation, e: React.MouseEvent) => {
+    e.stopPropagation();
+    onUnarchive(conv.id);
   };
 
   // Render a single conversation item
@@ -275,11 +299,21 @@ export function ConversationList({
                       <Button
                         variant="ghost"
                         size="icon"
-                        className="h-6 w-6 hover:bg-muted"
+                        className="h-6 w-6 hover:bg-muted hover:text-green-500"
                         onClick={(e) => handleStartEdit(conv, e)}
                       >
                         <Pencil className="h-3 w-3" />
                         <span className="sr-only">Rename</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-6 w-6 hover:bg-muted hover:text-blue-500"
+                        onClick={(e) => handleArchive(conv, e)}
+                        title="Archive"
+                      >
+                        <Archive className="h-3 w-3" />
+                        <span className="sr-only">Archive</span>
                       </Button>
                       <Button
                         variant="ghost"
@@ -337,29 +371,107 @@ export function ConversationList({
           </div>
         </div>
       ))}
+
+      {/* Archived Section */}
+      {archivedConversations.length > 0 && !collapsed && (
+        <div className="mt-4 pt-4 border-t border-border/50">
+          <button
+            onClick={() => setArchivedExpanded(!archivedExpanded)}
+            className="flex items-center gap-1 w-full px-2 mb-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider hover:text-muted-foreground transition-colors"
+          >
+            {archivedExpanded ? (
+              <ChevronDown className="h-3 w-3" />
+            ) : (
+              <ChevronRight className="h-3 w-3" />
+            )}
+            <Archive className="h-3 w-3" />
+            Archived ({archivedConversations.length})
+          </button>
+          {archivedExpanded && (
+            <div className="space-y-0.5">
+              {archivedConversations.map((conv) => (
+                <TooltipProvider key={conv.id} delayDuration={0}>
+                  <Tooltip>
+                    <TooltipTrigger asChild>
+                      <div
+                        role="button"
+                        tabIndex={0}
+                        onClick={() => onSelect(conv.id)}
+                        className={cn(
+                          "group relative flex cursor-pointer items-center rounded-lg py-2 px-2 transition-colors",
+                          currentConversationId === conv.id
+                            ? "bg-accent text-accent-foreground"
+                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                        )}
+                      >
+                        <Archive className="h-4 w-4 shrink-0 mr-3 text-muted-foreground/50" />
+                        <div className="min-w-0 flex-1 overflow-hidden">
+                          <p className="truncate text-sm font-medium leading-none opacity-70">
+                            {stripMarkdownFromTitle(conv.title)}
+                          </p>
+                          <p className="truncate text-[10px] text-muted-foreground/60 mt-0.5">
+                            {formatRelativeTime(conv.updatedAt || conv.createdAt)}
+                          </p>
+                        </div>
+                        <div className="ml-auto flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 hover:bg-muted hover:text-primary"
+                            onClick={(e) => handleUnarchive(conv, e)}
+                            title="Restore from archive"
+                          >
+                            <ArchiveRestore className="h-3 w-3" />
+                            <span className="sr-only">Unarchive</span>
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+                            onClick={(e) => onDelete(conv.id, e)}
+                          >
+                            <Trash2 className="h-3 w-3" />
+                            <span className="sr-only">Delete</span>
+                          </Button>
+                        </div>
+                      </div>
+                    </TooltipTrigger>
+                  </Tooltip>
+                </TooltipProvider>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 interface ConversationSidebarProps {
   conversations: Conversation[];
+  archivedConversations: Conversation[];
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
   onStarConversation: (id: string) => void;
   onUnstarConversation: (id: string) => void;
+  onArchiveConversation: (id: string) => void;
+  onUnarchiveConversation: (id: string) => void;
   onNewConversation: () => void;
 }
 
 export function ConversationSidebar({
   conversations,
+  archivedConversations,
   currentConversationId,
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
   onStarConversation,
   onUnstarConversation,
+  onArchiveConversation,
+  onUnarchiveConversation,
   onNewConversation,
 }: ConversationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
@@ -444,12 +556,15 @@ export function ConversationSidebar({
       <div className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
         <ConversationList
           conversations={filteredConversations}
+          archivedConversations={archivedConversations}
           currentConversationId={currentConversationId}
           onSelect={onSelectConversation}
           onDelete={onDeleteConversation}
           onRename={onRenameConversation}
           onStar={onStarConversation}
           onUnstar={onUnstarConversation}
+          onArchive={onArchiveConversation}
+          onUnarchive={onUnarchiveConversation}
           collapsed={isCollapsed}
           searchQuery={debouncedQuery}
         />
@@ -463,24 +578,30 @@ interface MobileHistorySheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   conversations: Conversation[];
+  archivedConversations: Conversation[];
   currentConversationId: string | null;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
   onStarConversation: (id: string) => void;
   onUnstarConversation: (id: string) => void;
+  onArchiveConversation: (id: string) => void;
+  onUnarchiveConversation: (id: string) => void;
 }
 
 export function MobileHistorySheet({
   open,
   onOpenChange,
   conversations,
+  archivedConversations,
   currentConversationId,
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
   onStarConversation,
   onUnstarConversation,
+  onArchiveConversation,
+  onUnarchiveConversation,
 }: MobileHistorySheetProps) {
   const [searchQuery, setSearchQuery] = useState("");
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
@@ -542,6 +663,7 @@ export function MobileHistorySheet({
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           <ConversationList
             conversations={filteredConversations}
+            archivedConversations={archivedConversations}
             currentConversationId={currentConversationId}
             onSelect={(id) => {
               onSelectConversation(id);
@@ -551,6 +673,8 @@ export function MobileHistorySheet({
             onRename={onRenameConversation}
             onStar={onStarConversation}
             onUnstar={onUnstarConversation}
+            onArchive={onArchiveConversation}
+            onUnarchive={onUnarchiveConversation}
             searchQuery={debouncedQuery}
           />
         </div>

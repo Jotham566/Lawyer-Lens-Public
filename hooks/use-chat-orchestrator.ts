@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
-import { useChatStore, useCurrentConversation, useActiveConversations } from "@/lib/stores";
+import { useChatStore, useCurrentConversation, useActiveConversations, useArchivedConversations } from "@/lib/stores";
 import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { useUpgradeModal } from "@/components/entitlements/upgrade-required-modal";
@@ -39,6 +39,8 @@ export function useChatOrchestrator() {
         renameConversation,
         starConversation,
         unstarConversation,
+        archiveConversation,
+        unarchiveConversation,
         addMessage,
         updateLastMessage,
         editMessageAndTruncate,
@@ -51,6 +53,7 @@ export function useChatOrchestrator() {
     } = useChatStore();
 
     const conversations = useActiveConversations();
+    const archivedConversations = useArchivedConversations();
     const currentConversation = useCurrentConversation();
     const citationContext = useCitationOptional();
 
@@ -533,6 +536,14 @@ export function useChatOrchestrator() {
         unstarConversation(id);
     }, [unstarConversation]);
 
+    const handleArchiveConversation = useCallback((id: string) => {
+        archiveConversation(id);
+    }, [archiveConversation]);
+
+    const handleUnarchiveConversation = useCallback((id: string) => {
+        unarchiveConversation(id);
+    }, [unarchiveConversation]);
+
     const handleSelectQuestion = (question: string) => {
         setInput(question);
         inputRef.current?.focus();
@@ -559,6 +570,7 @@ export function useChatOrchestrator() {
             error,
             selectedTool,
             conversations,
+            archivedConversations,
             currentConversation,
             currentConversationId,
             editingIndex,
@@ -591,6 +603,8 @@ export function useChatOrchestrator() {
             handleRenameConversation,
             handleStarConversation,
             handleUnstarConversation,
+            handleArchiveConversation,
+            handleUnarchiveConversation,
             handleSelectQuestion,
             setMobileHistoryOpen,
             setShortcutsDialogOpen,
