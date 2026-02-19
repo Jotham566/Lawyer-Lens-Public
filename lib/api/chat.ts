@@ -75,13 +75,13 @@ export async function deleteConversation(
 }
 
 /**
- * Update a conversation's properties (title, starred status)
+ * Update a conversation's properties (title, starred status, archived status)
  */
 export async function updateConversation(
   conversationId: string,
-  updates: { title?: string; is_starred?: boolean }
-): Promise<{ id: string; title: string; is_starred: boolean }> {
-  return apiFetch<{ id: string; title: string; is_starred: boolean }>(
+  updates: { title?: string; is_starred?: boolean; is_archived?: boolean }
+): Promise<{ id: string; title: string; is_starred: boolean; is_archived: boolean }> {
+  return apiFetch<{ id: string; title: string; is_starred: boolean; is_archived: boolean }>(
     `/chat/conversations/${conversationId}`,
     {
       method: "PATCH",

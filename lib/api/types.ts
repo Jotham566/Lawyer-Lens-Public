@@ -321,6 +321,7 @@ export interface ConversationSummary {
   id: string;
   title: string | null;
   is_starred?: boolean;
+  is_archived?: boolean;
   created_at: string;
   updated_at: string;
   message_count: number;

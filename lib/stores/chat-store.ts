@@ -231,6 +231,7 @@ export const useChatStore = create<ChatState>()(
       },
 
       archiveConversation: (id) => {
+        // Optimistic update
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
@@ -242,9 +243,15 @@ export const useChatStore = create<ChatState>()(
               ? state.conversations.find((c) => c.id !== id && !c.isArchived)?.id || null
               : state.currentConversationId,
         }));
+
+        // Persist to backend
+        updateConversation(id, { is_archived: true }).catch((error) => {
+          console.error("Failed to persist archive:", error);
+        });
       },
 
       unarchiveConversation: (id) => {
+        // Optimistic update
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
@@ -252,6 +259,11 @@ export const useChatStore = create<ChatState>()(
               : conv
           ),
         }));
+
+        // Persist to backend
+        updateConversation(id, { is_archived: false }).catch((error) => {
+          console.error("Failed to persist unarchive:", error);
+        });
       },
 
       starConversation: (id) => {
@@ -444,6 +456,7 @@ export const useChatStore = create<ChatState>()(
                   ...localConv, // Keep local state (messages)
                   title: backendConv.title || localConv.title,
                   isStarred: backendConv.is_starred ?? localConv.isStarred,
+                  isArchived: backendConv.is_archived ?? localConv.isArchived,
                   updatedAt: backendConv.updated_at,
                   // Don't overwrite messages if we have them locally and they might be newer/optimistic
                   // But if we have no messages locally and backend does (unlikely for list endpoint),
@@ -460,7 +473,7 @@ export const useChatStore = create<ChatState>()(
               messages: [],
               createdAt: summary.created_at,
               updatedAt: summary.updated_at,
-              isArchived: false,
+              isArchived: summary.is_archived ?? false,
               isStarred: summary.is_starred ?? false,
             }));
 
