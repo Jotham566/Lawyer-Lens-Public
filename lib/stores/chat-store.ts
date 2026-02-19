@@ -14,7 +14,7 @@ import type {
   VerificationStatus,
   ConfidenceInfo,
 } from "@/lib/api/types";
-import { getConversations, getConversation, deleteConversation as deleteConversationApi } from "@/lib/api/chat";
+import { getConversations, getConversation, deleteConversation as deleteConversationApi, updateConversation } from "@/lib/api/chat";
 
 export interface Conversation {
   id: string;
@@ -213,6 +213,7 @@ export const useChatStore = create<ChatState>()(
       },
 
       renameConversation: (id, title) => {
+        // Optimistic update - update local state immediately
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
@@ -220,6 +221,13 @@ export const useChatStore = create<ChatState>()(
               : conv
           ),
         }));
+
+        // Persist to backend (fire and forget, local state is source of truth for UI)
+        updateConversation(id, { title }).catch((error) => {
+          console.error("Failed to persist conversation rename:", error);
+          // Note: We don't revert local state on failure - the rename will persist
+          // locally and can be synced on next page load if needed
+        });
       },
 
       archiveConversation: (id) => {
@@ -247,6 +255,7 @@ export const useChatStore = create<ChatState>()(
       },
 
       starConversation: (id) => {
+        // Optimistic update
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
@@ -254,9 +263,15 @@ export const useChatStore = create<ChatState>()(
               : conv
           ),
         }));
+
+        // Persist to backend
+        updateConversation(id, { is_starred: true }).catch((error) => {
+          console.error("Failed to persist star:", error);
+        });
       },
 
       unstarConversation: (id) => {
+        // Optimistic update
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
@@ -264,6 +279,11 @@ export const useChatStore = create<ChatState>()(
               : conv
           ),
         }));
+
+        // Persist to backend
+        updateConversation(id, { is_starred: false }).catch((error) => {
+          console.error("Failed to persist unstar:", error);
+        });
       },
 
       addMessage: (conversationId, message) => {
@@ -423,9 +443,10 @@ export const useChatStore = create<ChatState>()(
                 return {
                   ...localConv, // Keep local state (messages)
                   title: backendConv.title || localConv.title,
+                  isStarred: backendConv.is_starred ?? localConv.isStarred,
                   updatedAt: backendConv.updated_at,
                   // Don't overwrite messages if we have them locally and they might be newer/optimistic
-                  // But if we have no messages locally and backend does (unlikely for list endpoint), 
+                  // But if we have no messages locally and backend does (unlikely for list endpoint),
                   // we'll fetch them in detail later.
                 };
               }
@@ -440,7 +461,7 @@ export const useChatStore = create<ChatState>()(
               createdAt: summary.created_at,
               updatedAt: summary.updated_at,
               isArchived: false,
-              isStarred: false,
+              isStarred: summary.is_starred ?? false,
             }));
 
             mergedConversations = [...newBackendConversations, ...mergedConversations];

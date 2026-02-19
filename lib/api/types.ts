@@ -320,6 +320,7 @@ export interface DocumentTypeCount {
 export interface ConversationSummary {
   id: string;
   title: string | null;
+  is_starred?: boolean;
   created_at: string;
   updated_at: string;
   message_count: number;

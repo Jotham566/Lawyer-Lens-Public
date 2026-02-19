@@ -74,6 +74,32 @@ export async function deleteConversation(
   });
 }
 
+/**
+ * Update a conversation's properties (title, starred status)
+ */
+export async function updateConversation(
+  conversationId: string,
+  updates: { title?: string; is_starred?: boolean }
+): Promise<{ id: string; title: string; is_starred: boolean }> {
+  return apiFetch<{ id: string; title: string; is_starred: boolean }>(
+    `/chat/conversations/${conversationId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(updates),
+    }
+  );
+}
+
+/**
+ * Update a conversation's title (convenience wrapper)
+ */
+export async function updateConversationTitle(
+  conversationId: string,
+  title: string
+): Promise<{ id: string; title: string }> {
+  return updateConversation(conversationId, { title });
+}
+
 
 /**
  * Verification data from the stream

@@ -36,6 +36,9 @@ export function useChatOrchestrator() {
         setCurrentConversation,
         createConversation,
         deleteConversationAsync,
+        renameConversation,
+        starConversation,
+        unstarConversation,
         addMessage,
         updateLastMessage,
         editMessageAndTruncate,
@@ -73,6 +76,7 @@ export function useChatOrchestrator() {
     const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
     const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
     const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
+    const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editInputRef = useRef<HTMLTextAreaElement>(null);
@@ -100,6 +104,11 @@ export function useChatOrchestrator() {
     // Keyboard shortcuts
     useEffect(() => {
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Check if user is typing in an input/textarea
+            const isTyping = document.activeElement?.tagName === "INPUT" ||
+                document.activeElement?.tagName === "TEXTAREA" ||
+                (document.activeElement as HTMLElement)?.isContentEditable;
+
             // Cmd+N or Ctrl+N - New conversation
             if ((e.metaKey || e.ctrlKey) && e.key === "n") {
                 e.preventDefault();
@@ -107,9 +116,17 @@ export function useChatOrchestrator() {
                 setInput("");
             }
 
+            // "?" key - Show keyboard shortcuts (only when not typing)
+            if (e.key === "?" && !isTyping && !e.metaKey && !e.ctrlKey) {
+                e.preventDefault();
+                setShortcutsDialogOpen(true);
+            }
+
             // Escape key handlers
             if (e.key === "Escape") {
-                if (editingIndex !== null) {
+                if (shortcutsDialogOpen) {
+                    setShortcutsDialogOpen(false);
+                } else if (editingIndex !== null) {
                     setEditingIndex(null);
                     setEditContent("");
                 } else if (mobileHistoryOpen) {
@@ -122,7 +139,7 @@ export function useChatOrchestrator() {
 
         document.addEventListener("keydown", handleKeyDown);
         return () => document.removeEventListener("keydown", handleKeyDown);
-    }, [createConversation, editingIndex, mobileHistoryOpen, deleteDialogOpen]);
+    }, [createConversation, editingIndex, mobileHistoryOpen, deleteDialogOpen, shortcutsDialogOpen]);
 
     // Fetch Conversations on Auth
     useEffect(() => {
@@ -503,6 +520,18 @@ export function useChatOrchestrator() {
         setMobileHistoryOpen(false);
     }, [setCurrentConversation]);
 
+    const handleRenameConversation = useCallback((id: string, newTitle: string) => {
+        renameConversation(id, newTitle);
+    }, [renameConversation]);
+
+    const handleStarConversation = useCallback((id: string) => {
+        starConversation(id);
+    }, [starConversation]);
+
+    const handleUnstarConversation = useCallback((id: string) => {
+        unstarConversation(id);
+    }, [unstarConversation]);
+
     const handleSelectQuestion = (question: string) => {
         setInput(question);
         inputRef.current?.focus();
@@ -536,6 +565,7 @@ export function useChatOrchestrator() {
             copiedId,
             deleteDialogOpen,
             mobileHistoryOpen,
+            shortcutsDialogOpen,
             upgradeModalOpen,
             upgradeDetails,
         },
@@ -556,8 +586,12 @@ export function useChatOrchestrator() {
             handleDeleteClick,
             handleConfirmDelete,
             handleSelectConversation,
+            handleRenameConversation,
+            handleStarConversation,
+            handleUnstarConversation,
             handleSelectQuestion,
             setMobileHistoryOpen,
+            setShortcutsDialogOpen,
             setDeleteDialogOpen,
             hideUpgradeModal,
             handleStop,

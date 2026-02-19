@@ -22,6 +22,7 @@ import {
   ChatInput,
   EmptyState,
   VirtualizedMessageList,
+  KeyboardShortcutsDialog,
 } from "@/components/chat";
 import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
 import { useRequireAuth } from "@/components/providers";
@@ -38,6 +39,9 @@ function ChatContent() {
   const { state, actions } = useChatOrchestrator();
   const {
     handleSelectConversation,
+    handleRenameConversation,
+    handleStarConversation,
+    handleUnstarConversation,
     handleDeleteClick,
     handleNewConversation,
     setMobileHistoryOpen,
@@ -52,6 +56,7 @@ function ChatContent() {
     copyMessage,
     handleRegenerate,
     setDeleteDialogOpen,
+    setShortcutsDialogOpen,
     handleConfirmDelete,
     hideUpgradeModal,
     handleStop,
@@ -74,6 +79,9 @@ function ChatContent() {
             currentConversationId={state.currentConversationId}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteClick}
+            onRenameConversation={handleRenameConversation}
+            onStarConversation={handleStarConversation}
+            onUnstarConversation={handleUnstarConversation}
             onNewConversation={handleNewConversation}
           />
 
@@ -102,6 +110,9 @@ function ChatContent() {
                   currentConversationId={state.currentConversationId}
                   onSelectConversation={handleSelectConversation}
                   onDeleteConversation={handleDeleteClick}
+                  onRenameConversation={handleRenameConversation}
+                  onStarConversation={handleStarConversation}
+                  onUnstarConversation={handleUnstarConversation}
                 />
               </div>
             </div>
@@ -178,6 +189,12 @@ function ChatContent() {
             open={state.upgradeModalOpen}
             onClose={hideUpgradeModal}
             details={state.upgradeDetails}
+          />
+
+          {/* Keyboard Shortcuts Dialog */}
+          <KeyboardShortcutsDialog
+            open={state.shortcutsDialogOpen}
+            onOpenChange={setShortcutsDialogOpen}
           />
 
           {/* Citation Side Panel / Bottom Sheet */}
