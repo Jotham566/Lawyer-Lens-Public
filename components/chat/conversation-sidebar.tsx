@@ -148,6 +148,9 @@ export function ConversationList({
                             <p className="truncate text-sm font-medium leading-none">
                               {stripMarkdownFromTitle(conv.title)}
                             </p>
+                            <p className="truncate text-[10px] text-muted-foreground/60 mt-0.5">
+                              {formatRelativeTime(conv.updatedAt || conv.createdAt)}
+                            </p>
                           </div>
                           <Button
                             variant="ghost"

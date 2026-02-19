@@ -22,7 +22,30 @@ import { TrustBadge, ConfidenceFactors, UncertaintyDisclaimer } from "./trust-in
 import { SourceBadgeList } from "./source-badge";
 import { MessageFeedback } from "./message-feedback";
 import { SourceTransparencyInline } from "./source-transparency";
+import { formatRelativeTime } from "./conversation-sidebar";
 import type { ChatMessage as ChatMessageType } from "@/lib/api/types";
+
+/**
+ * MessageTimestamp - Displays relative timestamp for messages
+ * Desktop: visible on hover, Mobile: always visible (subtle)
+ */
+function MessageTimestamp({ timestamp, align = "left" }: { timestamp?: string; align?: "left" | "right" }) {
+  if (!timestamp) return null;
+
+  return (
+    <span
+      className={cn(
+        "text-[10px] text-muted-foreground/50 transition-opacity",
+        // Mobile: always visible (subtle), Desktop: visible on hover
+        "opacity-60 md:opacity-0 md:group-hover:opacity-60",
+        align === "right" ? "text-right" : "text-left"
+      )}
+      title={new Date(timestamp).toLocaleString()}
+    >
+      {formatRelativeTime(timestamp)}
+    </span>
+  );
+}
 
 export function TypingIndicator() {
   return (
@@ -252,15 +275,18 @@ function ChatMessageComponent({
             </div>
           )}
 
-          {/* User Message Actions */}
+          {/* User Message Actions & Timestamp */}
           {!isEditing && message.content && (
-            <div className="flex justify-end gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100 px-2">
-              <UserMessageActions
-                onEdit={() => onStartEdit(index, message.content)}
-                onCopy={() => onCopy(`${index}-user`, message.content)}
-                copied={copiedId === `${index}-user`}
-                disabled={isLoading}
-              />
+            <div className="flex items-center justify-end gap-2 px-2">
+              <MessageTimestamp timestamp={message.timestamp} align="right" />
+              <div className="flex gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+                <UserMessageActions
+                  onEdit={() => onStartEdit(index, message.content)}
+                  onCopy={() => onCopy(`${index}-user`, message.content)}
+                  copied={copiedId === `${index}-user`}
+                  disabled={isLoading}
+                />
+              </div>
             </div>
           )}
         </div>
@@ -339,10 +365,10 @@ function ChatMessageComponent({
           </div>
         )}
 
-        {/* Assistant Message Actions */}
+        {/* Assistant Message Actions & Timestamp */}
         {message.content && (
-          <div className="flex items-center gap-2 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
-            <div className="flex gap-1">
+          <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
               <AssistantMessageActions
                 messageId={messageId}
                 content={message.content}
@@ -355,10 +381,14 @@ function ChatMessageComponent({
             {/* User feedback */}
             {!isStreaming && (
               <>
-                <div className="w-px h-4 bg-border" aria-hidden="true" />
-                <MessageFeedback messageId={messageId} />
+                <div className="w-px h-4 bg-border opacity-50" aria-hidden="true" />
+                <div className="opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
+                  <MessageFeedback messageId={messageId} />
+                </div>
               </>
             )}
+            {/* Timestamp */}
+            <MessageTimestamp timestamp={message.timestamp} />
           </div>
         )}
       </div>
