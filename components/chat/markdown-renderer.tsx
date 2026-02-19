@@ -9,21 +9,66 @@ import {
 } from "@/components/citations";
 import type { ChatSource } from "@/lib/api/types";
 
+// Common languages to support
+const SUPPORTED_LANGUAGES = new Set([
+  "javascript", "js", "jsx", "typescript", "ts", "tsx",
+  "python", "py", "sql", "json", "html", "css", "scss",
+  "bash", "sh", "shell", "yaml", "yml", "markdown", "md",
+  "java", "c", "cpp", "csharp", "cs", "go", "rust",
+  "ruby", "php", "swift", "kotlin", "scala", "r",
+  "xml", "graphql", "dockerfile", "makefile", "toml",
+  "ini", "diff", "plaintext", "text", "txt",
+]);
+
+// Map common aliases to shiki language names
+const LANGUAGE_ALIASES: Record<string, string> = {
+  js: "javascript",
+  ts: "typescript",
+  py: "python",
+  sh: "bash",
+  shell: "bash",
+  yml: "yaml",
+  md: "markdown",
+  cs: "csharp",
+  txt: "plaintext",
+  text: "plaintext",
+};
+
 /**
- * CodeBlock - Code block with copy button
- * Shows copy button on hover (desktop) or always (mobile via touch)
+ * Extract language from code block className (e.g., "language-javascript" -> "javascript")
  */
-function CodeBlock({ children }: { children?: React.ReactNode }) {
+function extractLanguage(className?: string): string | undefined {
+  if (!className) return undefined;
+  const match = className.match(/language-(\w+)/);
+  if (!match) return undefined;
+
+  const lang = match[1].toLowerCase();
+  const normalized = LANGUAGE_ALIASES[lang] || lang;
+
+  // Only return if it's a supported language
+  return SUPPORTED_LANGUAGES.has(lang) || SUPPORTED_LANGUAGES.has(normalized)
+    ? normalized
+    : undefined;
+}
+
+/**
+ * HighlightedCodeBlock - Code block with syntax highlighting and copy button
+ * Uses shiki for syntax highlighting with dual theme support (light/dark)
+ * Falls back to plain code while loading or for unsupported languages
+ */
+function HighlightedCodeBlock({
+  code,
+  language,
+}: {
+  code: string;
+  language?: string;
+}) {
   const [copied, setCopied] = React.useState(false);
-  const codeRef = React.useRef<HTMLPreElement>(null);
+  const [highlightedHtml, setHighlightedHtml] = React.useState<string | null>(null);
 
   const handleCopy = async () => {
-    // Extract text content from the code element
-    const codeElement = codeRef.current?.querySelector("code");
-    const text = codeElement?.textContent || codeRef.current?.textContent || "";
-
     try {
-      await navigator.clipboard.writeText(text);
+      await navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
@@ -31,14 +76,79 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
     }
   };
 
+  // Lazy load shiki and highlight code
+  React.useEffect(() => {
+    if (!language) return;
+
+    let cancelled = false;
+
+    const highlight = async () => {
+      try {
+        const { codeToHtml } = await import("shiki");
+
+        if (cancelled) return;
+
+        const html = await codeToHtml(code, {
+          lang: language,
+          themes: {
+            light: "github-light",
+            dark: "github-dark",
+          },
+        });
+
+        if (!cancelled) {
+          setHighlightedHtml(html);
+        }
+      } catch (err) {
+        // Silently fail - will show plain code fallback
+        console.warn("Syntax highlighting failed:", err);
+      }
+    };
+
+    void highlight();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [code, language]);
+
+  // CSS for shiki dual themes - applies correct theme based on class
+  const shikiStyles = `
+    .shiki,
+    .shiki span {
+      color: var(--shiki-light);
+      background-color: var(--shiki-light-bg);
+    }
+    .dark .shiki,
+    .dark .shiki span {
+      color: var(--shiki-dark);
+      background-color: var(--shiki-dark-bg);
+    }
+  `;
+
   return (
     <div className="relative group mb-4">
-      <pre
-        ref={codeRef}
-        className="overflow-x-auto rounded-lg bg-muted p-4 pr-12 font-mono text-sm"
-      >
-        {children}
-      </pre>
+      <style dangerouslySetInnerHTML={{ __html: shikiStyles }} />
+
+      {highlightedHtml ? (
+        <div
+          className="[&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:p-4 [&_pre]:pr-12 [&_pre]:text-sm [&_pre]:!bg-muted [&_code]:!bg-transparent"
+          dangerouslySetInnerHTML={{ __html: highlightedHtml }}
+        />
+      ) : (
+        <pre className="overflow-x-auto rounded-lg bg-muted p-4 pr-12 font-mono text-sm">
+          <code>{code}</code>
+        </pre>
+      )}
+
+      {/* Language label */}
+      {language && (
+        <span className="absolute top-2 left-3 text-[10px] uppercase tracking-wide text-muted-foreground/60 font-medium">
+          {language}
+        </span>
+      )}
+
+      {/* Copy button */}
       <button
         onClick={handleCopy}
         className={cn(
@@ -61,6 +171,40 @@ function CodeBlock({ children }: { children?: React.ReactNode }) {
     </div>
   );
 }
+
+/**
+ * CodeBlock - Code block wrapper that extracts language and code text
+ * Shows copy button on hover (desktop) or always (mobile via touch)
+ */
+function CodeBlock({
+  children,
+  className,
+}: {
+  children?: React.ReactNode;
+  className?: string;
+}) {
+  // Extract language from the code element's className
+  const language = extractLanguage(className);
+
+  // Extract text content from children
+  const code = React.useMemo(() => {
+    // Get text content from children (handles both string and React elements)
+    const extractText = (node: React.ReactNode): string => {
+      if (typeof node === "string") return node;
+      if (typeof node === "number") return String(node);
+      if (Array.isArray(node)) return node.map(extractText).join("");
+      if (React.isValidElement(node)) {
+        const props = node.props as { children?: React.ReactNode };
+        return extractText(props.children);
+      }
+      return "";
+    };
+    return extractText(children);
+  }, [children]);
+
+  return <HighlightedCodeBlock code={code} language={language} />;
+}
+
 
 interface MarkdownRendererProps {
   content: string;
@@ -141,25 +285,35 @@ const createMarkdownComponents = (
     </a>
   ),
 
-  // Code
-  code: ({ className, children, ...props }: { className?: string; children?: React.ReactNode }) => {
-    const isInline = !className;
-    if (isInline) {
+  // Code - handles both inline and block code
+  code: ({ className, children }: { className?: string; children?: React.ReactNode }) => {
+    // If no className, it's inline code
+    if (!className) {
       return (
         <code className="rounded bg-muted px-1.5 py-0.5 font-mono text-sm text-foreground">
           {children}
         </code>
       );
     }
-    return (
-      <code className={cn("font-mono text-sm", className)} {...props}>
-        {children}
-      </code>
-    );
+    // Block code - just return children, CodeBlock handles highlighting
+    return <>{children}</>;
   },
-  pre: ({ children }: { children?: React.ReactNode }) => (
-    <CodeBlock>{children}</CodeBlock>
-  ),
+  // Pre wraps code blocks - pass className from child code element
+  pre: ({ children }: { children?: React.ReactNode }) => {
+    // Extract className from the code child element for language detection
+    let codeClassName: string | undefined;
+    let codeChildren: React.ReactNode = children;
+
+    React.Children.forEach(children, (child) => {
+      if (React.isValidElement(child) && child.type === "code") {
+        const props = child.props as { className?: string; children?: React.ReactNode };
+        codeClassName = props.className;
+        codeChildren = props.children;
+      }
+    });
+
+    return <CodeBlock className={codeClassName}>{codeChildren}</CodeBlock>;
+  },
 
   // Blockquotes
   blockquote: ({ children }: { children?: React.ReactNode }) => (
