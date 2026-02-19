@@ -22,3 +22,4 @@ export { SourceBadge, SourceBadgeList } from "./source-badge";
 export { ChatMessage, TypingIndicator, MessageEditForm } from "./chat-message";
 export { VirtualizedMessageList } from "./virtualized-message-list";
 export { KeyboardShortcutsDialog } from "./keyboard-shortcuts-dialog";
+export { ExportDialog } from "./export-dialog";

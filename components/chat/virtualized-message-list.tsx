@@ -19,6 +19,7 @@ interface VirtualizedMessageListProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
+  onExport: () => void;
   editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
 
@@ -40,6 +41,7 @@ export function VirtualizedMessageList({
   onCopy,
   onRegenerate,
   onSelectFollowup,
+  onExport,
   editInputRef,
 }: VirtualizedMessageListProps) {
   const parentRef = useRef<HTMLDivElement>(null);
@@ -68,29 +70,31 @@ export function VirtualizedMessageList({
     },
   });
 
-  // Auto-scroll to bottom when new messages arrive
+  // Auto-scroll to bottom when new messages arrive (only for virtualized lists)
   useEffect(() => {
     if (messages.length > previousMessageCount.current && shouldAutoScroll) {
-      // Use requestAnimationFrame to ensure DOM is updated
-      requestAnimationFrame(() => {
-        // Safety check: only scroll if we have messages and virtualizer is ready
-        if (messages.length > 0 && parentRef.current) {
-          try {
-            virtualizer.scrollToIndex(messages.length - 1, {
-              align: "end",
-              behavior: "smooth",
-            });
-          } catch {
-            // Fallback: scroll container directly if virtualizer fails
-            if (parentRef.current) {
-              parentRef.current.scrollTo({
-                top: parentRef.current.scrollHeight,
+      // Only use virtualizer scrollToIndex for virtualized lists
+      if (messages.length >= VIRTUALIZATION_THRESHOLD) {
+        requestAnimationFrame(() => {
+          if (messages.length > 0 && parentRef.current) {
+            try {
+              virtualizer.scrollToIndex(messages.length - 1, {
+                align: "end",
                 behavior: "smooth",
               });
+            } catch {
+              // Fallback: scroll container directly if virtualizer fails
+              if (parentRef.current) {
+                parentRef.current.scrollTo({
+                  top: parentRef.current.scrollHeight,
+                  behavior: "smooth",
+                });
+              }
             }
           }
-        }
-      });
+        });
+      }
+      // Non-virtualized scrolling is handled by the separate useEffect below
     }
     previousMessageCount.current = messages.length;
   }, [messages.length, shouldAutoScroll, virtualizer]);
@@ -160,6 +164,7 @@ export function VirtualizedMessageList({
                 onCopy={onCopy}
                 onRegenerate={onRegenerate}
                 onSelectFollowup={onSelectFollowup}
+                onExport={onExport}
                 editInputRef={editInputRef}
               />
             ))}
@@ -261,6 +266,7 @@ export function VirtualizedMessageList({
                   onCopy={onCopy}
                   onRegenerate={onRegenerate}
                   onSelectFollowup={onSelectFollowup}
+                  onExport={onExport}
                   editInputRef={editInputRef}
                 />
               </div>

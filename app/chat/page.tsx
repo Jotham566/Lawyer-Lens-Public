@@ -23,6 +23,7 @@ import {
   EmptyState,
   VirtualizedMessageList,
   KeyboardShortcutsDialog,
+  ExportDialog,
 } from "@/components/chat";
 import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
 import { useRequireAuth } from "@/components/providers";
@@ -57,6 +58,7 @@ function ChatContent() {
     handleRegenerate,
     setDeleteDialogOpen,
     setShortcutsDialogOpen,
+    setExportDialogOpen,
     handleConfirmDelete,
     hideUpgradeModal,
     handleStop,
@@ -143,6 +145,7 @@ function ChatContent() {
                   onCopy={copyMessage}
                   onRegenerate={handleRegenerate}
                   onSelectFollowup={handleSelectQuestion}
+                  onExport={() => setExportDialogOpen(true)}
                   editInputRef={setEditInputRef}
                 />
               )}
@@ -195,6 +198,13 @@ function ChatContent() {
           <KeyboardShortcutsDialog
             open={state.shortcutsDialogOpen}
             onOpenChange={setShortcutsDialogOpen}
+          />
+
+          {/* Export Dialog */}
+          <ExportDialog
+            open={state.exportDialogOpen}
+            onOpenChange={setExportDialogOpen}
+            conversation={state.currentConversation}
           />
 
           {/* Citation Side Panel / Bottom Sheet */}

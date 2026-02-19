@@ -9,6 +9,7 @@ import {
   Pencil,
   X,
   Send,
+  Download,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -165,6 +166,7 @@ interface AssistantMessageActionsProps {
   copiedId: string | null;
   onCopy: (id: string, content: string) => void;
   onRegenerate: () => void;
+  onExport: () => void;
   disabled: boolean;
 }
 
@@ -174,6 +176,7 @@ function AssistantMessageActions({
   copiedId,
   onCopy,
   onRegenerate,
+  onExport,
   disabled,
 }: AssistantMessageActionsProps) {
   return (
@@ -211,6 +214,19 @@ function AssistantMessageActions({
         </TooltipTrigger>
         <TooltipContent>Regenerate response</TooltipContent>
       </Tooltip>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-7 w-7"
+            onClick={onExport}
+          >
+            <Download className="h-3.5 w-3.5" />
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Export conversation</TooltipContent>
+      </Tooltip>
     </>
   );
 }
@@ -228,6 +244,7 @@ interface ChatMessageProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
+  onExport: () => void;
   editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
 
@@ -244,6 +261,7 @@ function ChatMessageComponent({
   onCopy,
   onRegenerate,
   onSelectFollowup,
+  onExport,
   editInputRef,
 }: ChatMessageProps) {
   const messageId = `${message.timestamp}-${index}`;
@@ -375,6 +393,7 @@ function ChatMessageComponent({
                 copiedId={copiedId}
                 onCopy={onCopy}
                 onRegenerate={() => onRegenerate(index)}
+                onExport={onExport}
                 disabled={isLoading}
               />
             </div>

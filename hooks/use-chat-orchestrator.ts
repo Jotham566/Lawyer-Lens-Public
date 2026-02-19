@@ -77,6 +77,7 @@ export function useChatOrchestrator() {
     const [conversationToDelete, setConversationToDelete] = useState<string | null>(null);
     const [mobileHistoryOpen, setMobileHistoryOpen] = useState(false);
     const [shortcutsDialogOpen, setShortcutsDialogOpen] = useState(false);
+    const [exportDialogOpen, setExportDialogOpen] = useState(false);
 
     const inputRef = useRef<HTMLTextAreaElement>(null);
     const editInputRef = useRef<HTMLTextAreaElement>(null);
@@ -566,6 +567,7 @@ export function useChatOrchestrator() {
             deleteDialogOpen,
             mobileHistoryOpen,
             shortcutsDialogOpen,
+            exportDialogOpen,
             upgradeModalOpen,
             upgradeDetails,
         },
@@ -592,6 +594,7 @@ export function useChatOrchestrator() {
             handleSelectQuestion,
             setMobileHistoryOpen,
             setShortcutsDialogOpen,
+            setExportDialogOpen,
             setDeleteDialogOpen,
             hideUpgradeModal,
             handleStop,
