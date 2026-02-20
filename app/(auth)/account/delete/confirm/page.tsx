@@ -129,14 +129,14 @@ function ConfirmDeletionContent() {
           <div className="rounded-lg bg-muted p-4 text-sm">
             <p className="font-medium mb-2">Changed your mind?</p>
             <p className="text-muted-foreground">
-              You can cancel the scheduled deletion at any time by logging into your account before the deletion date.
+              Simply log in to your account to reactivate it. You can then cancel the scheduled deletion from your security settings.
             </p>
           </div>
         </CardContent>
 
         <CardFooter className="flex flex-col gap-4">
           <Button asChild variant="outline" className="w-full">
-            <Link href="/login">Log in to cancel deletion</Link>
+            <Link href="/login">Log in to reactivate account</Link>
           </Button>
           <Link
             href="/"
