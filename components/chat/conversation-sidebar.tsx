@@ -49,25 +49,42 @@ export const stripMarkdownFromTitle = (title: string): string => {
 };
 
 export function formatRelativeTime(timestamp: string): string {
-  const timeStr = timestamp.endsWith("Z") || timestamp.includes("+")
-    ? timestamp
-    : `${timestamp}Z`;
+  if (!timestamp) return "Unknown";
 
-  const date = new Date(timeStr);
-  const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMs / 3600000);
-  const diffDays = Math.floor(diffMs / 86400000);
+  try {
+    const timeStr = timestamp.endsWith("Z") || timestamp.includes("+")
+      ? timestamp
+      : `${timestamp}Z`;
 
-  if (diffMins < 1) return "Just now";
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString();
+    const date = new Date(timeStr);
+
+    // Check for invalid date
+    if (isNaN(date.getTime())) return "Unknown";
+
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    // Handle future dates (clock skew)
+    if (diffMs < 0) return "Just now";
+
+    const diffMins = Math.floor(diffMs / 60000);
+    const diffHours = Math.floor(diffMs / 3600000);
+    const diffDays = Math.floor(diffMs / 86400000);
+
+    if (diffMins < 1) return "Just now";
+    if (diffMins < 60) return `${diffMins}m ago`;
+    if (diffHours < 24) return `${diffHours}h ago`;
+    if (diffDays < 7) return `${diffDays}d ago`;
+    return date.toLocaleDateString();
+  } catch {
+    return "Unknown";
+  }
 }
 
 function getDayLabel(date: Date): string {
+  // Handle invalid dates
+  if (!date || isNaN(date.getTime())) return "Older";
+
   const now = new Date();
   const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
   const yesterday = new Date(today);
@@ -79,7 +96,8 @@ function getDayLabel(date: Date): string {
 
   if (checkDate.getTime() === today.getTime()) return "Today";
   if (checkDate.getTime() === yesterday.getTime()) return "Yesterday";
-  if (checkDate > lastWeek) return "Previous 7 Days";
+  // Use >= to include conversations from exactly 7 days ago
+  if (checkDate >= lastWeek) return "Previous 7 Days";
   return "Older";
 }
 

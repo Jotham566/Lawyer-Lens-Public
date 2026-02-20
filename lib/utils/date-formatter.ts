@@ -85,24 +85,36 @@ export function formatDateOnly(date: string | Date | null): string {
 export function formatRelativeTime(date: string | Date | null): string {
   if (!date) return 'Never'
 
-  const dateObj = typeof date === 'string' ? new Date(date) : date
-  const now = new Date()
-  const diffMs = now.getTime() - dateObj.getTime()
-  const diffSec = Math.floor(diffMs / 1000)
-  const diffMin = Math.floor(diffSec / 60)
-  const diffHour = Math.floor(diffMin / 60)
-  const diffDay = Math.floor(diffHour / 24)
+  try {
+    const dateObj = typeof date === 'string' ? new Date(date) : date
 
-  if (diffDay > 7) {
-    return formatDate(date, { showTime: true })
-  } else if (diffDay > 0) {
-    return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
-  } else if (diffHour > 0) {
-    return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
-  } else if (diffMin > 0) {
-    return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`
-  } else {
-    return 'Just now'
+    // Check for invalid date
+    if (isNaN(dateObj.getTime())) return 'Unknown'
+
+    const now = new Date()
+    const diffMs = now.getTime() - dateObj.getTime()
+
+    // Handle future dates (clock skew)
+    if (diffMs < 0) return 'Just now'
+
+    const diffSec = Math.floor(diffMs / 1000)
+    const diffMin = Math.floor(diffSec / 60)
+    const diffHour = Math.floor(diffMin / 60)
+    const diffDay = Math.floor(diffHour / 24)
+
+    if (diffDay > 7) {
+      return formatDate(date, { showTime: true })
+    } else if (diffDay > 0) {
+      return `${diffDay} day${diffDay > 1 ? 's' : ''} ago`
+    } else if (diffHour > 0) {
+      return `${diffHour} hour${diffHour > 1 ? 's' : ''} ago`
+    } else if (diffMin > 0) {
+      return `${diffMin} minute${diffMin > 1 ? 's' : ''} ago`
+    } else {
+      return 'Just now'
+    }
+  } catch {
+    return 'Unknown'
   }
 }
 
