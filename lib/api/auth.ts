@@ -280,13 +280,68 @@ export interface DeleteAccountRequest {
   confirmation: string; // User types "DELETE" to confirm
 }
 
+export interface DeletionStatusResponse {
+  status: "none" | "pending" | "scheduled";
+  requested_at?: string;
+  confirmed_at?: string;
+  scheduled_for?: string;
+  days_remaining?: number;
+}
+
+export interface DeletionConfirmResponse {
+  message: string;
+  scheduled_for: string;
+}
+
 /**
- * Delete user account (requires password confirmation)
+ * Request account deletion (initiates deletion flow)
+ * Account is deactivated and email is sent with confirm/cancel links
  */
 export async function deleteAccount(data: DeleteAccountRequest): Promise<{ message: string }> {
   return apiFetch<{ message: string }>("/auth/account", {
     method: "DELETE",
     body: JSON.stringify(data),
+  });
+}
+
+/**
+ * Confirm account deletion via email token
+ * Schedules permanent deletion after 90-day grace period
+ */
+export async function confirmAccountDeletion(token: string): Promise<DeletionConfirmResponse> {
+  return apiFetch<DeletionConfirmResponse>("/auth/account/deletion/confirm", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+/**
+ * Cancel account deletion via email token
+ * Reactivates the account
+ */
+export async function cancelAccountDeletion(token: string): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/account/deletion/cancel", {
+    method: "POST",
+    body: JSON.stringify({ token }),
+  });
+}
+
+/**
+ * Cancel a scheduled account deletion (authenticated endpoint)
+ * User must be logged in to use this
+ */
+export async function cancelScheduledDeletion(): Promise<{ message: string }> {
+  return apiFetch<{ message: string }>("/auth/account/deletion/cancel-scheduled", {
+    method: "POST",
+  });
+}
+
+/**
+ * Get account deletion status (authenticated endpoint)
+ */
+export async function getAccountDeletionStatus(): Promise<DeletionStatusResponse> {
+  return apiFetch<DeletionStatusResponse>("/auth/account/deletion/status", {
+    method: "GET",
   });
 }
 
