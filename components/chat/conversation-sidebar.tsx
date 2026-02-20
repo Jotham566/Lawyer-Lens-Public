@@ -37,7 +37,6 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/stores";
-import { Logo } from "@/components/layout/logo";
 
 // Helper to strip markdown from titles for display
 export const stripMarkdownFromTitle = (title: string): string => {
@@ -498,7 +497,7 @@ export function ConversationSidebar({
       {/* Header */}
       <div className={cn("flex items-center h-14 border-b px-3", isCollapsed ? "justify-center" : "justify-between")}>
         {!isCollapsed && (
-          <Logo height={126} />
+          <span className="font-semibold text-sm">Chat History</span>
         )}
         <Button
           variant="ghost"
