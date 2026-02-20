@@ -81,8 +81,8 @@ export default function OAuthCallbackPage() {
         sessionStorage.removeItem("oauth_return_url");
         sessionStorage.removeItem("auth_return_url");
 
-        // Update auth context
-        loginWithOAuth(response);
+        // Update auth context (fetches full user profile including avatar)
+        await loginWithOAuth(response);
 
         setState("success");
 

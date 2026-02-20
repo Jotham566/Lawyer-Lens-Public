@@ -36,7 +36,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<{ requiresVerification: boolean }>;
   register: (data: RegisterRequest) => Promise<{ emailSent: boolean }>;
-  loginWithOAuth: (response: LoginResponse) => void;
+  loginWithOAuth: (response: LoginResponse) => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
 }
@@ -143,15 +143,18 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const login = useCallback(async (credentials: LoginRequest) => {
     const response = await apiLogin(credentials);
 
+    // Fetch full user profile to get complete data (including avatar_url)
+    const user = await getCurrentUser();
+
     setState({
-      user: response.user,
+      user,
       isLoading: false,
       isAuthenticated: true,
     });
 
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
-    useChatStore.getState().setUserId(response.user.id);
+    useChatStore.getState().setUserId(user.id);
 
     return { requiresVerification: response.requires_email_verification };
   }, []);
@@ -160,30 +163,36 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const register = useCallback(async (data: RegisterRequest) => {
     const response = await apiRegister(data);
 
+    // Fetch full user profile to get complete data (including avatar_url)
+    const user = await getCurrentUser();
+
     setState({
-      user: response.user,
+      user,
       isLoading: false,
       isAuthenticated: true,
     });
 
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
-    useChatStore.getState().setUserId(response.user.id);
+    useChatStore.getState().setUserId(user.id);
 
     return { emailSent: response.email_verification_sent };
   }, []);
 
   // OAuth Login - for handling OAuth callback
-  const loginWithOAuth = useCallback((response: LoginResponse) => {
+  const loginWithOAuth = useCallback(async (_response: LoginResponse) => {
+    // Fetch full user profile to get complete data (including avatar_url)
+    const user = await getCurrentUser();
+
     setState({
-      user: response.user,
+      user,
       isLoading: false,
       isAuthenticated: true,
     });
 
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
-    useChatStore.getState().setUserId(response.user.id);
+    useChatStore.getState().setUserId(user.id);
   }, []);
 
   // Logout
