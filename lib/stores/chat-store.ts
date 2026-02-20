@@ -231,11 +231,11 @@ export const useChatStore = create<ChatState>()(
       },
 
       archiveConversation: (id) => {
-        // Optimistic update
+        // Optimistic update - don't update updatedAt for metadata changes
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
-              ? { ...conv, isArchived: true, updatedAt: new Date().toISOString() }
+              ? { ...conv, isArchived: true }
               : conv
           ),
           currentConversationId:
@@ -251,11 +251,11 @@ export const useChatStore = create<ChatState>()(
       },
 
       unarchiveConversation: (id) => {
-        // Optimistic update
+        // Optimistic update - don't update updatedAt for metadata changes
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
-              ? { ...conv, isArchived: false, updatedAt: new Date().toISOString() }
+              ? { ...conv, isArchived: false }
               : conv
           ),
         }));
@@ -267,11 +267,11 @@ export const useChatStore = create<ChatState>()(
       },
 
       starConversation: (id) => {
-        // Optimistic update
+        // Optimistic update - don't update updatedAt for metadata changes
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
-              ? { ...conv, isStarred: true, updatedAt: new Date().toISOString() }
+              ? { ...conv, isStarred: true }
               : conv
           ),
         }));
@@ -283,11 +283,11 @@ export const useChatStore = create<ChatState>()(
       },
 
       unstarConversation: (id) => {
-        // Optimistic update
+        // Optimistic update - don't update updatedAt for metadata changes
         set((state) => ({
           conversations: state.conversations.map((conv) =>
             conv.id === id
-              ? { ...conv, isStarred: false, updatedAt: new Date().toISOString() }
+              ? { ...conv, isStarred: false }
               : conv
           ),
         }));
