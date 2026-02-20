@@ -13,8 +13,6 @@ import {
   Monitor,
   Smartphone,
   Trash2,
-  AlertTriangle,
-  Calendar,
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -46,11 +44,7 @@ import {
   getSessions,
   revokeSession,
   revokeAllSessions,
-  deleteAccount,
-  getAccountDeletionStatus,
-  cancelScheduledDeletion,
   type UserSession,
-  type DeletionStatusResponse,
 } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/utils/date-formatter";
@@ -126,22 +120,9 @@ function formatSessionInfo(session: UserSession): string {
   return parts.length > 0 ? parts.join(" ") : session.user_agent || "Unknown device";
 }
 
-// Deletion confirmation schema
-const deleteAccountSchema = z.object({
-  password: z.string(),
-  confirmation: z.string().refine((val) => val === "DELETE", {
-    message: "Type DELETE to confirm",
-  }),
-});
-
-interface DeleteAccountFormData {
-  password: string;
-  confirmation: string;
-}
-
 export default function SecuritySettingsPage() {
   const { isLoading: authLoading } = useRequireAuth();
-  const { user, isAuthenticated, logout: authLogout } = useAuth();
+  const { user, isAuthenticated } = useAuth();
 
   const [sessions, setSessions] = useState<UserSession[]>([]);
   const [loadingSessions, setLoadingSessions] = useState(true);
@@ -155,16 +136,6 @@ export default function SecuritySettingsPage() {
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-
-  // Account deletion state
-  const [deletionStatus, setDeletionStatus] = useState<DeletionStatusResponse | null>(null);
-  const [deletionLoading, setDeletionLoading] = useState(true);
-  const [deletionError, setDeletionError] = useState<string | null>(null);
-  const [deletionSuccess, setDeletionSuccess] = useState<string | null>(null);
-  const [cancellingDeletion, setCancellingDeletion] = useState(false);
-  const [deletingAccount, setDeletingAccount] = useState(false);
-  const [showDeletePassword, setShowDeletePassword] = useState(false);
-  const [showDeleteDialog, setShowDeleteDialog] = useState(false);
 
   const {
     register,
@@ -198,84 +169,6 @@ export default function SecuritySettingsPage() {
       loadSessions();
     }
   }, [isAuthenticated]);
-
-  // Load deletion status
-  useEffect(() => {
-    async function loadDeletionStatus() {
-      if (!isAuthenticated) return;
-
-      try {
-        const status = await getAccountDeletionStatus();
-        setDeletionStatus(status);
-      } catch (err) {
-        console.error("Failed to load deletion status:", err);
-      } finally {
-        setDeletionLoading(false);
-      }
-    }
-
-    if (isAuthenticated) {
-      loadDeletionStatus();
-    }
-  }, [isAuthenticated]);
-
-  // Delete account form
-  const deleteForm = useForm<DeleteAccountFormData>({
-    resolver: zodResolver(deleteAccountSchema),
-    defaultValues: {
-      password: "",
-      confirmation: "",
-    },
-  });
-
-  const handleDeleteAccount = async (data: DeleteAccountFormData) => {
-    if (!isAuthenticated) return;
-
-    setDeletionError(null);
-    setDeletingAccount(true);
-
-    try {
-      await deleteAccount(data);
-      setDeletionSuccess(
-        "Your account has been deactivated. Please check your email for confirmation."
-      );
-      setShowDeleteDialog(false);
-      deleteForm.reset();
-      // Logout after deletion request
-      setTimeout(() => {
-        authLogout();
-      }, 3000);
-    } catch (err) {
-      if (err instanceof APIError) {
-        setDeletionError(err.message || "Failed to delete account");
-      } else {
-        setDeletionError("An unexpected error occurred");
-      }
-    } finally {
-      setDeletingAccount(false);
-    }
-  };
-
-  const handleCancelScheduledDeletion = async () => {
-    if (!isAuthenticated) return;
-
-    setCancellingDeletion(true);
-    setDeletionError(null);
-
-    try {
-      await cancelScheduledDeletion();
-      setDeletionStatus({ status: "none" });
-      setDeletionSuccess("Your scheduled account deletion has been cancelled.");
-    } catch (err) {
-      if (err instanceof APIError) {
-        setDeletionError(err.message || "Failed to cancel deletion");
-      } else {
-        setDeletionError("An unexpected error occurred");
-      }
-    } finally {
-      setCancellingDeletion(false);
-    }
-  };
 
   const onPasswordSubmit = async (data: PasswordFormData) => {
     if (!isAuthenticated) return;
@@ -599,202 +492,6 @@ export default function SecuritySettingsPage() {
                   )}
                 </div>
               ))}
-            </div>
-          )}
-        </CardContent>
-      </Card>
-
-      {/* Account Deletion */}
-      <Card className="border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-destructive">Delete Account</CardTitle>
-          <CardDescription>
-            Permanently delete your account and all associated data
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {deletionError && (
-            <AlertBanner
-              variant="error"
-              message={deletionError}
-              onDismiss={() => setDeletionError(null)}
-            />
-          )}
-
-          {deletionSuccess && (
-            <AlertBanner
-              variant="success"
-              message={deletionSuccess}
-              onDismiss={() => setDeletionSuccess(null)}
-            />
-          )}
-
-          {deletionLoading ? (
-            <div className="flex items-center justify-center py-4">
-              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
-            </div>
-          ) : deletionStatus?.status === "scheduled" ? (
-            <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4">
-                <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5" />
-                <div className="flex-1">
-                  <p className="font-medium text-orange-800 dark:text-orange-200">
-                    Account scheduled for deletion
-                  </p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
-                    Your account will be permanently deleted on{" "}
-                    <strong>
-                      {deletionStatus.scheduled_for
-                        ? new Date(deletionStatus.scheduled_for).toLocaleDateString(
-                            "en-US",
-                            {
-                              weekday: "long",
-                              year: "numeric",
-                              month: "long",
-                              day: "numeric",
-                            }
-                          )
-                        : "the scheduled date"}
-                    </strong>
-                    .
-                  </p>
-                  {deletionStatus.days_remaining !== undefined && (
-                    <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
-                      {deletionStatus.days_remaining} days remaining to cancel
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <Button
-                variant="outline"
-                onClick={handleCancelScheduledDeletion}
-                disabled={cancellingDeletion}
-                className="w-full"
-              >
-                {cancellingDeletion ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Cancelling...
-                  </>
-                ) : (
-                  "Cancel Scheduled Deletion"
-                )}
-              </Button>
-            </div>
-          ) : deletionStatus?.status === "pending" ? (
-            <div className="flex items-start gap-3 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-4">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5" />
-              <div>
-                <p className="font-medium text-yellow-800 dark:text-yellow-200">
-                  Deletion pending confirmation
-                </p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
-                  Please check your email to confirm or cancel the account deletion.
-                </p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-4">
-              <div className="rounded-lg bg-muted p-4 text-sm">
-                <p className="font-medium mb-2">What happens when you delete your account:</p>
-                <ul className="list-disc list-inside space-y-1 text-muted-foreground">
-                  <li>Your account will be immediately deactivated</li>
-                  <li>You&apos;ll receive an email to confirm or cancel</li>
-                  <li>After confirmation, you have 90 days to change your mind</li>
-                  <li>All data will be permanently deleted after 90 days</li>
-                </ul>
-              </div>
-
-              <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
-                <AlertDialogTrigger asChild>
-                  <Button variant="destructive" className="w-full">
-                    <Trash2 className="mr-2 h-4 w-4" />
-                    Delete My Account
-                  </Button>
-                </AlertDialogTrigger>
-                <AlertDialogContent>
-                  <AlertDialogHeader>
-                    <AlertDialogTitle>Delete your account?</AlertDialogTitle>
-                    <AlertDialogDescription>
-                      This will deactivate your account. You&apos;ll receive an email to
-                      confirm or cancel the deletion. After confirmation, your account will
-                      be permanently deleted in 90 days.
-                    </AlertDialogDescription>
-                  </AlertDialogHeader>
-
-                  <form
-                    onSubmit={deleteForm.handleSubmit(handleDeleteAccount)}
-                    className="space-y-4"
-                  >
-                    {canChangePassword && (
-                      <div className="space-y-2">
-                        <Label htmlFor="delete_password">Password</Label>
-                        <div className="relative">
-                          <Lock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                          <Input
-                            id="delete_password"
-                            type={showDeletePassword ? "text" : "password"}
-                            className="pl-10 pr-10"
-                            placeholder="Enter your password"
-                            {...deleteForm.register("password")}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => setShowDeletePassword(!showDeletePassword)}
-                            className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                          >
-                            {showDeletePassword ? (
-                              <EyeOff className="h-4 w-4" />
-                            ) : (
-                              <Eye className="h-4 w-4" />
-                            )}
-                          </button>
-                        </div>
-                        {deleteForm.formState.errors.password && (
-                          <p className="text-sm text-destructive">
-                            {deleteForm.formState.errors.password.message}
-                          </p>
-                        )}
-                      </div>
-                    )}
-
-                    <div className="space-y-2">
-                      <Label htmlFor="delete_confirmation">
-                        Type <span className="font-mono font-bold">DELETE</span> to confirm
-                      </Label>
-                      <Input
-                        id="delete_confirmation"
-                        placeholder="DELETE"
-                        {...deleteForm.register("confirmation")}
-                      />
-                      {deleteForm.formState.errors.confirmation && (
-                        <p className="text-sm text-destructive">
-                          {deleteForm.formState.errors.confirmation.message}
-                        </p>
-                      )}
-                    </div>
-
-                    <AlertDialogFooter>
-                      <AlertDialogCancel type="button">Cancel</AlertDialogCancel>
-                      <Button
-                        type="submit"
-                        variant="destructive"
-                        disabled={deletingAccount}
-                      >
-                        {deletingAccount ? (
-                          <>
-                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                            Deleting...
-                          </>
-                        ) : (
-                          "Delete Account"
-                        )}
-                      </Button>
-                    </AlertDialogFooter>
-                  </form>
-                </AlertDialogContent>
-              </AlertDialog>
             </div>
           )}
         </CardContent>

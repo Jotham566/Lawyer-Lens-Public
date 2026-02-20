@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
-import { User, Mail, Loader2, AlertTriangle } from "lucide-react";
+import { User, Mail, Loader2, AlertTriangle, Calendar } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -18,7 +18,12 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { useAuth, useRequireAuth } from "@/components/providers";
-import { updateProfile } from "@/lib/api/auth";
+import {
+  updateProfile,
+  getAccountDeletionStatus,
+  cancelScheduledDeletion,
+  type DeletionStatusResponse,
+} from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { PageHeader, AlertBanner, PageLoading, StatusBadge } from "@/components/common";
 import { AvatarUpload, DeleteAccountDialog } from "@/components/profile";
@@ -48,6 +53,54 @@ export default function SettingsPage() {
     error: resendError,
     clearError: clearResendError,
   } = useResendVerification(isAuthenticated);
+
+  // Deletion status state
+  const [deletionStatus, setDeletionStatus] = useState<DeletionStatusResponse | null>(null);
+  const [deletionLoading, setDeletionLoading] = useState(true);
+  const [cancellingDeletion, setCancellingDeletion] = useState(false);
+  const [deletionError, setDeletionError] = useState<string | null>(null);
+  const [deletionSuccess, setDeletionSuccess] = useState<string | null>(null);
+
+  // Load deletion status
+  useEffect(() => {
+    async function loadDeletionStatus() {
+      if (!isAuthenticated) return;
+
+      try {
+        const status = await getAccountDeletionStatus();
+        setDeletionStatus(status);
+      } catch (err) {
+        console.error("Failed to load deletion status:", err);
+      } finally {
+        setDeletionLoading(false);
+      }
+    }
+
+    if (isAuthenticated) {
+      loadDeletionStatus();
+    }
+  }, [isAuthenticated]);
+
+  const handleCancelScheduledDeletion = async () => {
+    if (!isAuthenticated) return;
+
+    setCancellingDeletion(true);
+    setDeletionError(null);
+
+    try {
+      await cancelScheduledDeletion();
+      setDeletionStatus({ status: "none" });
+      setDeletionSuccess("Your scheduled account deletion has been cancelled.");
+    } catch (err) {
+      if (err instanceof APIError) {
+        setDeletionError(err.message || "Failed to cancel deletion");
+      } else {
+        setDeletionError("An unexpected error occurred");
+      }
+    } finally {
+      setCancellingDeletion(false);
+    }
+  };
 
   const {
     register,
@@ -269,22 +322,105 @@ export default function SettingsPage() {
             Irreversible and destructive actions
           </CardDescription>
         </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="font-medium">Delete Account</p>
-              <p className="text-sm text-muted-foreground">
-                Permanently delete your account and all associated data
-              </p>
-            </div>
-            <DeleteAccountDialog
-              trigger={
-                <Button variant="destructive" size="sm">
-                  Delete Account
-                </Button>
-              }
+        <CardContent className="space-y-4">
+          {deletionError && (
+            <AlertBanner
+              variant="error"
+              message={deletionError}
+              onDismiss={() => setDeletionError(null)}
             />
-          </div>
+          )}
+
+          {deletionSuccess && (
+            <AlertBanner
+              variant="success"
+              message={deletionSuccess}
+              onDismiss={() => setDeletionSuccess(null)}
+            />
+          )}
+
+          {deletionLoading ? (
+            <div className="flex items-center justify-center py-4">
+              <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+            </div>
+          ) : deletionStatus?.status === "scheduled" ? (
+            <div className="space-y-4">
+              <div className="flex items-start gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4">
+                <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+                <div className="flex-1">
+                  <p className="font-medium text-orange-800 dark:text-orange-200">
+                    Account scheduled for deletion
+                  </p>
+                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                    Your account will be permanently deleted on{" "}
+                    <strong>
+                      {deletionStatus.scheduled_for
+                        ? new Date(deletionStatus.scheduled_for).toLocaleDateString(
+                            "en-US",
+                            {
+                              weekday: "long",
+                              year: "numeric",
+                              month: "long",
+                              day: "numeric",
+                            }
+                          )
+                        : "the scheduled date"}
+                    </strong>
+                    .
+                  </p>
+                  {deletionStatus.days_remaining !== undefined && (
+                    <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                      {deletionStatus.days_remaining} days remaining to cancel
+                    </p>
+                  )}
+                </div>
+              </div>
+
+              <Button
+                variant="outline"
+                onClick={handleCancelScheduledDeletion}
+                disabled={cancellingDeletion}
+                className="w-full"
+              >
+                {cancellingDeletion ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Cancelling...
+                  </>
+                ) : (
+                  "Cancel Scheduled Deletion"
+                )}
+              </Button>
+            </div>
+          ) : deletionStatus?.status === "pending" ? (
+            <div className="flex items-start gap-3 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-4">
+              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+              <div>
+                <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                  Deletion pending confirmation
+                </p>
+                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                  Please check your email to confirm or cancel the account deletion.
+                </p>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="font-medium">Delete Account</p>
+                <p className="text-sm text-muted-foreground">
+                  Permanently delete your account and all associated data
+                </p>
+              </div>
+              <DeleteAccountDialog
+                trigger={
+                  <Button variant="destructive" size="sm">
+                    Delete Account
+                  </Button>
+                }
+              />
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>
