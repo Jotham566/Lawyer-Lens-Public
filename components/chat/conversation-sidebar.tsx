@@ -5,7 +5,6 @@ import {
   MessageSquare,
   Plus,
   Trash2,
-  Scale,
   History,
   PanelLeftClose,
   PanelLeftOpen,
@@ -38,6 +37,7 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/stores";
+import { Logo } from "@/components/layout/logo";
 
 // Helper to strip markdown from titles for display
 export const stripMarkdownFromTitle = (title: string): string => {
@@ -498,10 +498,7 @@ export function ConversationSidebar({
       {/* Header */}
       <div className={cn("flex items-center h-14 border-b px-3", isCollapsed ? "justify-center" : "justify-between")}>
         {!isCollapsed && (
-          <div className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
-            <span className="font-semibold text-sm">Law Lens</span>
-          </div>
+          <Logo height={126} />
         )}
         <Button
           variant="ghost"

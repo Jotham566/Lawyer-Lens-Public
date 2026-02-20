@@ -13,7 +13,6 @@ import {
   ChevronRight,
   ScrollText,
   BookOpen,
-  Scale,
   Activity,
   Settings,
   Building2,
@@ -28,6 +27,7 @@ import {
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
 import { useAuth } from "@/components/providers";
+import { Logo } from "./logo";
 
 interface MobileNavProps {
   open: boolean;
@@ -128,9 +128,8 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent side="left" className="w-80 p-0">
         <SheetHeader className="border-b p-4">
-          <SheetTitle className="flex items-center gap-2">
-            <Scale className="h-5 w-5 text-primary" />
-            Law Lens
+          <SheetTitle>
+            <Logo height={140} />
           </SheetTitle>
           <SheetDescription className="sr-only">
             Main navigation menu for Law Lens

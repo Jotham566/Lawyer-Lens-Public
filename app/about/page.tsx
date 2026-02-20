@@ -9,19 +9,12 @@ export default function AboutPage() {
 
       {/* Header */}
       <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Scale className="h-6 w-6 text-primary" />
-          </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              About Law Lens
-            </h1>
-            <p className="text-muted-foreground">
-              Uganda&apos;s Legal Intelligence Platform
-            </p>
-          </div>
-        </div>
+        <h1 className="text-2xl font-bold tracking-tight sm:text-3xl mb-2">
+          About Law Lens
+        </h1>
+        <p className="text-muted-foreground">
+          Uganda&apos;s Legal Intelligence Platform
+        </p>
       </div>
 
       {/* Mission */}

@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Scale, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
+import { Logo } from "@/components/layout/logo";
 
 export default function AuthLayout({
   children,
@@ -11,10 +12,7 @@ export default function AuthLayout({
       {/* Header */}
       <header className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
         <div className="container flex h-14 items-center justify-between px-4">
-          <Link href="/" className="flex items-center gap-2 font-semibold hover:opacity-80 transition-opacity">
-            <Scale className="h-5 w-5 text-primary" />
-            <span>Law Lens</span>
-          </Link>
+          <Logo height={140} />
           <Link
             href="/"
             className="flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"

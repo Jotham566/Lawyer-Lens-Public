@@ -7,7 +7,6 @@ import {
   Menu,
   X,
   Search,
-  Scale,
   Gavel,
   BookMarked,
   FileText,
@@ -32,6 +31,7 @@ import {
 import { ThemeToggle } from "./theme-toggle";
 import { UserMenu } from "./user-menu";
 import { OrgSwitcher } from "./org-switcher";
+import { Logo } from "./logo";
 import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
@@ -100,12 +100,9 @@ export function HeaderRedesign({
     >
       <div className="container flex h-16 items-center gap-4 px-4">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2 mr-4">
-          <Scale className="h-6 w-6 text-primary" />
-          <span className="hidden font-bold text-lg sm:inline-block">
-            Law Lens
-          </span>
-        </Link>
+        <div className="mr-4">
+          <Logo height={155} />
+        </div>
 
         {/* Desktop Navigation - Only render after mount to prevent hydration mismatch */}
         {mounted ? (
