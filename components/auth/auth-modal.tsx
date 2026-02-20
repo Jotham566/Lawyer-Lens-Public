@@ -483,7 +483,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
     resolver: zodResolver(registerSchema),
   });
 
-  const password = useWatch({ control, name: "password" });
+  const password = useWatch({ control, name: "password" }) || "";
 
   const onSubmit = async (data: RegisterFormData) => {
     setError(null);

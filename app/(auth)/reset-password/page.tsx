@@ -89,7 +89,7 @@ function ResetPasswordContent() {
     resolver: zodResolver(resetPasswordSchema),
   });
 
-  const password = useWatch({ control, name: "password" });
+  const password = useWatch({ control, name: "password" }) || "";
 
   const onSubmit = async (data: ResetPasswordFormData) => {
     if (!token) {
