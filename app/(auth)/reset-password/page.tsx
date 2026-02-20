@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { useRedirectIfAuthenticated } from "@/components/providers";
 import { resetPassword } from "@/lib/api/auth";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { APIError } from "@/lib/api/client";
 
 const resetPasswordSchema = z.object({
   password: z
