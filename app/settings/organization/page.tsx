@@ -32,7 +32,7 @@ import {
   updateOrganization,
   type Organization,
 } from "@/lib/api/organizations";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import {
   PageHeader,
   AlertBanner,
@@ -107,11 +107,7 @@ function OrganizationSettingsContent() {
       setOrganization(updated);
       setSuccess("Organization updated successfully");
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to update organization");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to update organization"));
     }
   };
 

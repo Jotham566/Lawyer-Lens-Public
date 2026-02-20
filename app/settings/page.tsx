@@ -24,7 +24,7 @@ import {
   cancelScheduledDeletion,
   type DeletionStatusResponse,
 } from "@/lib/api/auth";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import { PageHeader, AlertBanner, PageLoading, StatusBadge } from "@/components/common";
 import { AvatarUpload, DeleteAccountDialog } from "@/components/profile";
 import { useResendVerification } from "@/lib/hooks";
@@ -92,11 +92,7 @@ export default function SettingsPage() {
       setDeletionStatus({ status: "none" });
       setDeletionSuccess("Your scheduled account deletion has been cancelled.");
     } catch (err) {
-      if (err instanceof APIError) {
-        setDeletionError(err.message || "Failed to cancel deletion");
-      } else {
-        setDeletionError("An unexpected error occurred");
-      }
+      setDeletionError(getUserFriendlyError(err, "Failed to cancel deletion"));
     } finally {
       setCancellingDeletion(false);
     }
@@ -132,11 +128,7 @@ export default function SettingsPage() {
       await refreshSession();
       setSuccess("Profile updated successfully");
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to update profile");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to update profile"));
     }
   };
 

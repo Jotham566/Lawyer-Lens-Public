@@ -269,6 +269,73 @@ export class APIError extends Error {
       (this.message?.includes("limit") && this.message?.includes("exceeded"))
     );
   }
+
+  /**
+   * Get a user-friendly error message that doesn't expose technical details.
+   * Use this instead of err.message when displaying errors to users.
+   */
+  getUserMessage(fallback?: string): string {
+    // Map error codes to user-friendly messages
+    const errorCodeMessages: Record<string, string> = {
+      INVALID_CREDENTIALS: "Invalid email or password. Please try again.",
+      USER_NOT_FOUND: "Account not found. Please check your email address.",
+      USER_EXISTS: "An account with this email already exists.",
+      EMAIL_NOT_VERIFIED: "Please verify your email address to continue.",
+      TOKEN_EXPIRED: "This link has expired. Please request a new one.",
+      INVALID_TOKEN: "This link is invalid. Please request a new one.",
+      ACCOUNT_LOCKED: "Your account has been temporarily locked. Please try again later.",
+      RATE_LIMIT_EXCEEDED: "Too many requests. Please wait a moment and try again.",
+      USAGE_LIMIT_EXCEEDED: "You've reached your usage limit. Please upgrade your plan.",
+      FEATURE_NOT_AVAILABLE: "This feature is not available on your current plan.",
+      PERMISSION_DENIED: "You don't have permission to perform this action.",
+      VALIDATION_ERROR: "Please check your input and try again.",
+      SERVICE_UNAVAILABLE: "Service is temporarily unavailable. Please try again later.",
+    };
+
+    // Check for known error codes first
+    if (this.errorCode && errorCodeMessages[this.errorCode]) {
+      return errorCodeMessages[this.errorCode];
+    }
+
+    // Map HTTP status codes to user-friendly messages
+    const statusMessages: Record<number, string> = {
+      400: "Invalid request. Please check your input and try again.",
+      401: "Please sign in to continue.",
+      403: "You don't have permission to perform this action.",
+      404: "The requested resource was not found.",
+      408: "Request timed out. Please try again.",
+      409: "This action conflicts with the current state. Please refresh and try again.",
+      413: "The file is too large. Please try a smaller file.",
+      422: "Please check your input and try again.",
+      429: "Too many requests. Please wait a moment and try again.",
+      500: "An internal error occurred. Please try again later.",
+      502: "Service is temporarily unavailable. Please try again later.",
+      503: "Service is temporarily unavailable. Please try again later.",
+      504: "Request timed out. Please try again.",
+    };
+
+    if (statusMessages[this.status]) {
+      return statusMessages[this.status];
+    }
+
+    // Return fallback or generic message
+    return fallback || "An unexpected error occurred. Please try again.";
+  }
+}
+
+/**
+ * Get a user-friendly error message from any error type.
+ * This sanitizes error messages to avoid exposing technical details to users.
+ */
+export function getUserFriendlyError(error: unknown, fallback?: string): string {
+  // Handle APIError with its built-in user message
+  if (error instanceof APIError) {
+    return error.getUserMessage(fallback);
+  }
+
+  // For other Error types, use a generic message
+  // Don't expose raw error.message as it may contain technical details
+  return fallback || "An unexpected error occurred. Please try again.";
 }
 
 /**

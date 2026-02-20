@@ -46,7 +46,7 @@ import {
   type OrganizationMember,
   type OrganizationRole,
 } from "@/lib/api/organizations";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 
 // Import reusable components
 import {
@@ -110,11 +110,7 @@ function TeamMembersContent() {
       );
       setSuccess(`${member.full_name}'s role updated to ${newRole}`);
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to update member role");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to update member role"));
     } finally {
       setActionLoading(null);
     }
@@ -132,11 +128,7 @@ function TeamMembersContent() {
       setMembers((prev) => prev.filter((m) => m.id !== memberToRemove.id));
       setSuccess(`${memberToRemove.full_name} has been removed from the team`);
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to remove member");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to remove member"));
     } finally {
       setActionLoading(null);
       setMemberToRemove(null);

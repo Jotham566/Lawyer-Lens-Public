@@ -22,6 +22,7 @@ import {
 import Link from "next/link";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
+import { getUserFriendlyError } from "@/lib/api/client";
 import {
   validateUgandaPhone,
   detectProvider,
@@ -193,8 +194,7 @@ function CheckoutContent() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Payment failed");
+        throw new Error("Payment failed");
       }
 
       const data = await response.json();
@@ -206,7 +206,7 @@ function CheckoutContent() {
         router.push("/billing?success=true");
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Payment failed. Please try again.");
+      setError(getUserFriendlyError(err, "Payment failed. Please try again."));
     } finally {
       setIsProcessing(false);
     }

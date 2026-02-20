@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers";
 import { deleteAccount } from "@/lib/api/auth";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 
 const CONFIRMATION_TEXT = "DELETE";
@@ -89,7 +89,7 @@ export function DeleteAccountDialog({ trigger }: DeleteAccountDialogProps) {
         if (err.errorCode === "INVALID_PASSWORD") {
           setError("Incorrect password. Please try again.");
         } else {
-          setError(err.message || "Failed to delete account. Please try again.");
+          setError(err.getUserMessage("Failed to delete account. Please try again."));
         }
       } else {
         setError("An unexpected error occurred. Please try again.");

@@ -46,7 +46,7 @@ import {
   revokeAllSessions,
   type UserSession,
 } from "@/lib/api/auth";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/utils/date-formatter";
 
 const passwordSchema = z
@@ -184,14 +184,10 @@ export default function SecuritySettingsPage() {
       setPasswordSuccess("Password changed successfully");
       reset();
     } catch (err) {
-      if (err instanceof APIError) {
-        if (err.errorCode === "INVALID_CREDENTIALS") {
-          setPasswordError("Current password is incorrect");
-        } else {
-          setPasswordError(err.message || "Failed to change password");
-        }
+      if (err instanceof APIError && err.errorCode === "INVALID_CREDENTIALS") {
+        setPasswordError("Current password is incorrect");
       } else {
-        setPasswordError("An unexpected error occurred");
+        setPasswordError(getUserFriendlyError(err, "Failed to change password"));
       }
     }
   };
@@ -206,11 +202,7 @@ export default function SecuritySettingsPage() {
       await revokeSession(sessionId);
       setSessions((prev) => prev.filter((s) => s.id !== sessionId));
     } catch (err) {
-      if (err instanceof APIError) {
-        setSessionError(err.message || "Failed to revoke session");
-      } else {
-        setSessionError("An unexpected error occurred");
-      }
+      setSessionError(getUserFriendlyError(err, "Failed to revoke session"));
     } finally {
       setRevokingSession(null);
     }
@@ -226,11 +218,7 @@ export default function SecuritySettingsPage() {
       await revokeAllSessions();
       setSessions((prev) => prev.filter((s) => s.is_current));
     } catch (err) {
-      if (err instanceof APIError) {
-        setSessionError(err.message || "Failed to revoke sessions");
-      } else {
-        setSessionError("An unexpected error occurred");
-      }
+      setSessionError(getUserFriendlyError(err, "Failed to revoke sessions"));
     } finally {
       setRevokingAll(false);
     }

@@ -33,7 +33,7 @@ import { useAuth } from "@/components/providers";
 import { useAuthModal } from "./auth-modal-provider";
 import { useResendVerification } from "@/lib/hooks";
 import { forgotPassword, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 import { BetaAccessModal } from "@/components/beta";
 
@@ -277,7 +277,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
         } else if (err.errorCode === "EMAIL_NOT_VERIFIED") {
           setError("Please verify your email address before logging in.");
         } else {
-          setError(err.message || "Login failed. Please try again.");
+          setError(err.getUserMessage("Login failed. Please try again."));
         }
       } else {
         setError("An unexpected error occurred. Please try again.");
@@ -514,7 +514,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           setShowBetaModal(true);
           setError(null);
         } else {
-          setError(err.message || "Registration failed. Please try again.");
+          setError(err.getUserMessage("Registration failed. Please try again."));
         }
       } else {
         setError("An unexpected error occurred. Please try again.");
@@ -723,7 +723,7 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
         setSubmittedEmail(data.email);
         setSuccess(true);
       } else if (err instanceof APIError) {
-        setError(err.message || "Failed to send reset email. Please try again.");
+        setError(err.getUserMessage("Failed to send reset email. Please try again."));
       } else {
         setError("An unexpected error occurred. Please try again.");
       }

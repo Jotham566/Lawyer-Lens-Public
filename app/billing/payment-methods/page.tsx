@@ -38,6 +38,7 @@ import {
   AlertCircle,
 } from "lucide-react";
 import Link from "next/link";
+import { getUserFriendlyError } from "@/lib/api/client";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
 
@@ -103,8 +104,7 @@ export default function PaymentMethodsPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to add payment method");
+        throw new Error("Failed to add payment method");
       }
 
       // If card, redirect to payment provider for card entry
@@ -119,7 +119,7 @@ export default function PaymentMethodsPage() {
       setShowAddDialog(false);
       setPhoneNumber("");
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to add payment method");
+      setError(getUserFriendlyError(err, "Failed to add payment method"));
     } finally {
       setIsAddingMethod(false);
     }
@@ -137,7 +137,7 @@ export default function PaymentMethodsPage() {
 
       await fetchPaymentMethods();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update payment method");
+      setError(getUserFriendlyError(err, "Failed to update payment method"));
     }
   };
 
@@ -148,13 +148,12 @@ export default function PaymentMethodsPage() {
       });
 
       if (!response.ok) {
-        const data = await response.json();
-        throw new Error(data.detail || "Failed to delete payment method");
+        throw new Error("Failed to delete payment method");
       }
 
       await fetchPaymentMethods();
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete payment method");
+      setError(getUserFriendlyError(err, "Failed to delete payment method"));
     }
   };
 

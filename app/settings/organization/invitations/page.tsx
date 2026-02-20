@@ -51,7 +51,7 @@ import {
   type OrganizationInvitation,
   type OrganizationRole,
 } from "@/lib/api/organizations";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 
 // Import reusable components
 import {
@@ -154,11 +154,7 @@ function InvitationsContent() {
       reset();
       setDialogOpen(false);
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to send invitation");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to send invitation"));
     }
   };
 
@@ -174,11 +170,7 @@ function InvitationsContent() {
       setInvitations((prev) => prev.filter((i) => i.id !== invitation.id));
       setSuccess(`Invitation to ${invitation.email} has been cancelled`);
     } catch (err) {
-      if (err instanceof APIError) {
-        setError(err.message || "Failed to cancel invitation");
-      } else {
-        setError("An unexpected error occurred");
-      }
+      setError(getUserFriendlyError(err, "Failed to cancel invitation"));
     } finally {
       setCancellingId(null);
     }

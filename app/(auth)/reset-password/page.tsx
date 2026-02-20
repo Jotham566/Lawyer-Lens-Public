@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/card";
 import { useRedirectIfAuthenticated } from "@/components/providers";
 import { resetPassword } from "@/lib/api/auth";
-import { APIError } from "@/lib/api/client";
+import { APIError, getUserFriendlyError } from "@/lib/api/client";
 
 const resetPasswordSchema = z.object({
   password: z
@@ -110,7 +110,7 @@ function ResetPasswordContent() {
         if (err.errorCode === "TOKEN_EXPIRED" || err.errorCode === "TOKEN_INVALID") {
           setError("This reset link has expired or is invalid. Please request a new one.");
         } else {
-          setError(err.message || "Failed to reset password. Please try again.");
+          setError(err.getUserMessage("Failed to reset password. Please try again."));
         }
       } else {
         setError("An unexpected error occurred. Please try again.");
