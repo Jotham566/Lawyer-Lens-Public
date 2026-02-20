@@ -26,6 +26,16 @@ const nextConfig = {
         hostname: "api.ug.lawlens.io",
         pathname: "/api/v1/**",
       },
+      {
+        protocol: "https",
+        hostname: "*.s3.amazonaws.com",
+        pathname: "/avatars/**",
+      },
+      {
+        protocol: "https",
+        hostname: "*.s3.*.amazonaws.com",
+        pathname: "/avatars/**",
+      },
     ],
   },
 
