@@ -33,7 +33,7 @@ import { useAuth } from "@/components/providers";
 import { useAuthModal } from "./auth-modal-provider";
 import { useResendVerification } from "@/lib/hooks";
 import { forgotPassword, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 import { BetaAccessModal } from "@/components/beta";
 

@@ -51,7 +51,7 @@ import {
   type OrganizationInvitation,
   type OrganizationRole,
 } from "@/lib/api/organizations";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { getUserFriendlyError } from "@/lib/api/client";
 
 // Import reusable components
 import {

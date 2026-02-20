@@ -24,7 +24,7 @@ import {
   cancelScheduledDeletion,
   type DeletionStatusResponse,
 } from "@/lib/api/auth";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { getUserFriendlyError } from "@/lib/api/client";
 import { PageHeader, AlertBanner, PageLoading, StatusBadge } from "@/components/common";
 import { AvatarUpload, DeleteAccountDialog } from "@/components/profile";
 import { useResendVerification } from "@/lib/hooks";

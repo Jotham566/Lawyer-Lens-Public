@@ -32,7 +32,7 @@ import {
   updateOrganization,
   type Organization,
 } from "@/lib/api/organizations";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { getUserFriendlyError } from "@/lib/api/client";
 import {
   PageHeader,
   AlertBanner,

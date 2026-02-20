@@ -21,7 +21,7 @@ import {
 } from "@/components/ui/dialog";
 import { useAuth } from "@/components/providers";
 import { deleteAccount } from "@/lib/api/auth";
-import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 
 const CONFIRMATION_TEXT = "DELETE";
