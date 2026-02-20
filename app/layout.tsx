@@ -6,6 +6,7 @@ import "katex/dist/katex.min.css";
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/layout";
 import { Toaster } from "sonner";
+import { ThemeFavicon } from "@/components/theme-favicon";
 
 // Use local font with system font fallbacks (avoids Google Fonts network issues during build)
 const inter = localFont({
@@ -92,6 +93,15 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  icons: {
+    icon: [
+      { url: "/icons/light/favicon-32x32.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/icons/dark/favicon-32x32.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: dark)" },
+    ],
+    apple: [
+      { url: "/icons/light/apple-touch-icon.png", sizes: "96x96" },
+    ],
+  },
 };
 
 export const viewport: Viewport = {
@@ -125,6 +135,7 @@ export default function RootLayout({
         className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <Providers>
+          <ThemeFavicon />
           <AppShell>{children}</AppShell>
           <Toaster richColors position="top-right" />
         </Providers>
