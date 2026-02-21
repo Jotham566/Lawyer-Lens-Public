@@ -20,7 +20,6 @@ import {
   type User,
   type LoginRequest,
   type RegisterRequest,
-  type LoginResponse,
 } from "@/lib/api/auth";
 import { onUnauthorized } from "@/lib/api/client";
 import { useChatStore } from "@/lib/stores/chat-store";
@@ -36,7 +35,7 @@ interface AuthState {
 interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<{ requiresVerification: boolean }>;
   register: (data: RegisterRequest) => Promise<{ emailSent: boolean }>;
-  loginWithOAuth: (response: LoginResponse) => Promise<void>;
+  loginWithOAuth: () => Promise<void>;
   logout: () => Promise<void>;
   refreshSession: () => Promise<boolean>;
 }
@@ -180,7 +179,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
   }, []);
 
   // OAuth Login - for handling OAuth callback
-  const loginWithOAuth = useCallback(async (_response: LoginResponse) => {
+  const loginWithOAuth = useCallback(async () => {
     // Fetch full user profile to get complete data (including avatar_url)
     const user = await getCurrentUser();
 

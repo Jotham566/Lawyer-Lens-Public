@@ -67,7 +67,7 @@ export default function OAuthCallbackPage() {
 
       try {
         // Exchange code for tokens
-        const response = await handleOAuthCallback(provider, {
+        await handleOAuthCallback(provider, {
           code,
           state: stateParam,
         });
@@ -82,7 +82,7 @@ export default function OAuthCallbackPage() {
         sessionStorage.removeItem("auth_return_url");
 
         // Update auth context (fetches full user profile including avatar)
-        await loginWithOAuth(response);
+        await loginWithOAuth();
 
         setState("success");
 
