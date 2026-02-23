@@ -27,6 +27,7 @@ import { HighlightedExcerpt } from "./highlighted-excerpt";
 import { CitationNavigation, CitationNavigationHints } from "./citation-navigation";
 import { RelatedSources } from "./related-sources";
 import { CitationExport } from "./citation-export";
+import { buildHierarchyPath, parseCitationExcerpt } from "./citation-excerpt-utils";
 import { useCitation } from "./citation-context";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
 
@@ -450,7 +451,18 @@ export function SourcePanel() {
   const sectionRef = formatSectionFromData(sectionData) || formatSectionRef(activeSource);
   // Always fall back to activeSource.excerpt - this shows immediately without any state reset
   const displayExcerpt = expandedContent || activeSource.excerpt;
-  const hasTable = expandedTables.length > 0;
+  const parsedExcerpt = parseCitationExcerpt(displayExcerpt);
+  const fallbackTables: ExpandedTable[] = parsedExcerpt.tables.map((table) => ({
+    rows: [table.headers, ...table.rows],
+    header_rows: [0],
+  }));
+  const hierarchyPath = buildHierarchyPath(activeSource, sectionData?.hierarchy_path ?? []);
+  const headingHierarchy = hierarchyPath.length > 0
+    ? hierarchyPath
+    : parsedExcerpt.hierarchyLabel
+      ? parsedExcerpt.hierarchyLabel.split(">").map((part) => part.trim()).filter(Boolean)
+      : [];
+  const hasTable = expandedTables.length > 0 || fallbackTables.length > 0;
 
   const handleCopy = async () => {
     await navigator.clipboard.writeText(displayExcerpt);
@@ -519,6 +531,11 @@ export function SourcePanel() {
               <Icon className={cn("h-5 w-5", colors.icon)} />
             </div>
             <div className="flex-1 min-w-0">
+              {headingHierarchy.length > 0 && (
+                <p className="mb-1 text-[11px] leading-snug text-muted-foreground">
+                  [{headingHierarchy.join(" > ")}]
+                </p>
+              )}
               {sectionRef && (
                 <span className="block text-sm font-semibold text-primary mb-0.5">
                   {sectionRef}
@@ -647,16 +664,25 @@ export function SourcePanel() {
                 </div>
               )}
 
+              {/* Parsed fallback tables from plain excerpt text */}
+              {!htmlContent && expandedTables.length === 0 && fallbackTables.length > 0 && !showRaw && (
+                <div className="space-y-4">
+                  {fallbackTables.map((table, idx) => (
+                    <ExpandedTableDisplay key={idx} table={table} />
+                  ))}
+                </div>
+              )}
+
 
               {/* Plain text - shows immediately with basic excerpt, updates when expanded content loads */}
-              {!htmlContent && !showRaw && expandedTables.length === 0 && (
+              {!htmlContent && !showRaw && expandedTables.length === 0 && fallbackTables.length === 0 && (
                 <div className={cn(
                   "rounded-lg border-l-4 border bg-muted/30 p-4",
                   colors.borderLeft,
                   colors.border
                 )}>
                   <HighlightedExcerpt
-                    excerpt={displayExcerpt}
+                    excerpt={parsedExcerpt.bodyText || displayExcerpt}
                     showQuotes={true}
                     scrollToHighlight={false}
                   />

@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { HighlightedExcerptCompact } from "./highlighted-excerpt";
 import { CitationNavigation } from "./citation-navigation";
 import { useCitation } from "./citation-context";
+import { buildHierarchyPath, parseCitationExcerpt } from "./citation-excerpt-utils";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
 
 // Document type utilities
@@ -109,6 +110,13 @@ export function SourceBottomSheet() {
 
   const Icon = documentIconMap[activeSource.document_type] || FileText;
   const sectionRef = formatSectionRef(activeSource);
+  const parsedExcerpt = parseCitationExcerpt(activeSource.excerpt);
+  const hierarchyPath = buildHierarchyPath(activeSource);
+  const headingHierarchy = hierarchyPath.length > 0
+    ? hierarchyPath
+    : parsedExcerpt.hierarchyLabel
+      ? parsedExcerpt.hierarchyLabel.split(">").map((part) => part.trim()).filter(Boolean)
+      : [];
 
   const handleCopy = async () => {
     const citation = sectionRef
@@ -152,6 +160,11 @@ export function SourceBottomSheet() {
               <Icon className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
+              {headingHierarchy.length > 0 && (
+                <p className="text-[10px] leading-snug text-muted-foreground mb-0.5">
+                  [{headingHierarchy.join(" > ")}]
+                </p>
+              )}
               {sectionRef && (
                 <span className="block text-xs font-semibold text-primary mb-0.5">
                   {sectionRef}
@@ -203,12 +216,43 @@ export function SourceBottomSheet() {
           isExpanded ? "flex-1" : "max-h-[200px]"
         )}>
           <HighlightedExcerptCompact
-            excerpt={activeSource.excerpt}
+            excerpt={parsedExcerpt.bodyText || activeSource.excerpt}
             maxLength={isExpanded ? 0 : 300}
             className="text-sm"
           />
 
-          {!isExpanded && activeSource.excerpt.length > 300 && (
+          {isExpanded && parsedExcerpt.tables.length > 0 && (
+            <div className="mt-3 space-y-3">
+              {parsedExcerpt.tables.map((table, tableIdx) => (
+                <div key={tableIdx} className="overflow-x-auto rounded-lg border border-border">
+                  <table className="w-full text-xs">
+                    <thead className="bg-muted/50">
+                      <tr>
+                        {table.headers.map((header, headerIdx) => (
+                          <th key={headerIdx} className="px-2 py-1.5 text-left font-semibold">
+                            {header}
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-border">
+                      {table.rows.map((row, rowIdx) => (
+                        <tr key={rowIdx}>
+                          {row.map((cell, cellIdx) => (
+                            <td key={cellIdx} className="px-2 py-1.5 align-top">
+                              {cell}
+                            </td>
+                          ))}
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {!isExpanded && (parsedExcerpt.bodyText || activeSource.excerpt).length > 300 && (
             <button
               onClick={() => setIsExpanded(true)}
               className="flex items-center gap-1 mt-2 text-xs text-primary font-medium"

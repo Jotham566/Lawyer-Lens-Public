@@ -254,6 +254,7 @@ export interface ChatSource {
   section?: string;  // Human-readable section heading (breadcrumb path)
   section_id?: string;  // Section identifier for fetching from AKN XML
   legal_reference?: string;  // Formatted legal reference like "Part II, Section 9(2)"
+  hierarchy_path?: HierarchyPathItem[]; // Full hierarchy path for richer citation breadcrumbs
   chunk_id?: string;  // Chunk ID for precise expand-source lookup
 }
 
