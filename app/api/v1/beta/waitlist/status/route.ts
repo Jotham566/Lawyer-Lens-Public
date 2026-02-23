@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003";
+// INTERNAL_API_URL includes /api/v1 suffix in production
+const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003/api/v1";
 
 /**
  * Proxy endpoint for beta waitlist status
- * 
+ *
  * @route GET /api/v1/beta/waitlist/status?email={email}
  * @description Proxies requests to backend API to check waitlist status
  * @backend Integration required: Backend must implement GET /api/v1/beta/waitlist/status
@@ -23,7 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     // Proxy request to backend
-    const backendUrl = `${BACKEND_URL}/api/v1/beta/waitlist/status?email=${encodeURIComponent(email)}`;
+    const backendUrl = `${BACKEND_URL}/beta/waitlist/status?email=${encodeURIComponent(email)}`;
     
     const response = await fetch(backendUrl, {
       method: "GET",

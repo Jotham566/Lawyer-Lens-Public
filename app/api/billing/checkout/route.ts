@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthHeader } from "../_auth";
 
-const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003";
+// INTERNAL_API_URL includes /api/v1 suffix in production
+const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003/api/v1";
 
 export async function POST(request: NextRequest) {
   try {
@@ -35,7 +36,7 @@ export async function POST(request: NextRequest) {
       pending_url: `${appUrl}/billing/pending`,
     };
 
-    const response = await fetch(`${BACKEND_URL}/api/v1/billing/checkout`, {
+    const response = await fetch(`${BACKEND_URL}/billing/checkout`, {
       method: "POST",
       headers: {
         Authorization: authHeader,
