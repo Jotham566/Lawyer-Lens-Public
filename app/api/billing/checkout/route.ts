@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 
 import { getAuthHeader } from "../_auth";
 
-const BACKEND_URL = process.env.BACKEND_URL || "http://localhost:8003";
+const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003";
 
 export async function POST(request: NextRequest) {
   try {
