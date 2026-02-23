@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -32,7 +32,7 @@ import {
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "./auth-modal-provider";
 import { useResendVerification } from "@/lib/hooks";
-import { forgotPassword, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
+import { forgotPassword, getOAuthProviders, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 import { BetaAccessModal } from "@/components/beta";
@@ -70,18 +70,53 @@ function MicrosoftIcon({ className }: { className?: string }) {
 interface SocialLoginButtonsProps {
   mode: "login" | "register";
   disabled?: boolean;
+  invitationToken?: string;
   onError?: (error: string) => void;
 }
 
-function SocialLoginButtons({ mode, disabled, onError }: SocialLoginButtonsProps) {
+function SocialLoginButtons({ mode, disabled, invitationToken, onError }: SocialLoginButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
+  const [providersEnabled, setProvidersEnabled] = useState<Record<OAuthProvider, boolean>>({
+    google: true,
+    microsoft: true,
+  });
+
+  useEffect(() => {
+    let mounted = true;
+    const loadProviders = async () => {
+      try {
+        const response = await getOAuthProviders();
+        if (!mounted) return;
+        const nextState: Record<OAuthProvider, boolean> = {
+          google: false,
+          microsoft: false,
+        };
+        for (const provider of response.providers) {
+          if (provider.provider === "google" || provider.provider === "microsoft") {
+            nextState[provider.provider] = provider.enabled;
+          }
+        }
+        setProvidersEnabled(nextState);
+      } catch {
+        // Keep optimistic defaults; endpoint may be unavailable during partial deploys.
+      }
+    };
+
+    void loadProviders();
+    return () => {
+      mounted = false;
+    };
+  }, []);
 
   const handleOAuth = async (provider: OAuthProvider) => {
-    if (loading || disabled) return;
+    if (loading || disabled || !providersEnabled[provider]) return;
 
     setLoading(provider);
     try {
-      await initiateOAuth(provider);
+      await initiateOAuth(provider, undefined, {
+        flow: mode,
+        invitation_token: mode === "register" ? invitationToken : undefined,
+      });
     } catch (error) {
       setLoading(null);
       if (error instanceof APIError) {
@@ -93,6 +128,15 @@ function SocialLoginButtons({ mode, disabled, onError }: SocialLoginButtonsProps
   };
 
   const actionText = mode === "login" ? "Sign in" : "Sign up";
+  const hasAnyProvider = providersEnabled.google || providersEnabled.microsoft;
+
+  if (!hasAnyProvider) {
+    return (
+      <p className="text-sm text-muted-foreground text-center">
+        Social sign-in is currently unavailable.
+      </p>
+    );
+  }
 
   return (
     <div className="space-y-3">
@@ -101,7 +145,7 @@ function SocialLoginButtons({ mode, disabled, onError }: SocialLoginButtonsProps
         variant="outline"
         className="w-full"
         onClick={() => handleOAuth("google")}
-        disabled={disabled || loading !== null}
+        disabled={disabled || loading !== null || !providersEnabled.google}
       >
         {loading === "google" ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -115,7 +159,7 @@ function SocialLoginButtons({ mode, disabled, onError }: SocialLoginButtonsProps
         variant="outline"
         className="w-full"
         onClick={() => handleOAuth("microsoft")}
-        disabled={disabled || loading !== null}
+        disabled={disabled || loading !== null || !providersEnabled.microsoft}
       >
         {loading === "microsoft" ? (
           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
@@ -553,6 +597,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
         <SocialLoginButtons
           mode="register"
           disabled={isSubmitting}
+          invitationToken={invitationToken || undefined}
           onError={setError}
         />
 

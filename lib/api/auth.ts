@@ -350,10 +350,18 @@ export async function getAccountDeletionStatus(): Promise<DeletionStatusResponse
 // ============================================================================
 
 export type OAuthProvider = "google" | "microsoft";
+export type OAuthFlow = "login" | "register";
 
 export interface OAuthUrlResponse {
   authorization_url: string;
   state: string;
+}
+
+export interface OAuthProvidersResponse {
+  providers: Array<{
+    provider: OAuthProvider;
+    enabled: boolean;
+  }>;
 }
 
 export interface OAuthCallbackRequest {
@@ -361,17 +369,38 @@ export interface OAuthCallbackRequest {
   state: string;
 }
 
+export interface OAuthAuthorizeRequest {
+  flow?: OAuthFlow;
+  invitation_token?: string;
+}
+
+/**
+ * Get available OAuth providers and whether each is enabled.
+ */
+export async function getOAuthProviders(): Promise<OAuthProvidersResponse> {
+  return apiFetch<OAuthProvidersResponse>("/auth/oauth/providers", {
+    method: "GET",
+  });
+}
+
 /**
  * Get OAuth authorization URL
  */
-export async function getOAuthUrl(provider: OAuthProvider): Promise<OAuthUrlResponse> {
+export async function getOAuthUrl(
+  provider: OAuthProvider,
+  options: OAuthAuthorizeRequest = {}
+): Promise<OAuthUrlResponse> {
   const redirectUri = typeof window !== "undefined"
     ? `${window.location.origin}/auth/callback/${provider}`
     : "";
 
   return apiFetch<OAuthUrlResponse>(`/auth/oauth/${provider}/authorize`, {
     method: "POST",
-    body: JSON.stringify({ redirect_uri: redirectUri }),
+    body: JSON.stringify({
+      redirect_uri: redirectUri,
+      flow: options.flow ?? "login",
+      invitation_token: options.invitation_token,
+    }),
   });
 }
 
@@ -397,13 +426,19 @@ export async function handleOAuthCallback(
  * @param provider - OAuth provider (google or microsoft)
  * @param returnUrl - Optional URL to redirect to after authentication
  */
-export async function initiateOAuth(provider: OAuthProvider, returnUrl?: string): Promise<void> {
-  const { authorization_url, state } = await getOAuthUrl(provider);
+export async function initiateOAuth(
+  provider: OAuthProvider,
+  returnUrl?: string,
+  options: OAuthAuthorizeRequest = {}
+): Promise<void> {
+  const flow = options.flow ?? "login";
+  const { authorization_url, state } = await getOAuthUrl(provider, options);
 
   // Store state for verification on callback
   if (typeof window !== "undefined") {
     sessionStorage.setItem("oauth_state", state);
     sessionStorage.setItem("oauth_provider", provider);
+    sessionStorage.setItem("oauth_flow", flow);
     // Preserve return URL for post-auth redirect
     if (returnUrl) {
       sessionStorage.setItem("oauth_return_url", returnUrl);

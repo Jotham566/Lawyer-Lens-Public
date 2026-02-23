@@ -78,6 +78,7 @@ export default function OAuthCallbackPage() {
         // Clear stored OAuth state
         sessionStorage.removeItem("oauth_state");
         sessionStorage.removeItem("oauth_provider");
+        sessionStorage.removeItem("oauth_flow");
         sessionStorage.removeItem("oauth_return_url");
         sessionStorage.removeItem("auth_return_url");
 
