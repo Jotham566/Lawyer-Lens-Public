@@ -2,6 +2,22 @@ This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-
 
 ## Getting Started
 
+### Node and pnpm
+
+- Recommended Node runtime: **24.14.0** (see `.nvmrc`)
+- Recommended pnpm: **10.30.3**
+
+Important: use shell `nvm` (`nvm-sh`). If `nvm` points to a Python package in `.venv/bin/nvm`, it is the wrong tool for Node version management.
+
+```bash
+nvm install 24.14.0
+nvm use 24.14.0
+node -v
+pnpm -v
+```
+
+Production builds for this frontend are containerized with pinned Node/pnpm in `frontend-public/Dockerfile`, so deployment does not require installing `nvm`.
+
 First, run the development server:
 
 ```bash

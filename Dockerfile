@@ -9,10 +9,10 @@
 # -----------------------------------------------------------------------------
 # Stage 1: Builder
 # -----------------------------------------------------------------------------
-FROM public.ecr.aws/docker/library/node:20-alpine AS builder
+FROM public.ecr.aws/docker/library/node:24.14.0-alpine AS builder
 
 # Install pnpm
-RUN corepack enable && corepack prepare pnpm@10.28.1 --activate
+RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
 
 WORKDIR /app
 
@@ -54,7 +54,7 @@ RUN pnpm build
 # -----------------------------------------------------------------------------
 # Stage 2: Runner (Production)
 # -----------------------------------------------------------------------------
-FROM public.ecr.aws/docker/library/node:20-alpine AS runner
+FROM public.ecr.aws/docker/library/node:24.14.0-alpine AS runner
 
 WORKDIR /app
 

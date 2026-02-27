@@ -2,9 +2,13 @@
   "name": "@akn/public",
   "version": "0.1.0",
   "private": true,
+  "engines": {
+    "node": ">=24 <25",
+    "pnpm": ">=10.30.3 <11"
+  },
   "scripts": {
     "dev": "next dev -p 3001",
-    "build": "next build",
+    "build": "pnpm lint && pnpm type-check && next build",
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start -p 3001",
     "lint": "eslint",
@@ -58,7 +62,7 @@
     "framer-motion": "^12.23.24",
     "katex": "^0.16.25",
     "lucide-react": "^0.555.0",
-    "next": "^16.0.7",
+    "next": "^16.1.6",
     "next-themes": "^0.4.6",
     "react": "19.2.0",
     "react-dom": "19.2.0",
@@ -79,7 +83,7 @@
     "@axe-core/playwright": "^4.11.0",
     "@fontsource/inter": "^5.2.8",
     "@fontsource/jetbrains-mono": "^5.2.8",
-    "@next/bundle-analyzer": "^16.0.7",
+    "@next/bundle-analyzer": "^16.1.6",
     "@playwright/test": "^1.57.0",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.0",
@@ -92,9 +96,9 @@
     "@types/react-dom": "^19",
     "baseline-browser-mapping": "^2.8.32",
     "eslint": "^9",
-    "eslint-config-next": "16.0.5",
+    "eslint-config-next": "^16.1.6",
     "jest": "^30.2.0",
     "jest-environment-jsdom": "^30.2.0",
-    "typescript": "^5"
+    "typescript": "^5.9.3"
   }
 }
