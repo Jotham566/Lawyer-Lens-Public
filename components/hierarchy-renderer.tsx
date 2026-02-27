@@ -189,15 +189,20 @@ function NodeSaveButton({ node, className }: { node: HierarchicalNode; className
   };
 
   return (
-    <div className={cn("flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity focus-within:opacity-100", className)}>
+    <div
+      className={cn(
+        "flex items-center gap-0.5 text-muted-foreground opacity-0 transition-opacity group-hover/node:opacity-70 hover:opacity-100 focus-within:opacity-100",
+        className
+      )}
+    >
       <button
         type="button"
         onClick={handleCopySectionLink}
-        className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
         aria-label="Copy section link"
         title="Copy section link"
       >
-        {copied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+        {copied ? <Check className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
       </button>
       <SaveToCollectionButton
         documentId={documentId}
@@ -212,7 +217,7 @@ function NodeSaveButton({ node, className }: { node: HierarchicalNode; className
         }}
         variant="ghost"
         size="icon"
-        className="h-6 w-6"
+        className="h-5 w-5"
         showLabel={false}
       />
     </div>

@@ -489,7 +489,7 @@ function DocumentContent({ id }: { id: string }) {
                   </DropdownMenu>
                 )}
 
-              <Button variant="outline" size="sm" onClick={copyLink}>
+              <Button variant="outline" size="sm" onClick={copyLink} className="hidden sm:inline-flex">
                 {copied ? (
                   <>
                     <Check className="mr-2 h-4 w-4" />
@@ -503,7 +503,7 @@ function DocumentContent({ id }: { id: string }) {
                 )}
               </Button>
 
-              <Button variant="outline" size="sm" onClick={handlePrint}>
+              <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:inline-flex">
                 <Printer className="mr-2 h-4 w-4" />
                 Print
               </Button>
@@ -547,7 +547,7 @@ function DocumentContent({ id }: { id: string }) {
         </div>
 
         {/* Content - Format based on document type */}
-        <div id="document-main-content" className="flex-1 px-4 py-6 pb-24 md:px-6 md:pb-6">
+        <div id="document-main-content" className="flex-1 px-4 py-6 pb-32 md:px-6 md:pb-6">
           <div className="mx-auto max-w-7xl">
             {/* Judgments: Show only PDF */}
             {document.document_type === "judgment" && (
