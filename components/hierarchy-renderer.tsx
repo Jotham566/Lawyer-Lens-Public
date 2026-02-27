@@ -420,9 +420,9 @@ function Subsection({ node }: { node: HierarchicalNode }) {
         isHighlighted && "section-highlighted"
       )}
     >
-      <div className="w-10 flex-shrink-0 flex items-start gap-1">
+      <div className="w-12 flex-shrink-0 flex items-start gap-1.5">
         {node.identifier && <span>({node.identifier})</span>}
-        <NodeSaveButton node={node} className="w-4 h-4 -ml-1 mt-1 absolute -left-5" />
+        <NodeSaveButton node={node} className="mt-0.5" />
       </div>
       <div className="flex-1 min-w-0">
         <NodeContent node={node} />
