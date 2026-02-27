@@ -422,7 +422,6 @@ function Subsection({ node }: { node: HierarchicalNode }) {
     >
       <div className="w-12 flex-shrink-0 flex items-start gap-1.5">
         {node.identifier && <span>({node.identifier})</span>}
-        <NodeSaveButton node={node} className="mt-0.5" />
       </div>
       <div className="flex-1 min-w-0">
         <NodeContent node={node} />

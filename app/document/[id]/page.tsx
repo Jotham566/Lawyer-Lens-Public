@@ -583,7 +583,7 @@ function DocumentContent({ id }: { id: string }) {
               document.document_type === "constitution") && (
                 <>
                   {/* Sticky Reading Controls */}
-                  <div className="z-30 mb-4 rounded-lg border bg-background px-3 py-2 shadow-sm lg:sticky lg:top-16">
+                  <div className="z-30 mb-4 rounded-lg border bg-background px-3 py-2 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm text-muted-foreground">
                       Text size:
