@@ -547,7 +547,7 @@ function DocumentContent({ id }: { id: string }) {
         </div>
 
         {/* Content - Format based on document type */}
-        <div id="document-main-content" className="flex-1 px-4 py-6 md:px-6">
+        <div id="document-main-content" className="flex-1 px-4 py-6 pb-24 md:px-6 md:pb-6">
           <div className="mx-auto max-w-7xl">
             {/* Judgments: Show only PDF */}
             {document.document_type === "judgment" && (
@@ -583,7 +583,7 @@ function DocumentContent({ id }: { id: string }) {
               document.document_type === "constitution") && (
                 <>
                   {/* Sticky Reading Controls */}
-                  <div className="sticky top-16 z-30 mb-4 rounded-lg border bg-background/95 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+                  <div className="sticky top-16 z-30 mb-4 rounded-lg border bg-background px-3 py-2 shadow-sm">
                     <div className="flex flex-wrap items-center justify-between gap-2">
                       <span className="text-sm text-muted-foreground">
                       Text size:
@@ -798,83 +798,83 @@ function DocumentContent({ id }: { id: string }) {
             <Card className="mt-6">
               <CardContent className="py-4">
                 <h3 className="mb-3 font-medium">Document Information</h3>
-                <dl className="grid gap-2 text-sm sm:grid-cols-2">
-                  <div className="flex justify-between">
+                <dl className="grid gap-3 text-sm sm:grid-cols-2">
+                  <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                     <dt className="text-muted-foreground">Document ID:</dt>
-                    <dd className="font-mono">{document.human_readable_id}</dd>
+                    <dd className="font-mono break-all sm:text-right">{document.human_readable_id}</dd>
                   </div>
                   {document.act_number && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Act Number:</dt>
-                      <dd>{document.act_number}</dd>
+                      <dd className="sm:text-right">{document.act_number}</dd>
                     </div>
                   )}
                   {document.chapter && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Chapter:</dt>
-                      <dd>{document.chapter}</dd>
+                      <dd className="sm:text-right">{document.chapter}</dd>
                     </div>
                   )}
                   {document.case_number && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Case Number:</dt>
-                      <dd>{document.case_number}</dd>
+                      <dd className="sm:text-right">{document.case_number}</dd>
                     </div>
                   )}
                   {document.court_level && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Court:</dt>
-                      <dd>{document.court_level.replace(/_/g, " ")}</dd>
+                      <dd className="sm:text-right">{document.court_level.replace(/_/g, " ")}</dd>
                     </div>
                   )}
                   {document.publication_date && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">
                         Publication Date:
                       </dt>
-                      <dd>
+                      <dd className="sm:text-right">
                         {formatDateOnly(document.publication_date)}
                       </dd>
                     </div>
                   )}
                   {document.commencement_date && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">
                         Commencement Date:
                       </dt>
-                      <dd>
+                      <dd className="sm:text-right">
                         {formatDateOnly(document.commencement_date)}
                       </dd>
                     </div>
                   )}
                   {document.gazette_number && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Gazette Number:</dt>
-                      <dd>{document.gazette_number}</dd>
+                      <dd className="sm:text-right">{document.gazette_number}</dd>
                     </div>
                   )}
                   {document.version_number && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Version:</dt>
-                      <dd>
+                      <dd className="sm:text-right">
                         {document.version_number}
                         {document.is_latest_version && " (Latest)"}
                       </dd>
                     </div>
                   )}
                   {document.status && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Status:</dt>
-                      <dd className="capitalize">
+                      <dd className="capitalize sm:text-right">
                         {document.status.replace(/_/g, " ")}
                       </dd>
                     </div>
                   )}
                   {/* Public documents are always published */}
                   {!document.status && (
-                    <div className="flex justify-between">
+                    <div className="flex flex-col gap-1 sm:flex-row sm:items-start sm:justify-between sm:gap-3">
                       <dt className="text-muted-foreground">Status:</dt>
-                      <dd className="capitalize text-green-600">Published</dd>
+                      <dd className="capitalize text-green-600 sm:text-right">Published</dd>
                     </div>
                   )}
                 </dl>
