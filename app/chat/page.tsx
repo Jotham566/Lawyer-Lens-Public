@@ -64,6 +64,7 @@ function ChatContent() {
     handleConfirmDelete,
     hideUpgradeModal,
     handleStop,
+    handleMessageFeedback,
     setInputRef,
     setEditInputRef,
   } = actions;
@@ -153,6 +154,7 @@ function ChatContent() {
                   onCopy={copyMessage}
                   onRegenerate={handleRegenerate}
                   onSelectFollowup={handleSelectQuestion}
+                  onFeedback={handleMessageFeedback}
                   onExport={() => setExportDialogOpen(true)}
                   editInputRef={setEditInputRef}
                 />

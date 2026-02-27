@@ -24,7 +24,7 @@ import { SourceBadgeList } from "./source-badge";
 import { MessageFeedback } from "./message-feedback";
 import { SourceTransparencyInline } from "./source-transparency";
 import { formatRelativeTime } from "./conversation-sidebar";
-import type { ChatMessage as ChatMessageType } from "@/lib/api/types";
+import type { ChatFeedbackType, ChatMessage as ChatMessageType } from "@/lib/api/types";
 
 /**
  * MessageTimestamp - Displays relative timestamp for messages
@@ -244,6 +244,12 @@ interface ChatMessageProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
+  onFeedback: (payload: {
+    messageId: string;
+    type: ChatFeedbackType;
+    reason?: string;
+    timestamp: string;
+  }) => Promise<void>;
   onExport: () => void;
   editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
@@ -261,10 +267,12 @@ function ChatMessageComponent({
   onCopy,
   onRegenerate,
   onSelectFollowup,
+  onFeedback,
   onExport,
   editInputRef,
 }: ChatMessageProps) {
-  const messageId = `${message.timestamp}-${index}`;
+  const messageActionId = `${message.timestamp}-${index}`;
+  const persistedMessageId = message.id;
   const isStreaming = isLoading && isLastMessage;
 
   // User messages: right-aligned, AI messages: left-aligned with icon
@@ -388,7 +396,7 @@ function ChatMessageComponent({
           <div className="flex items-center gap-2">
             <div className="flex items-center gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
               <AssistantMessageActions
-                messageId={messageId}
+                messageId={messageActionId}
                 content={message.content}
                 copiedId={copiedId}
                 onCopy={onCopy}
@@ -402,7 +410,12 @@ function ChatMessageComponent({
               <>
                 <div className="w-px h-4 bg-border opacity-50" aria-hidden="true" />
                 <div className="opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
-                  <MessageFeedback messageId={messageId} />
+                  <MessageFeedback
+                    messageId={persistedMessageId || messageActionId}
+                    disabled={!persistedMessageId}
+                    disabledReason="Feedback is available once this response is fully saved."
+                    onFeedback={onFeedback}
+                  />
                 </div>
               </>
             )}
@@ -425,6 +438,7 @@ export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => 
   // - copied state changed for this message
   return (
     prevProps.message.content === nextProps.message.content &&
+    prevProps.message.id === nextProps.message.id &&
     prevProps.message.sources === nextProps.message.sources &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.isLastMessage === nextProps.isLastMessage &&

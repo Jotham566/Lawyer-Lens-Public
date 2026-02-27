@@ -11,10 +11,12 @@ import {
     streamChatWithTypewriter,
     getSuggestedQuestions,
     createResearchSession,
+    submitChatFeedback,
 } from "@/lib/api";
 import { APIError } from "@/lib/api/client";
 import type {
     ChatMessage as ChatMessageType,
+    ChatFeedbackType,
     ChatSource,
     VerificationStatus,
     ConfidenceInfo,
@@ -204,6 +206,7 @@ export function useChatOrchestrator() {
                 let verification: VerificationStatus | undefined;
                 let confidenceInfo: ConfidenceInfo | undefined;
                 let followups: string[] = [];
+                let assistantMessageId: string | undefined;
 
                 const stream = streamChatWithTypewriter(
                     {
@@ -222,7 +225,7 @@ export function useChatOrchestrator() {
                     switch (event.type) {
                         case "content":
                             fullContent += event.text;
-                            updateLastMessage(activeConvId, fullContent);
+                            updateLastMessage(activeConvId, fullContent, undefined, undefined, undefined, undefined, assistantMessageId);
                             break;
                         case "content_update":
                         case "citations":
@@ -236,7 +239,19 @@ export function useChatOrchestrator() {
                             }
                             if (event.type === 'followups') followups = event.questions;
 
-                            updateLastMessage(activeConvId, fullContent, sources, followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
+                            updateLastMessage(
+                                activeConvId,
+                                fullContent,
+                                sources,
+                                followups.length > 0 ? followups : getSuggestedQuestions(),
+                                verification,
+                                confidenceInfo,
+                                assistantMessageId
+                            );
+                            break;
+                        case "message_id":
+                            assistantMessageId = event.id;
+                            updateLastMessage(activeConvId, fullContent, sources, followups.length > 0 ? followups : undefined, verification, confidenceInfo, assistantMessageId);
                             break;
                         case "error":
                             setError(event.message);
@@ -249,7 +264,15 @@ export function useChatOrchestrator() {
                             break;
                         case "done":
                             if (sources.length === 0) {
-                                updateLastMessage(activeConvId, fullContent, [], followups.length > 0 ? followups : getSuggestedQuestions(), verification, confidenceInfo);
+                                updateLastMessage(
+                                    activeConvId,
+                                    fullContent,
+                                    [],
+                                    followups.length > 0 ? followups : getSuggestedQuestions(),
+                                    verification,
+                                    confidenceInfo,
+                                    assistantMessageId
+                                );
                             }
                             break;
                     }
@@ -268,6 +291,23 @@ export function useChatOrchestrator() {
             }
         },
         [addMessage, updateLastMessage, setLoading, setError, refreshEntitlements, replaceConversationId]
+    );
+
+    const handleMessageFeedback = useCallback(
+        async (payload: {
+            messageId: string;
+            type: ChatFeedbackType;
+            reason?: string;
+            timestamp: string;
+        }) => {
+            await submitChatFeedback({
+                message_id: payload.messageId,
+                feedback_type: payload.type,
+                reason: payload.reason,
+                metadata: { submitted_at: payload.timestamp, surface: "chat_page" },
+            });
+        },
+        []
     );
 
     // 2. Regular Chat Handler
@@ -612,6 +652,7 @@ export function useChatOrchestrator() {
             setDeleteDialogOpen,
             hideUpgradeModal,
             handleStop,
+            handleMessageFeedback,
         }
     };
 }

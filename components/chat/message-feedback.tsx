@@ -18,7 +18,9 @@ import { cn } from "@/lib/utils";
 
 interface MessageFeedbackProps {
   messageId: string;
-  onFeedback?: (feedback: FeedbackData) => void;
+  onFeedback?: (feedback: FeedbackData) => Promise<void> | void;
+  disabled?: boolean;
+  disabledReason?: string;
   className?: string;
 }
 
@@ -53,55 +55,79 @@ const FLAG_REASONS = [
 export function MessageFeedback({
   messageId,
   onFeedback,
+  disabled = false,
+  disabledReason,
   className,
 }: MessageFeedbackProps) {
   const [feedback, setFeedback] = React.useState<"positive" | "negative" | "flag" | null>(null);
   const [showThankYou, setShowThankYou] = React.useState(false);
+  const [isSubmitting, setIsSubmitting] = React.useState(false);
+  const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [negativePopoverOpen, setNegativePopoverOpen] = React.useState(false);
   const [flagPopoverOpen, setFlagPopoverOpen] = React.useState(false);
   const [selectedReason, setSelectedReason] = React.useState<string | null>(null);
   const [additionalDetails, setAdditionalDetails] = React.useState("");
 
-  const handlePositiveFeedback = () => {
-    setFeedback("positive");
-    setShowThankYou(true);
-    onFeedback?.({
+  const submitFeedback = async (payload: FeedbackData) => {
+    setSubmitError(null);
+    setIsSubmitting(true);
+    try {
+      await onFeedback?.(payload);
+      return true;
+    } catch (err) {
+      setSubmitError(err instanceof Error ? err.message : "Failed to submit feedback");
+      return false;
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const handlePositiveFeedback = async () => {
+    const ok = await submitFeedback({
       messageId,
       type: "positive",
       timestamp: new Date().toISOString(),
     });
+    if (!ok) return;
+
+    setFeedback("positive");
+    setShowThankYou(true);
     setTimeout(() => setShowThankYou(false), 2000);
   };
 
-  const handleNegativeFeedback = () => {
+  const handleNegativeFeedback = async () => {
     if (!selectedReason) return;
 
-    setFeedback("negative");
-    setNegativePopoverOpen(false);
-    setShowThankYou(true);
-    onFeedback?.({
+    const ok = await submitFeedback({
       messageId,
       type: "negative",
       reason: additionalDetails ? `${selectedReason}: ${additionalDetails}` : selectedReason,
       timestamp: new Date().toISOString(),
     });
+    if (!ok) return;
+
+    setFeedback("negative");
+    setNegativePopoverOpen(false);
+    setShowThankYou(true);
     setSelectedReason(null);
     setAdditionalDetails("");
     setTimeout(() => setShowThankYou(false), 2000);
   };
 
-  const handleFlagSubmit = () => {
+  const handleFlagSubmit = async () => {
     if (!selectedReason) return;
 
-    setFeedback("flag");
-    setFlagPopoverOpen(false);
-    setShowThankYou(true);
-    onFeedback?.({
+    const ok = await submitFeedback({
       messageId,
       type: "flag",
       reason: additionalDetails ? `${selectedReason}: ${additionalDetails}` : selectedReason,
       timestamp: new Date().toISOString(),
     });
+    if (!ok) return;
+
+    setFeedback("flag");
+    setFlagPopoverOpen(false);
+    setShowThankYou(true);
     setSelectedReason(null);
     setAdditionalDetails("");
     setTimeout(() => setShowThankYou(false), 2000);
@@ -157,6 +183,7 @@ export function MessageFeedback({
             variant="ghost"
             size="icon"
             className="h-7 w-7 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
+            disabled={disabled || isSubmitting}
             onClick={handlePositiveFeedback}
             aria-label="This response was helpful"
           >
@@ -175,6 +202,7 @@ export function MessageFeedback({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-slate-600 dark:hover:text-slate-400"
+                disabled={disabled || isSubmitting}
                 aria-label="This response needs improvement"
                 aria-expanded={negativePopoverOpen}
                 aria-haspopup="dialog"
@@ -222,7 +250,7 @@ export function MessageFeedback({
             <Button
               size="sm"
               className="w-full"
-              disabled={!selectedReason}
+              disabled={!selectedReason || isSubmitting}
               onClick={handleNegativeFeedback}
             >
               Submit Feedback
@@ -240,6 +268,7 @@ export function MessageFeedback({
                 variant="ghost"
                 size="icon"
                 className="h-7 w-7 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400"
+                disabled={disabled || isSubmitting}
                 aria-label="Flag this response for review"
                 aria-expanded={flagPopoverOpen}
                 aria-haspopup="dialog"
@@ -288,7 +317,7 @@ export function MessageFeedback({
               size="sm"
               variant="outline"
               className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/50"
-              disabled={!selectedReason}
+              disabled={!selectedReason || isSubmitting}
               onClick={handleFlagSubmit}
             >
               Submit Flag
@@ -296,6 +325,10 @@ export function MessageFeedback({
           </div>
         </PopoverContent>
       </Popover>
+      {submitError && <span className="text-xs text-destructive">{submitError}</span>}
+      {!submitError && disabled && disabledReason && (
+        <span className="text-xs text-muted-foreground">{disabledReason}</span>
+      )}
     </div>
   );
 }

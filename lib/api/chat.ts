@@ -8,6 +8,8 @@ import { apiFetch, apiPost, apiGet, getApiBaseUrl, getCsrfToken } from "./client
 import type {
   ChatRequest,
   ChatResponse,
+  ChatFeedbackRequest,
+  ChatFeedbackResponse,
   ChatSource,
   VerificationStatus,
   ConfidenceInfo,
@@ -100,6 +102,15 @@ export async function updateConversationTitle(
   return updateConversation(conversationId, { title });
 }
 
+/**
+ * Submit feedback for an assistant chat response
+ */
+export async function submitChatFeedback(
+  request: ChatFeedbackRequest
+): Promise<ChatFeedbackResponse> {
+  return apiPost<ChatFeedbackResponse>("/chat/feedback", request);
+}
+
 
 /**
  * Verification data from the stream
@@ -117,6 +128,7 @@ export type StreamEvent =
   | { type: "content_update"; fullContent: string }
   | { type: "citations"; citations: ChatSource[] }
   | { type: "verification"; data: StreamVerificationData }
+  | { type: "message_id"; id: string }
   | { type: "conversation_id"; id: string }
   | { type: "followups"; questions: string[] }
   | { type: "done" }
@@ -154,6 +166,7 @@ export async function* streamChatWithTypewriter(
     citations: null as ChatSource[] | null,
     contentUpdatePending: null as string | null,
     verificationData: null as StreamVerificationData | null,
+    messageId: null as string | null,
     conversationId: null as string | null,
     followups: null as string[] | null,
     errorMessage: null as string | null,  // Store error to yield later
@@ -171,6 +184,8 @@ export async function* streamChatWithTypewriter(
         state.citations = event.citations;
       } else if (event.type === "verification") {
         state.verificationData = event.data;
+      } else if (event.type === "message_id") {
+        state.messageId = event.id;
       } else if (event.type === "conversation_id") {
         state.conversationId = event.id;
       } else if (event.type === "followups") {
@@ -214,6 +229,11 @@ export async function* streamChatWithTypewriter(
   // Send verification data if available (for trust indicators)
   if (state.verificationData) {
     yield { type: "verification", data: state.verificationData };
+  }
+
+  // Send message ID update if we have one
+  if (state.messageId) {
+    yield { type: "message_id", id: state.messageId };
   }
 
   // Send conversation ID update if we have one
@@ -352,6 +372,12 @@ export async function* streamChatMessage(
           if (content.startsWith("[CONVERSATION_ID]")) {
             const id = content.slice(17); // Remove "[CONVERSATION_ID]" prefix
             yield { type: "conversation_id", id };
+            continue;
+          }
+
+          if (content.startsWith("[MESSAGE_ID]")) {
+            const id = content.slice(12); // Remove "[MESSAGE_ID]" prefix
+            yield { type: "message_id", id };
             continue;
           }
 

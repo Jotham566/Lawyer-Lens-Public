@@ -233,6 +233,7 @@ export interface HybridSearchResponse {
 
 // Chat types
 export interface ChatMessage {
+  id?: string;
   role: "user" | "assistant";
   content: string;
   sources?: ChatSource[];
@@ -242,6 +243,8 @@ export interface ChatMessage {
   verification?: VerificationStatus;
   /** Detailed confidence information (for assistant messages) */
   confidence_info?: ConfidenceInfo;
+  provider?: string;
+  tokens_used?: number;
 }
 
 export interface ChatSource {
@@ -310,6 +313,23 @@ export interface ChatResponse {
   verification?: VerificationStatus;
   /** Detailed confidence information */
   confidence_info?: ConfidenceInfo;
+}
+
+export type ChatFeedbackType = "positive" | "negative" | "flag";
+
+export interface ChatFeedbackRequest {
+  message_id: string;
+  feedback_type: ChatFeedbackType;
+  reason?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface ChatFeedbackResponse {
+  id: string;
+  message_id: string;
+  feedback_type: ChatFeedbackType;
+  created_at: string;
+  updated_at: string;
 }
 
 // Statistics types

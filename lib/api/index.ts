@@ -37,6 +37,7 @@ export {
 export {
   sendChatMessage,
   getChatHealth,
+  submitChatFeedback,
   streamChatMessage,
   streamChatWithTypewriter,
   getSuggestedQuestions,

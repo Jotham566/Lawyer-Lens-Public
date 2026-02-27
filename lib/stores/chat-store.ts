@@ -55,7 +55,8 @@ interface ChatState {
     sources?: ChatSource[],
     suggestedFollowups?: string[],
     verification?: VerificationStatus,
-    confidenceInfo?: ConfidenceInfo
+    confidenceInfo?: ConfidenceInfo,
+    messageId?: string
   ) => void;
   editMessageAndTruncate: (
     conversationId: string,
@@ -348,7 +349,8 @@ export const useChatStore = create<ChatState>()(
         sources,
         suggestedFollowups,
         verification,
-        confidenceInfo
+        confidenceInfo,
+        messageId
       ) => {
         set((state) => {
           const conversations = state.conversations.map((conv) => {
@@ -360,6 +362,7 @@ export const useChatStore = create<ChatState>()(
             if (lastIndex >= 0 && messages[lastIndex].role === "assistant") {
               messages[lastIndex] = {
                 ...messages[lastIndex],
+                id: messageId || messages[lastIndex].id,
                 content,
                 sources: sources || messages[lastIndex].sources,
                 suggested_followups:

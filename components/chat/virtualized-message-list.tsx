@@ -5,7 +5,7 @@ import { useVirtualizer } from "@tanstack/react-virtual";
 import { ChatMessage } from "./chat-message";
 import { AlertCircle } from "lucide-react";
 import { RateLimitError, isRateLimitError } from "./rate-limit-error";
-import type { ChatMessage as ChatMessageType } from "@/lib/api/types";
+import type { ChatFeedbackType, ChatMessage as ChatMessageType } from "@/lib/api/types";
 
 interface VirtualizedMessageListProps {
   messages: ChatMessageType[];
@@ -19,6 +19,12 @@ interface VirtualizedMessageListProps {
   onCopy: (id: string, content: string) => void;
   onRegenerate: (index: number) => void;
   onSelectFollowup: (question: string) => void;
+  onFeedback: (payload: {
+    messageId: string;
+    type: ChatFeedbackType;
+    reason?: string;
+    timestamp: string;
+  }) => Promise<void>;
   onExport: () => void;
   editInputRef?: React.Ref<HTMLTextAreaElement>;
 }
@@ -41,6 +47,7 @@ export function VirtualizedMessageList({
   onCopy,
   onRegenerate,
   onSelectFollowup,
+  onFeedback,
   onExport,
   editInputRef,
 }: VirtualizedMessageListProps) {
@@ -164,6 +171,7 @@ export function VirtualizedMessageList({
                 onCopy={onCopy}
                 onRegenerate={onRegenerate}
                 onSelectFollowup={onSelectFollowup}
+                onFeedback={onFeedback}
                 onExport={onExport}
                 editInputRef={editInputRef}
               />
@@ -266,6 +274,7 @@ export function VirtualizedMessageList({
                   onCopy={onCopy}
                   onRegenerate={onRegenerate}
                   onSelectFollowup={onSelectFollowup}
+                  onFeedback={onFeedback}
                   onExport={onExport}
                   editInputRef={editInputRef}
                 />
