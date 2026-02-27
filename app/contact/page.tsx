@@ -1,7 +1,3 @@
-"use client";
-
-import { useMemo } from "react";
-import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Mail, LifeBuoy, Briefcase, ArrowLeft } from "lucide-react";
 
@@ -9,14 +5,14 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 
-export default function ContactPage() {
-  const searchParams = useSearchParams();
-  const subject = searchParams.get("subject") || "General Inquiry";
+interface ContactPageProps {
+  searchParams?: Promise<{ subject?: string }>;
+}
 
-  const salesMailto = useMemo(
-    () => `mailto:sales@lawlens.io?subject=${encodeURIComponent(subject)}`,
-    [subject]
-  );
+export default async function ContactPage({ searchParams }: ContactPageProps) {
+  const resolvedSearchParams = (await searchParams) ?? {};
+  const subject = resolvedSearchParams.subject || "General Inquiry";
+  const salesMailto = `mailto:sales@lawlens.io?subject=${encodeURIComponent(subject)}`;
   const supportMailto = "mailto:support@lawlens.io?subject=Support Request";
 
   return (
@@ -81,4 +77,3 @@ export default function ContactPage() {
     </div>
   );
 }
-
