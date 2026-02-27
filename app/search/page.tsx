@@ -476,8 +476,10 @@ interface SearchResultCardProps {
 }
 
 function SearchResultCard({ result, mode }: SearchResultCardProps) {
+  const searchParams = useSearchParams();
   const documentType = result.document_type;
   const config = documentTypeConfig[documentType];
+  const returnTo = `/search?${searchParams.toString()}`;
 
   // Get highlight or snippet content based on result type
   const content =
@@ -498,7 +500,7 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
   const score = getScore();
 
   return (
-    <Link href={`/document/${result.document_id}`}>
+    <Link href={`/document/${result.document_id}?from=search&returnTo=${encodeURIComponent(returnTo)}`}>
       <Card className="transition-all hover:border-primary/50 hover:shadow-sm">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">

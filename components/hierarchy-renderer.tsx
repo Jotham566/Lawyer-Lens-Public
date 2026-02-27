@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { Check, Link2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { HierarchicalNode, TextFragment } from "@/lib/api/types";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
@@ -19,6 +20,7 @@ interface HierarchyRendererProps {
   };
   fontSize?: "small" | "medium" | "large";
   highlightedSectionId?: string | null;
+  showDocumentHeader?: boolean;
   className?: string;
   documentId?: string;
 }
@@ -51,6 +53,7 @@ export function HierarchyRenderer({
   document,
   fontSize = "medium",
   highlightedSectionId = null,
+  showDocumentHeader = true,
   className,
   documentId,
 }: HierarchyRendererProps) {
@@ -70,8 +73,8 @@ export function HierarchyRenderer({
             className
           )}
         >
-          {/* Document Header using actual metadata */}
-          {document && <DocumentHeader document={document} />}
+          {/* Optional in-page header (can be disabled when page already has a hero/header) */}
+          {showDocumentHeader && document && <DocumentHeader document={document} />}
 
           {/* Document Body */}
           <div className="hierarchy-body">
@@ -88,6 +91,7 @@ export function HierarchyRenderer({
 function NodeSaveButton({ node, className }: { node: HierarchicalNode; className?: string }) {
   const { documentId, documentTitle, documentShortTitle } = React.useContext(DocumentContext) || {};
   const ancestorPath = React.useContext(AncestorPathContext);
+  const [copied, setCopied] = React.useState(false);
 
   if (!documentId) return null;
 
@@ -171,23 +175,47 @@ function NodeSaveButton({ node, className }: { node: HierarchicalNode; className
   const docName = documentShortTitle || documentTitle || '';
   const snippetLabel = docName ? `${docName} - ${fullLabel}` : fullLabel;
 
+  const handleCopySectionLink = async () => {
+    if (typeof window === "undefined") return;
+    const url = new URL(window.location.href);
+    url.hash = sectionId;
+    try {
+      await navigator.clipboard.writeText(url.toString());
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1600);
+    } catch {
+      // no-op: clipboard may be unavailable in some contexts
+    }
+  };
+
   return (
-    <SaveToCollectionButton
-      documentId={documentId}
-      sectionId={sectionId}
-      itemType={itemType}
-      meta={{
-        snippet_label: snippetLabel,
-        section_title: node.title,
-        section_identifier: node.identifier,
-        section_type: node.type,
-        hierarchical_path: hierarchicalPath,
-      }}
-      variant="ghost"
-      size="icon"
-      className={cn("h-6 w-6 opacity-0 group-hover/node:opacity-100 transition-opacity focus:opacity-100", className)}
-      showLabel={false}
-    />
+    <div className={cn("flex items-center gap-1 opacity-0 group-hover/node:opacity-100 transition-opacity focus-within:opacity-100", className)}>
+      <button
+        type="button"
+        onClick={handleCopySectionLink}
+        className="inline-flex h-6 w-6 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        aria-label="Copy section link"
+        title="Copy section link"
+      >
+        {copied ? <Check className="h-3.5 w-3.5" /> : <Link2 className="h-3.5 w-3.5" />}
+      </button>
+      <SaveToCollectionButton
+        documentId={documentId}
+        sectionId={sectionId}
+        itemType={itemType}
+        meta={{
+          snippet_label: snippetLabel,
+          section_title: node.title,
+          section_identifier: node.identifier,
+          section_type: node.type,
+          hierarchical_path: hierarchicalPath,
+        }}
+        variant="ghost"
+        size="icon"
+        className="h-6 w-6"
+        showLabel={false}
+      />
+    </div>
   );
 }
 

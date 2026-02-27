@@ -1,18 +1,18 @@
 "use client";
 
-import { use, useState, useEffect, Suspense } from "react";
+import { use, useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
+  ArrowLeft,
   Download,
   Share2,
   Printer,
   Check,
   ExternalLink,
-  ZoomIn,
-  ZoomOut,
+  List,
   Gavel,
   ScrollText,
   BookOpen,
@@ -34,15 +34,23 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+  SheetTrigger,
+} from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useDocument } from "@/lib/hooks";
+import { useDocument, useDocumentsByType } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { useLibraryStore } from "@/lib/stores";
-import type { DocumentType } from "@/lib/api/types";
+import type { DocumentType, HierarchicalNode } from "@/lib/api/types";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
 const documentTypeConfig: Record<
@@ -83,18 +91,117 @@ interface PageProps {
   params: Promise<{ id: string }>;
 }
 
+function getNodeIdForPath(node: HierarchicalNode): string {
+  if (node.akn_eid) return node.akn_eid;
+  const type = node.type?.toLowerCase() || "node";
+  return `${type}-${node.identifier || "unknown"}`;
+}
+
+function findPathToSection(
+  node: HierarchicalNode,
+  sectionId: string,
+  ancestors: HierarchicalNode[] = []
+): HierarchicalNode[] | null {
+  const currentId = getNodeIdForPath(node);
+  if (currentId === sectionId) {
+    return [...ancestors, node];
+  }
+  for (const child of node.children || []) {
+    const result = findPathToSection(child, sectionId, [...ancestors, node]);
+    if (result) return result;
+  }
+  return null;
+}
+
+function formatPathNode(node: HierarchicalNode): string {
+  const type = (node.type || "").toLowerCase();
+  const id = node.identifier;
+  const title = node.title;
+  if (type === "part") return id ? `Part ${id}` : "Part";
+  if (type === "chapter") return id ? `Chapter ${id}` : "Chapter";
+  if (type === "section") return id ? `Section ${id}` : "Section";
+  if (type === "subsection") return id ? `(${id})` : "Subsection";
+  if (type === "paragraph") return id ? `(${id})` : "Paragraph";
+  if (type === "subparagraph") return id ? `(${id})` : "Subparagraph";
+  if (type === "schedule") return id ? `Schedule ${id}` : "Schedule";
+  return title || node.type || "Section";
+}
+
 function DocumentContent({ id }: { id: string }) {
+  const router = useRouter();
   const { data: document, isLoading, error } = useDocument(id);
+  const { data: typedDocuments } = useDocumentsByType(document?.document_type || "act", 1, 50);
   const searchParams = useSearchParams();
+  const from = searchParams.get("from");
+  const returnTo = searchParams.get("returnTo");
   const initialSectionId = searchParams.get("section");
 
   const [copied, setCopied] = useState(false);
+  const [hashSectionId] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    const hash = window.location.hash?.replace(/^#/, "").trim();
+    return hash ? decodeURIComponent(hash) : null;
+  });
+  const [mobileTocOpen, setMobileTocOpen] = useState(false);
   const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
     "medium"
   );
   const [manualHighlightId, setManualHighlightId] = useState<string | null>(null);
-  const highlightedSectionId = manualHighlightId ?? initialSectionId;
+  const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
+  const highlightedSectionId = manualHighlightId ?? hashSectionId ?? initialSectionId;
   const addToHistory = useLibraryStore((s) => s.addToHistory);
+
+  const relatedDocuments = useMemo(() => {
+    if (!typedDocuments?.items || !document) return [];
+    return typedDocuments.items
+      .filter((item) => item.id !== document.id)
+      .slice(0, 5);
+  }, [typedDocuments, document]);
+
+  const documentIndexInTypeList = useMemo(() => {
+    if (!typedDocuments?.items || !document) return -1;
+    return typedDocuments.items.findIndex((item) => item.id === document.id);
+  }, [typedDocuments, document]);
+
+  const prevDocument = useMemo(() => {
+    if (!typedDocuments?.items || documentIndexInTypeList <= 0) return null;
+    return typedDocuments.items[documentIndexInTypeList - 1];
+  }, [typedDocuments, documentIndexInTypeList]);
+
+  const nextDocument = useMemo(() => {
+    if (!typedDocuments?.items || documentIndexInTypeList < 0) return null;
+    if (documentIndexInTypeList >= typedDocuments.items.length - 1) return null;
+    return typedDocuments.items[documentIndexInTypeList + 1];
+  }, [typedDocuments, documentIndexInTypeList]);
+
+  const legalPath = useMemo(() => {
+    if (!document?.hierarchical_structure || !activeSectionId) return null;
+    const path = findPathToSection(document.hierarchical_structure, activeSectionId);
+    if (!path || path.length === 0) return null;
+    return path
+      .filter((node) => !!node.type)
+      .map(formatPathNode)
+      .join(" > ");
+  }, [document, activeSectionId]);
+
+  const handleBackNavigation = useCallback(() => {
+    if (returnTo) {
+      router.push(returnTo);
+      return;
+    }
+
+    if (from === "search") {
+      router.push("/search");
+      return;
+    }
+
+    const hasHistory = window.history.length > 1;
+    if (hasHistory) {
+      router.back();
+      return;
+    }
+    router.push("/browse");
+  }, [router, returnTo, from]);
 
   // Scroll to highlighted section when document loads and structure is ready
   useEffect(() => {
@@ -278,6 +385,12 @@ function DocumentContent({ id }: { id: string }) {
   return (
     <TooltipProvider>
       <div className="flex flex-col">
+        <a
+          href="#document-main-content"
+          className="sr-only sr-only-focusable absolute left-4 top-4 z-[60] rounded-md bg-background px-3 py-2 text-sm shadow"
+        >
+          Skip to document content
+        </a>
         {/* Breadcrumb */}
         <div className="border-b px-4 py-3 md:px-6">
           <div className="mx-auto max-w-5xl">
@@ -322,6 +435,11 @@ function DocumentContent({ id }: { id: string }) {
 
             {/* Actions */}
             <div className="mt-4 flex flex-wrap items-center gap-2">
+              <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+                  <ArrowLeft className="mr-2 h-4 w-4" />
+                  Back
+              </Button>
+
               {/* Save to Library */}
               <SaveToCollectionButton
                 documentId={document.id}
@@ -398,27 +516,46 @@ function DocumentContent({ id }: { id: string }) {
                 </Link>
               </Button>
             </div>
+
+            {legalPath && (
+              <div className="mt-3 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                <span className="font-medium text-foreground">Current section:</span> {legalPath}
+              </div>
+            )}
+
+            {(prevDocument || nextDocument) && (
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+                {prevDocument ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/document/${prevDocument.id}`}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      Previous {typeConfig?.label || "Document"}
+                    </Link>
+                  </Button>
+                ) : null}
+                {nextDocument ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/document/${nextDocument.id}`}>
+                      Next {typeConfig?.label || "Document"}
+                      <ExternalLink className="ml-2 h-4 w-4" />
+                    </Link>
+                  </Button>
+                ) : null}
+              </div>
+            )}
           </div>
         </div>
 
         {/* Content - Format based on document type */}
-        <div className="flex-1 px-4 py-6 md:px-6">
+        <div id="document-main-content" className="flex-1 px-4 py-6 md:px-6">
           <div className="mx-auto max-w-7xl">
             {/* Judgments: Show only PDF */}
             {document.document_type === "judgment" && (
               <Card>
                 <CardContent className="p-0">
                   <div className="flex items-center justify-between border-b px-4 py-2">
-                    <div className="flex items-center gap-2">
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <ZoomOut className="h-4 w-4" />
-                      </Button>
-                      <span className="text-sm text-muted-foreground">
-                        100%
-                      </span>
-                      <Button variant="ghost" size="icon" className="h-8 w-8">
-                        <ZoomIn className="h-4 w-4" />
-                      </Button>
+                    <div className="text-sm text-muted-foreground">
+                      PDF viewer
                     </div>
                     <Button variant="outline" size="sm" asChild>
                       <a
@@ -445,60 +582,95 @@ function DocumentContent({ id }: { id: string }) {
               document.document_type === "regulation" ||
               document.document_type === "constitution") && (
                 <>
-                  {/* Font Size Controls */}
-                  <div className="mb-4 flex items-center justify-end gap-1">
-                    <span className="mr-2 text-sm text-muted-foreground">
+                  {/* Sticky Reading Controls */}
+                  <div className="sticky top-16 z-30 mb-4 rounded-lg border bg-background/95 px-3 py-2 backdrop-blur supports-[backdrop-filter]:bg-background/70">
+                    <div className="flex flex-wrap items-center justify-between gap-2">
+                      <span className="text-sm text-muted-foreground">
                       Text size:
-                    </span>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={fontSize === "small" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setFontSize("small")}
-                        >
-                          <span className="text-xs">A</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Small text</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={fontSize === "medium" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setFontSize("medium")}
-                        >
-                          <span className="text-sm">A</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Medium text</TooltipContent>
-                    </Tooltip>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        <Button
-                          variant={fontSize === "large" ? "secondary" : "ghost"}
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => setFontSize("large")}
-                        >
-                          <span className="text-base">A</span>
-                        </Button>
-                      </TooltipTrigger>
-                      <TooltipContent>Large text</TooltipContent>
-                    </Tooltip>
+                      </span>
+                      <div className="flex items-center gap-1">
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={fontSize === "small" ? "secondary" : "ghost"}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setFontSize("small")}
+                            >
+                              <span className="text-xs">A</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Small text</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={fontSize === "medium" ? "secondary" : "ghost"}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setFontSize("medium")}
+                            >
+                              <span className="text-sm">A</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Medium text</TooltipContent>
+                        </Tooltip>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant={fontSize === "large" ? "secondary" : "ghost"}
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => setFontSize("large")}
+                            >
+                              <span className="text-base">A</span>
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Large text</TooltipContent>
+                        </Tooltip>
+                      </div>
+
+                      <Sheet open={mobileTocOpen} onOpenChange={setMobileTocOpen}>
+                        <SheetTrigger asChild>
+                          <Button variant="outline" size="sm" className="lg:hidden">
+                            <List className="mr-2 h-4 w-4" />
+                            Contents
+                          </Button>
+                        </SheetTrigger>
+                        <SheetContent side="left" className="w-[90vw] max-w-sm p-0">
+                          <SheetHeader className="px-4 py-3 border-b">
+                            <SheetTitle>Table of Contents</SheetTitle>
+                            <SheetDescription>
+                              Jump to any section in this document.
+                            </SheetDescription>
+                          </SheetHeader>
+                          <div className="p-4">
+                            {document.hierarchical_structure && (
+                              <TableOfContents
+                                node={document.hierarchical_structure}
+                                onSectionSelect={(sectionId) => {
+                                  setManualHighlightId(sectionId);
+                                  setMobileTocOpen(false);
+                                }}
+                                onActiveSectionChange={setActiveSectionId}
+                                className="h-[calc(100vh-140px)] w-full"
+                              />
+                            )}
+                          </div>
+                        </SheetContent>
+                      </Sheet>
+                    </div>
                   </div>
 
-                  {/* Main content with ToC sidebar */}
-                  <div className="flex gap-6">
+                  {/* Main content with ToC + Reader + Context rail */}
+                  <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px]">
                     {/* Table of Contents - sticky sidebar */}
                     {document.hierarchical_structure && (
-                      <div className="hidden lg:block sticky top-4 self-start">
+                      <div className="hidden lg:block sticky top-20 self-start">
                         <TableOfContents
                           node={document.hierarchical_structure}
                           onSectionSelect={setManualHighlightId}
+                          onActiveSectionChange={setActiveSectionId}
                           className="shadow-sm"
                         />
                       </div>
@@ -523,6 +695,7 @@ function DocumentContent({ id }: { id: string }) {
                             }}
                             fontSize={fontSize}
                             highlightedSectionId={highlightedSectionId}
+                            showDocumentHeader={false}
                           />
                         ) : (
                           <div className="text-center py-8">
@@ -544,6 +717,79 @@ function DocumentContent({ id }: { id: string }) {
                         )}
                       </CardContent>
                     </Card>
+
+                    {/* Enterprise context rail */}
+                    <aside className="hidden xl:block sticky top-20 self-start space-y-4">
+                      <Card>
+                        <CardContent className="p-4 space-y-3">
+                          <h3 className="text-sm font-semibold">Document Trust</h3>
+                          <div className="space-y-2 text-sm">
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Status</span>
+                              <span className="font-medium text-green-600 dark:text-green-400">
+                                {document.status
+                                  ? document.status.replace(/_/g, " ")
+                                  : "Published"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Version</span>
+                              <span className="font-medium">
+                                {document.version_number || "Current"}
+                              </span>
+                            </div>
+                            <div className="flex items-center justify-between">
+                              <span className="text-muted-foreground">Jurisdiction</span>
+                              <span className="font-medium">
+                                {document.jurisdiction || "UG"}
+                              </span>
+                            </div>
+                          </div>
+                        </CardContent>
+                      </Card>
+
+                      <Card>
+                        <CardContent className="p-4 space-y-2">
+                          <h3 className="text-sm font-semibold">Quick Actions</h3>
+                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                            <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
+                              <MessageSquare className="mr-2 h-4 w-4" />
+                              Ask AI about this document
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
+                              <Download className="mr-2 h-4 w-4" />
+                              Download PDF
+                            </a>
+                          </Button>
+                        </CardContent>
+                      </Card>
+
+                      {relatedDocuments.length > 0 && (
+                        <Card>
+                          <CardContent className="p-4 space-y-2">
+                            <h3 className="text-sm font-semibold">
+                              Related {typeConfig?.label || "Documents"}
+                            </h3>
+                            <div className="space-y-1.5">
+                              {relatedDocuments.map((item) => (
+                                <Link
+                                  key={item.id}
+                                  href={`/document/${item.id}`}
+                                  className="block rounded-md px-2 py-1.5 text-sm hover:bg-accent/50 transition-colors"
+                                >
+                                  <p className="line-clamp-2">{item.short_title || item.title}</p>
+                                  <p className="text-xs text-muted-foreground">
+                                    {item.human_readable_id}
+                                  </p>
+                                </Link>
+                              ))}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      )}
+                    </aside>
                   </div>
                 </>
               )}

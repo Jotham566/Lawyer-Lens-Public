@@ -19,6 +19,7 @@ interface TocItem {
 interface TableOfContentsProps {
   node: HierarchicalNode;
   onSectionSelect?: (id: string) => void;
+  onActiveSectionChange?: (id: string | null) => void;
   className?: string;
 }
 
@@ -164,16 +165,15 @@ function TocItemComponent({
     <div className={cn("toc-item", getIndentClass())}>
       <div
         className={cn(
-          "flex items-start gap-1 py-1.5 px-2 rounded-md cursor-pointer transition-colors",
+          "flex w-full items-start gap-1 py-1.5 px-2 rounded-md transition-colors",
           "hover:bg-accent/50",
           isActive && "bg-primary/10 text-primary font-medium",
           isParentOfActive && !isActive && "text-primary/80"
         )}
-        onClick={() => onSelect(item.id)}
-        title={formatTocLabel(item)}
       >
         {hasChildren && (
           <button
+            type="button"
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
@@ -188,7 +188,15 @@ function TocItemComponent({
           </button>
         )}
         {!hasChildren && <span className="w-4 shrink-0" />}
-        <span className="text-sm leading-snug break-words">{formatTocLabel(item)}</span>
+        <button
+          type="button"
+          className="min-w-0 flex-1 text-left"
+          onClick={() => onSelect(item.id)}
+          title={formatTocLabel(item)}
+          aria-current={isActive ? "location" : undefined}
+        >
+          <span className="text-sm leading-snug break-words">{formatTocLabel(item)}</span>
+        </button>
       </div>
 
       {hasChildren && isExpanded && (
@@ -211,7 +219,12 @@ function TocItemComponent({
  * Table of Contents component
  * Extracts structure from hierarchical node and provides navigation
  */
-export function TableOfContents({ node, onSectionSelect, className }: TableOfContentsProps) {
+export function TableOfContents({
+  node,
+  onSectionSelect,
+  onActiveSectionChange,
+  className,
+}: TableOfContentsProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isCollapsed, setIsCollapsed] = useState(false);
 
@@ -224,6 +237,9 @@ export function TableOfContents({ node, onSectionSelect, className }: TableOfCon
     if (element) {
       element.scrollIntoView({ behavior: "smooth", block: "start" });
       setActiveId(id);
+      if (window.location.hash !== `#${id}`) {
+        window.history.replaceState(null, "", `#${id}`);
+      }
       // Notify parent of selection for highlighting
       onSectionSelect?.(id);
     }
@@ -245,14 +261,19 @@ export function TableOfContents({ node, onSectionSelect, className }: TableOfCon
 
       if (currentId) {
         setActiveId(currentId);
+        if (window.location.hash !== `#${currentId}`) {
+          window.history.replaceState(null, "", `#${currentId}`);
+        }
       }
+
+      onActiveSectionChange?.(currentId);
     };
 
     window.addEventListener("scroll", handleScroll, { passive: true });
     handleScroll(); // Initial check
 
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [onActiveSectionChange]);
 
   if (tocItems.length === 0) {
     return null;
