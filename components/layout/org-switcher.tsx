@@ -25,6 +25,7 @@ import {
   switchOrganization,
   type Organization,
 } from "@/lib/api/organizations";
+import { useRouter } from "next/navigation";
 
 interface OrgSwitcherProps {
   className?: string;
@@ -32,6 +33,7 @@ interface OrgSwitcherProps {
 
 export function OrgSwitcher({ className }: OrgSwitcherProps) {
   const { isAuthenticated } = useAuth();
+  const router = useRouter();
 
   const [open, setOpen] = useState(false);
   const [organizations, setOrganizations] = useState<Organization[]>([]);
@@ -149,8 +151,7 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
               <CommandItem
                 onSelect={() => {
                   setOpen(false);
-                  // Navigate to create org page
-                  window.location.href = "/settings/organization/new";
+                  router.push("/settings/organization/new");
                 }}
                 className="cursor-pointer"
               >
