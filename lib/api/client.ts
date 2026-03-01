@@ -288,6 +288,9 @@ export class APIError extends Error {
       USAGE_LIMIT_EXCEEDED: "You've reached your usage limit. Please upgrade your plan.",
       FEATURE_NOT_AVAILABLE: "This feature is not available on your current plan.",
       PERMISSION_DENIED: "You don't have permission to perform this action.",
+      BETA_ACCESS_REQUIRED: "Registration is currently invite-only. Join the waitlist to get access.",
+      INVALID_INVITATION: "Invalid or expired invitation token. Please request a new invitation.",
+      INVITATION_EMAIL_MISMATCH: "This invitation was sent to a different email address.",
       VALIDATION_ERROR: "Please check your input and try again.",
       SERVICE_UNAVAILABLE: "Service is temporarily unavailable. Please try again later.",
     };

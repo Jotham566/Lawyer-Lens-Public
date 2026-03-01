@@ -129,6 +129,9 @@ export {
   type VerifyEmailRequest,
 } from "./auth";
 
+// Beta API
+export { getPublicBetaMode, type PublicBetaMode } from "./beta";
+
 // Knowledge Base API
 export {
   uploadDocument,

@@ -553,7 +553,11 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
       if (err instanceof APIError) {
         if (err.errorCode === "USER_EXISTS") {
           setError("An account with this email already exists.");
-        } else if (err.errorCode === "beta_access_required" || err.message?.includes("invite-only")) {
+        } else if (
+          err.errorCode === "BETA_ACCESS_REQUIRED" ||
+          err.errorCode === "beta_access_required" ||
+          err.message?.toLowerCase().includes("invite-only")
+        ) {
           // Show beta access modal instead of error
           setShowBetaModal(true);
           setError(null);
