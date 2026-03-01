@@ -26,6 +26,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { cn } from "@/lib/utils";
 import { useDocumentsByType } from "@/lib/hooks";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import { resolveDocumentYear } from "@/lib/utils/document-year";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -214,7 +215,9 @@ function ActsContent() {
             ? "grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             : "space-y-2"
         )}>
-          {filteredItems.map((act) => (
+          {filteredItems.map((act) => {
+            const displayYear = resolveDocumentYear(act);
+            return (
             <Link key={act.id} href={`/document/${act.id}`}>
               <Card className={cn(
                 "h-full transition-colors hover:border-primary/50 hover:bg-muted/30",
@@ -238,7 +241,7 @@ function ActsContent() {
                       )}
                     </div>
                     <Badge variant="secondary" className="shrink-0">
-                      {act.act_year || "N/A"}
+                      {displayYear || "N/A"}
                     </Badge>
                   </div>
                   {viewMode === "list" && (
@@ -258,7 +261,8 @@ function ActsContent() {
                 )}
               </Card>
             </Link>
-          ))}
+            );
+          })}
         </div>
       )}
 

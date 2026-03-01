@@ -16,6 +16,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { useDocumentsByType } from "@/lib/hooks";
+import { resolveDocumentYear } from "@/lib/utils/document-year";
 
 const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
@@ -154,7 +155,9 @@ function ActsContent() {
 
         {filteredItems && filteredItems.length > 0 && (
           <div className="space-y-2">
-            {filteredItems.map((act) => (
+            {filteredItems.map((act) => {
+              const displayYear = resolveDocumentYear(act);
+              return (
               <Link key={act.id} href={`/document/${act.id}`}>
                 <Card className="transition-colors hover:border-primary/50">
                   <CardHeader className="py-3">
@@ -170,7 +173,7 @@ function ActsContent() {
                         )}
                       </div>
                       <Badge variant="secondary" className="shrink-0">
-                        {act.act_year || "N/A"}
+                        {displayYear || "N/A"}
                       </Badge>
                     </div>
                     <div className="flex items-center gap-3 text-xs text-muted-foreground">
@@ -180,7 +183,8 @@ function ActsContent() {
                   </CardHeader>
                 </Card>
               </Link>
-            ))}
+              );
+            })}
           </div>
         )}
 
