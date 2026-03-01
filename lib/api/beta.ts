@@ -5,8 +5,8 @@ export interface PublicBetaMode {
 }
 
 export async function getPublicBetaMode(): Promise<PublicBetaMode> {
-  return apiFetch<PublicBetaMode>("/beta/mode", {
+  return apiFetch<PublicBetaMode>(`/beta/mode?_=${Date.now()}`, {
     method: "GET",
+    cache: "no-store",
   });
 }
-

@@ -94,9 +94,15 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    getPublicBetaMode()
-      .then((mode) => setBetaModeEnabled(mode.enabled))
-      .catch(() => setBetaModeEnabled(false));
+    const loadBetaMode = () => {
+      getPublicBetaMode()
+        .then((mode) => setBetaModeEnabled(mode.enabled))
+        .catch(() => setBetaModeEnabled(false));
+    };
+
+    loadBetaMode();
+    window.addEventListener("focus", loadBetaMode);
+    return () => window.removeEventListener("focus", loadBetaMode);
   }, []);
 
   const handleSearch = (e: React.FormEvent) => {
