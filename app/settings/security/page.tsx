@@ -56,8 +56,8 @@ const passwordSchema = z
       .string()
       .min(8, "Password must be at least 8 characters")
       .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must contain at least one uppercase letter, one lowercase letter, and one number"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:',.<>/?~`"])/,
+        "Password must contain uppercase, lowercase, number, and special character"
       ),
     confirm_password: z.string(),
   })
@@ -75,6 +75,10 @@ function PasswordStrength({ password }: { password: string }) {
     { label: "Uppercase letter", valid: /[A-Z]/.test(password) },
     { label: "Lowercase letter", valid: /[a-z]/.test(password) },
     { label: "Number", valid: /\d/.test(password) },
+    {
+      label: "Special character",
+      valid: /[!@#$%^&*()_+\-=[\]{}|;:',.<>/?~`"]/.test(password),
+    },
   ];
 
   return (

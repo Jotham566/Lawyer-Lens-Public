@@ -208,8 +208,8 @@ const registerSchema = z
       .string()
       .min(8, "Password must be at least 8 characters")
       .regex(
-        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)/,
-        "Password must contain uppercase, lowercase, and number"
+        /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*()_+\-=[\]{}|;:',.<>/?~`"])/,
+        "Password must contain uppercase, lowercase, number, and special character"
       ),
     confirmPassword: z.string(),
   })
@@ -237,6 +237,10 @@ function PasswordStrength({ password }: { password: string | undefined }) {
     { label: "Uppercase", valid: /[A-Z]/.test(pwd) },
     { label: "Lowercase", valid: /[a-z]/.test(pwd) },
     { label: "Number", valid: /\d/.test(pwd) },
+    {
+      label: "Special",
+      valid: /[!@#$%^&*()_+\-=[\]{}|;:',.<>/?~`"]/.test(pwd),
+    },
   ];
 
   return (
