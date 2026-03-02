@@ -29,11 +29,11 @@ import { Loader2, Mail, CheckCircle2, Clock, AlertCircle, Sparkles } from "lucid
 import Link from "next/link";
 
 interface WaitlistStatus {
-  email: string;
-  position: number;
+  email?: string;
+  position: number | null;
   total_waiting: number;
-  status: "pending" | "invited" | "registered";
-  created_at: string;
+  status: "pending" | "invited" | "registered" | "joined";
+  created_at?: string;
   invited_at?: string;
 }
 
@@ -47,6 +47,7 @@ function WaitlistStatusContent() {
   const [error, setError] = useState<string | null>(null);
 
   const email = searchParams.get("email");
+  const token = searchParams.get("token");
 
   const getMockStatus = useCallback((emailToCheck: string): WaitlistStatus => {
     // Generate consistent mock data based on email
@@ -64,20 +65,21 @@ function WaitlistStatusContent() {
     };
   }, []);
 
-  const fetchWaitlistStatus = useCallback(async (emailToCheck: string) => {
+  const fetchWaitlistStatus = useCallback(async (query: { email?: string; token?: string }) => {
     try {
       // Use mock data if enabled or if backend is not available
       if (USE_MOCK_DATA) {
         // Simulate network delay
         await new Promise((resolve) => setTimeout(resolve, 800));
-        setStatus(getMockStatus(emailToCheck));
+        setStatus(getMockStatus(query.email || "waitlist@example.com"));
         setLoading(false);
         return;
       }
 
-      const response = await fetch(
-        `/api/v1/beta/waitlist/status?email=${encodeURIComponent(emailToCheck)}`
-      );
+      const params = new URLSearchParams();
+      if (query.email) params.set("email", query.email);
+      if (query.token) params.set("token", query.token);
+      const response = await fetch(`/api/v1/beta/waitlist/status?${params.toString()}`);
 
       if (!response.ok) {
         if (response.status === 404) {
@@ -98,7 +100,7 @@ function WaitlistStatusContent() {
       // Fallback to mock data in development when backend is unavailable
       if (process.env.NODE_ENV === "development") {
         console.warn("Backend unavailable, using mock data. Set NEXT_PUBLIC_USE_MOCK_WAITLIST=true to suppress this warning.");
-        setStatus(getMockStatus(emailToCheck));
+        setStatus(getMockStatus(query.email || "waitlist@example.com"));
       } else {
         setError("Unable to connect to the server. Please try again later.");
       }
@@ -108,14 +110,14 @@ function WaitlistStatusContent() {
   }, [getMockStatus]);
 
   useEffect(() => {
-    if (!email) {
-      setError("No email provided");
+    if (!email && !token) {
+      setError("No status identifier provided");
       setLoading(false);
       return;
     }
 
-    fetchWaitlistStatus(email);
-  }, [email, fetchWaitlistStatus]);
+    fetchWaitlistStatus({ email: email || undefined, token: token || undefined });
+  }, [email, token, fetchWaitlistStatus]);
 
   if (loading) {
     return (
@@ -128,7 +130,7 @@ function WaitlistStatusContent() {
     );
   }
 
-  if (error || !email) {
+  if (error || (!email && !token)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <Card className="max-w-lg w-full border-destructive/50">
@@ -171,7 +173,7 @@ function WaitlistStatusContent() {
             <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
               <Mail className="h-4 w-4 text-green-600 dark:text-green-400" />
               <AlertDescription className="text-green-900 dark:text-green-100">
-                An invitation email has been sent to <strong>{status.email}</strong>
+                An invitation email has been sent to <strong>{status.email || email || "your inbox"}</strong>
               </AlertDescription>
             </Alert>
 
@@ -204,7 +206,7 @@ function WaitlistStatusContent() {
     );
   }
 
-  if (status?.status === "registered") {
+  if (status?.status === "registered" || status?.status === "joined") {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
         <Card className="max-w-lg w-full border-blue-200 dark:border-blue-800">
@@ -222,7 +224,7 @@ function WaitlistStatusContent() {
           </CardHeader>
           <CardContent className="space-y-4">
             <p className="text-center text-muted-foreground">
-              You&apos;ve already registered with <strong>{status.email}</strong>
+              You&apos;ve already registered with <strong>{status.email || email || "this account"}</strong>
             </p>
             <Button asChild className="w-full">
               <Link href="/login">Sign In</Link>
@@ -252,7 +254,7 @@ function WaitlistStatusContent() {
         <CardContent className="space-y-6">
           <div className="text-center p-8 bg-white dark:bg-background rounded-lg border-2 border-purple-300 dark:border-purple-700">
             <div className="text-6xl font-bold text-purple-600 dark:text-purple-400 mb-2">
-              #{status?.position}
+              #{status?.position ?? "—"}
             </div>
             <p className="text-muted-foreground">Your position in line</p>
             {status?.total_waiting && (
@@ -278,7 +280,7 @@ function WaitlistStatusContent() {
           <Alert>
             <Mail className="h-4 w-4" />
             <AlertDescription className="text-foreground">
-              We&apos;ve sent a confirmation email to <strong>{status?.email}</strong>.
+              We&apos;ve sent a confirmation email to <strong>{status?.email || email || "your inbox"}</strong>.
               You&apos;ll hear from us when your invitation is ready!
             </AlertDescription>
           </Alert>

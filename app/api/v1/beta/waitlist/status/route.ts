@@ -15,16 +15,20 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const email = searchParams.get("email");
+    const token = searchParams.get("token");
 
-    if (!email) {
+    if (!email && !token) {
       return NextResponse.json(
-        { message: "Email parameter is required" },
+        { message: "Email or token parameter is required" },
         { status: 400 }
       );
     }
 
     // Proxy request to backend
-    const backendUrl = `${BACKEND_URL}/beta/waitlist/status?email=${encodeURIComponent(email)}`;
+    const backendParams = new URLSearchParams();
+    if (email) backendParams.set("email", email);
+    if (token) backendParams.set("token", token);
+    const backendUrl = `${BACKEND_URL}/beta/waitlist/status?${backendParams.toString()}`;
     
     const response = await fetch(backendUrl, {
       method: "GET",

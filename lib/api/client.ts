@@ -362,12 +362,19 @@ export async function apiFetch<T>(
 ): Promise<T> {
   const url = `${API_BASE}${endpoint}`;
 
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
-    ...(options?.headers as Record<string, string> | undefined),
-  };
-
   const method = options?.method ?? "GET";
+  const providedHeaders = (options?.headers as Record<string, string> | undefined) || {};
+  const headers: Record<string, string> = { ...providedHeaders };
+  const hasJsonBody =
+    options?.body !== undefined &&
+    options?.body !== null &&
+    !("Content-Type" in headers) &&
+    method.toUpperCase() !== "GET" &&
+    method.toUpperCase() !== "HEAD";
+  if (hasJsonBody) {
+    headers["Content-Type"] = "application/json";
+  }
+
   if (requiresCsrf(method) && !headers["X-CSRF-Token"]) {
     const csrfToken = getCsrfToken();
     if (csrfToken) {
