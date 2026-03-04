@@ -270,7 +270,7 @@ function WaitlistStatusContent() {
               <strong className="text-purple-900 dark:text-purple-100">Beta users receive:</strong>
               <ul className="mt-2 space-y-1 text-sm text-purple-800 dark:text-purple-200">
                 <li>• Early Adopter Badge</li>
-                <li>• 180-day extended trial</li>
+                <li>• 90-day extended trial</li>
                 <li>• Priority support</li>
                 <li>• Founding member pricing</li>
               </ul>

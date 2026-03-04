@@ -90,7 +90,7 @@ function BetaAccessRequired() {
               <strong>Beta users receive:</strong>
               <ul className="mt-2 space-y-1 text-sm">
                 <li>• Early Adopter Badge</li>
-                <li>• 180-day extended trial</li>
+                <li>• 90-day extended trial</li>
                 <li>• Priority support</li>
                 <li>• Founding member pricing</li>
               </ul>

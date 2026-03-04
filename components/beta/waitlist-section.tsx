@@ -175,7 +175,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
                 <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Extended Trial</p>
-                  <p className="text-sm text-muted-foreground">180 days of full platform access</p>
+                  <p className="text-sm text-muted-foreground">90 days of full platform access</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
