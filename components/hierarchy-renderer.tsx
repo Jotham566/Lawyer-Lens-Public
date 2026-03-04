@@ -567,12 +567,118 @@ function GenericNode({ node, depth }: { node: HierarchicalNode; depth: number })
 
 // ============ Content Helpers ============
 
+type ParsedTableLike = {
+  rows: string[][];
+  header_rows?: number[];
+};
+
+function decodeHtmlEntities(value: string): string {
+  return value
+    .replace(/&nbsp;/gi, " ")
+    .replace(/&amp;/gi, "&")
+    .replace(/&lt;/gi, "<")
+    .replace(/&gt;/gi, ">")
+    .replace(/&quot;/gi, '"')
+    .replace(/&#39;/gi, "'")
+    .replace(/&#x27;/gi, "'")
+    .replace(/&#(\d+);/g, (_, code: string) => {
+      const codePoint = Number.parseInt(code, 10);
+      return Number.isFinite(codePoint) ? String.fromCharCode(codePoint) : "";
+    });
+}
+
+function stripHtml(value: string): string {
+  const withBreaks = value.replace(/<br\s*\/?>/gi, "\n");
+  const noTags = withBreaks.replace(/<[^>]+>/g, " ");
+  return decodeHtmlEntities(noTags)
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/\n{3,}/g, "\n\n")
+    .trim();
+}
+
+function parseHtmlTableBlock(htmlTable: string): ParsedTableLike | null {
+  const rowMatches = htmlTable.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi);
+  if (!rowMatches || rowMatches.length < 2) return null;
+
+  const rows = rowMatches
+    .map((rowHtml) => {
+      const cellMatches = rowHtml.match(/<t[hd]\b[^>]*>[\s\S]*?<\/t[hd]>/gi) || [];
+      return cellMatches.map((cellHtml) => stripHtml(cellHtml)).filter((cell) => cell.length > 0);
+    })
+    .filter((cells) => cells.length > 0);
+
+  if (rows.length < 2) return null;
+
+  const hasHeaderRow = /<th\b/i.test(rowMatches[0]);
+  return {
+    rows,
+    header_rows: hasHeaderRow ? [0] : undefined,
+  };
+}
+
+function extractTablesAndCleanText(value: string): { tables: ParsedTableLike[]; cleanedText: string } {
+  let remaining = value;
+  const tables: ParsedTableLike[] = [];
+
+  const tableBlocks = remaining.match(/<table\b[\s\S]*?<\/table>/gi) || [];
+  for (const tableBlock of tableBlocks) {
+    const parsed = parseHtmlTableBlock(tableBlock);
+    if (parsed) tables.push(parsed);
+  }
+  remaining = remaining.replace(/<table\b[\s\S]*?<\/table>/gi, " ");
+
+  if (/<tr\b/i.test(remaining) && /<t[hd]\b/i.test(remaining)) {
+    const looseRows = remaining.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
+    if (looseRows.length > 0) {
+      const parsedLoose = parseHtmlTableBlock(`<table>${looseRows.join("")}</table>`);
+      if (parsedLoose) tables.push(parsedLoose);
+      remaining = remaining.replace(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi, " ");
+    }
+  }
+
+  const cleanedText = stripHtml(remaining)
+    .split("\n")
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0 && !/^tbl-\d+\.html$/i.test(line))
+    .join("\n");
+
+  return { tables, cleanedText };
+}
+
 function NodeContent({ node }: { node: HierarchicalNode }) {
   // Use styled_text if available for style-aware rendering
   if (node.styled_text && node.styled_text.length > 0) {
+    const cleanedBlocks = node.styled_text
+      .map((block) => {
+        const cleanedFragments = block.fragments
+          .map((fragment) => {
+            const cleanedText = extractTablesAndCleanText(fragment.text).cleanedText;
+            if (!cleanedText) return null;
+            return {
+              ...fragment,
+              text: cleanedText,
+            };
+          })
+          .filter((fragment): fragment is TextFragment => fragment !== null);
+
+        if (cleanedFragments.length === 0) return null;
+
+        return {
+          ...block,
+          text: cleanedFragments.map((fragment) => fragment.text).join(""),
+          fragments: cleanedFragments,
+        };
+      })
+      .filter(
+        (block): block is NonNullable<typeof node.styled_text>[number] => block !== null
+      );
+
+    if (cleanedBlocks.length === 0) return null;
+
     return (
       <div className="node-content">
-        {node.styled_text.map((block, blockIdx) => (
+        {cleanedBlocks.map((block, blockIdx) => (
           <p key={blockIdx} className={blockIdx === 0 ? "mt-0 mb-1" : "my-1"}>
             {block.fragments.map((fragment, fragIdx) => (
               <StyledFragment key={fragIdx} fragment={fragment} />
@@ -586,10 +692,16 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
   // Fallback to plain text
   if (!node.text || node.text.length === 0) return null;
 
+  const cleanedTextBlocks = node.text
+    .map((text) => extractTablesAndCleanText(text).cleanedText)
+    .filter((text) => text.length > 0);
+
+  if (cleanedTextBlocks.length === 0) return null;
+
   return (
     <div className="node-content">
-      {node.text.map((text, index) => (
-        <p key={index} className={index === 0 ? "mt-0 mb-1" : "my-1"}>
+      {cleanedTextBlocks.map((text, index) => (
+        <p key={index} className={cn(index === 0 ? "mt-0 mb-1" : "my-1", "whitespace-pre-wrap")}>
           {text}
         </p>
       ))}
@@ -658,6 +770,39 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
           rows: item.rows,
           header_rows: item.header_rows,
         });
+      }
+
+      const rawText = item.text || item.value?.text;
+      if (typeof rawText === "string" && /<(table|tr|td|th)\b/i.test(rawText)) {
+        const parsedTables = extractTablesAndCleanText(rawText).tables;
+        if (parsedTables.length > 0) {
+          allTables.push(...parsedTables);
+        }
+      }
+    }
+  }
+
+  // Add tables embedded as raw HTML in node.text (common in Mistral/Gemini outputs)
+  if (node.text && node.text.length > 0) {
+    for (const text of node.text) {
+      if (!/<(table|tr|td|th)\b/i.test(text)) continue;
+      const parsedTables = extractTablesAndCleanText(text).tables;
+      if (parsedTables.length > 0) {
+        allTables.push(...parsedTables);
+      }
+    }
+  }
+
+  // Add tables embedded in styled text fragments
+  if (node.styled_text && node.styled_text.length > 0) {
+    for (const block of node.styled_text) {
+      for (const fragment of block.fragments) {
+        const text = fragment.text;
+        if (!/<(table|tr|td|th)\b/i.test(text)) continue;
+        const parsedTables = extractTablesAndCleanText(text).tables;
+        if (parsedTables.length > 0) {
+          allTables.push(...parsedTables);
+        }
       }
     }
   }

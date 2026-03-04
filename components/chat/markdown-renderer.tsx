@@ -275,14 +275,28 @@ const createMarkdownComponents = (
 
   // Links
   a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
-    >
-      {children}
-    </a>
+    (() => {
+      // react-markdown can parse bracketed numeric references like [1] as links in some cases.
+      // Convert those back to interactive source citations when they are internal/empty refs.
+      const text = React.Children.toArray(children)
+        .map((child) => (typeof child === "string" || typeof child === "number" ? String(child) : ""))
+        .join("")
+        .trim();
+      if ((!href || href.startsWith("#")) && /^\d+(?:\s*,\s*\d+)*$/.test(text)) {
+        return <>{withCitations(`[${text}]`)}</>;
+      }
+
+      return (
+        <a
+          href={href}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="text-primary underline decoration-primary/30 underline-offset-2 transition-colors hover:decoration-primary"
+        >
+          {children}
+        </a>
+      );
+    })()
   ),
 
   // Code - handles both inline and block code
@@ -501,17 +515,33 @@ function processChildren(
   sources: ChatSource[],
   enablePreviews: boolean
 ): React.ReactNode {
-  return React.Children.map(children, (child, idx) => {
-    // Only process string children
-    if (typeof child === "string") {
-      return (
-        <React.Fragment key={idx}>
-          {renderTextWithCitations(child, sources, enablePreviews)}
-        </React.Fragment>
-      );
+  const processNode = (node: React.ReactNode): React.ReactNode => {
+    if (typeof node === "string") {
+      return renderTextWithCitations(node, sources, enablePreviews);
     }
-    return child;
-  });
+
+    if (Array.isArray(node)) {
+      return node.map((item, idx) => <React.Fragment key={idx}>{processNode(item)}</React.Fragment>);
+    }
+
+    if (!React.isValidElement(node)) {
+      return node;
+    }
+
+    // Avoid transforming inside code/pre where brackets are literal.
+    if (typeof node.type === "string" && (node.type === "code" || node.type === "pre")) {
+      return node;
+    }
+
+    const props = node.props as { children?: React.ReactNode };
+    if (props.children === undefined) {
+      return node;
+    }
+
+    return React.cloneElement(node, undefined, processNode(props.children));
+  };
+
+  return processNode(children);
 }
 
 function MarkdownRendererInner({
