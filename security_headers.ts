@@ -18,6 +18,11 @@ export function proxy(request: NextRequest) {
     ...apiOrigins,
     ...(umamiOrigin ? [umamiOrigin] : []),
   ].join(" ");
+  const frameSrc = [
+    "'self'",
+    ...apiOrigins,
+    ...(isProd ? [] : ["http://localhost:*"]),
+  ].join(" ");
 
   const strictStyles = process.env.CSP_STRICT_STYLES === "true";
   const styleSrc = strictStyles
@@ -58,7 +63,7 @@ export function proxy(request: NextRequest) {
     "img-src 'self' data: blob: https:",
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
-    "frame-src 'none'",
+    `frame-src ${frameSrc}`,
     "worker-src 'self' blob:",
     "frame-ancestors 'none'",
     "base-uri 'self'",
