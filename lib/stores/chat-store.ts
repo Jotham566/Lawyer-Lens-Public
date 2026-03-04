@@ -15,6 +15,7 @@ import type {
   ConfidenceInfo,
 } from "@/lib/api/types";
 import { getConversations, getConversation, deleteConversation as deleteConversationApi, updateConversation } from "@/lib/api/chat";
+import { APIError } from "@/lib/api/client";
 
 export interface Conversation {
   id: string;
@@ -497,6 +498,11 @@ export const useChatStore = create<ChatState>()(
             };
           });
         } catch (error) {
+          if (error instanceof APIError && error.status === 404) {
+            // New users may have no history yet; treat as empty state.
+            set({ isFetchingHistory: false, error: null });
+            return;
+          }
           console.error("Failed to fetch conversations:", error);
           set({ isFetchingHistory: false, error: "Failed to load history" });
         }

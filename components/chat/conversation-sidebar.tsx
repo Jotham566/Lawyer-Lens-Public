@@ -299,12 +299,13 @@ export function ConversationList({
                       </p>
                     </div>
                     <div className="ml-auto flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className={cn(
-                          "h-6 w-6",
-                          conv.isStarred
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      className={cn(
+                        "h-6 w-6",
+                        conv.isStarred
                             ? "text-amber-400 hover:text-amber-500 hover:bg-amber-100/50 dark:hover:bg-amber-900/30"
                             : "hover:bg-muted hover:text-amber-400"
                         )}
@@ -313,30 +314,33 @@ export function ConversationList({
                         <Star className={cn("h-3 w-3", conv.isStarred && "fill-current")} />
                         <span className="sr-only">{conv.isStarred ? "Unpin" : "Pin"}</span>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-muted hover:text-green-500"
-                        onClick={(e) => handleStartEdit(conv, e)}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      className="h-6 w-6 hover:bg-muted hover:text-green-500"
+                      onClick={(e) => handleStartEdit(conv, e)}
                       >
                         <Pencil className="h-3 w-3" />
                         <span className="sr-only">Rename</span>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-muted hover:text-blue-500"
-                        onClick={(e) => handleArchive(conv, e)}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      className="h-6 w-6 hover:bg-muted hover:text-blue-500"
+                      onClick={(e) => handleArchive(conv, e)}
                         title="Archive"
                       >
                         <Archive className="h-3 w-3" />
                         <span className="sr-only">Archive</span>
                       </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
-                        onClick={(e) => onDelete(conv.id, e)}
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      type="button"
+                      className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+                      onClick={(e) => onDelete(conv.id, e)}
                       >
                         <Trash2 className="h-3 w-3" />
                         <span className="sr-only">Delete</span>
@@ -393,6 +397,7 @@ export function ConversationList({
       {archivedConversations.length > 0 && !collapsed && (
         <div className="mt-4 pt-4 border-t border-border/50">
           <button
+            type="button"
             onClick={() => setArchivedExpanded(!archivedExpanded)}
             className="flex items-center gap-1 w-full px-2 mb-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider hover:text-muted-foreground transition-colors"
           >
@@ -434,6 +439,7 @@ export function ConversationList({
                           <Button
                             variant="ghost"
                             size="icon"
+                            type="button"
                             className="h-6 w-6 hover:bg-muted hover:text-primary"
                             onClick={(e) => handleUnarchive(conv, e)}
                             title="Restore from archive"
@@ -444,6 +450,7 @@ export function ConversationList({
                           <Button
                             variant="ghost"
                             size="icon"
+                            type="button"
                             className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
                             onClick={(e) => onDelete(conv.id, e)}
                           >
@@ -527,6 +534,7 @@ export function ConversationSidebar({
         <Button
           variant="ghost"
           size="icon"
+          type="button"
           className="h-8 w-8 text-muted-foreground"
           onClick={() => setIsCollapsed(!isCollapsed)}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -539,6 +547,7 @@ export function ConversationSidebar({
       <div className="p-3">
         <Button
           onClick={onNewConversation}
+          type="button"
           variant={isCollapsed ? "ghost" : "default"}
           size={isCollapsed ? "icon" : "default"}
           className={cn("w-full justify-start", isCollapsed && "justify-center px-0")}
@@ -562,6 +571,7 @@ export function ConversationSidebar({
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="Clear search"
@@ -653,6 +663,7 @@ export function MobileHistorySheet({
         <Button
           variant="ghost"
           size="icon"
+          type="button"
           className="h-8 w-8"
           aria-label="Chat history"
         >
@@ -685,6 +696,7 @@ export function MobileHistorySheet({
             />
             {searchQuery && (
               <button
+                type="button"
                 onClick={() => setSearchQuery("")}
                 className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
                 aria-label="Clear search"
