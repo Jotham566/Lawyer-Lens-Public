@@ -284,6 +284,7 @@ export class APIError extends Error {
       TOKEN_EXPIRED: "This link has expired. Please request a new one.",
       INVALID_TOKEN: "This link is invalid. Please request a new one.",
       ACCOUNT_LOCKED: "Your account has been temporarily locked. Please try again later.",
+      SOCIAL_AUTH_REQUIRED: "This account uses social sign-in. Please continue with Google or Microsoft.",
       RATE_LIMIT_EXCEEDED: "Too many requests. Please wait a moment and try again.",
       USAGE_LIMIT_EXCEEDED: "You've reached your usage limit. Please upgrade your plan.",
       FEATURE_NOT_AVAILABLE: "This feature is not available on your current plan.",

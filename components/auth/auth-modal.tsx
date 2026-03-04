@@ -319,7 +319,13 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
     } catch (err) {
       if (err instanceof APIError) {
         if (err.errorCode === "INVALID_CREDENTIALS") {
-          setError("Invalid email or password");
+          setError("Invalid email or password. Please try again.");
+        } else if (err.errorCode === "SOCIAL_AUTH_REQUIRED") {
+          const providerRaw = String(err.details?.provider || "").toLowerCase();
+          const provider = providerRaw === "google" || providerRaw === "microsoft"
+            ? providerRaw.charAt(0).toUpperCase() + providerRaw.slice(1)
+            : "Google or Microsoft";
+          setError(`This account uses ${provider} sign-in. Use the social sign-in button to continue.`);
         } else if (err.errorCode === "ACCOUNT_LOCKED") {
           setError("Account temporarily locked. Please try again later.");
         } else if (err.errorCode === "EMAIL_NOT_VERIFIED") {
