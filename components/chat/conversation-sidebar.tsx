@@ -468,6 +468,7 @@ interface ConversationSidebarProps {
   conversations: Conversation[];
   archivedConversations: Conversation[];
   currentConversationId: string | null;
+  isFetchingHistory?: boolean;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
@@ -482,6 +483,7 @@ export function ConversationSidebar({
   conversations,
   archivedConversations,
   currentConversationId,
+  isFetchingHistory = false,
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
@@ -515,7 +517,12 @@ export function ConversationSidebar({
       {/* Header */}
       <div className={cn("flex items-center h-14 border-b px-3", isCollapsed ? "justify-center" : "justify-between")}>
         {!isCollapsed && (
-          <span className="font-semibold text-sm">Chat History</span>
+          <div className="flex items-center gap-2">
+            <span className="font-semibold text-sm">Chat History</span>
+            {isFetchingHistory && (
+              <span className="text-[11px] text-muted-foreground">Refreshing...</span>
+            )}
+          </div>
         )}
         <Button
           variant="ghost"
@@ -568,20 +575,28 @@ export function ConversationSidebar({
 
       {/* List */}
       <div className="flex-1 overflow-y-auto px-2 py-2 scrollbar-thin">
-        <ConversationList
-          conversations={filteredConversations}
-          archivedConversations={archivedConversations}
-          currentConversationId={currentConversationId}
-          onSelect={onSelectConversation}
-          onDelete={onDeleteConversation}
-          onRename={onRenameConversation}
-          onStar={onStarConversation}
-          onUnstar={onUnstarConversation}
-          onArchive={onArchiveConversation}
-          onUnarchive={onUnarchiveConversation}
-          collapsed={isCollapsed}
-          searchQuery={debouncedQuery}
-        />
+        {isFetchingHistory && filteredConversations.length === 0 ? (
+          <div className="space-y-2 px-2 py-1">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-10 rounded-lg bg-muted/60 animate-pulse" />
+            ))}
+          </div>
+        ) : (
+          <ConversationList
+            conversations={filteredConversations}
+            archivedConversations={archivedConversations}
+            currentConversationId={currentConversationId}
+            onSelect={onSelectConversation}
+            onDelete={onDeleteConversation}
+            onRename={onRenameConversation}
+            onStar={onStarConversation}
+            onUnstar={onUnstarConversation}
+            onArchive={onArchiveConversation}
+            onUnarchive={onUnarchiveConversation}
+            collapsed={isCollapsed}
+            searchQuery={debouncedQuery}
+          />
+        )}
       </div>
     </div>
   );
@@ -594,6 +609,7 @@ interface MobileHistorySheetProps {
   conversations: Conversation[];
   archivedConversations: Conversation[];
   currentConversationId: string | null;
+  isFetchingHistory?: boolean;
   onSelectConversation: (id: string) => void;
   onDeleteConversation: (id: string, e: React.MouseEvent) => void;
   onRenameConversation: (id: string, newTitle: string) => void;
@@ -609,6 +625,7 @@ export function MobileHistorySheet({
   conversations,
   archivedConversations,
   currentConversationId,
+  isFetchingHistory = false,
   onSelectConversation,
   onDeleteConversation,
   onRenameConversation,
@@ -647,6 +664,9 @@ export function MobileHistorySheet({
           <SheetTitle className="flex items-center gap-2 text-base">
             <History className="h-4 w-4" />
             History
+            {isFetchingHistory && (
+              <span className="text-[11px] font-normal text-muted-foreground">Refreshing...</span>
+            )}
           </SheetTitle>
           <SheetDescription className="sr-only">
             Chat history
@@ -675,22 +695,30 @@ export function MobileHistorySheet({
           </div>
         </div>
         <div className="flex-1 overflow-y-auto px-4 pb-4">
-          <ConversationList
-            conversations={filteredConversations}
-            archivedConversations={archivedConversations}
-            currentConversationId={currentConversationId}
-            onSelect={(id) => {
-              onSelectConversation(id);
-              onOpenChange(false);
-            }}
-            onDelete={onDeleteConversation}
-            onRename={onRenameConversation}
-            onStar={onStarConversation}
-            onUnstar={onUnstarConversation}
-            onArchive={onArchiveConversation}
-            onUnarchive={onUnarchiveConversation}
-            searchQuery={debouncedQuery}
-          />
+          {isFetchingHistory && filteredConversations.length === 0 ? (
+            <div className="space-y-2 py-1">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <div key={i} className="h-10 rounded-lg bg-muted/60 animate-pulse" />
+              ))}
+            </div>
+          ) : (
+            <ConversationList
+              conversations={filteredConversations}
+              archivedConversations={archivedConversations}
+              currentConversationId={currentConversationId}
+              onSelect={(id) => {
+                onSelectConversation(id);
+                onOpenChange(false);
+              }}
+              onDelete={onDeleteConversation}
+              onRename={onRenameConversation}
+              onStar={onStarConversation}
+              onUnstar={onUnstarConversation}
+              onArchive={onArchiveConversation}
+              onUnarchive={onUnarchiveConversation}
+              searchQuery={debouncedQuery}
+            />
+          )}
         </div>
       </SheetContent>
     </Sheet>

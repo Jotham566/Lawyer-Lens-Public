@@ -34,6 +34,7 @@ export function useChatOrchestrator() {
     const {
         currentConversationId,
         isLoading,
+        isFetchingHistory,
         error,
         setCurrentConversation,
         createConversation,
@@ -607,6 +608,7 @@ export function useChatOrchestrator() {
         state: {
             input,
             isLoading,
+            isFetchingHistory,
             error,
             selectedTool,
             conversations,

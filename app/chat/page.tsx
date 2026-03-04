@@ -83,6 +83,7 @@ function ChatContent() {
             conversations={state.conversations}
             archivedConversations={state.archivedConversations}
             currentConversationId={state.currentConversationId}
+            isFetchingHistory={state.isFetchingHistory}
             onSelectConversation={handleSelectConversation}
             onDeleteConversation={handleDeleteClick}
             onRenameConversation={handleRenameConversation}
@@ -117,6 +118,7 @@ function ChatContent() {
                   conversations={state.conversations}
                   archivedConversations={state.archivedConversations}
                   currentConversationId={state.currentConversationId}
+                  isFetchingHistory={state.isFetchingHistory}
                   onSelectConversation={handleSelectConversation}
                   onDeleteConversation={handleDeleteClick}
                   onRenameConversation={handleRenameConversation}

@@ -31,7 +31,10 @@ interface ChatState {
   // Current conversation
   currentConversationId: string | null;
   conversations: Conversation[];
+  // True only while an assistant response is actively streaming
   isLoading: boolean;
+  // True while conversation history list is being fetched/refreshed
+  isFetchingHistory: boolean;
   error: string | null;
 
   // User-scoped storage key
@@ -101,6 +104,7 @@ export const useChatStore = create<ChatState>()(
       currentConversationId: null,
       conversations: [],
       isLoading: false,
+      isFetchingHistory: false,
       error: null,
       userId: null,
 
@@ -441,7 +445,7 @@ export const useChatStore = create<ChatState>()(
         }),
 
       fetchConversations: async () => {
-        set({ isLoading: true, error: null });
+        set({ isFetchingHistory: true, error: null });
         try {
           const response = await getConversations(50, 0);
 
@@ -489,12 +493,12 @@ export const useChatStore = create<ChatState>()(
 
             return {
               conversations: mergedConversations,
-              isLoading: false
+              isFetchingHistory: false
             };
           });
         } catch (error) {
           console.error("Failed to fetch conversations:", error);
-          set({ isLoading: false, error: "Failed to load history" });
+          set({ isFetchingHistory: false, error: "Failed to load history" });
         }
       },
 
