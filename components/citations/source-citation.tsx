@@ -109,6 +109,18 @@ function QualityDot({ score }: { score: number }) {
  * Detect if text contains table data and get info about it
  */
 function detectTableInfo(text: string): { isTable: boolean; rowCount: number; columnCount: number } {
+  const lower = text.toLowerCase();
+  if (lower.includes("<table") || lower.includes("<tr") || lower.includes("<td") || lower.includes("<th")) {
+    const rows = text.match(/<tr\b[^>]*>[\s\S]*?<\/tr>/gi) || [];
+    const firstRow = rows[0] || "";
+    const firstRowCells = firstRow.match(/<t[hd]\b[^>]*>[\s\S]*?<\/t[hd]>/gi) || [];
+    return {
+      isTable: rows.length > 0,
+      rowCount: rows.length,
+      columnCount: firstRowCells.length,
+    };
+  }
+
   const pipeCount = (text.match(/\|/g) || []).length;
   if (pipeCount < 2) return { isTable: false, rowCount: 0, columnCount: 0 };
 

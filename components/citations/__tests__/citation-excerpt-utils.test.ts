@@ -15,6 +15,28 @@ describe("citation excerpt utils", () => {
     ]);
   });
 
+  it("parses html table excerpts into structured rows", () => {
+    const excerpt =
+      '[Schedule 2: Excise duty]<table><tr><th>Item</th><th>Rate</th></tr><tr><td>Opaque beer</td><td>20% or Ushs. 230 per litre</td></tr></table>';
+    const parsed = parseCitationExcerpt(excerpt);
+
+    expect(parsed.hierarchyLabel).toBe("Schedule 2: Excise duty");
+    expect(parsed.tables).toHaveLength(1);
+    expect(parsed.tables[0].headers).toEqual(["Item", "Rate"]);
+    expect(parsed.tables[0].rows).toEqual([["Opaque beer", "20% or Ushs. 230 per litre"]]);
+    expect(parsed.bodyText).toBe("");
+  });
+
+  it("parses loose html row fragments without table wrapper", () => {
+    const excerpt =
+      '[Schedule 2: Excise duty]<tr><th>Item</th><th>Rate</th></tr><tr><td>Opaque beer</td><td>20% or Ushs. 230 per litre</td></tr>';
+    const parsed = parseCitationExcerpt(excerpt);
+
+    expect(parsed.tables).toHaveLength(1);
+    expect(parsed.tables[0].headers).toEqual(["Item", "Rate"]);
+    expect(parsed.tables[0].rows[0]).toEqual(["Opaque beer", "20% or Ushs. 230 per litre"]);
+  });
+
   it("builds readable hierarchy breadcrumb from hierarchy_path", () => {
     const source = {
       document_id: "doc-1",

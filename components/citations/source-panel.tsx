@@ -339,6 +339,10 @@ export function SourcePanel() {
           activeSource.excerpt.includes('|') || // Table separator
           excerptLower.includes('[schedule') || // Schedule header
           excerptLower.includes('table columns:') || // Table indicator
+          excerptLower.includes('<table') || // HTML table block
+          excerptLower.includes('<tr') || // HTML row fragments
+          excerptLower.includes('<td') || // HTML cell fragments
+          excerptLower.includes('<th') || // HTML header cells
           /\d+\.\s*\|/.test(activeSource.excerpt); // Numbered table rows
 
         const isFullEId = activeSource.section_id && (
