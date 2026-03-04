@@ -120,6 +120,14 @@ export interface StreamVerificationData {
   confidence_info: ConfidenceInfo;
 }
 
+export interface StreamErrorMetadata {
+  retryable?: boolean;
+  retry_after_ms?: number;
+  reason_code?: string;
+  provider?: string | null;
+  trace_id?: string;
+}
+
 /**
  * Stream event types from the chat API
  */
@@ -132,7 +140,7 @@ export type StreamEvent =
   | { type: "conversation_id"; id: string }
   | { type: "followups"; questions: string[] }
   | { type: "done" }
-  | { type: "error"; message: string };
+  | ({ type: "error"; message: string } & StreamErrorMetadata);
 
 /**
  * Configuration for typing animation
@@ -265,74 +273,144 @@ export async function* streamChatMessage(
   signal?: AbortSignal
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
+  const maxAutoRetries = 1;
+  let attempt = 0;
 
-  // Build headers with optional auth
-  const headers: Record<string, string> = {
-    "Content-Type": "application/json",
+  const sleep = (ms: number) =>
+    new Promise<void>((resolve) => {
+      setTimeout(resolve, ms);
+    });
+
+  const withJitter = (baseMs: number) => {
+    const jitter = Math.floor(Math.random() * 250);
+    return Math.max(100, baseMs + jitter);
   };
-  const csrfToken = getCsrfToken();
-  if (csrfToken) {
-    headers["X-CSRF-Token"] = csrfToken;
-  }
 
-  const response = await fetch(`${API_BASE}/chat/stream`, {
-    method: "POST",
-    headers,
-    body: JSON.stringify(request),
-    credentials: "include",
-    signal,
-  });
+  while (!signal?.aborted) {
+    // Build headers with optional auth
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    const csrfToken = getCsrfToken();
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
 
-  if (!response.ok) {
-    // Handle specific error cases - yield error events instead of throwing
-    // to prevent Next.js dev error overlay
-    if (response.status === 429) {
-      try {
-        const errorData = await response.json();
-        if (errorData.detail?.error === "usage_limit_exceeded") {
-          yield {
-            type: "error",
-            message: `You've reached your monthly limit of ${errorData.detail.limit} AI queries. Upgrade your plan for more queries.`
-          };
-          return;
+    let emittedAnyContent = false;
+    let shouldRetry = false;
+
+    const response = await fetch(`${API_BASE}/chat/stream`, {
+      method: "POST",
+      headers,
+      body: JSON.stringify(request),
+      credentials: "include",
+      signal,
+    });
+
+    if (!response.ok) {
+      if (response.status === 429) {
+        try {
+          const errorData = await response.json();
+          if (errorData.detail?.error === "usage_limit_exceeded") {
+            yield {
+              type: "error",
+              message: `You've reached your monthly limit of ${errorData.detail.limit} AI queries. Upgrade your plan for more queries.`,
+              retryable: false,
+              reason_code: "usage_limit_exceeded",
+            };
+            return;
+          }
+        } catch {
+          // If parsing fails, fall through to generic handling.
         }
-      } catch {
-        // If parsing fails, yield generic rate limit error
+
+        if (attempt < maxAutoRetries) {
+          attempt += 1;
+          await sleep(withJitter(1000));
+          continue;
+        }
+
+        yield {
+          type: "error",
+          message: "Rate limit exceeded. Please try again later.",
+          retryable: true,
+          reason_code: "rate_limited",
+        };
+        return;
       }
-      yield { type: "error", message: "Rate limit exceeded. Please try again later." };
+      yield { type: "error", message: `Chat stream error: ${response.status}` };
       return;
     }
-    yield { type: "error", message: `Chat stream error: ${response.status}` };
-    return;
-  }
 
-  const reader = response.body?.getReader();
-  if (!reader) {
-    throw new Error("No response body");
-  }
+    const reader = response.body?.getReader();
+    if (!reader) {
+      yield { type: "error", message: "No response body" };
+      return;
+    }
 
-  const decoder = new TextDecoder();
-  let buffer = "";
+    const decoder = new TextDecoder();
+    let buffer = "";
 
-  try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
+    try {
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
 
-      buffer += decoder.decode(value, { stream: true });
+        buffer += decoder.decode(value, { stream: true });
 
-      // Parse SSE format: "data: content\n\n"
-      const lines = buffer.split("\n\n");
-      // Keep the last incomplete chunk in the buffer
-      buffer = lines.pop() || "";
+        // Parse SSE format: "data: content\n\n"
+        const lines = buffer.split("\n\n");
+        // Keep the last incomplete chunk in the buffer
+        buffer = lines.pop() || "";
 
-      for (const line of lines) {
-        if (line.startsWith("data: ")) {
+        for (const line of lines) {
+          if (!line.startsWith("data: ")) {
+            continue;
+          }
           const content = line.slice(6); // Remove "data: " prefix
 
           if (content === "[DONE]") {
             yield { type: "done" };
             return;
+          }
+
+          if (content.startsWith("[ERROR_JSON]")) {
+            try {
+              const parsed = JSON.parse(content.slice(12)) as {
+                message?: string;
+                retryable?: boolean;
+                retry_after_ms?: number;
+                reason_code?: string;
+                provider?: string | null;
+                trace_id?: string;
+              };
+
+              if (
+                parsed.retryable &&
+                !emittedAnyContent &&
+                attempt < maxAutoRetries &&
+                !signal?.aborted
+              ) {
+                attempt += 1;
+                await sleep(withJitter(parsed.retry_after_ms ?? 800));
+                shouldRetry = true;
+                break;
+              }
+
+              yield {
+                type: "error",
+                message: parsed.message || "Chat stream failed. Please retry.",
+                retryable: parsed.retryable,
+                retry_after_ms: parsed.retry_after_ms,
+                reason_code: parsed.reason_code,
+                provider: parsed.provider,
+                trace_id: parsed.trace_id,
+              };
+              return;
+            } catch {
+              yield { type: "error", message: "Chat stream failed. Please retry." };
+              return;
+            }
           }
 
           if (content.startsWith("[ERROR]")) {
@@ -394,12 +472,24 @@ export async function* streamChatMessage(
 
           // Regular content - unescape newlines
           const text = content.replace(/\\n/g, "\n");
+          if (text) {
+            emittedAnyContent = true;
+          }
           yield { type: "content", text };
         }
+
+        if (shouldRetry) {
+          break;
+        }
       }
+    } finally {
+      reader.releaseLock();
     }
-  } finally {
-    reader.releaseLock();
+
+    if (shouldRetry) {
+      continue;
+    }
+    return;
   }
 }
 

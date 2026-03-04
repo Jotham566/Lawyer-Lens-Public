@@ -190,6 +190,11 @@ export function useChatOrchestrator() {
             setLoading(true);
             setError(null);
 
+            // Enforce a single active stream in the client.
+            if (abortControllerRef.current) {
+                abortControllerRef.current.abort();
+            }
+
             // Create AbortController for this stream
             const controller = new AbortController();
             abortControllerRef.current = controller;
@@ -338,6 +343,7 @@ export function useChatOrchestrator() {
     // 3. Main Send Handler
     const handleSend = useCallback(
         async (message?: string, conversationId?: string, messagesForHistory?: ChatMessageType[]) => {
+            if (isLoading) return;
             const text = message || input.trim();
             const convId = conversationId || currentConversationId;
 
@@ -444,7 +450,7 @@ export function useChatOrchestrator() {
             await handleRegularChat(text, activeConvId, messagesForHistory);
 
         },
-        [input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
+        [isLoading, input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
     );
 
     // Initial Query Handler
