@@ -10,6 +10,7 @@ import type { ChatFeedbackType, ChatMessage as ChatMessageType } from "@/lib/api
 interface VirtualizedMessageListProps {
   messages: ChatMessageType[];
   isLoading: boolean;
+  isGenerating?: boolean;
   error: string | null;
   editingIndex: number | null;
   copiedId: string | null;
@@ -38,6 +39,7 @@ const VIRTUALIZATION_THRESHOLD = 20;
 export function VirtualizedMessageList({
   messages,
   isLoading,
+  isGenerating,
   error,
   editingIndex,
   copiedId,
@@ -108,7 +110,7 @@ export function VirtualizedMessageList({
 
   // Scroll to bottom during streaming
   useEffect(() => {
-    if (isLoading && shouldAutoScroll && messages.length > 0) {
+    if ((isGenerating ?? isLoading) && shouldAutoScroll && messages.length > 0) {
       const scrollInterval = setInterval(() => {
         if (parentRef.current) {
           const { scrollHeight, clientHeight } = parentRef.current;
@@ -121,7 +123,7 @@ export function VirtualizedMessageList({
 
       return () => clearInterval(scrollInterval);
     }
-  }, [isLoading, shouldAutoScroll, messages.length]);
+  }, [isGenerating, isLoading, shouldAutoScroll, messages.length]);
 
   // Re-measure items when editing state changes
   useEffect(() => {
@@ -163,6 +165,7 @@ export function VirtualizedMessageList({
                 index={index}
                 isEditing={editingIndex === index}
                 isLoading={isLoading}
+                isGenerating={isGenerating}
                 isLastMessage={index === messages.length - 1}
                 copiedId={copiedId}
                 onStartEdit={onStartEdit}
@@ -266,6 +269,7 @@ export function VirtualizedMessageList({
                   index={virtualItem.index}
                   isEditing={editingIndex === virtualItem.index}
                   isLoading={isLoading}
+                  isGenerating={isGenerating}
                   isLastMessage={virtualItem.index === messages.length - 1}
                   copiedId={copiedId}
                   onStartEdit={onStartEdit}

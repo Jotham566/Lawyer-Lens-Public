@@ -147,6 +147,7 @@ function ChatContent() {
                 <VirtualizedMessageList
                   messages={state.currentConversation.messages}
                   isLoading={state.isLoading}
+                  isGenerating={state.isGenerating}
                   error={state.error}
                   editingIndex={state.editingIndex}
                   copiedId={state.copiedId}

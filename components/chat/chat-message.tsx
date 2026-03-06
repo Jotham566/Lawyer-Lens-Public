@@ -236,6 +236,7 @@ interface ChatMessageProps {
   index: number;
   isEditing: boolean;
   isLoading: boolean;
+  isGenerating?: boolean;
   isLastMessage: boolean;
   copiedId: string | null;
   onStartEdit: (index: number, content: string) => void;
@@ -259,6 +260,7 @@ function ChatMessageComponent({
   index,
   isEditing,
   isLoading,
+  isGenerating,
   isLastMessage,
   copiedId,
   onStartEdit,
@@ -273,7 +275,7 @@ function ChatMessageComponent({
 }: ChatMessageProps) {
   const messageActionId = `${message.timestamp}-${index}`;
   const persistedMessageId = message.id;
-  const isStreaming = isLoading && isLastMessage;
+  const isStreaming = (isGenerating ?? isLoading) && isLastMessage;
 
   // User messages: right-aligned, AI messages: left-aligned with icon
   if (message.role === "user") {
@@ -447,6 +449,7 @@ export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => 
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.isLastMessage === nextProps.isLastMessage &&
     prevProps.isLoading === nextProps.isLoading &&
+    prevProps.isGenerating === nextProps.isGenerating &&
     prevProps.copiedId === nextProps.copiedId
   );
 });
