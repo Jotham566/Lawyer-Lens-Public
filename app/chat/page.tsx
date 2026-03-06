@@ -171,6 +171,7 @@ function ChatContent() {
               onKeyDown={handleKeyDown}
               onSubmit={() => handleSend()}
               isLoading={state.isLoading}
+              isGenerating={state.isGenerating}
               onStop={handleStop}
               selectedTool={state.selectedTool}
               onSelectTool={setSelectedTool}

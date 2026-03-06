@@ -347,7 +347,7 @@ function ChatMessageComponent({
         {message.content && (
           <div className="space-y-2">
             <div className="flex flex-wrap items-center gap-3">
-              {!isStreaming && message.verification && (
+              {message.verification && (
                 <TrustBadge
                   verification={message.verification}
                   confidenceInfo={message.confidence_info}
@@ -433,6 +433,7 @@ export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => 
   // Re-render if:
   // - message content changed
   // - message sources changed (citations arrive after streaming)
+  // - verification or confidence info changed (trust badge updates)
   // - editing state changed
   // - loading state changed for last message
   // - copied state changed for this message
@@ -440,6 +441,9 @@ export const ChatMessage = memo(ChatMessageComponent, (prevProps, nextProps) => 
     prevProps.message.content === nextProps.message.content &&
     prevProps.message.id === nextProps.message.id &&
     prevProps.message.sources === nextProps.message.sources &&
+    prevProps.message.verification === nextProps.message.verification &&
+    prevProps.message.confidence_info === nextProps.message.confidence_info &&
+    prevProps.message.suggested_followups === nextProps.message.suggested_followups &&
     prevProps.isEditing === nextProps.isEditing &&
     prevProps.isLastMessage === nextProps.isLastMessage &&
     prevProps.isLoading === nextProps.isLoading &&

@@ -12,7 +12,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
-import { ShieldCheck, Info, ChevronDown, HelpCircle, AlertTriangle } from "lucide-react";
+import { ShieldCheck, Info, ChevronDown, HelpCircle, AlertTriangle, Loader2 } from "lucide-react";
 import type { VerificationStatus, ConfidenceInfo } from "@/lib/api/types";
 
 interface TrustIndicatorProps {
@@ -37,6 +37,7 @@ function getVerificationStyle(level: string) {
         textColor: "text-emerald-700 dark:text-emerald-300",
         iconColor: "text-emerald-600 dark:text-emerald-400",
         label: "Verified",
+        animate: false,
       };
     case "partially_verified":
       return {
@@ -46,6 +47,17 @@ function getVerificationStyle(level: string) {
         textColor: "text-blue-700 dark:text-blue-300",
         iconColor: "text-blue-600 dark:text-blue-400",
         label: "Mostly Verified",
+        animate: false,
+      };
+    case "analyzing":
+      return {
+        icon: Loader2,
+        bgColor: "bg-amber-50 dark:bg-amber-950/50",
+        borderColor: "border-amber-200 dark:border-amber-800",
+        textColor: "text-amber-700 dark:text-amber-300",
+        iconColor: "text-amber-600 dark:text-amber-400 animate-spin",
+        label: "Analyzing Sources...",
+        animate: true,
       };
     default: // unverified
       return {
@@ -55,6 +67,7 @@ function getVerificationStyle(level: string) {
         textColor: "text-slate-600 dark:text-slate-400",
         iconColor: "text-slate-500 dark:text-slate-500",
         label: "Review Suggested",
+        animate: false,
       };
   }
 }
@@ -416,8 +429,8 @@ export function ConfidenceFactors({
                             scorePercent >= 80
                               ? "bg-emerald-500"
                               : scorePercent >= 60
-                              ? "bg-blue-500"
-                              : "bg-slate-400"
+                                ? "bg-blue-500"
+                                : "bg-slate-400"
                           )}
                           style={{ width: `${scorePercent}%` }}
                         />

@@ -16,6 +16,7 @@ interface ChatInputProps {
   onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
   onSubmit: () => void;
   isLoading: boolean;
+  isGenerating?: boolean;
   onStop?: () => void;
   selectedTool: ToolMode;
   onSelectTool: (tool: ToolMode) => void;
@@ -29,12 +30,15 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
       onKeyDown,
       onSubmit,
       isLoading,
+      isGenerating,
       onStop,
       selectedTool,
       onSelectTool,
     },
     ref
   ) {
+    // Show stop button only while LLM is actively generating text
+    const showStop = isGenerating ?? isLoading;
     return (
       <div className="border-t p-3 md:p-4">
         <div className="mx-auto max-w-3xl">
@@ -79,7 +83,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 className="min-h-[48px] md:min-h-[80px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-14 pr-14 py-5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
               />
               <div className="absolute right-3 bottom-3">
-                {isLoading ? (
+                {showStop ? (
                   <Button
                     type="button"
                     size="icon"
