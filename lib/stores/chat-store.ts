@@ -23,6 +23,7 @@ export interface Conversation {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+  isLocalOnly?: boolean;
   // New fields for better management
   isArchived?: boolean;
   isStarred?: boolean;
@@ -78,7 +79,13 @@ interface ChatState {
   replaceConversationId: (oldId: string, newId: string) => void;
 }
 
-const generateId = () => Math.random().toString(36).substring(2, 15);
+const generateId = () => {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+
+  return `local-${Math.random().toString(36).substring(2, 15)}`;
+};
 
 const generateTitle = (message: string): string => {
   // Strip markdown formatting, emojis, and tool prefixes for cleaner titles
@@ -160,6 +167,7 @@ export const useChatStore = create<ChatState>()(
           messages: [],
           createdAt: now,
           updatedAt: now,
+          isLocalOnly: true,
           isArchived: false,
           isStarred: false,
         };
@@ -318,6 +326,7 @@ export const useChatStore = create<ChatState>()(
               messages: [message],
               createdAt: now,
               updatedAt: now,
+              isLocalOnly: true,
               isArchived: false,
               isStarred: false,
             };
@@ -463,6 +472,7 @@ export const useChatStore = create<ChatState>()(
                 return {
                   ...localConv, // Keep local state (messages)
                   title: backendConv.title || localConv.title,
+                  isLocalOnly: false,
                   isStarred: backendConv.is_starred ?? localConv.isStarred,
                   isArchived: backendConv.is_archived ?? localConv.isArchived,
                   updatedAt: backendConv.updated_at,
@@ -481,6 +491,7 @@ export const useChatStore = create<ChatState>()(
               messages: [],
               createdAt: summary.created_at,
               updatedAt: summary.updated_at,
+              isLocalOnly: false,
               isArchived: summary.is_archived ?? false,
               isStarred: summary.is_starred ?? false,
             }));
@@ -534,6 +545,7 @@ export const useChatStore = create<ChatState>()(
                 ...c,
                 title: detail.title || c.title,
                 updatedAt: detail.updated_at,
+                isLocalOnly: false,
                 messages: messages
               };
             });
@@ -541,8 +553,28 @@ export const useChatStore = create<ChatState>()(
             return { conversations };
           });
         } catch (error) {
+          if (error instanceof APIError && error.status === 404) {
+            set((state) => {
+              const target = state.conversations.find((conversation) => conversation.id === id);
+              if (!target || !target.isLocalOnly || target.messages.length > 0) {
+                return {};
+              }
+
+              const conversations = state.conversations.filter((conversation) => conversation.id !== id);
+              const nextCurrentConversationId =
+                state.currentConversationId === id
+                  ? conversations.find((conversation) => !conversation.isArchived)?.id || null
+                  : state.currentConversationId;
+
+              return {
+                conversations,
+                currentConversationId: nextCurrentConversationId,
+              };
+            });
+            return;
+          }
+
           console.error(`Failed to fetch conversation ${id}:`, error);
-          // Don't error globally, just log
         }
       },
 
@@ -550,7 +582,7 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           const conversations = state.conversations.map((c) => {
             if (c.id !== oldId) return c;
-            return { ...c, id: newId };
+            return { ...c, id: newId, isLocalOnly: false };
           });
 
           return {

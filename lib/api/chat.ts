@@ -17,6 +17,35 @@ import type {
   ConversationDetail,
 } from "./types";
 
+function sanitizeChatRequest(request: ChatRequest): ChatRequest {
+  const cleanMessage = request.message.trim();
+  const cleanConversationId = request.conversation_id?.trim() || undefined;
+  const cleanHistory = (request.conversation_history || [])
+    .filter(
+      (item): item is { role: string; content: string } =>
+        Boolean(item) &&
+        typeof item.role === "string" &&
+        typeof item.content === "string"
+    )
+    .map((item) => ({
+      role: item.role.trim().toLowerCase(),
+      content: item.content.trim(),
+    }))
+    .filter(
+      (item) =>
+        item.content.length > 0 &&
+        (item.role === "user" || item.role === "assistant" || item.role === "system")
+    );
+
+  return {
+    ...request,
+    message: cleanMessage,
+    conversation_id: cleanConversationId,
+    conversation_history: cleanHistory,
+    search_mode: request.search_mode?.trim?.().toLowerCase() as ChatRequest["search_mode"] | undefined,
+  };
+}
+
 /**
  * Chat health response type
  */
@@ -34,7 +63,7 @@ interface ChatHealthResponse {
 export async function sendChatMessage(
   request: ChatRequest
 ): Promise<ChatResponse> {
-  return apiPost<ChatResponse>("/chat", request);
+  return apiPost<ChatResponse>("/chat", sanitizeChatRequest(request));
 }
 
 /**
@@ -243,6 +272,7 @@ export async function* streamChatMessage(
   signal?: AbortSignal
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const API_BASE = getApiBaseUrl();
+  const sanitizedRequest = sanitizeChatRequest(request);
   const maxAutoRetries = 1;
   let attempt = 0;
 
@@ -272,7 +302,7 @@ export async function* streamChatMessage(
     const response = await fetch(`${API_BASE}/chat/stream`, {
       method: "POST",
       headers,
-      body: JSON.stringify(request),
+      body: JSON.stringify(sanitizedRequest),
       credentials: "include",
       signal,
     });

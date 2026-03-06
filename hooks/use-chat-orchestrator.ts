@@ -175,7 +175,7 @@ export function useChatOrchestrator() {
         if (!uuidRegex.test(currentConversationId)) return;
 
         const conv = useChatStore.getState().conversations.find(c => c.id === currentConversationId);
-        if (conv && conv.messages.length === 0) {
+        if (conv && !conv.isLocalOnly && conv.messages.length === 0) {
             fetchingConversationRef.current.add(currentConversationId);
             fetchConversation(currentConversationId).finally(() => {
                 fetchingConversationRef.current.delete(currentConversationId);
