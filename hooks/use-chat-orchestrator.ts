@@ -64,6 +64,7 @@ export function useChatOrchestrator() {
     const [input, setInput] = useState(initialQuery || "");
     const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [isGenerating, setIsGenerating] = useState(false);
 
     // Tool Execution State
     const [, setActiveToolExecution] = useState<{
@@ -189,6 +190,7 @@ export function useChatOrchestrator() {
         async (text: string, activeConvId: string, conversationHistory: { role: string; content: string }[]) => {
             setLoading(true);
             setError(null);
+            setIsGenerating(true);
 
             // Enforce a single active stream in the client.
             if (abortControllerRef.current) {
@@ -262,6 +264,9 @@ export function useChatOrchestrator() {
                         case "error":
                             setError(event.message);
                             break;
+                        case "generation_done":
+                            setIsGenerating(false);
+                            break;
                         case "conversation_id":
                             if (activeConvId !== event.id) {
                                 replaceConversationId(activeConvId, event.id);
@@ -292,6 +297,7 @@ export function useChatOrchestrator() {
                 }
             } finally {
                 abortControllerRef.current = null;
+                setIsGenerating(false);
                 setLoading(false);
                 refreshEntitlements();
             }
@@ -614,6 +620,7 @@ export function useChatOrchestrator() {
         state: {
             input,
             isLoading,
+            isGenerating,
             isFetchingHistory,
             error,
             selectedTool,

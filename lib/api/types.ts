@@ -275,8 +275,8 @@ export interface ChatRequest {
  * Uses encouraging language to build user confidence.
  */
 export interface VerificationStatus {
-  /** Verification level: 'verified', 'partially_verified', or 'unverified' */
-  level: "verified" | "partially_verified" | "unverified";
+  /** Verification level: 'verified', 'partially_verified', 'analyzing', or 'unverified' */
+  level: "verified" | "partially_verified" | "analyzing" | "unverified";
   /** How well entities are grounded in sources (0-1) */
   source_grounding: number;
   /** How well claims are supported by sources (0-1) */

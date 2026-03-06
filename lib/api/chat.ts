@@ -136,6 +136,7 @@ export type StreamEvent =
   | { type: "content_update"; fullContent: string }
   | { type: "citations"; citations: ChatSource[] }
   | { type: "verification"; data: StreamVerificationData }
+  | { type: "generation_done" }
   | { type: "message_id"; id: string }
   | { type: "conversation_id"; id: string }
   | { type: "followups"; questions: string[] }
@@ -166,50 +167,44 @@ export async function* streamChatWithTypewriter(
 ): AsyncGenerator<StreamEvent, void, unknown> {
   const { charsPerTick = 10, tickDelay = 10 } = config;
 
-  // Use an object wrapper to avoid TypeScript closure inference issues
+  // Queue-based approach: metadata events are pushed here by the stream consumer
+  // and drained by the typewriter tick loop, so they reach React immediately.
+  const pendingEvents: StreamEvent[] = [];
+
   const state = {
     contentBuffer: "",
     revealedLength: 0,
     isStreaming: true,
-    citations: null as ChatSource[] | null,
-    contentUpdatePending: null as string | null,
-    verificationData: null as StreamVerificationData | null,
-    messageId: null as string | null,
-    conversationId: null as string | null,
-    followups: null as string[] | null,
-    errorMessage: null as string | null,  // Store error to yield later
+    errorMessage: null as string | null,
   };
 
-  // Start the stream
+  // Start the stream — metadata events go into pendingEvents immediately
   const streamPromise = (async () => {
     for await (const event of streamChatMessage(request, signal)) {
       if (event.type === "content") {
         state.contentBuffer += event.text;
-      } else if (event.type === "content_update") {
-        // Backend sends sanitized content - queue it to replace buffer after reveal
-        state.contentUpdatePending = event.fullContent;
-      } else if (event.type === "citations") {
-        state.citations = event.citations;
-      } else if (event.type === "verification") {
-        state.verificationData = event.data;
-      } else if (event.type === "message_id") {
-        state.messageId = event.id;
-      } else if (event.type === "conversation_id") {
-        state.conversationId = event.id;
-      } else if (event.type === "followups") {
-        state.followups = event.questions;
       } else if (event.type === "done") {
         state.isStreaming = false;
       } else if (event.type === "error") {
         state.isStreaming = false;
-        state.errorMessage = event.message;  // Store error instead of throwing
+        state.errorMessage = event.message;
+      } else {
+        // All other events (content_update, citations, verification,
+        // generation_done, message_id, conversation_id, followups)
+        // are pushed to the queue for immediate delivery
+        pendingEvents.push(event);
       }
     }
     state.isStreaming = false;
   })();
 
-  // Reveal content gradually
+  // Reveal content gradually, draining metadata events each tick
   while ((state.isStreaming || state.revealedLength < state.contentBuffer.length) && !signal?.aborted) {
+    // Drain any pending metadata events first — these reach React immediately
+    while (pendingEvents.length > 0) {
+      yield pendingEvents.shift()!;
+    }
+
     if (state.revealedLength < state.contentBuffer.length) {
       const nextLength = Math.min(state.revealedLength + charsPerTick, state.contentBuffer.length);
       const newText = state.contentBuffer.slice(state.revealedLength, nextLength);
@@ -221,37 +216,12 @@ export async function* streamChatWithTypewriter(
     await new Promise(resolve => setTimeout(resolve, tickDelay));
   }
 
-  // Wait for stream to complete
+  // Wait for stream to complete (should already be done at this point)
   await streamPromise;
 
-  // If there's a content update (sanitized version), send it to replace the content
-  if (state.contentUpdatePending !== null) {
-    yield { type: "content_update", fullContent: state.contentUpdatePending };
-  }
-
-  // Send citations if we have them
-  if (state.citations) {
-    yield { type: "citations", citations: state.citations };
-  }
-
-  // Send verification data if available (for trust indicators)
-  if (state.verificationData) {
-    yield { type: "verification", data: state.verificationData };
-  }
-
-  // Send message ID update if we have one
-  if (state.messageId) {
-    yield { type: "message_id", id: state.messageId };
-  }
-
-  // Send conversation ID update if we have one
-  if (state.conversationId) {
-    yield { type: "conversation_id", id: state.conversationId };
-  }
-
-  // Send follow-up suggestions if we have them
-  if (state.followups && state.followups.length > 0) {
-    yield { type: "followups", questions: state.followups };
+  // Drain any remaining events that arrived after typing finished
+  while (pendingEvents.length > 0) {
+    yield pendingEvents.shift()!;
   }
 
   // Send error if one occurred (yield instead of throw to avoid dev overlay)
@@ -444,6 +414,11 @@ export async function* streamChatMessage(
             } catch (e) {
               console.error("Failed to parse verification data:", e);
             }
+            continue;
+          }
+
+          if (content === "[GENERATION_DONE]") {
+            yield { type: "generation_done" };
             continue;
           }
 
