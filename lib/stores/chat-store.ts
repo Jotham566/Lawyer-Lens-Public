@@ -159,6 +159,17 @@ export const useChatStore = create<ChatState>()(
       setCurrentConversation: (id) => set({ currentConversationId: id }),
 
       createConversation: () => {
+        const existingEmptyConversation = get().conversations.find(
+          (conversation) =>
+            !conversation.isArchived &&
+            conversation.messages.length === 0
+        );
+
+        if (existingEmptyConversation) {
+          set({ currentConversationId: existingEmptyConversation.id });
+          return existingEmptyConversation.id;
+        }
+
         const id = generateId();
         const now = new Date().toISOString();
         const newConversation: Conversation = {
@@ -194,6 +205,24 @@ export const useChatStore = create<ChatState>()(
       },
 
       deleteConversationAsync: async (id) => {
+        const targetConversation = get().conversations.find(
+          (conversation) => conversation.id === id
+        );
+
+        if (targetConversation?.isLocalOnly && targetConversation.messages.length === 0) {
+          set((state) => {
+            const filtered = state.conversations.filter((c) => c.id !== id);
+            return {
+              conversations: filtered,
+              currentConversationId:
+                state.currentConversationId === id
+                  ? filtered.find((c) => !c.isArchived)?.id || null
+                  : state.currentConversationId,
+            };
+          });
+          return;
+        }
+
         try {
           // Call API to delete from backend
           await deleteConversationApi(id);
@@ -210,7 +239,13 @@ export const useChatStore = create<ChatState>()(
             };
           });
         } catch (error) {
-          console.error("Failed to delete conversation:", error);
+          const isMissingBackendConversation =
+            error instanceof APIError && error.status === 404;
+
+          if (!isMissingBackendConversation) {
+            console.error("Failed to delete conversation:", error);
+          }
+
           // Still remove from local state even if API fails
           // (conversation may have been local-only / not yet synced)
           set((state) => {
@@ -465,24 +500,33 @@ export const useChatStore = create<ChatState>()(
 
             // 1. Update existing conversations that match backend
             // 2. Add new conversations from backend
-            let mergedConversations = state.conversations.map(localConv => {
-              const backendConv = backendMap.get(localConv.id);
-              if (backendConv) {
-                backendMap.delete(localConv.id); // Mark as handled
-                return {
-                  ...localConv, // Keep local state (messages)
-                  title: backendConv.title || localConv.title,
-                  isLocalOnly: false,
-                  isStarred: backendConv.is_starred ?? localConv.isStarred,
-                  isArchived: backendConv.is_archived ?? localConv.isArchived,
-                  updatedAt: backendConv.updated_at,
-                  // Don't overwrite messages if we have them locally and they might be newer/optimistic
-                  // But if we have no messages locally and backend does (unlikely for list endpoint),
-                  // we'll fetch them in detail later.
-                };
-              }
-              return localConv; // Keep local-only conversations (optimistic creations)
-            });
+            let mergedConversations = state.conversations
+              .map(localConv => {
+                const backendConv = backendMap.get(localConv.id);
+                if (backendConv) {
+                  backendMap.delete(localConv.id); // Mark as handled
+                  return {
+                    ...localConv, // Keep local state (messages)
+                    title: backendConv.title || localConv.title,
+                    isLocalOnly: false,
+                    isStarred: backendConv.is_starred ?? localConv.isStarred,
+                    isArchived: backendConv.is_archived ?? localConv.isArchived,
+                    updatedAt: backendConv.updated_at,
+                    // Don't overwrite messages if we have them locally and they might be newer/optimistic
+                    // But if we have no messages locally and backend does (unlikely for list endpoint),
+                    // we'll fetch them in detail later.
+                  };
+                }
+
+                // Backend is the source of truth for persisted conversations.
+                // Only preserve unsynced local drafts that have not yet been created server-side.
+                if (localConv.isLocalOnly) {
+                  return localConv;
+                }
+
+                return null;
+              })
+              .filter((conversation): conversation is Conversation => Boolean(conversation));
 
             // Add remaining backend conversations (that weren't in local state)
             const newBackendConversations = Array.from(backendMap.values()).map(summary => ({

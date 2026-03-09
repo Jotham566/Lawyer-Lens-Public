@@ -164,7 +164,10 @@ export function ConversationList({
       handleCancelEdit();
     }
   };
-  if (conversations.length === 0) {
+  const hasActiveConversations = conversations.length > 0;
+  const hasArchivedConversations = archivedConversations.length > 0;
+
+  if (!hasActiveConversations && !hasArchivedConversations) {
     if (collapsed) return null;
     return (
       <div className="flex flex-col items-center justify-center py-8 text-center px-4">
