@@ -80,7 +80,7 @@ export function ToolsDropdown({
             >
               <Wrench className="h-4 w-4" />
               {showLabel && <span className="hidden sm:inline">Tools</span>}
-              {selectedTool !== "chat" && activeTool && (
+              {showLabel && selectedTool !== "chat" && activeTool && (
                 <Badge
                   variant="secondary"
                   className={cn(

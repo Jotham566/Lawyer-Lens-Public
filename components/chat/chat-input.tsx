@@ -42,33 +42,31 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     return (
       <div className="border-t p-3 md:p-4">
         <div className="mx-auto max-w-3xl">
-          {/* Active tool indicator */}
-          {selectedTool !== "chat" && (
-            <div className="mb-2">
-              <ActiveToolIndicator tool={selectedTool} onClear={() => onSelectTool("chat")} />
-            </div>
-          )}
-          {/* Input Form */}
           <form
             onSubmit={(e) => {
               e.preventDefault();
               onSubmit();
             }}
-            className="flex items-end gap-2"
+            className="rounded-[28px] border border-muted-foreground/20 bg-background px-3 py-3 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring"
             role="search"
             aria-label="Chat input"
           >
             <label htmlFor="chat-input" className="sr-only">
               Type your legal question
             </label>
-            <div className="relative flex-1">
-              <div className="absolute left-3 bottom-3 z-10">
+            {selectedTool !== "chat" && (
+              <div className="mb-3 flex flex-wrap items-center gap-2">
+                <ActiveToolIndicator tool={selectedTool} onClear={() => onSelectTool("chat")} />
+              </div>
+            )}
+            <div className="relative">
+              <div className="absolute bottom-0 left-0 z-10">
                 <ToolsDropdown
                   selectedTool={selectedTool}
                   onSelectTool={onSelectTool}
                   disabled={isLoading}
                   showLabel={false}
-                  className="h-10 w-10 p-0 rounded-full border-0 hover:bg-muted"
+                  className="h-9 w-9 rounded-full border-0 p-0 hover:bg-muted"
                 />
               </div>
               <textarea
@@ -80,9 +78,9 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 placeholder={getToolPlaceholder(selectedTool)}
                 rows={1}
                 aria-label="Chat message input"
-                className="min-h-[48px] md:min-h-[80px] max-h-[200px] w-full resize-none rounded-3xl border border-muted-foreground/20 bg-background pl-14 pr-14 py-5 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent transition-shadow"
+                className="min-h-[64px] max-h-[220px] w-full resize-none border-0 bg-transparent px-0 pb-12 pt-2 text-sm outline-none placeholder:text-muted-foreground/70 focus:outline-none focus:ring-0"
               />
-              <div className="absolute right-3 bottom-3">
+              <div className="absolute bottom-0 right-0">
                 {showStop ? (
                   <Button
                     type="button"
