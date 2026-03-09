@@ -5,7 +5,6 @@ import { ArrowUp, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
   ToolsDropdown,
-  ActiveToolIndicator,
   getToolPlaceholder,
   type ToolMode,
 } from "./tools-dropdown";
@@ -54,19 +53,14 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
             <label htmlFor="chat-input" className="sr-only">
               Type your legal question
             </label>
-            {selectedTool !== "chat" && (
-              <div className="mb-3 flex flex-wrap items-center gap-2">
-                <ActiveToolIndicator tool={selectedTool} onClear={() => onSelectTool("chat")} />
-              </div>
-            )}
             <div className="relative">
               <div className="absolute bottom-0 left-0 z-10">
                 <ToolsDropdown
                   selectedTool={selectedTool}
                   onSelectTool={onSelectTool}
                   disabled={isLoading}
-                  showLabel={false}
-                  className="h-9 w-9 rounded-full border-0 p-0 hover:bg-muted"
+                  showLabel
+                  className="h-9 rounded-full border-0 bg-transparent px-2 text-sm shadow-none hover:bg-muted"
                 />
               </div>
               <textarea

@@ -1,6 +1,7 @@
 "use client";
 
-import { Search, FileText, Wrench, X, Sparkles } from "lucide-react";
+import { useState } from "react";
+import { ChevronDown, Search, FileText, SlidersHorizontal, X, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -59,73 +60,84 @@ export function ToolsDropdown({
   className,
   showLabel = true,
 }: ToolsDropdownProps & { className?: string; showLabel?: boolean }) {
+  const [isHovered, setIsHovered] = useState(false);
   const activeTool = tools.find((t) => t.id === selectedTool);
+  const ActiveToolIcon = activeTool?.icon;
+  const handleClearTool = (
+    e:
+      | React.MouseEvent<HTMLButtonElement>
+      | React.KeyboardEvent<HTMLButtonElement>
+  ) => {
+    e.preventDefault();
+    e.stopPropagation();
+    onSelectTool("chat");
+  };
 
   return (
     <DropdownMenu>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <DropdownMenuTrigger asChild>
-            <Button
-              variant="ghost"
-              size="sm"
-              className={cn(
-                "h-9 gap-2 px-3 rounded-full border",
-                selectedTool !== "chat"
-                  ? "bg-primary/10 border-primary/30 hover:bg-primary/20"
-                  : "hover:bg-muted",
-                className
-              )}
-              disabled={disabled}
-            >
-              <Wrench className="h-4 w-4" />
-              {showLabel && <span className="hidden sm:inline">Tools</span>}
-              {showLabel && selectedTool !== "chat" && activeTool && (
-                <Badge
-                  variant="secondary"
-                  className={cn(
-                    "ml-1 h-5 px-1.5 text-xs font-normal",
-                    activeTool.color
-                  )}
-                >
-                  {activeTool.name.split(" ")[0]}
-                </Badge>
-              )}
-            </Button>
-          </DropdownMenuTrigger>
-        </TooltipTrigger>
-        <TooltipContent>
-          {selectedTool === "chat" ? "Select a tool" : `Active: ${activeTool?.name}`}
-        </TooltipContent>
-      </Tooltip>
+      <div
+        className="relative inline-flex"
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+      >
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                className={cn(
+                  "h-9 gap-2 rounded-full border px-3",
+                  selectedTool !== "chat"
+                    ? "border-primary/30 bg-primary/10 font-medium text-foreground hover:bg-primary/15"
+                    : "hover:bg-muted text-muted-foreground",
+                  className
+                )}
+                disabled={disabled}
+              >
+                {selectedTool !== "chat" && activeTool ? (
+                  <>
+                    {ActiveToolIcon ? (
+                      <ActiveToolIcon className={cn("h-4 w-4", activeTool.color, "opacity-100")} />
+                    ) : null}
+                    {showLabel && <span className="text-foreground">{activeTool.name}</span>}
+                    {showLabel && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
+                  </>
+                ) : (
+                  <>
+                    <SlidersHorizontal className="h-4 w-4" />
+                    {showLabel && <span className="hidden sm:inline">Tools</span>}
+                  </>
+                )}
+              </Button>
+            </DropdownMenuTrigger>
+          </TooltipTrigger>
+          <TooltipContent>
+            {selectedTool === "chat" ? "Select a tool" : `Active: ${activeTool?.name}`}
+          </TooltipContent>
+        </Tooltip>
+        {selectedTool !== "chat" && isHovered && (
+          <button
+            type="button"
+            aria-label={`Clear ${activeTool?.name ?? "tool"}`}
+            className="absolute left-2 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm ring-1 ring-border transition-colors hover:bg-muted hover:text-foreground"
+            onClick={handleClearTool}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                handleClearTool(e);
+              }
+            }}
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        )}
+      </div>
       <DropdownMenuContent align="start" className="w-72">
         <DropdownMenuLabel className="flex items-center gap-2">
           <Sparkles className="h-4 w-4 text-primary" />
           AI Tools
         </DropdownMenuLabel>
         <DropdownMenuSeparator />
-        <DropdownMenuItem
-          onClick={() => onSelectTool("chat")}
-          className={cn(
-            "flex items-start gap-3 p-3 cursor-pointer",
-            selectedTool === "chat" && "bg-accent"
-          )}
-        >
-          <div
-            className={cn(
-              "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-              selectedTool === "chat" ? "bg-primary/20" : "bg-muted"
-            )}
-          >
-            <Sparkles className="h-5 w-5 text-primary" />
-          </div>
-          <div className="flex flex-col gap-0.5">
-            <span className="font-medium">Standard Chat</span>
-            <span className="text-xs text-muted-foreground">
-              General legal Q&A
-            </span>
-          </div>
-        </DropdownMenuItem>
         {tools.map((tool) => {
           const Icon = tool.icon;
           const isSelected = selectedTool === tool.id;
