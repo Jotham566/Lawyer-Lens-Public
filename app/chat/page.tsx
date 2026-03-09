@@ -134,12 +134,24 @@ function ChatContent() {
             <div className="flex-1 overflow-hidden min-h-0" role="region" aria-label="Chat messages" aria-live="polite">
               {!state.currentConversation || state.currentConversation.messages.length === 0 ? (
                 <div className="h-full overflow-y-auto">
-                  <div className="mx-auto max-w-3xl px-4 py-6">
+                  <div className="h-full">
                     <EmptyState
                       selectedTool={state.selectedTool}
-                      onClearTool={() => setSelectedTool("chat")}
-                      onSelectTool={setSelectedTool}
                       onSelectQuestion={handleSelectQuestion}
+                      composer={
+                        <ChatInput
+                          ref={setInputRef}
+                          value={state.input}
+                          onChange={handleInputChange}
+                          onKeyDown={handleKeyDown}
+                          onSubmit={() => handleSend()}
+                          isLoading={state.isLoading}
+                          isGenerating={state.isGenerating}
+                          onStop={handleStop}
+                          selectedTool={state.selectedTool}
+                          onSelectTool={setSelectedTool}
+                        />
+                      }
                     />
                   </div>
                 </div>
@@ -165,18 +177,20 @@ function ChatContent() {
             </div>
 
             {/* Input Area */}
-            <ChatInput
-              ref={setInputRef}
-              value={state.input}
-              onChange={handleInputChange}
-              onKeyDown={handleKeyDown}
-              onSubmit={() => handleSend()}
-              isLoading={state.isLoading}
-              isGenerating={state.isGenerating}
-              onStop={handleStop}
-              selectedTool={state.selectedTool}
-              onSelectTool={setSelectedTool}
-            />
+            {state.currentConversation && state.currentConversation.messages.length > 0 && (
+              <ChatInput
+                ref={setInputRef}
+                value={state.input}
+                onChange={handleInputChange}
+                onKeyDown={handleKeyDown}
+                onSubmit={() => handleSend()}
+                isLoading={state.isLoading}
+                isGenerating={state.isGenerating}
+                onStop={handleStop}
+                selectedTool={state.selectedTool}
+                onSelectTool={setSelectedTool}
+              />
+            )}
           </div>
 
           {/* Delete Confirmation Dialog */}
