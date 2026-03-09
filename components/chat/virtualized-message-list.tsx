@@ -57,6 +57,69 @@ export function VirtualizedMessageList({
   const [shouldAutoScroll, setShouldAutoScroll] = useState(true);
   const previousMessageCount = useRef(messages.length);
 
+  const scrollByAmount = useCallback((delta: number) => {
+    if (!parentRef.current) return;
+
+    parentRef.current.scrollBy({
+      top: delta,
+      behavior: "smooth",
+    });
+  }, []);
+
+  const scrollToEdge = useCallback((position: "top" | "bottom") => {
+    if (!parentRef.current) return;
+
+    parentRef.current.scrollTo({
+      top: position === "top" ? 0 : parentRef.current.scrollHeight,
+      behavior: "smooth",
+    });
+  }, []);
+
+  const handleKeyScroll = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      const target = e.target as HTMLElement | null;
+      const tagName = target?.tagName;
+      const isTypingTarget =
+        tagName === "TEXTAREA" ||
+        tagName === "INPUT" ||
+        target?.isContentEditable;
+
+      if (isTypingTarget) return;
+
+      const viewportHeight = parentRef.current?.clientHeight ?? 0;
+      const lineStep = 72;
+      const pageStep = Math.max(Math.floor(viewportHeight * 0.85), 240);
+
+      switch (e.key) {
+        case "ArrowDown":
+          e.preventDefault();
+          scrollByAmount(lineStep);
+          break;
+        case "ArrowUp":
+          e.preventDefault();
+          scrollByAmount(-lineStep);
+          break;
+        case "PageDown":
+          e.preventDefault();
+          scrollByAmount(pageStep);
+          break;
+        case "PageUp":
+          e.preventDefault();
+          scrollByAmount(-pageStep);
+          break;
+        case "Home":
+          e.preventDefault();
+          scrollToEdge("top");
+          break;
+        case "End":
+          e.preventDefault();
+          scrollToEdge("bottom");
+          break;
+      }
+    },
+    [scrollByAmount, scrollToEdge]
+  );
+
   // Track if user has scrolled up from bottom
   const handleScroll = useCallback(() => {
     if (!parentRef.current) return;
@@ -153,8 +216,12 @@ export function VirtualizedMessageList({
     return (
       <div
         ref={parentRef}
-        className="h-full overflow-auto"
+        className="h-full overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
         onScroll={handleScroll}
+        onKeyDown={handleKeyScroll}
+        onMouseDown={() => parentRef.current?.focus()}
+        tabIndex={0}
+        aria-label="Chat conversation"
       >
         <div className="mx-auto max-w-3xl px-4 py-6" role="log" aria-live="polite" aria-atomic="false">
           <div className="space-y-6">
@@ -206,8 +273,12 @@ export function VirtualizedMessageList({
   return (
     <div
       ref={parentRef}
-      className="h-full overflow-auto"
+      className="h-full overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
       onScroll={handleScroll}
+      onKeyDown={handleKeyScroll}
+      onMouseDown={() => parentRef.current?.focus()}
+      tabIndex={0}
+      aria-label="Chat conversation"
       role="log"
       aria-live="polite"
       aria-atomic="false"

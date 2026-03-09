@@ -7,7 +7,6 @@ import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
   ArrowLeft,
-  Download,
   Share2,
   Printer,
   Check,
@@ -28,12 +27,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
 import {
   Sheet,
   SheetContent,
@@ -360,6 +353,7 @@ function DocumentContent({ id }: { id: string }) {
   const typeConfig = documentTypeConfig[document.document_type];
   const TypeIcon = typeConfig?.icon || FileText;
   const pdfUrl = getDocumentPdfUrl(id);
+  const embeddedPdfUrl = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
 
   // Generate breadcrumb items based on document type
   const getBreadcrumbItems = () => {
@@ -453,42 +447,6 @@ function DocumentContent({ id }: { id: string }) {
                 }}
                 size="sm"
               />
-              {/* Judgments: PDF download only */}
-              {document.document_type === "judgment" && (
-                <Button variant="outline" size="sm" asChild>
-                  <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                    <Download className="mr-2 h-4 w-4" />
-                    Download PDF
-                  </a>
-                </Button>
-              )}
-
-              {/* Acts/Regulations/Constitution: Multiple format downloads */}
-              {(document.document_type === "act" ||
-                document.document_type === "regulation" ||
-                document.document_type === "constitution") && (
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="outline" size="sm">
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent>
-                      <DropdownMenuItem asChild>
-                        <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                          <FileText className="mr-2 h-4 w-4" />
-                          PDF
-                        </a>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem disabled>
-                        <FileText className="mr-2 h-4 w-4" />
-                        AKN XML (coming soon)
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                )}
-
               <Button variant="outline" size="sm" onClick={copyLink} className="hidden sm:inline-flex">
                 {copied ? (
                   <>
@@ -557,19 +515,12 @@ function DocumentContent({ id }: { id: string }) {
                     <div className="text-sm text-muted-foreground">
                       PDF viewer
                     </div>
-                    <Button variant="outline" size="sm" asChild>
-                      <a
-                        href={pdfUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        <ExternalLink className="mr-2 h-4 w-4" />
-                        Open in new tab
-                      </a>
-                    </Button>
+                    <div className="text-xs text-muted-foreground">
+                      Reading view
+                    </div>
                   </div>
                   <iframe
-                    src={pdfUrl}
+                    src={embeddedPdfUrl}
                     className="h-[700px] w-full"
                     title={`PDF: ${document.title}`}
                   />
@@ -757,12 +708,6 @@ function DocumentContent({ id }: { id: string }) {
                               Ask AI about this document
                             </Link>
                           </Button>
-                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                            <a href={pdfUrl} target="_blank" rel="noopener noreferrer">
-                              <Download className="mr-2 h-4 w-4" />
-                              Download PDF
-                            </a>
-                          </Button>
                         </CardContent>
                       </Card>
 
@@ -777,12 +722,19 @@ function DocumentContent({ id }: { id: string }) {
                                 <Link
                                   key={item.id}
                                   href={`/document/${item.id}`}
-                                  className="block rounded-md px-2 py-1.5 text-sm hover:bg-accent/50 transition-colors"
+                                  className="block min-w-0 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent/50"
                                 >
-                                  <p className="line-clamp-2">{item.short_title || item.title}</p>
-                                  <p className="text-xs text-muted-foreground">
+                                  <p className="line-clamp-2 break-words">
+                                    {item.short_title || item.title}
+                                  </p>
+                                  <p className="break-all text-xs text-muted-foreground">
                                     {item.human_readable_id}
                                   </p>
+                                  {item.title && item.title !== item.short_title && (
+                                    <p className="break-all text-xs text-muted-foreground/80">
+                                      {item.title}
+                                    </p>
+                                  )}
                                 </Link>
                               ))}
                             </div>

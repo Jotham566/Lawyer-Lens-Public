@@ -50,7 +50,7 @@ const faqs = [
   {
     question: "Can I download or print documents?",
     answer:
-      "Yes, you can download documents in PDF format or print them directly from the document viewer using the download and print buttons in the toolbar.",
+      "You can read and print documents directly from the document viewer. Public document downloads are not available from the web interface.",
   },
   {
     question: "How do I navigate within a long document?",

@@ -42,6 +42,153 @@ interface AncestorInfo {
 }
 const AncestorPathContext = React.createContext<AncestorInfo[]>([]);
 
+type KatexLike = {
+  renderToString: (
+    tex: string,
+    options?: Record<string, unknown>
+  ) => string;
+};
+
+type MathSegment =
+  | { type: "text"; value: string }
+  | { type: "math"; value: string; display: boolean };
+
+function parseMathSegments(text: string): MathSegment[] {
+  const segments: MathSegment[] = [];
+  let remaining = text;
+
+  while (remaining.length > 0) {
+    const displayStart = remaining.indexOf("$$");
+    const inlineStart = remaining.indexOf("$");
+
+    let startIdx = -1;
+    let display = false;
+
+    if (displayStart !== -1 && (inlineStart === -1 || displayStart <= inlineStart)) {
+      startIdx = displayStart;
+      display = true;
+    } else if (inlineStart !== -1) {
+      if (remaining[inlineStart + 1] === "$") {
+        startIdx = displayStart;
+        display = true;
+      } else {
+        startIdx = inlineStart;
+        display = false;
+      }
+    }
+
+    if (startIdx === -1) {
+      segments.push({ type: "text", value: remaining });
+      break;
+    }
+
+    if (startIdx > 0) {
+      segments.push({ type: "text", value: remaining.slice(0, startIdx) });
+    }
+
+    const delimiter = display ? "$$" : "$";
+    const searchStart = startIdx + delimiter.length;
+    let endIdx = remaining.indexOf(delimiter, searchStart);
+
+    if (!display) {
+      while (endIdx !== -1 && remaining[endIdx + 1] === "$") {
+        endIdx = remaining.indexOf(delimiter, endIdx + 2);
+      }
+    }
+
+    if (endIdx === -1) {
+      segments.push({ type: "text", value: remaining.slice(startIdx) });
+      break;
+    }
+
+    segments.push({
+      type: "math",
+      value: remaining.slice(searchStart, endIdx).trim(),
+      display,
+    });
+
+    remaining = remaining.slice(endIdx + delimiter.length);
+  }
+
+  return segments.filter((segment) => segment.type === "math" || segment.value.length > 0);
+}
+
+function MathText({
+  text,
+  className,
+}: {
+  text: string;
+  className?: string;
+}) {
+  const [katex, setKatex] = React.useState<KatexLike | null>(null);
+
+  React.useEffect(() => {
+    if (!text.includes("$")) return;
+
+    let cancelled = false;
+    void (async () => {
+      const { default: loadedKatex } = await import("katex");
+      if (!cancelled) {
+        setKatex(loadedKatex as KatexLike);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [text]);
+
+  if (!text.includes("$")) {
+    return <>{text}</>;
+  }
+
+  const segments = parseMathSegments(text);
+
+  return (
+    <span className={className}>
+      {segments.map((segment, index) => {
+        if (segment.type === "text") {
+          return <React.Fragment key={index}>{segment.value}</React.Fragment>;
+        }
+
+        if (!katex) {
+          return (
+            <React.Fragment key={index}>
+              {segment.display ? `$$${segment.value}$$` : `$${segment.value}$`}
+            </React.Fragment>
+          );
+        }
+
+        try {
+          const html = katex.renderToString(segment.value, {
+            displayMode: segment.display,
+            throwOnError: false,
+            strict: false,
+          });
+
+          if (segment.display) {
+            return (
+              <span
+                key={index}
+                className="my-4 block overflow-x-auto"
+                dangerouslySetInnerHTML={{ __html: html }}
+              />
+            );
+          }
+
+          return <span key={index} dangerouslySetInnerHTML={{ __html: html }} />;
+        } catch {
+          return (
+            <React.Fragment key={index}>
+              {segment.display ? `$$${segment.value}$$` : `$${segment.value}$`}
+            </React.Fragment>
+          );
+        }
+      })}
+    </span>
+  );
+}
+
 /**
  * Hierarchical Structure Renderer
  *
@@ -702,7 +849,7 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
     <div className="node-content">
       {cleanedTextBlocks.map((text, index) => (
         <p key={index} className={cn(index === 0 ? "mt-0 mb-1" : "my-1", "whitespace-pre-wrap")}>
-          {text}
+          <MathText text={text} />
         </p>
       ))}
     </div>
@@ -722,7 +869,7 @@ function StyledFragment({ fragment }: { fragment: TextFragment }) {
 
   return (
     <span className={cn(classes)}>
-      {fragment.text}
+      <MathText text={fragment.text} />
     </span>
   );
 }
