@@ -39,7 +39,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     // Show stop button only while LLM is actively generating text
     const showStop = isGenerating ?? isLoading;
     return (
-      <div className="border-t p-3 md:p-4">
+      <div className="p-3 md:p-4">
         <div className="mx-auto max-w-3xl">
           <form
             onSubmit={(e) => {
