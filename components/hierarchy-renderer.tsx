@@ -576,6 +576,11 @@ function Subsection({ node }: { node: HierarchicalNode }) {
         {node.identifier && <span>({node.identifier})</span>}
       </div>
       <div className="flex-1 min-w-0">
+        {node.title && (
+          <div className="mb-1 whitespace-pre-wrap">
+            <MathText text={node.title} />
+          </div>
+        )}
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -602,6 +607,11 @@ function Paragraph({ node }: { node: HierarchicalNode }) {
         {node.identifier && <span>({node.identifier})</span>}
       </div>
       <div className="flex-1 min-w-0">
+        {node.title && (
+          <div className="mb-1 whitespace-pre-wrap">
+            <MathText text={node.title} />
+          </div>
+        )}
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -628,6 +638,11 @@ function Subparagraph({ node }: { node: HierarchicalNode }) {
         {node.identifier && <span>({node.identifier})</span>}
       </div>
       <div className="flex-1 min-w-0">
+        {node.title && (
+          <div className="mb-1 whitespace-pre-wrap">
+            <MathText text={node.title} />
+          </div>
+        )}
         <NodeContent node={node} />
         <NodeTables node={node} />
         <NodeChildren node={node} />
@@ -786,11 +801,24 @@ function extractTablesAndCleanText(value: string): { tables: ParsedTableLike[]; 
 
   const cleanedText = stripHtml(remaining)
     .split("\n")
-    .map((line) => line.trim())
+    .map((line) => line.replace(/[ \t]+$/g, "").replace(/^[ \t]+/g, ""))
     .filter((line) => line.length > 0 && !/^tbl-\d+\.html$/i.test(line))
     .join("\n");
 
   return { tables, cleanedText };
+}
+
+function cleanStyledFragmentText(value: string): string {
+  const withoutTables = value.replace(/<table\b[\s\S]*?<\/table>/gi, " ");
+  const withBreaks = withoutTables.replace(/<br\s*\/?>/gi, "\n");
+  const noTags = withBreaks.replace(/<[^>]+>/g, " ");
+
+  return decodeHtmlEntities(noTags)
+    .replace(/\r\n?/g, "\n")
+    .replace(/[ \t\f\v]+/g, " ")
+    .replace(/\n[ \t]+/g, "\n")
+    .replace(/[ \t]+\n/g, "\n")
+    .replace(/\n{3,}/g, "\n\n");
 }
 
 function NodeContent({ node }: { node: HierarchicalNode }) {
@@ -800,8 +828,8 @@ function NodeContent({ node }: { node: HierarchicalNode }) {
       .map((block) => {
         const cleanedFragments = block.fragments
           .map((fragment) => {
-            const cleanedText = extractTablesAndCleanText(fragment.text).cleanedText;
-            if (!cleanedText) return null;
+            const cleanedText = cleanStyledFragmentText(fragment.text);
+            if (!cleanedText.trim()) return null;
             return {
               ...fragment,
               text: cleanedText,
@@ -903,17 +931,32 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
   // 1. node.tables[] - standard table storage
   // 2. node.content[] - Docling stores tables here with type: "table"
   const allTables: TableData[] = [];
+  const seenTableSignatures = new Set<string>();
+
+  const addTable = (table: TableData) => {
+    const signature = JSON.stringify({
+      rows: table.rows,
+      header_rows: table.header_rows || [],
+    });
+    if (seenTableSignatures.has(signature)) return;
+    seenTableSignatures.add(signature);
+    allTables.push(table);
+  };
+
+  const addTables = (tables: TableData[]) => {
+    for (const table of tables) addTable(table);
+  };
 
   // Add tables from standard tables array
   if (node.tables && node.tables.length > 0) {
-    allTables.push(...node.tables);
+    addTables(node.tables);
   }
 
   // Add tables from content array (Docling format)
   if (node.content && Array.isArray(node.content)) {
     for (const item of node.content) {
       if (item.type === "table" && item.rows && item.rows.length > 0) {
-        allTables.push({
+        addTable({
           rows: item.rows,
           header_rows: item.header_rows,
         });
@@ -923,7 +966,7 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
       if (typeof rawText === "string" && /<(table|tr|td|th)\b/i.test(rawText)) {
         const parsedTables = extractTablesAndCleanText(rawText).tables;
         if (parsedTables.length > 0) {
-          allTables.push(...parsedTables);
+          addTables(parsedTables);
         }
       }
     }
@@ -935,7 +978,7 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
       if (!/<(table|tr|td|th)\b/i.test(text)) continue;
       const parsedTables = extractTablesAndCleanText(text).tables;
       if (parsedTables.length > 0) {
-        allTables.push(...parsedTables);
+        addTables(parsedTables);
       }
     }
   }
@@ -948,7 +991,7 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
         if (!/<(table|tr|td|th)\b/i.test(text)) continue;
         const parsedTables = extractTablesAndCleanText(text).tables;
         if (parsedTables.length > 0) {
-          allTables.push(...parsedTables);
+          addTables(parsedTables);
         }
       }
     }
