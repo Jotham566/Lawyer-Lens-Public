@@ -734,6 +734,10 @@ type ParsedTableLike = {
   header_rows?: number[];
 };
 
+type ContentSegment =
+  | { type: "text"; text: string; fragments?: TextFragment[] }
+  | { type: "table"; table: ParsedTableLike };
+
 function decodeHtmlEntities(value: string): string {
   return value
     .replace(/&nbsp;/gi, " ")
@@ -779,6 +783,43 @@ function parseHtmlTableBlock(htmlTable: string): ParsedTableLike | null {
   };
 }
 
+function extractOrderedContentSegments(value: string, fragments?: TextFragment[]): ContentSegment[] {
+  const segments: ContentSegment[] = [];
+  const tableRegex = /<table\b[\s\S]*?<\/table>/gi;
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+
+  while ((match = tableRegex.exec(value)) !== null) {
+    const preceding = value.slice(lastIndex, match.index);
+    const cleanedPreceding = stripHtml(preceding);
+    if (cleanedPreceding.length > 0) {
+      segments.push({ type: "text", text: cleanedPreceding });
+    }
+
+    const parsed = parseHtmlTableBlock(match[0]);
+    if (parsed) {
+      segments.push({ type: "table", table: parsed });
+    }
+
+    lastIndex = match.index + match[0].length;
+  }
+
+  const trailing = value.slice(lastIndex);
+  const cleanedTrailing = stripHtml(trailing);
+  if (cleanedTrailing.length > 0) {
+    segments.push({ type: "text", text: cleanedTrailing, fragments });
+  }
+
+  if (segments.length === 0) {
+    const cleaned = stripHtml(value);
+    if (cleaned.length > 0) {
+      segments.push({ type: "text", text: cleaned, fragments });
+    }
+  }
+
+  return segments;
+}
+
 function extractTablesAndCleanText(value: string): { tables: ParsedTableLike[]; cleanedText: string } {
   let remaining = value;
   const tables: ParsedTableLike[] = [];
@@ -822,6 +863,64 @@ function cleanStyledFragmentText(value: string): string {
 }
 
 function NodeContent({ node }: { node: HierarchicalNode }) {
+  if (node.content && Array.isArray(node.content) && node.content.length > 0) {
+    const orderedSegments: ContentSegment[] = [];
+
+    for (const item of node.content) {
+      if (item.type === "table" && item.rows && item.rows.length > 0) {
+        orderedSegments.push({
+          type: "table",
+          table: {
+            rows: item.rows,
+            header_rows: item.header_rows,
+          },
+        });
+        continue;
+      }
+
+      const rawText = item.text || item.value?.text;
+      if (typeof rawText === "string" && rawText.length > 0) {
+        orderedSegments.push(...extractOrderedContentSegments(rawText, item.fragments));
+      }
+    }
+
+    if (orderedSegments.length > 0) {
+      return (
+        <div className="node-content">
+          {orderedSegments.map((segment, index) => {
+            if (segment.type === "table") {
+              return <TableRenderer key={`table-${index}`} table={segment.table} />;
+            }
+
+            const fragments = segment.fragments
+              ?.map((fragment) => {
+                const cleanedText = cleanStyledFragmentText(fragment.text);
+                if (!cleanedText.trim()) return null;
+                return { ...fragment, text: cleanedText };
+              })
+              .filter((fragment): fragment is TextFragment => fragment !== null);
+
+            if (fragments && fragments.length > 0) {
+              return (
+                <p key={`text-${index}`} className={cn(index === 0 ? "mt-0 mb-1" : "my-1", "whitespace-pre-wrap")}>
+                  {fragments.map((fragment, fragIdx) => (
+                    <StyledFragment key={fragIdx} fragment={fragment} />
+                  ))}
+                </p>
+              );
+            }
+
+            return (
+              <p key={`text-${index}`} className={cn(index === 0 ? "mt-0 mb-1" : "my-1", "whitespace-pre-wrap")}>
+                <MathText text={segment.text} />
+              </p>
+            );
+          })}
+        </div>
+      );
+    }
+  }
+
   // Use styled_text if available for style-aware rendering
   if (node.styled_text && node.styled_text.length > 0) {
     const cleanedBlocks = node.styled_text
@@ -929,7 +1028,10 @@ function NodeChildren({ node }: { node: HierarchicalNode }) {
 function NodeTables({ node }: { node: HierarchicalNode }) {
   // Collect tables from both sources:
   // 1. node.tables[] - standard table storage
-  // 2. node.content[] - Docling stores tables here with type: "table"
+  // 2. fallback parsing from text/styled_text only when ordered content is absent
+  //
+  // When node.content[] exists, NodeContent() already renders that sequence in order,
+  // including any embedded tables. Re-reading content here causes duplicates.
   const allTables: TableData[] = [];
   const seenTableSignatures = new Set<string>();
 
@@ -952,46 +1054,30 @@ function NodeTables({ node }: { node: HierarchicalNode }) {
     addTables(node.tables);
   }
 
-  // Add tables from content array (Docling format)
-  if (node.content && Array.isArray(node.content)) {
-    for (const item of node.content) {
-      if (item.type === "table" && item.rows && item.rows.length > 0) {
-        addTable({
-          rows: item.rows,
-          header_rows: item.header_rows,
-        });
-      }
-
-      const rawText = item.text || item.value?.text;
-      if (typeof rawText === "string" && /<(table|tr|td|th)\b/i.test(rawText)) {
-        const parsedTables = extractTablesAndCleanText(rawText).tables;
+  // When ordered content is available, NodeContent has already rendered its text/table flow.
+  // Avoid reparsing mirrored table HTML from content/text/styled_text here.
+  if (!(node.content && Array.isArray(node.content) && node.content.length > 0)) {
+    // Add tables embedded as raw HTML in node.text (common in Mistral/Gemini outputs)
+    if (node.text && node.text.length > 0) {
+      for (const text of node.text) {
+        if (!/<(table|tr|td|th)\b/i.test(text)) continue;
+        const parsedTables = extractTablesAndCleanText(text).tables;
         if (parsedTables.length > 0) {
           addTables(parsedTables);
         }
       }
     }
-  }
 
-  // Add tables embedded as raw HTML in node.text (common in Mistral/Gemini outputs)
-  if (node.text && node.text.length > 0) {
-    for (const text of node.text) {
-      if (!/<(table|tr|td|th)\b/i.test(text)) continue;
-      const parsedTables = extractTablesAndCleanText(text).tables;
-      if (parsedTables.length > 0) {
-        addTables(parsedTables);
-      }
-    }
-  }
-
-  // Add tables embedded in styled text fragments
-  if (node.styled_text && node.styled_text.length > 0) {
-    for (const block of node.styled_text) {
-      for (const fragment of block.fragments) {
-        const text = fragment.text;
-        if (!/<(table|tr|td|th)\b/i.test(text)) continue;
-        const parsedTables = extractTablesAndCleanText(text).tables;
-        if (parsedTables.length > 0) {
-          addTables(parsedTables);
+    // Add tables embedded in styled text fragments
+    if (node.styled_text && node.styled_text.length > 0) {
+      for (const block of node.styled_text) {
+        for (const fragment of block.fragments) {
+          const text = fragment.text;
+          if (!/<(table|tr|td|th)\b/i.test(text)) continue;
+          const parsedTables = extractTablesAndCleanText(text).tables;
+          if (parsedTables.length > 0) {
+            addTables(parsedTables);
+          }
         }
       }
     }

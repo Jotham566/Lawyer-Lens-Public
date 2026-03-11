@@ -45,6 +45,9 @@ export interface HierarchicalContentItem {
   header_rows?: number[]; // For table content
   text?: string; // For text content
   value?: { text: string }; // Alternative text format
+  fragments?: TextFragment[]; // Optional styled fragments from OCR/conversion
+  page?: number;
+  position?: number;
 }
 
 // Hierarchical structure for document content
