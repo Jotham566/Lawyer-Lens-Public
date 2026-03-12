@@ -43,9 +43,11 @@ import {
   submitClarifyingAnswers,
   approveResearchBrief,
   getResearchReport,
+  resumeResearchSession,
   streamResearchProgress,
   type ResearchSession,
   type ResearchReport,
+  type ResearchGraphCheckpoint,
   type ClarifyAnswers,
   type StreamProgress,
   type ApproveBriefRequest,
@@ -115,6 +117,7 @@ function ResearchContent() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [progress, setProgress] = useState<StreamProgress | null>(null);
+  const [isResuming, setIsResuming] = useState(false);
 
   // Research sessions store for persistence
   const { addSession, updateSession: updateStoredSession } = useResearchSessionsStore();
@@ -305,6 +308,62 @@ function ResearchContent() {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleResumeResearch = async () => {
+    if (!session) return;
+
+    setIsResuming(true);
+    setError(null);
+
+    try {
+      const resumedSession = await resumeResearchSession(session.session_id);
+      setSession(resumedSession);
+      setProgress({
+        phase: "researching",
+        message: resumedSession.current_step || "Resuming research from last checkpoint...",
+        progress: resumedSession.progress_percent || 0,
+      });
+      updateStoredSession(session.session_id, { status: "researching", reportReady: false });
+      startProgressStream(session.session_id);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to resume research");
+    } finally {
+      setIsResuming(false);
+    }
+  };
+
+  const renderCheckpointList = (checkpoints?: ResearchGraphCheckpoint[] | null) => {
+    if (!checkpoints || checkpoints.length === 0) return null;
+
+    return (
+      <div className="mt-6 w-full max-w-xl rounded-lg border bg-muted/30 p-4 text-left">
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <p className="text-sm font-medium">Graph Checkpoints</p>
+          <Badge variant="outline">{checkpoints.length}</Badge>
+        </div>
+        <div className="space-y-2">
+          {checkpoints.slice(-5).reverse().map((checkpoint, index) => (
+            <div key={`${checkpoint.node}-${checkpoint.recorded_at || index}`} className="flex items-start justify-between gap-3 rounded-md border bg-background px-3 py-2">
+              <div className="min-w-0">
+                <p className="text-sm font-medium">{checkpoint.node}</p>
+                <p className="text-xs text-muted-foreground">
+                  Phase: {checkpoint.phase || "unknown"}
+                  {checkpoint.finding_count !== undefined ? ` | Findings: ${checkpoint.finding_count}` : ""}
+                </p>
+              </div>
+              <div className="shrink-0 text-right">
+                {checkpoint.recorded_at && (
+                  <p className="text-xs text-muted-foreground">
+                    {formatDateOnly(checkpoint.recorded_at)}
+                  </p>
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
   };
 
   // Helper functions for brief editing
@@ -1131,6 +1190,8 @@ function ResearchContent() {
   if (session?.status === "researching" || session?.status === "writing") {
     const progressPercent = progress?.progress ?? (session.progress_percent || 0);
     const progressMessage = progress?.message || session.current_step || getDefaultProgressMessage(session.status);
+    const latestCheckpoint = session.graph_checkpoints?.[session.graph_checkpoints.length - 1];
+    const isResumedRun = (session.current_step || "").startsWith("Resuming from checkpoint");
 
     return (
       <TooltipProvider>
@@ -1157,6 +1218,11 @@ function ResearchContent() {
                     ? "Researching Your Query..."
                     : "Writing Your Report..."}
                 </h3>
+
+                <div className="mt-3 flex flex-wrap items-center justify-center gap-2">
+                  <Badge variant="outline">Execution in progress</Badge>
+                  {isResumedRun && <Badge>Resumed from checkpoint</Badge>}
+                </div>
 
                 <p className="mt-2 text-sm text-muted-foreground max-w-md">
                   {progressMessage}
@@ -1193,6 +1259,15 @@ function ResearchContent() {
                   </div>
                 )}
 
+                {latestCheckpoint && (
+                  <div className="mt-4 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+                    Latest checkpoint: <span className="font-medium text-foreground">{latestCheckpoint.node}</span>
+                    {latestCheckpoint.phase ? ` (${latestCheckpoint.phase})` : ""}
+                  </div>
+                )}
+
+                {renderCheckpointList(session.graph_checkpoints)}
+
                 <p className="mt-6 text-xs text-muted-foreground">
                   This may take a few minutes for comprehensive research.
                 </p>
@@ -1206,6 +1281,8 @@ function ResearchContent() {
 
   // Complete phase - show report
   if (session?.status === "complete" && report) {
+    const wasResumedRun = report.execution_trace?.some((entry) => entry.node === "writer") &&
+      session.current_step?.includes("Resuming from checkpoint");
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-4xl px-4 py-8">
@@ -1223,8 +1300,8 @@ function ResearchContent() {
           <div className="space-y-6">
             {/* Report Header */}
             <Card>
-              <CardHeader>
-                <div className="flex items-start gap-4">
+            <CardHeader>
+              <div className="flex items-start gap-4">
                   <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
                     <FileText className="h-6 w-6 text-blue-500" />
                   </div>
@@ -1240,6 +1317,17 @@ function ResearchContent() {
                         {report.total_tokens_used || 0} tokens
                       </span>
                     </div>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <Badge variant="outline">Execution complete</Badge>
+                      {wasResumedRun && <Badge>Recovered from checkpoint</Badge>}
+                    </div>
+                    {report.research_audit && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        <Badge variant="secondary">{report.research_audit.documents} documents</Badge>
+                        <Badge variant="secondary">{report.research_audit.chunks} chunks</Badge>
+                        <Badge variant="secondary">{report.research_audit.legal_references} legal refs</Badge>
+                      </div>
+                    )}
                   </div>
                 </div>
               </CardHeader>
@@ -1347,6 +1435,33 @@ function ResearchContent() {
                 </CardContent>
               </Card>
             )}
+
+            {report.execution_trace && report.execution_trace.length > 0 && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Execution Trace</CardTitle>
+                  <CardDescription>Graph stages executed for this report.</CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <div className="space-y-2">
+                    {report.execution_trace.map((entry, index) => (
+                      <div key={`${entry.node}-${index}`} className="flex items-center justify-between rounded-lg border px-3 py-2 text-sm">
+                        <div>
+                          <p className="font-medium">{entry.node}</p>
+                          <p className="text-xs text-muted-foreground">
+                            Phase: {entry.phase || "unknown"}
+                            {entry.route_decision ? ` | Route: ${entry.route_decision}` : ""}
+                          </p>
+                        </div>
+                        {typeof entry.finding_count === "number" && (
+                          <Badge variant="outline">{entry.finding_count} findings</Badge>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                </CardContent>
+              </Card>
+            )}
           </div>
         </div>
       </TooltipProvider>
@@ -1400,17 +1515,31 @@ function ResearchContent() {
               <p className="mt-2 text-sm text-muted-foreground max-w-md">
                 {session?.error || error || "An unexpected error occurred during research."}
               </p>
-              <Button
-                variant="outline"
-                className="mt-6"
-                onClick={() => {
-                  setSession(null);
-                  setError(null);
-                  router.replace("/research");
-                }}
-              >
-                Try Again
-              </Button>
+              {renderCheckpointList(session?.graph_checkpoints)}
+              <div className="mt-6 flex gap-2">
+                {session?.graph_checkpoints && session.graph_checkpoints.length > 0 && (
+                  <Button onClick={handleResumeResearch} disabled={isResuming}>
+                    {isResuming ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Resuming...
+                      </>
+                    ) : (
+                      "Resume Research"
+                    )}
+                  </Button>
+                )}
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSession(null);
+                    setError(null);
+                    router.replace("/research");
+                  }}
+                >
+                  Start New Research
+                </Button>
+              </div>
             </div>
           </CardContent>
         </Card>

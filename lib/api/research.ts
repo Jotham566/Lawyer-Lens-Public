@@ -69,6 +69,7 @@ export interface ResearchSession {
   clarifying_questions: ClarifyingQuestion[] | null;
   research_brief?: ResearchBrief | null;
   report?: ResearchReport | null;
+  graph_checkpoints?: ResearchGraphCheckpoint[] | null;
   created_at: string;
   progress_percent?: number;
   current_step?: string;
@@ -98,6 +99,38 @@ export interface ResearchReport {
   citations: ResearchCitation[];
   generated_at: string;
   total_tokens_used: number;
+  research_audit?: ResearchAudit | null;
+  execution_trace?: ResearchExecutionTraceEntry[] | null;
+}
+
+export interface ResearchAudit {
+  topics: number;
+  agents: number;
+  findings: number;
+  documents: number;
+  chunks: number;
+  legal_references: number;
+  citations: number;
+}
+
+export interface ResearchExecutionTraceEntry {
+  node: string;
+  phase?: string;
+  route_decision?: string | null;
+  finding_count?: number;
+  has_brief?: boolean;
+  has_report?: boolean;
+}
+
+export interface ResearchGraphCheckpoint {
+  kind?: "graph_checkpoint";
+  node: string;
+  phase?: string;
+  route_decision?: string | null;
+  finding_count?: number;
+  has_brief?: boolean;
+  has_report?: boolean;
+  recorded_at?: string;
 }
 
 export interface ResearchSection {
@@ -190,6 +223,15 @@ export async function approveResearchBrief(
   request: ApproveBriefRequest
 ): Promise<ResearchSession> {
   return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request);
+}
+
+/**
+ * Resume a failed research session from the latest persisted checkpoint
+ */
+export async function resumeResearchSession(
+  sessionId: string
+): Promise<ResearchSession> {
+  return apiPost<ResearchSession>(`/research/${sessionId}/resume`, {});
 }
 
 /**
