@@ -2,6 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import {
+  getAllDocumentsByType,
   getDocument,
   getDocuments,
   getRecentDocuments,
@@ -67,6 +68,20 @@ export function useDocumentsByType(
   return useQuery({
     queryKey: ["documents", "type", type, page, size],
     queryFn: () => getDocumentsByType(type, page, size),
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
+ * Hook to fetch all documents of a type by paging within API limits.
+ */
+export function useAllDocumentsByType(
+  type: DocumentType,
+  pageSize: number = 100
+) {
+  return useQuery({
+    queryKey: ["documents", "type", "all", type, pageSize],
+    queryFn: () => getAllDocumentsByType(type, pageSize),
     staleTime: 5 * 60 * 1000,
   });
 }

@@ -8,6 +8,7 @@ export {
   useDocuments,
   useRecentDocuments,
   useRepositoryStats,
+  useAllDocumentsByType,
   useDocumentsByType,
   useDocumentAknXml,
 } from "./use-documents";

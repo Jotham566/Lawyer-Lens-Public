@@ -7,6 +7,7 @@ import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
   ArrowLeft,
+  ArrowRight,
   Share2,
   Printer,
   Check,
@@ -36,15 +37,16 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
-import { useDocument, useDocumentsByType } from "@/lib/hooks";
+import { useAllDocumentsByType, useDocument } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { useLibraryStore } from "@/lib/stores";
-import type { DocumentType, HierarchicalNode } from "@/lib/api/types";
+import type { Document, DocumentType, HierarchicalNode } from "@/lib/api/types";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { resolveDocumentYear } from "@/lib/utils/document-year";
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -120,10 +122,122 @@ function formatPathNode(node: HierarchicalNode): string {
   return title || node.type || "Section";
 }
 
+function matchesYearBucket(year: number | null, bucket: string) {
+  if (!year) return bucket === "all";
+  switch (bucket) {
+    case "2020s":
+      return year >= 2020;
+    case "2010s":
+      return year >= 2010 && year <= 2019;
+    case "2000s":
+      return year >= 2000 && year <= 2009;
+    case "1990s":
+      return year >= 1990 && year <= 1999;
+    case "archive":
+      return year < 1990;
+    default:
+      return true;
+  }
+}
+
+function matchesJudgmentYearRange(year: number | null, range: string) {
+  if (!year) return range === "all";
+  switch (range) {
+    case "2020s":
+      return year >= 2020;
+    case "2015s":
+      return year >= 2015 && year <= 2019;
+    case "2010s":
+      return year >= 2010 && year <= 2014;
+    case "archive":
+      return year < 2010;
+    default:
+      return true;
+  }
+}
+
+function sortDocumentsForActs(items: Document[], sort: string) {
+  return [...items].sort((a, b) => {
+    const aYear = Number(resolveDocumentYear(a) || 0);
+    const bYear = Number(resolveDocumentYear(b) || 0);
+    const titleCompare = a.title.localeCompare(b.title);
+
+    switch (sort) {
+      case "title_desc":
+        return b.title.localeCompare(a.title);
+      case "year_desc":
+        return bYear - aYear || titleCompare;
+      case "year_asc":
+        return aYear - bYear || titleCompare;
+      default:
+        return titleCompare;
+    }
+  });
+}
+
+function sortDocumentsForJudgments(items: Document[], sort: string) {
+  return [...items].sort((a, b) => {
+    const aDate = a.publication_date ? new Date(a.publication_date).getTime() : 0;
+    const bDate = b.publication_date ? new Date(b.publication_date).getTime() : 0;
+    const titleCompare = a.title.localeCompare(b.title);
+
+    switch (sort) {
+      case "date_asc":
+        return aDate - bDate || titleCompare;
+      case "title_asc":
+        return titleCompare;
+      case "title_desc":
+        return b.title.localeCompare(a.title);
+      default:
+        return bDate - aDate || titleCompare;
+    }
+  });
+}
+
+function getCollectionInfo(documentType: DocumentType) {
+  switch (documentType) {
+    case "act":
+      return {
+        rootLabel: "Legislation",
+        rootHref: "/legislation",
+        collectionLabel: "Acts",
+        collectionHref: "/legislation/acts",
+      };
+    case "regulation":
+      return {
+        rootLabel: "Legislation",
+        rootHref: "/legislation",
+        collectionLabel: "Regulations",
+        collectionHref: "/legislation/regulations",
+      };
+    case "constitution":
+      return {
+        rootLabel: "Legislation",
+        rootHref: "/legislation",
+        collectionLabel: "Constitution",
+        collectionHref: "/legislation/constitution",
+      };
+    case "judgment":
+      return {
+        rootLabel: "Case Law",
+        rootHref: "/judgments",
+        collectionLabel: "Judgments",
+        collectionHref: "/judgments",
+      };
+    default:
+      return {
+        rootLabel: "Browse",
+        rootHref: "/browse",
+        collectionLabel: "Documents",
+        collectionHref: "/browse",
+      };
+  }
+}
+
 function DocumentContent({ id }: { id: string }) {
   const router = useRouter();
   const { data: document, isLoading, error } = useDocument(id);
-  const { data: typedDocuments } = useDocumentsByType(document?.document_type || "act", 1, 50);
+  const { data: typedDocuments } = useAllDocumentsByType(document?.document_type || "act");
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
   const returnTo = searchParams.get("returnTo");
@@ -143,29 +257,120 @@ function DocumentContent({ id }: { id: string }) {
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const highlightedSectionId = manualHighlightId ?? hashSectionId ?? initialSectionId;
   const addToHistory = useLibraryStore((s) => s.addToHistory);
+  const collectionInfo = document ? getCollectionInfo(document.document_type) : null;
+
+  const contextualDocuments = useMemo(() => {
+    if (!typedDocuments || !document) return [];
+
+    if (document.document_type === "judgment" && returnTo?.startsWith("/judgments/")) {
+      const target = returnTo.startsWith("http")
+        ? new URL(returnTo)
+        : new URL(returnTo, "http://localhost");
+      const pathParts = target.pathname.split("/").filter(Boolean);
+      const courtId = pathParts[1];
+      const params = target.searchParams;
+      const year = params.get("year") || "all";
+      const query = (params.get("q") || "").trim().toLowerCase();
+      const sort = params.get("sort") || "date_desc";
+
+      const filtered = typedDocuments.filter((item) => {
+        const searchable = [
+          item.title,
+          item.case_number,
+          item.human_readable_id,
+          item.court_level,
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+        const judgmentYear = item.publication_date
+          ? new Date(item.publication_date).getFullYear()
+          : null;
+
+        if (courtId && item.court_level !== courtId) {
+          return false;
+        }
+
+        if (year !== "all" && !matchesJudgmentYearRange(judgmentYear, year)) {
+          return false;
+        }
+
+        if (query && !searchable.includes(query)) {
+          return false;
+        }
+
+        return true;
+      });
+
+      return sortDocumentsForJudgments(filtered, sort);
+    }
+
+    if (document.document_type !== "act" || !returnTo?.startsWith("/legislation/acts")) {
+      return typedDocuments;
+    }
+
+    const target = returnTo.startsWith("http")
+      ? new URL(returnTo)
+      : new URL(returnTo, "http://localhost");
+    const params = target.searchParams;
+    const letter = params.get("letter") || "";
+    const year = params.get("year") || "all";
+    const query = (params.get("q") || "").trim().toLowerCase();
+    const sort = params.get("sort") || "title_asc";
+
+    const filtered = typedDocuments.filter((item) => {
+      const title = item.title.toUpperCase();
+      const displayYear = Number(resolveDocumentYear(item) || 0) || null;
+      const searchable = [
+        item.title,
+        item.short_title,
+        item.chapter,
+        item.act_number ? `Act No. ${item.act_number}` : "",
+      ]
+        .filter(Boolean)
+        .join(" ")
+        .toLowerCase();
+
+      if (letter && !title.startsWith(letter)) {
+        return false;
+      }
+
+      if (year !== "all" && !matchesYearBucket(displayYear, year)) {
+        return false;
+      }
+
+      if (query && !searchable.includes(query)) {
+        return false;
+      }
+
+      return true;
+    });
+
+    return sortDocumentsForActs(filtered, sort);
+  }, [typedDocuments, document, returnTo]);
 
   const relatedDocuments = useMemo(() => {
-    if (!typedDocuments?.items || !document) return [];
-    return typedDocuments.items
+    if (!contextualDocuments.length || !document) return [];
+    return contextualDocuments
       .filter((item) => item.id !== document.id)
       .slice(0, 5);
-  }, [typedDocuments, document]);
+  }, [contextualDocuments, document]);
 
   const documentIndexInTypeList = useMemo(() => {
-    if (!typedDocuments?.items || !document) return -1;
-    return typedDocuments.items.findIndex((item) => item.id === document.id);
-  }, [typedDocuments, document]);
+    if (!contextualDocuments.length || !document) return -1;
+    return contextualDocuments.findIndex((item) => item.id === document.id);
+  }, [contextualDocuments, document]);
 
   const prevDocument = useMemo(() => {
-    if (!typedDocuments?.items || documentIndexInTypeList <= 0) return null;
-    return typedDocuments.items[documentIndexInTypeList - 1];
-  }, [typedDocuments, documentIndexInTypeList]);
+    if (!contextualDocuments.length || documentIndexInTypeList <= 0) return null;
+    return contextualDocuments[documentIndexInTypeList - 1];
+  }, [contextualDocuments, documentIndexInTypeList]);
 
   const nextDocument = useMemo(() => {
-    if (!typedDocuments?.items || documentIndexInTypeList < 0) return null;
-    if (documentIndexInTypeList >= typedDocuments.items.length - 1) return null;
-    return typedDocuments.items[documentIndexInTypeList + 1];
-  }, [typedDocuments, documentIndexInTypeList]);
+    if (!contextualDocuments.length || documentIndexInTypeList < 0) return null;
+    if (documentIndexInTypeList >= contextualDocuments.length - 1) return null;
+    return contextualDocuments[documentIndexInTypeList + 1];
+  }, [contextualDocuments, documentIndexInTypeList]);
 
   const legalPath = useMemo(() => {
     if (!document?.hierarchical_structure || !activeSectionId) return null;
@@ -193,8 +398,8 @@ function DocumentContent({ id }: { id: string }) {
       router.back();
       return;
     }
-    router.push("/browse");
-  }, [router, returnTo, from]);
+    router.push(collectionInfo?.collectionHref || "/browse");
+  }, [router, returnTo, from, collectionInfo]);
 
   // Scroll to highlighted section when document loads and structure is ready
   useEffect(() => {
@@ -354,24 +559,31 @@ function DocumentContent({ id }: { id: string }) {
   const TypeIcon = typeConfig?.icon || FileText;
   const pdfUrl = getDocumentPdfUrl(id);
   const embeddedPdfUrl = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
+  const browseBackLabel = document.document_type === "act"
+    ? "Back to Acts"
+    : `Back to ${collectionInfo?.collectionLabel || "Documents"}`;
+  const buildDocumentHref = (documentId: string) =>
+    `/document/${documentId}${
+      returnTo
+        ? `?returnTo=${encodeURIComponent(returnTo)}${from ? `&from=${encodeURIComponent(from)}` : ""}`
+        : from
+          ? `?from=${encodeURIComponent(from)}`
+          : ""
+    }`;
 
   // Generate breadcrumb items based on document type
   const getBreadcrumbItems = () => {
     const docTitle = document.short_title || document.title;
     const truncatedTitle = docTitle.length > 50 ? `${docTitle.slice(0, 50)}...` : docTitle;
-
-    const typeToPath: Record<DocumentType, { label: string; href: string }> = {
-      act: { label: "Acts", href: "/browse/acts" },
-      judgment: { label: "Case Law", href: "/browse/judgments" },
-      regulation: { label: "Regulations", href: "/browse/regulations" },
-      constitution: { label: "Constitution", href: "/browse/constitution" },
-    };
-
-    const typeInfo = typeToPath[document.document_type] || { label: "Browse", href: "/browse" };
+    const typeInfo = getCollectionInfo(document.document_type);
 
     return [
-      { label: "Browse", href: "/browse", isCurrentPage: false },
-      { label: typeInfo.label, href: typeInfo.href, isCurrentPage: false },
+      { label: typeInfo.rootLabel, href: typeInfo.rootHref, isCurrentPage: false },
+      {
+        label: typeInfo.collectionLabel,
+        href: returnTo || typeInfo.collectionHref,
+        isCurrentPage: false,
+      },
       { label: truncatedTitle, href: `/document/${id}`, isCurrentPage: true },
     ];
   };
@@ -393,45 +605,85 @@ function DocumentContent({ id }: { id: string }) {
         </div>
 
         {/* Header */}
-        <div className="border-b px-4 py-4 md:px-6">
+        <div className="border-b px-4 py-3 md:px-6">
           <div className="mx-auto max-w-5xl">
-            <div className="flex items-start gap-4">
-              <div
-                className={cn(
-                  "flex h-12 w-12 shrink-0 items-center justify-center rounded-xl",
-                  typeConfig?.bgColor || "bg-muted"
-                )}
-              >
-                <TypeIcon className={cn("h-6 w-6", typeConfig?.color)} />
-              </div>
-              <div className="min-w-0 flex-1">
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge className={cn(typeConfig?.className)}>
-                    {typeConfig?.label || document.document_type}
-                  </Badge>
-                  {document.act_year && (
-                    <Badge variant="outline">{document.act_year}</Badge>
+            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
+              <div className="flex items-start gap-3">
+                <div
+                  className={cn(
+                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
+                    typeConfig?.bgColor || "bg-muted"
                   )}
-                  {document.chapter && (
-                    <Badge variant="outline">Chapter {document.chapter}</Badge>
-                  )}
+                >
+                  <TypeIcon className={cn("h-5 w-5", typeConfig?.color)} />
                 </div>
-                <h1 className="mt-2 text-xl font-semibold leading-tight md:text-2xl">
-                  {document.title}
-                </h1>
-                {document.short_title && document.short_title !== document.title && (
-                  <p className="mt-1 text-muted-foreground">
-                    {document.short_title}
-                  </p>
-                )}
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Badge className={cn(typeConfig?.className)}>
+                      {typeConfig?.label || document.document_type}
+                    </Badge>
+                    {document.act_year && (
+                      <Badge variant="outline">{document.act_year}</Badge>
+                    )}
+                    {document.chapter && (
+                      <Badge variant="outline">Chapter {document.chapter}</Badge>
+                    )}
+                    {document.act_number && (
+                      <Badge variant="outline">Act No. {document.act_number}</Badge>
+                    )}
+                  </div>
+                  <h1 className="mt-1.5 text-2xl font-semibold leading-tight md:text-2xl">
+                    {document.title}
+                  </h1>
+                  {document.short_title && document.short_title !== document.title && (
+                    <p className="mt-1 text-sm text-muted-foreground">
+                      {document.short_title}
+                    </p>
+                  )}
+                  <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground md:text-xs">
+                    <span className="rounded-full border bg-muted/30 px-3 py-1">
+                      {document.human_readable_id}
+                    </span>
+                    {document.publication_date && (
+                      <span className="rounded-full border bg-muted/30 px-3 py-1">
+                        Published {formatDateOnly(document.publication_date)}
+                      </span>
+                    )}
+                    {document.commencement_date && (
+                      <span className="rounded-full border bg-muted/30 px-3 py-1">
+                        Commenced {formatDateOnly(document.commencement_date)}
+                      </span>
+                    )}
+                  </div>
+                </div>
               </div>
+
+              <Card className="w-full max-w-sm border-border/70 bg-muted/20">
+                <CardContent className="flex items-center justify-between gap-3 p-3.5">
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium">
+                      {documentIndexInTypeList >= 0 && contextualDocuments.length > 0
+                        ? `${documentIndexInTypeList + 1} of ${contextualDocuments.length} in this view`
+                        : `Browse ${collectionInfo?.collectionLabel?.toLowerCase() || "documents"}`}
+                    </p>
+                    <p className="text-xs text-muted-foreground sm:text-sm">
+                      Return to the same filtered results or keep moving through nearby documents.
+                    </p>
+                  </div>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={returnTo || collectionInfo?.collectionHref || "/browse"}>
+                      {collectionInfo?.collectionLabel || "Browse"}
+                    </Link>
+                  </Button>
+                </CardContent>
+              </Card>
             </div>
 
             {/* Actions */}
-            <div className="mt-4 flex flex-wrap items-center gap-2">
+            <div className="mt-3 flex flex-wrap items-center gap-2">
               <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
                   <ArrowLeft className="mr-2 h-4 w-4" />
-                  Back
+                  {browseBackLabel}
               </Button>
 
               {/* Save to Library */}
@@ -482,10 +734,10 @@ function DocumentContent({ id }: { id: string }) {
             )}
 
             {(prevDocument || nextDocument) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-3">
+              <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-2.5">
                 {prevDocument ? (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/document/${prevDocument.id}`}>
+                    <Link href={buildDocumentHref(prevDocument.id)}>
                       <ArrowLeft className="mr-2 h-4 w-4" />
                       Previous {typeConfig?.label || "Document"}
                     </Link>
@@ -493,9 +745,9 @@ function DocumentContent({ id }: { id: string }) {
                 ) : null}
                 {nextDocument ? (
                   <Button variant="outline" size="sm" asChild>
-                    <Link href={`/document/${nextDocument.id}`}>
+                    <Link href={buildDocumentHref(nextDocument.id)}>
                       Next {typeConfig?.label || "Document"}
-                      <ExternalLink className="ml-2 h-4 w-4" />
+                      <ArrowRight className="ml-2 h-4 w-4" />
                     </Link>
                   </Button>
                 ) : null}
@@ -509,23 +761,91 @@ function DocumentContent({ id }: { id: string }) {
           <div className="mx-auto max-w-7xl">
             {/* Judgments: Show only PDF */}
             {document.document_type === "judgment" && (
-              <Card>
-                <CardContent className="p-0">
-                  <div className="flex items-center justify-between border-b px-4 py-2">
-                    <div className="text-sm text-muted-foreground">
-                      PDF viewer
+              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+                <Card className="overflow-hidden">
+                  <CardContent className="p-0">
+                    <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                      <div>
+                        <p className="text-sm font-medium">Judgment reader</p>
+                        <p className="text-xs text-muted-foreground">
+                          PDF reading view with preserved case navigation.
+                        </p>
+                      </div>
+                      <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {document.court_level && (
+                          <Badge variant="outline">{document.court_level.replace(/_/g, " ")}</Badge>
+                        )}
+                        {document.publication_date && (
+                          <Badge variant="outline">{formatDateOnly(document.publication_date)}</Badge>
+                        )}
+                      </div>
                     </div>
-                    <div className="text-xs text-muted-foreground">
-                      Reading view
-                    </div>
-                  </div>
-                  <iframe
-                    src={embeddedPdfUrl}
-                    className="h-[700px] w-full"
-                    title={`PDF: ${document.title}`}
-                  />
-                </CardContent>
-              </Card>
+                    <iframe
+                      src={embeddedPdfUrl}
+                      className="h-[780px] w-full"
+                      title={`PDF: ${document.title}`}
+                    />
+                  </CardContent>
+                </Card>
+
+                <aside className="space-y-4">
+                  <Card>
+                    <CardContent className="space-y-3 p-4">
+                      <h3 className="text-sm font-semibold">Case Snapshot</h3>
+                      <div className="space-y-2 text-sm">
+                        {document.case_number && (
+                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
+                            <span className="text-muted-foreground">Case number</span>
+                            <span className="min-w-0 break-words text-right font-medium">
+                              {document.case_number}
+                            </span>
+                          </div>
+                        )}
+                        {document.court_level && (
+                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
+                            <span className="text-muted-foreground">Court</span>
+                            <span className="min-w-0 break-words text-right font-medium">
+                              {document.court_level.replace(/_/g, " ")}
+                            </span>
+                          </div>
+                        )}
+                        {document.publication_date && (
+                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
+                            <span className="text-muted-foreground">Date</span>
+                            <span className="min-w-0 break-words text-right font-medium">
+                              {formatDateOnly(document.publication_date)}
+                            </span>
+                          </div>
+                        )}
+                        <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
+                          <span className="text-muted-foreground">Document ID</span>
+                          <span className="min-w-0 break-all text-right font-medium">
+                            {document.human_readable_id}
+                          </span>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  <Card>
+                    <CardContent className="space-y-2 p-4">
+                      <h3 className="text-sm font-semibold">Quick Actions</h3>
+                      <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                        <Link href={returnTo || collectionInfo?.collectionHref || "/judgments"}>
+                          <ArrowLeft className="mr-2 h-4 w-4" />
+                          Back to {collectionInfo?.collectionLabel || "judgments"}
+                        </Link>
+                      </Button>
+                      <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                        <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
+                          <MessageSquare className="mr-2 h-4 w-4" />
+                          Ask AI about this judgment
+                        </Link>
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </aside>
+              </div>
             )}
 
             {/* Acts, Regulations, Constitution: Show rendered AKN content with ToC */}
@@ -614,7 +934,7 @@ function DocumentContent({ id }: { id: string }) {
                   </div>
 
                   {/* Main content with ToC + Reader + Context rail */}
-                  <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[280px_minmax(0,1fr)_280px]">
+                  <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_260px]">
                     {/* Table of Contents - sticky sidebar */}
                     {document.hierarchical_structure && (
                       <div className="hidden lg:block sticky top-20 self-start">
@@ -703,6 +1023,12 @@ function DocumentContent({ id }: { id: string }) {
                         <CardContent className="p-4 space-y-2">
                           <h3 className="text-sm font-semibold">Quick Actions</h3>
                           <Button variant="outline" size="sm" className="w-full justify-start" asChild>
+                            <Link href={returnTo || collectionInfo?.collectionHref || "/browse"}>
+                              <ArrowLeft className="mr-2 h-4 w-4" />
+                              Back to {collectionInfo?.collectionLabel || "results"}
+                            </Link>
+                          </Button>
+                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
                             <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
                               <MessageSquare className="mr-2 h-4 w-4" />
                               Ask AI about this document
@@ -721,7 +1047,7 @@ function DocumentContent({ id }: { id: string }) {
                               {relatedDocuments.map((item) => (
                                 <Link
                                   key={item.id}
-                                  href={`/document/${item.id}`}
+                                  href={buildDocumentHref(item.id)}
                                   className="block min-w-0 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent/50"
                                 >
                                   <p className="line-clamp-2 break-words">

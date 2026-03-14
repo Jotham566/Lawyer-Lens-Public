@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useMemo } from "react";
 import Link from "next/link";
 import { BookOpen, ArrowRight, FileText, ExternalLink } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -8,9 +8,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { searchDocuments } from "@/lib/api";
-import type { SearchResult } from "@/lib/api/types";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import { useAllDocumentsByType } from "@/lib/hooks";
 
 const constitutionHighlights = [
   {
@@ -46,28 +45,11 @@ const constitutionHighlights = [
 ];
 
 export default function ConstitutionPage() {
-  const [constitution, setConstitution] = useState<SearchResult | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    searchDocuments({
-      q: "Constitution of Uganda 1995",
-      document_type: ["constitution"],
-      page: 1,
-      size: 1,
-    })
-      .then((response) => {
-        if (response.hits.length > 0) {
-          setConstitution(response.hits[0]);
-        }
-      })
-      .catch((err) => {
-        console.error("Failed to load constitution:", err);
-        setError("Failed to load constitution");
-      })
-      .finally(() => setIsLoading(false));
-  }, []);
+  const { data, isLoading, error } = useAllDocumentsByType("constitution");
+  const constitution = useMemo(() => data?.[0] || null, [data]);
+  const detailHref = constitution
+    ? `/document/${constitution.id}?returnTo=${encodeURIComponent("/legislation/constitution")}&from=constitution`
+    : null;
 
   return (
     <div className="container mx-auto px-4 py-6 max-w-6xl">
@@ -104,7 +86,7 @@ export default function ConstitutionPage() {
       ) : error ? (
         <Card className="mb-8 border-destructive">
           <CardContent className="pt-6">
-            <p className="text-sm text-destructive">{error}</p>
+            <p className="text-sm text-destructive">Failed to load constitution</p>
           </CardContent>
         </Card>
       ) : constitution ? (
@@ -131,7 +113,7 @@ export default function ConstitutionPage() {
             </p>
             <div className="flex flex-wrap gap-3">
               <Button asChild>
-                <Link href={`/document/${constitution.document_id}`}>
+                <Link href={detailHref!}>
                   <FileText className="mr-2 h-4 w-4" />
                   Read Full Text
                 </Link>

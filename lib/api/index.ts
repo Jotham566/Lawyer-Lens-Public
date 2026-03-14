@@ -9,6 +9,7 @@ export { apiFetch, apiGet, apiPost, getApiBaseUrl, APIError } from "./client";
 
 // Documents API
 export {
+  getAllDocumentsByType,
   getDocument,
   getDocuments,
   getDocumentContent,

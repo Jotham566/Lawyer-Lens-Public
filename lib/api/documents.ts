@@ -106,6 +106,37 @@ export async function getDocumentsByType(
 }
 
 /**
+ * Get all documents of a given type by paging within backend limits.
+ */
+export async function getAllDocumentsByType(
+  type: DocumentType,
+  pageSize: number = 100
+): Promise<Document[]> {
+  const firstPage = await getDocuments({
+    document_type: type,
+    page: 1,
+    size: pageSize,
+    sort_by: "title",
+    sort_order: "asc",
+  });
+
+  const items = [...firstPage.items];
+
+  for (let page = 2; page <= firstPage.total_pages; page += 1) {
+    const nextPage = await getDocuments({
+      document_type: type,
+      page,
+      size: pageSize,
+      sort_by: "title",
+      sort_order: "asc",
+    });
+    items.push(...nextPage.items);
+  }
+
+  return items;
+}
+
+/**
  * Get available document types with counts
  */
 export async function getDocumentTypes(): Promise<
