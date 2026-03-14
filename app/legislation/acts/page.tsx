@@ -204,151 +204,193 @@ function ActsContent() {
         </div>
       </div>
 
-      <Card className="mb-6 border-border/70">
-        <CardContent className="pt-5">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,0.78fr))_auto]">
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Search acts
-              </label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      updateParams({
-                        q: searchInput.trim() || undefined,
-                        page: "1",
-                      });
+      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <Card className="border-border/70">
+            <CardContent className="space-y-5 pt-5">
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Search acts
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        updateParams({
+                          q: searchInput.trim() || undefined,
+                          page: "1",
+                        });
+                      }
+                    }}
+                    placeholder="Title, short title, chapter, act number..."
+                    className="pl-9"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Year range
+                </label>
+                <Select
+                  value={year}
+                  onValueChange={(value) => updateParams({ year: value === "all" ? undefined : value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearBuckets.map((bucket) => (
+                      <SelectItem key={bucket.value} value={bucket.value}>
+                        {bucket.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Sort by
+                </label>
+                <Select
+                  value={sort}
+                  onValueChange={(value) => updateParams({ sort: value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Browse by letter
+                </label>
+                <Select
+                  value={letter || "all"}
+                  onValueChange={(value) => updateParams({ letter: value === "all" ? undefined : value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All titles</SelectItem>
+                    {alphabet.map((item) => (
+                      <SelectItem key={item} value={item}>
+                        {item}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  View
+                </label>
+                <ToggleGroup
+                  type="single"
+                  value={view}
+                  onValueChange={(value) => {
+                    if (value) {
+                      updateParams({ view: value, page: "1" });
                     }
                   }}
-                  placeholder="Title, short title, chapter, act number..."
-                  className="pl-9"
-                />
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="grid" aria-label="Grid view">
+                    <Grid3X3 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Year range
-              </label>
-              <Select
-                value={year}
-                onValueChange={(value) => updateParams({ year: value === "all" ? undefined : value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearBuckets.map((bucket) => (
-                    <SelectItem key={bucket.value} value={bucket.value}>
-                      {bucket.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Sort by
-              </label>
-              <Select
-                value={sort}
-                onValueChange={(value) => updateParams({ sort: value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Browse by letter
-              </label>
-              <Select
-                value={letter || "all"}
-                onValueChange={(value) => updateParams({ letter: value === "all" ? undefined : value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All titles</SelectItem>
-                  {alphabet.map((item) => (
-                    <SelectItem key={item} value={item}>
-                      {item}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                View
-              </label>
-              <ToggleGroup
-                type="single"
-                value={view}
-                onValueChange={(value) => {
-                  if (value) {
-                    updateParams({ view: value, page: "1" });
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  variant="default"
+                  size="sm"
+                  onClick={() =>
+                    updateParams({
+                      q: searchInput.trim() || undefined,
+                      page: "1",
+                    })
                   }
-                }}
-                className="justify-start"
-              >
-                <ToggleGroupItem value="list" aria-label="List view">
-                  <List className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="grid" aria-label="Grid view">
-                  <Grid3X3 className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-          </div>
+                >
+                  Apply search
+                </Button>
+                {activeFilters.length > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchInput("");
+                      router.push("/legislation/acts");
+                    }}
+                  >
+                    Reset all
+                  </Button>
+                )}
+              </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() =>
-                updateParams({
-                  q: searchInput.trim() || undefined,
-                  page: "1",
-                })
-              }
-            >
-              Apply search
-            </Button>
-            {activeFilters.length > 0 && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchInput("");
-                  router.push("/legislation/acts");
-                }}
-              >
-                Reset all
-              </Button>
-            )}
-          </div>
+              <div className="space-y-2 border-t pt-4">
+                <div className="flex items-center justify-between gap-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    Quick jump
+                  </p>
+                  {letter && (
+                    <button
+                      type="button"
+                      className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      onClick={() => updateParams({ letter: undefined, page: "1" })}
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <Button
+                    variant={!letter ? "secondary" : "outline"}
+                    size="sm"
+                    className="h-8 rounded-full px-3"
+                    onClick={() => updateParams({ letter: undefined, page: "1" })}
+                  >
+                    All
+                  </Button>
+                  {alphabet.map((item) => (
+                    <Button
+                      key={item}
+                      variant={letter === item ? "secondary" : "outline"}
+                      size="sm"
+                      className="h-8 min-w-8 rounded-full px-2.5"
+                      onClick={() => updateParams({ letter: item, page: "1" })}
+                    >
+                      {item}
+                    </Button>
+                  ))}
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
 
+        <div className="min-w-0">
           {activeFilters.length > 0 && (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mb-4 flex flex-wrap gap-2">
               {activeFilters.map((filter) => (
                 <Badge key={filter.key} variant="secondary" className="gap-1 rounded-full px-3 py-1">
                   {filter.label}
@@ -370,182 +412,144 @@ function ActsContent() {
             </div>
           )}
 
-          <div className="mt-4 space-y-2">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Quick jump
-              </p>
-              {letter && (
-                <button
-                  type="button"
-                  className="text-xs text-muted-foreground transition-colors hover:text-foreground"
-                  onClick={() => updateParams({ letter: undefined, page: "1" })}
-                >
-                  Clear letter
-                </button>
-              )}
-            </div>
-            <div className="flex flex-wrap gap-1.5">
-              <Button
-                variant={!letter ? "secondary" : "outline"}
-                size="sm"
-                className="h-8 rounded-full px-3"
-                onClick={() => updateParams({ letter: undefined, page: "1" })}
-              >
-                All
-              </Button>
-              {alphabet.map((item) => (
-                <Button
-                  key={item}
-                  variant={letter === item ? "secondary" : "outline"}
-                  size="sm"
-                  className="h-8 min-w-8 rounded-full px-2.5"
-                  onClick={() => updateParams({ letter: item, page: "1" })}
-                >
-                  {item}
-                </Button>
-              ))}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-        <p>
-          Showing {acts.length === 0 ? 0 : (safePage - 1) * DEFAULT_PAGE_SIZE + 1}
-          {"-"}
-          {Math.min(safePage * DEFAULT_PAGE_SIZE, acts.length)} of {acts.length}
-        </p>
-        <p>{sortOptions.find((option) => option.value === sort)?.label || "Title A-Z"}</p>
-      </div>
-
-      {isLoading && (
-        <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-          {Array.from({ length: 9 }).map((_, index) => (
-            <Card key={index}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-5 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive">Failed to load acts. Please try again.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && !error && acts.length === 0 && (
-        <Card>
-          <CardContent className="py-14 text-center">
-            <FileText className="mx-auto h-12 w-12 text-muted-foreground/40" />
-            <h3 className="mt-4 text-lg font-medium">No acts match these filters</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Adjust the search, clear a filter, or browse all Acts again.
+          <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
+            <p>
+              Showing {acts.length === 0 ? 0 : (safePage - 1) * DEFAULT_PAGE_SIZE + 1}
+              {"-"}
+              {Math.min(safePage * DEFAULT_PAGE_SIZE, acts.length)} of {acts.length}
             </p>
-            <div className="mt-5 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchInput("");
-                  router.push("/legislation/acts");
-                }}
-              >
-                Clear all filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <p>{sortOptions.find((option) => option.value === sort)?.label || "Title A-Z"}</p>
+          </div>
 
-      {!isLoading && !error && paginatedActs.length > 0 && (
-        <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-          {paginatedActs.map((act) => {
-            const displayYear = resolveDocumentYear(act);
-            const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent(currentActsUrl)}&from=acts`;
-            return (
-              <Link key={act.id} href={documentHref} className="group block">
-                <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
-                  <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-                          <Badge variant="outline" className="rounded-full text-[11px] text-foreground/80">
-                            Act
-                          </Badge>
-                          {act.human_readable_id && (
-                            <span className="truncate text-foreground/65">{act.human_readable_id}</span>
-                          )}
-                        </div>
-                        <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
-                          {act.title}
-                        </h3>
-                        {act.short_title && act.short_title !== act.title && (
-                          <p className="text-sm text-muted-foreground">{act.short_title}</p>
-                        )}
-                      </div>
-                      <Badge variant="secondary" className="shrink-0 rounded-full">
-                        {displayYear || "N/A"}
-                      </Badge>
-                    </div>
+          {isLoading && (
+            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
+              {Array.from({ length: 9 }).map((_, index) => (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-5 w-3/4" />
                   </CardHeader>
-                  <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
-                      {act.chapter && <span className="rounded-full bg-muted px-2.5 py-1">Chapter {act.chapter}</span>}
-                      {act.act_number && <span className="rounded-full bg-muted px-2.5 py-1">Act No. {act.act_number}</span>}
-                      {act.publication_date && <span className="rounded-full bg-muted px-2.5 py-1">Published text</span>}
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground">
-                        Open full Act, contents, and metadata
-                      </span>
-                      <span className="inline-flex items-center font-medium text-primary">
-                        Open Act
-                        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    </div>
+                  <CardContent>
+                    <Skeleton className="h-4 w-1/2" />
                   </CardContent>
                 </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
 
-      {!isLoading && !error && totalPages > 1 && (
-        <div className="mt-8 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {safePage} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage <= 1}
-              onClick={() => updateParams({ page: String(safePage - 1) })}
-            >
-              <ChevronLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage >= totalPages}
-              onClick={() => updateParams({ page: String(safePage + 1) })}
-            >
-              Next
-              <ChevronRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
+          {error && (
+            <Card className="border-destructive">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive">Failed to load acts. Please try again.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !error && acts.length === 0 && (
+            <Card>
+              <CardContent className="py-14 text-center">
+                <FileText className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                <h3 className="mt-4 text-lg font-medium">No acts match these filters</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Adjust the search, clear a filter, or browse all Acts again.
+                </p>
+                <div className="mt-5 flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchInput("");
+                      router.push("/legislation/acts");
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !error && paginatedActs.length > 0 && (
+            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
+              {paginatedActs.map((act) => {
+                const displayYear = resolveDocumentYear(act);
+                const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent(currentActsUrl)}&from=acts`;
+                return (
+                  <Link key={act.id} href={documentHref} className="group block">
+                    <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                      <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
+                              <Badge variant="outline" className="rounded-full text-[11px] text-foreground/80">
+                                Act
+                              </Badge>
+                              {act.human_readable_id && (
+                                <span className="truncate text-foreground/65">{act.human_readable_id}</span>
+                              )}
+                            </div>
+                            <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
+                              {act.title}
+                            </h3>
+                            {act.short_title && act.short_title !== act.title && (
+                              <p className="text-sm text-muted-foreground">{act.short_title}</p>
+                            )}
+                          </div>
+                          <Badge variant="secondary" className="shrink-0 rounded-full">
+                            {displayYear || "N/A"}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
+                          {act.chapter && <span className="rounded-full bg-muted px-2.5 py-1">Chapter {act.chapter}</span>}
+                          {act.act_number && <span className="rounded-full bg-muted px-2.5 py-1">Act No. {act.act_number}</span>}
+                          {act.publication_date && <span className="rounded-full bg-muted px-2.5 py-1">Published text</span>}
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-muted-foreground">
+                            Open full Act, contents, and metadata
+                          </span>
+                          <span className="inline-flex items-center font-medium text-primary">
+                            Open Act
+                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {!isLoading && !error && totalPages > 1 && (
+            <div className="mt-8 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Page {safePage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage <= 1}
+                  onClick={() => updateParams({ page: String(safePage - 1) })}
+                >
+                  <ChevronLeft className="mr-1 h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage >= totalPages}
+                  onClick={() => updateParams({ page: String(safePage + 1) })}
+                >
+                  Next
+                  <ChevronRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }

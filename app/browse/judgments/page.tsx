@@ -194,274 +194,278 @@ function JudgmentsContent() {
         </div>
       </div>
 
-      <Card className="mb-6 border-border/70">
-        <CardContent className="pt-5">
-          <div className="grid gap-3 lg:grid-cols-[minmax(0,1.5fr)_repeat(3,minmax(0,0.8fr))_auto]">
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Search judgments
-              </label>
-              <div className="relative">
-                <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  value={searchInput}
-                  onChange={(event) => setSearchInput(event.target.value)}
-                  onKeyDown={(event) => {
-                    if (event.key === "Enter") {
-                      updateParams({ q: searchInput.trim() || undefined, page: "1" });
-                    }
-                  }}
-                  placeholder="Case title, number, citation..."
-                  className="pl-9"
-                />
+      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
+        <aside className="lg:sticky lg:top-24 lg:self-start">
+          <Card className="border-border/70">
+            <CardContent className="space-y-5 pt-5">
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Search judgments
+                </label>
+                <div className="relative">
+                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                  <Input
+                    value={searchInput}
+                    onChange={(event) => setSearchInput(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === "Enter") {
+                        updateParams({ q: searchInput.trim() || undefined, page: "1" });
+                      }
+                    }}
+                    placeholder="Case title, number, citation..."
+                    className="pl-9"
+                  />
+                </div>
               </div>
-            </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Court
-              </label>
-              <Select
-                value={court}
-                onValueChange={(value) => updateParams({ court: value === "all" ? undefined : value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {courtLevels.map((level) => (
-                    <SelectItem key={level.value} value={level.value}>
-                      {level.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Court
+                </label>
+                <Select
+                  value={court}
+                  onValueChange={(value) => updateParams({ court: value === "all" ? undefined : value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {courtLevels.map((level) => (
+                      <SelectItem key={level.value} value={level.value}>
+                        {level.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Year range
-              </label>
-              <Select
-                value={year}
-                onValueChange={(value) => updateParams({ year: value === "all" ? undefined : value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <Calendar className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {yearRanges.map((range) => (
-                    <SelectItem key={range.value} value={range.value}>
-                      {range.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Year range
+                </label>
+                <Select
+                  value={year}
+                  onValueChange={(value) => updateParams({ year: value === "all" ? undefined : value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <Calendar className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {yearRanges.map((range) => (
+                      <SelectItem key={range.value} value={range.value}>
+                        {range.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                Sort by
-              </label>
-              <Select
-                value={sort}
-                onValueChange={(value) => updateParams({ sort: value, page: "1" })}
-              >
-                <SelectTrigger>
-                  <SlidersHorizontal className="mr-2 h-4 w-4" />
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {sortOptions.map((option) => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  Sort by
+                </label>
+                <Select
+                  value={sort}
+                  onValueChange={(value) => updateParams({ sort: value, page: "1" })}
+                >
+                  <SelectTrigger>
+                    <SlidersHorizontal className="mr-2 h-4 w-4" />
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sortOptions.map((option) => (
+                      <SelectItem key={option.value} value={option.value}>
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
 
-            <div className="space-y-2">
-              <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                View
-              </label>
-              <ToggleGroup
-                type="single"
-                value={view}
-                onValueChange={(value) => value && updateParams({ view: value, page: "1" })}
-                className="justify-start"
-              >
-                <ToggleGroupItem value="list" aria-label="List view">
-                  <List className="h-4 w-4" />
-                </ToggleGroupItem>
-                <ToggleGroupItem value="grid" aria-label="Grid view">
-                  <Grid3X3 className="h-4 w-4" />
-                </ToggleGroupItem>
-              </ToggleGroup>
-            </div>
-          </div>
+              <div className="space-y-2">
+                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                  View
+                </label>
+                <ToggleGroup
+                  type="single"
+                  value={view}
+                  onValueChange={(value) => value && updateParams({ view: value, page: "1" })}
+                  className="justify-start"
+                >
+                  <ToggleGroupItem value="list" aria-label="List view">
+                    <List className="h-4 w-4" />
+                  </ToggleGroupItem>
+                  <ToggleGroupItem value="grid" aria-label="Grid view">
+                    <Grid3X3 className="h-4 w-4" />
+                  </ToggleGroupItem>
+                </ToggleGroup>
+              </div>
 
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
-            >
-              Apply search
-            </Button>
-            {(query || court !== "all" || year !== "all" || sort !== "date_desc" || view !== "list") && (
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={() => {
-                  setSearchInput("");
-                  router.push("/browse/judgments");
-                }}
-              >
-                Reset all
-              </Button>
-            )}
-          </div>
-        </CardContent>
-      </Card>
+              <div className="flex flex-wrap items-center gap-2">
+                <Button
+                  size="sm"
+                  onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
+                >
+                  Apply search
+                </Button>
+                {(query || court !== "all" || year !== "all" || sort !== "date_desc" || view !== "list") && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSearchInput("");
+                      router.push("/browse/judgments");
+                    }}
+                  >
+                    Reset all
+                  </Button>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </aside>
 
-      <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-        <p>
-          Showing {judgments.length === 0 ? 0 : (safePage - 1) * DEFAULT_PAGE_SIZE + 1}
-          {"-"}
-          {Math.min(safePage * DEFAULT_PAGE_SIZE, judgments.length)} of {judgments.length}
-        </p>
-        <p>{sortOptions.find((option) => option.value === sort)?.label || "Newest first"}</p>
-      </div>
-
-      {isLoading && (
-        <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-          {Array.from({ length: 9 }).map((_, index) => (
-            <Card key={index}>
-              <CardHeader className="pb-2">
-                <Skeleton className="h-5 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      )}
-
-      {error && (
-        <Card className="border-destructive">
-          <CardContent className="pt-6">
-            <p className="text-sm text-destructive">Failed to load judgments. Please try again.</p>
-          </CardContent>
-        </Card>
-      )}
-
-      {!isLoading && !error && judgments.length === 0 && (
-        <Card>
-          <CardContent className="py-14 text-center">
-            <Gavel className="mx-auto h-12 w-12 text-muted-foreground/40" />
-            <h3 className="mt-4 text-lg font-medium">No judgments match this view</h3>
-            <p className="mt-2 text-sm text-muted-foreground">
-              Clear a filter, broaden the search, or change courts to find more case law.
+        <div className="min-w-0">
+          <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
+            <p>
+              Showing {judgments.length === 0 ? 0 : (safePage - 1) * DEFAULT_PAGE_SIZE + 1}
+              {"-"}
+              {Math.min(safePage * DEFAULT_PAGE_SIZE, judgments.length)} of {judgments.length}
             </p>
-            <div className="mt-5 flex justify-center gap-2">
-              <Button
-                variant="outline"
-                onClick={() => {
-                  setSearchInput("");
-                  router.push("/browse/judgments");
-                }}
-              >
-                Clear all filters
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-      )}
+            <p>{sortOptions.find((option) => option.value === sort)?.label || "Newest first"}</p>
+          </div>
 
-      {!isLoading && !error && paginatedJudgments.length > 0 && (
-        <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-          {paginatedJudgments.map((judgment) => {
-            const detailHref = `/document/${judgment.id}?returnTo=${encodeURIComponent(currentRoute)}&from=judgments`;
-            const judgmentYear = getJudgmentYear(judgment.publication_date);
-
-            return (
-              <Link key={judgment.id} href={detailHref} className="group block">
-                <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
-                  <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0 space-y-2">
-                        <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-                          <Badge variant="outline" className="rounded-full text-[11px] text-foreground/80">
-                            {formatCourtLabel(judgment.court_level)}
-                          </Badge>
-                          {judgment.case_number && (
-                            <span className="truncate text-foreground/65">{judgment.case_number}</span>
-                          )}
-                        </div>
-                        <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
-                          {judgment.title}
-                        </h3>
-                      </div>
-                      <Badge variant="secondary" className="shrink-0 rounded-full">
-                        {judgmentYear || "N/A"}
-                      </Badge>
-                    </div>
+          {isLoading && (
+            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
+              {Array.from({ length: 9 }).map((_, index) => (
+                <Card key={index}>
+                  <CardHeader className="pb-2">
+                    <Skeleton className="h-5 w-3/4" />
                   </CardHeader>
-                  <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
-                    <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
-                      {judgment.publication_date && (
-                        <span className="rounded-full bg-muted px-2.5 py-1">
-                          {formatDateOnly(judgment.publication_date)}
-                        </span>
-                      )}
-                      <span className="rounded-full bg-muted px-2.5 py-1">PDF judgment</span>
-                    </div>
-                    <div className="flex items-center justify-between gap-3 text-sm">
-                      <span className="text-muted-foreground">
-                        Open judgment, metadata, and reading tools
-                      </span>
-                      <span className="inline-flex items-center font-medium text-primary">
-                        Open case
-                        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
-                      </span>
-                    </div>
+                  <CardContent>
+                    <Skeleton className="h-4 w-1/2" />
                   </CardContent>
                 </Card>
-              </Link>
-            );
-          })}
-        </div>
-      )}
+              ))}
+            </div>
+          )}
 
-      {!isLoading && !error && totalPages > 1 && (
-        <div className="mt-8 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-          <p className="text-sm text-muted-foreground">
-            Page {safePage} of {totalPages}
-          </p>
-          <div className="flex items-center gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage <= 1}
-              onClick={() => updateParams({ page: String(safePage - 1) })}
-            >
-              <ArrowLeft className="mr-1 h-4 w-4" />
-              Previous
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              disabled={safePage >= totalPages}
-              onClick={() => updateParams({ page: String(safePage + 1) })}
-            >
-              Next
-              <ArrowRight className="ml-1 h-4 w-4" />
-            </Button>
-          </div>
+          {error && (
+            <Card className="border-destructive">
+              <CardContent className="pt-6">
+                <p className="text-sm text-destructive">Failed to load judgments. Please try again.</p>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !error && judgments.length === 0 && (
+            <Card>
+              <CardContent className="py-14 text-center">
+                <Gavel className="mx-auto h-12 w-12 text-muted-foreground/40" />
+                <h3 className="mt-4 text-lg font-medium">No judgments match this view</h3>
+                <p className="mt-2 text-sm text-muted-foreground">
+                  Clear a filter, broaden the search, or change courts to find more case law.
+                </p>
+                <div className="mt-5 flex justify-center gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setSearchInput("");
+                      router.push("/browse/judgments");
+                    }}
+                  >
+                    Clear all filters
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {!isLoading && !error && paginatedJudgments.length > 0 && (
+            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
+              {paginatedJudgments.map((judgment) => {
+                const detailHref = `/document/${judgment.id}?returnTo=${encodeURIComponent(currentRoute)}&from=judgments`;
+                const judgmentYear = getJudgmentYear(judgment.publication_date);
+
+                return (
+                  <Link key={judgment.id} href={detailHref} className="group block">
+                    <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                      <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0 space-y-2">
+                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
+                              <Badge variant="outline" className="rounded-full text-[11px] text-foreground/80">
+                                {formatCourtLabel(judgment.court_level)}
+                              </Badge>
+                              {judgment.case_number && (
+                                <span className="truncate text-foreground/65">{judgment.case_number}</span>
+                              )}
+                            </div>
+                            <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
+                              {judgment.title}
+                            </h3>
+                          </div>
+                          <Badge variant="secondary" className="shrink-0 rounded-full">
+                            {judgmentYear || "N/A"}
+                          </Badge>
+                        </div>
+                      </CardHeader>
+                      <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
+                        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
+                          {judgment.publication_date && (
+                            <span className="rounded-full bg-muted px-2.5 py-1">
+                              {formatDateOnly(judgment.publication_date)}
+                            </span>
+                          )}
+                          <span className="rounded-full bg-muted px-2.5 py-1">PDF judgment</span>
+                        </div>
+                        <div className="flex items-center justify-between gap-3 text-sm">
+                          <span className="text-muted-foreground">
+                            Open judgment, metadata, and reading tools
+                          </span>
+                          <span className="inline-flex items-center font-medium text-primary">
+                            Open case
+                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                          </span>
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </Link>
+                );
+              })}
+            </div>
+          )}
+
+          {!isLoading && !error && totalPages > 1 && (
+            <div className="mt-8 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
+              <p className="text-sm text-muted-foreground">
+                Page {safePage} of {totalPages}
+              </p>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage <= 1}
+                  onClick={() => updateParams({ page: String(safePage - 1) })}
+                >
+                  <ArrowLeft className="mr-1 h-4 w-4" />
+                  Previous
+                </Button>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  disabled={safePage >= totalPages}
+                  onClick={() => updateParams({ page: String(safePage + 1) })}
+                >
+                  Next
+                  <ArrowRight className="ml-1 h-4 w-4" />
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
-      )}
+      </div>
     </div>
   );
 }
