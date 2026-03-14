@@ -2,7 +2,8 @@
 
 import { use, useState, useEffect, useMemo, useCallback, Suspense } from "react";
 import Link from "next/link";
-import { useRouter, useSearchParams } from "next/navigation";
+import dynamic from "next/dynamic";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   FileText,
@@ -22,12 +23,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
+import { TooltipProvider } from "@/components/ui/tooltip";
 import {
   Sheet,
   SheetContent,
@@ -43,10 +39,22 @@ import { HierarchyRenderer } from "@/components/hierarchy-renderer";
 import { TableOfContents } from "@/components/table-of-contents";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
+import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
+import { DocumentChatPanel } from "@/components/document-chat";
+import { useAuth, useAuthModal } from "@/components/providers";
 import { useLibraryStore } from "@/lib/stores";
 import type { Document, DocumentType, HierarchicalNode } from "@/lib/api/types";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { resolveDocumentYear } from "@/lib/utils/document-year";
+import { useDocumentChat } from "@/hooks/use-document-chat";
+
+const PdfReader = dynamic(
+  () => import("@/components/pdf/pdf-reader").then((module) => module.PdfReader),
+  {
+    ssr: false,
+    loading: () => <Skeleton className="h-[calc(100vh-196px)] min-h-[780px] w-full" />,
+  }
+);
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -236,6 +244,9 @@ function getCollectionInfo(documentType: DocumentType) {
 
 function DocumentContent({ id }: { id: string }) {
   const router = useRouter();
+  const pathname = usePathname();
+  const { isAuthenticated } = useAuth();
+  const { openLogin } = useAuthModal();
   const { data: document, isLoading, error } = useDocument(id);
   const { data: typedDocuments } = useAllDocumentsByType(document?.document_type || "act");
   const searchParams = useSearchParams();
@@ -244,20 +255,77 @@ function DocumentContent({ id }: { id: string }) {
   const initialSectionId = searchParams.get("section");
 
   const [copied, setCopied] = useState(false);
+  const [isDesktopDocumentChat, setIsDesktopDocumentChat] = useState(false);
+  const [hasInitializedDocumentChat, setHasInitializedDocumentChat] = useState(false);
+  const [desktopChatWidth, setDesktopChatWidth] = useState(0);
+  const [isResizingDocumentChat, setIsResizingDocumentChat] = useState(false);
   const [hashSectionId] = useState<string | null>(() => {
     if (typeof window === "undefined") return null;
     const hash = window.location.hash?.replace(/^#/, "").trim();
     return hash ? decodeURIComponent(hash) : null;
   });
   const [mobileTocOpen, setMobileTocOpen] = useState(false);
-  const [fontSize, setFontSize] = useState<"small" | "medium" | "large">(
-    "medium"
-  );
+  const [documentChatOpen, setDocumentChatOpen] = useState(false);
   const [manualHighlightId, setManualHighlightId] = useState<string | null>(null);
   const [activeSectionId, setActiveSectionId] = useState<string | null>(null);
   const highlightedSectionId = manualHighlightId ?? hashSectionId ?? initialSectionId;
+  const documentChat = useDocumentChat(document ?? null);
   const addToHistory = useLibraryStore((s) => s.addToHistory);
   const collectionInfo = document ? getCollectionInfo(document.document_type) : null;
+
+  const clampDesktopChatWidth = useCallback((value: number) => {
+    if (typeof window === "undefined") return value;
+    const minWidth = 360;
+    const maxWidth = Math.min(Math.floor(window.innerWidth * 0.55), 760);
+    return Math.min(Math.max(value, minWidth), maxWidth);
+  }, []);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+
+    const mediaQuery = window.matchMedia("(min-width: 1280px)");
+    const syncDesktopState = (event?: MediaQueryListEvent) => {
+      const matches = event ? event.matches : mediaQuery.matches;
+      setIsDesktopDocumentChat(matches);
+      if (!hasInitializedDocumentChat) {
+        setDocumentChatOpen(matches);
+        setDesktopChatWidth(clampDesktopChatWidth(window.innerWidth * 0.4));
+        setHasInitializedDocumentChat(true);
+      } else if (matches) {
+        setDesktopChatWidth((current) =>
+          current > 0 ? clampDesktopChatWidth(current) : clampDesktopChatWidth(window.innerWidth * 0.4)
+        );
+      }
+    };
+
+    syncDesktopState();
+    mediaQuery.addEventListener("change", syncDesktopState);
+    return () => mediaQuery.removeEventListener("change", syncDesktopState);
+  }, [clampDesktopChatWidth, hasInitializedDocumentChat]);
+
+  useEffect(() => {
+    if (!isDesktopDocumentChat || !isResizingDocumentChat) return;
+
+    const handlePointerMove = (event: PointerEvent) => {
+      setDesktopChatWidth(clampDesktopChatWidth(window.innerWidth - event.clientX));
+    };
+
+    const handlePointerUp = () => {
+      setIsResizingDocumentChat(false);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.document.body.style.cursor = "col-resize";
+    window.document.body.style.userSelect = "none";
+
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.document.body.style.cursor = "";
+      window.document.body.style.userSelect = "";
+    };
+  }, [clampDesktopChatWidth, isDesktopDocumentChat, isResizingDocumentChat]);
 
   const contextualDocuments = useMemo(() => {
     if (!typedDocuments || !document) return [];
@@ -400,6 +468,26 @@ function DocumentContent({ id }: { id: string }) {
     }
     router.push(collectionInfo?.collectionHref || "/browse");
   }, [router, returnTo, from, collectionInfo]);
+
+  const handleOpenDocumentChat = useCallback(() => {
+    if (!isAuthenticated) {
+      openLogin(`${pathname}${searchParams.toString() ? `?${searchParams.toString()}` : ""}`);
+      return;
+    }
+    setDocumentChatOpen(true);
+  }, [isAuthenticated, openLogin, pathname, searchParams]);
+
+  const handleSelectChatCitation = useCallback((sectionId?: string | null) => {
+    if (!sectionId) return;
+    setManualHighlightId(sectionId);
+    setActiveSectionId(sectionId);
+    setTimeout(() => {
+      const element = window.document.getElementById(sectionId);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "center" });
+      }
+    }, 80);
+  }, []);
 
   // Scroll to highlighted section when document loads and structure is ready
   useEffect(() => {
@@ -556,9 +644,7 @@ function DocumentContent({ id }: { id: string }) {
   }
 
   const typeConfig = documentTypeConfig[document.document_type];
-  const TypeIcon = typeConfig?.icon || FileText;
   const pdfUrl = getDocumentPdfUrl(id);
-  const embeddedPdfUrl = `${pdfUrl}#toolbar=0&navpanes=0&scrollbar=1`;
   const browseBackLabel = document.document_type === "act"
     ? "Back to Acts"
     : `Back to ${collectionInfo?.collectionLabel || "Documents"}`;
@@ -588,36 +674,179 @@ function DocumentContent({ id }: { id: string }) {
     ];
   };
 
+  const activeDesktopChatWidth = desktopChatWidth || 440;
+
   return (
     <TooltipProvider>
-      <div className="flex flex-col">
+      <div
+        className={cn(
+          "flex flex-col",
+        )}
+        style={
+          documentChatOpen && isDesktopDocumentChat
+            ? { paddingRight: `${activeDesktopChatWidth}px` }
+            : undefined
+        }
+      >
         <a
           href="#document-main-content"
           className="sr-only sr-only-focusable absolute left-4 top-4 z-[60] rounded-md bg-background px-3 py-2 text-sm shadow"
         >
           Skip to document content
         </a>
-        {/* Breadcrumb */}
-        <div className="border-b px-4 py-3 md:px-6">
-          <div className="mx-auto max-w-5xl">
-            <Breadcrumbs items={getBreadcrumbItems()} />
+        <div
+          className={cn(
+            "bg-background",
+            document.document_type !== "judgment" &&
+              "sticky top-0 z-30 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/85"
+          )}
+        >
+          {/* Breadcrumb */}
+          <div className="px-4 py-1.5 md:px-6">
+            <div className="mx-auto max-w-5xl">
+              <Breadcrumbs items={getBreadcrumbItems()} />
+            </div>
           </div>
-        </div>
 
-        {/* Header */}
-        <div className="border-b px-4 py-3 md:px-6">
-          <div className="mx-auto max-w-5xl">
-            <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-              <div className="flex items-start gap-3">
-                <div
-                  className={cn(
-                    "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl",
-                    typeConfig?.bgColor || "bg-muted"
-                  )}
-                >
-                  <TypeIcon className={cn("h-5 w-5", typeConfig?.color)} />
+          {/* Header */}
+          <div className={cn("px-4 py-2 md:px-6", document.document_type === "judgment" && "border-t")}>
+            <div className="mx-auto max-w-5xl">
+            {document.document_type === "judgment" ? (
+              <div className="flex flex-col gap-2.5">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+                      <ArrowLeft className="mr-2 h-4 w-4" />
+                      {browseBackLabel}
+                    </Button>
+                    <SaveToCollectionButton
+                      documentId={document.id}
+                      itemType="document"
+                      meta={{
+                        title: document.title,
+                        short_title: document.short_title,
+                        document_type: document.document_type,
+                        act_year: document.act_year,
+                        chapter: document.chapter,
+                      }}
+                      size="sm"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={copyLink}
+                      className="hidden sm:inline-flex"
+                    >
+                      {copied ? (
+                        <>
+                          <Check className="mr-2 h-4 w-4" />
+                          Copied!
+                        </>
+                      ) : (
+                        <>
+                          <Share2 className="mr-2 h-4 w-4" />
+                          Share
+                        </>
+                      )}
+                    </Button>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Card className="border-border/70 bg-muted/20">
+                      <CardContent className="flex items-center gap-3 px-3 py-2">
+                        <div className="min-w-0">
+                          <p className="text-xs font-medium leading-tight">
+                            {documentIndexInTypeList >= 0 && contextualDocuments.length > 0
+                              ? `${documentIndexInTypeList + 1} of ${contextualDocuments.length} in this view`
+                              : `Browse ${collectionInfo?.collectionLabel?.toLowerCase() || "documents"}`}
+                          </p>
+                        </div>
+                        <Button variant="outline" size="sm" className="h-8" asChild>
+                          <Link href={returnTo || collectionInfo?.collectionHref || "/browse"}>
+                            {collectionInfo?.collectionLabel || "Browse"}
+                          </Link>
+                        </Button>
+                      </CardContent>
+                    </Card>
+                    <Button variant="ghost" size="sm" onClick={handleOpenDocumentChat}>
+                      <MessageSquare className="mr-2 h-4 w-4" />
+                      Ask this document
+                    </Button>
+                  </div>
                 </div>
-                <div className="min-w-0 flex-1">
+              </div>
+            ) : (
+              <>
+                <div className="flex flex-col gap-2">
+                  <div className="flex flex-wrap items-center justify-between gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
+                        <ArrowLeft className="mr-2 h-4 w-4" />
+                        {browseBackLabel}
+                      </Button>
+                      <SaveToCollectionButton
+                        documentId={document.id}
+                        itemType="document"
+                        meta={{
+                          title: document.title,
+                          short_title: document.short_title,
+                          document_type: document.document_type,
+                          act_year: document.act_year,
+                          chapter: document.chapter,
+                        }}
+                        size="sm"
+                      />
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={copyLink}
+                        className="hidden sm:inline-flex"
+                      >
+                        {copied ? (
+                          <>
+                            <Check className="mr-2 h-4 w-4" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Share2 className="mr-2 h-4 w-4" />
+                            Share
+                          </>
+                        )}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={handlePrint}
+                        className="hidden sm:inline-flex"
+                      >
+                        <Printer className="mr-2 h-4 w-4" />
+                          Print
+                        </Button>
+                      <Button variant="ghost" size="sm" onClick={handleOpenDocumentChat}>
+                        <MessageSquare className="mr-2 h-4 w-4" />
+                        Ask this document
+                      </Button>
+                      {prevDocument ? (
+                        <Button variant="outline" size="sm" className="h-8 px-2.5" asChild>
+                          <Link href={buildDocumentHref(prevDocument.id)}>
+                            <ArrowLeft className="mr-2 h-4 w-4" />
+                            Previous {typeConfig?.label || "Document"}
+                          </Link>
+                        </Button>
+                      ) : null}
+                      {nextDocument ? (
+                        <Button variant="outline" size="sm" className="h-8 px-2.5" asChild>
+                          <Link href={buildDocumentHref(nextDocument.id)}>
+                            Next {typeConfig?.label || "Document"}
+                            <ArrowRight className="ml-2 h-4 w-4" />
+                          </Link>
+                        </Button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-0.5 min-w-0">
                   <div className="flex flex-wrap items-center gap-2">
                     <Badge className={cn(typeConfig?.className)}>
                       {typeConfig?.label || document.document_type}
@@ -632,15 +861,10 @@ function DocumentContent({ id }: { id: string }) {
                       <Badge variant="outline">Act No. {document.act_number}</Badge>
                     )}
                   </div>
-                  <h1 className="mt-1.5 text-2xl font-semibold leading-tight md:text-2xl">
+                  <h1 className="mt-0.5 text-[1.35rem] font-semibold leading-tight">
                     {document.title}
                   </h1>
-                  {document.short_title && document.short_title !== document.title && (
-                    <p className="mt-1 text-sm text-muted-foreground">
-                      {document.short_title}
-                    </p>
-                  )}
-                  <div className="mt-2 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground md:text-xs">
+                  <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground md:text-xs">
                     <span className="rounded-full border bg-muted/30 px-3 py-1">
                       {document.human_readable_id}
                     </span>
@@ -654,124 +878,84 @@ function DocumentContent({ id }: { id: string }) {
                         Commenced {formatDateOnly(document.commencement_date)}
                       </span>
                     )}
+                    {legalPath && (
+                      <span className="rounded-full border bg-muted/30 px-3 py-1">
+                        {legalPath}
+                      </span>
+                    )}
                   </div>
                 </div>
-              </div>
+              </>
+            )}
 
-              <Card className="w-full max-w-sm border-border/70 bg-muted/20">
-                <CardContent className="flex items-center justify-between gap-3 p-3.5">
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium">
-                      {documentIndexInTypeList >= 0 && contextualDocuments.length > 0
-                        ? `${documentIndexInTypeList + 1} of ${contextualDocuments.length} in this view`
-                        : `Browse ${collectionInfo?.collectionLabel?.toLowerCase() || "documents"}`}
-                    </p>
-                    <p className="text-xs text-muted-foreground sm:text-sm">
-                      Return to the same filtered results or keep moving through nearby documents.
-                    </p>
-                  </div>
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={returnTo || collectionInfo?.collectionHref || "/browse"}>
-                      {collectionInfo?.collectionLabel || "Browse"}
-                    </Link>
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
-
-            {/* Actions */}
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              <Button variant="ghost" size="sm" onClick={handleBackNavigation}>
-                  <ArrowLeft className="mr-2 h-4 w-4" />
-                  {browseBackLabel}
-              </Button>
-
-              {/* Save to Library */}
-              <SaveToCollectionButton
-                documentId={document.id}
-                itemType="document"
-                meta={{
-                  title: document.title,
-                  short_title: document.short_title,
-                  document_type: document.document_type,
-                  act_year: document.act_year,
-                  chapter: document.chapter,
-                }}
-                size="sm"
-              />
-              <Button variant="outline" size="sm" onClick={copyLink} className="hidden sm:inline-flex">
-                {copied ? (
-                  <>
-                    <Check className="mr-2 h-4 w-4" />
-                    Copied!
-                  </>
-                ) : (
-                  <>
-                    <Share2 className="mr-2 h-4 w-4" />
-                    Share
-                  </>
-                )}
-              </Button>
-
-              <Button variant="outline" size="sm" onClick={handlePrint} className="hidden sm:inline-flex">
-                <Printer className="mr-2 h-4 w-4" />
-                Print
-              </Button>
-
-              {/* Ask about document link */}
-              <Button variant="ghost" size="sm" asChild className="ml-auto hidden sm:inline-flex">
-                <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
-                  <MessageSquare className="mr-2 h-4 w-4" />
-                  Ask about this
-                </Link>
-              </Button>
-            </div>
-
-            {legalPath && (
-              <div className="mt-3 rounded-md border bg-muted/40 px-3 py-2 text-xs text-muted-foreground">
+            {legalPath && document.document_type === "judgment" && (
+              <div className="mt-1.5 rounded-md border bg-muted/40 px-3 py-1.5 text-xs text-muted-foreground">
                 <span className="font-medium text-foreground">Current section:</span> {legalPath}
               </div>
             )}
 
-            {(prevDocument || nextDocument) && (
-              <div className="mt-3 flex flex-wrap items-center gap-2 border-t pt-2.5">
-                {prevDocument ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={buildDocumentHref(prevDocument.id)}>
-                      <ArrowLeft className="mr-2 h-4 w-4" />
-                      Previous {typeConfig?.label || "Document"}
-                    </Link>
-                  </Button>
-                ) : null}
-                {nextDocument ? (
-                  <Button variant="outline" size="sm" asChild>
-                    <Link href={buildDocumentHref(nextDocument.id)}>
-                      Next {typeConfig?.label || "Document"}
-                      <ArrowRight className="ml-2 h-4 w-4" />
-                    </Link>
-                  </Button>
-                ) : null}
-              </div>
-            )}
+            </div>
           </div>
         </div>
 
         {/* Content - Format based on document type */}
-        <div id="document-main-content" className="flex-1 px-4 py-6 pb-32 md:px-6 md:pb-6">
-          <div className="mx-auto max-w-7xl">
+        <div id="document-main-content" className="flex-1 px-4 py-2 pb-28 md:px-6 md:pb-4">
+          <div
+            className={cn(
+              "mx-auto",
+              documentChatOpen
+                ? "max-w-none"
+                : "max-w-7xl"
+            )}
+          >
             {/* Judgments: Show only PDF */}
             {document.document_type === "judgment" && (
-              <div className="grid gap-5 xl:grid-cols-[minmax(0,1fr)_280px]">
+              <div>
                 <Card className="overflow-hidden">
                   <CardContent className="p-0">
-                    <div className="flex flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+                    <div className="flex flex-wrap items-center justify-between gap-2 border-b px-4 py-2">
                       <div>
-                        <p className="text-sm font-medium">Judgment reader</p>
-                        <p className="text-xs text-muted-foreground">
-                          PDF reading view with preserved case navigation.
-                        </p>
+                        <div className="flex flex-wrap items-center gap-2">
+                          <Badge className={cn(typeConfig?.className)}>
+                            {typeConfig?.label || document.document_type}
+                          </Badge>
+                          {document.publication_date && (
+                            <Badge variant="outline">
+                              {new Date(document.publication_date).getFullYear()}
+                            </Badge>
+                          )}
+                        </div>
+                        <h1 className="mt-0.5 text-[1.25rem] font-semibold leading-tight">
+                          {document.title}
+                        </h1>
+                        <div className="mt-0.5 flex flex-wrap gap-1.5 text-[11px] text-muted-foreground">
+                          {document.case_number && (
+                            <span className="rounded-full border bg-muted/30 px-2.5 py-0.5">
+                              {document.case_number}
+                            </span>
+                          )}
+                          <span className="rounded-full border bg-muted/30 px-2.5 py-0.5">
+                            {document.human_readable_id}
+                          </span>
+                        </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                        {prevDocument ? (
+                          <Button variant="outline" size="sm" className="h-8 px-2.5" asChild>
+                            <Link href={buildDocumentHref(prevDocument.id)}>
+                              <ArrowLeft className="mr-2 h-4 w-4" />
+                              Previous
+                            </Link>
+                          </Button>
+                        ) : null}
+                        {nextDocument ? (
+                          <Button variant="outline" size="sm" className="h-8 px-2.5" asChild>
+                            <Link href={buildDocumentHref(nextDocument.id)}>
+                              Next
+                              <ArrowRight className="ml-2 h-4 w-4" />
+                            </Link>
+                          </Button>
+                        ) : null}
                         {document.court_level && (
                           <Badge variant="outline">{document.court_level.replace(/_/g, " ")}</Badge>
                         )}
@@ -780,71 +964,13 @@ function DocumentContent({ id }: { id: string }) {
                         )}
                       </div>
                     </div>
-                    <iframe
-                      src={embeddedPdfUrl}
-                      className="h-[780px] w-full"
-                      title={`PDF: ${document.title}`}
+                    <PdfReader
+                      fileUrl={pdfUrl}
+                      title={document.title}
+                      className="h-[calc(100vh-196px)] min-h-[780px] border-0 shadow-none"
                     />
                   </CardContent>
                 </Card>
-
-                <aside className="space-y-4">
-                  <Card>
-                    <CardContent className="space-y-3 p-4">
-                      <h3 className="text-sm font-semibold">Case Snapshot</h3>
-                      <div className="space-y-2 text-sm">
-                        {document.case_number && (
-                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
-                            <span className="text-muted-foreground">Case number</span>
-                            <span className="min-w-0 break-words text-right font-medium">
-                              {document.case_number}
-                            </span>
-                          </div>
-                        )}
-                        {document.court_level && (
-                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
-                            <span className="text-muted-foreground">Court</span>
-                            <span className="min-w-0 break-words text-right font-medium">
-                              {document.court_level.replace(/_/g, " ")}
-                            </span>
-                          </div>
-                        )}
-                        {document.publication_date && (
-                          <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
-                            <span className="text-muted-foreground">Date</span>
-                            <span className="min-w-0 break-words text-right font-medium">
-                              {formatDateOnly(document.publication_date)}
-                            </span>
-                          </div>
-                        )}
-                        <div className="grid grid-cols-[minmax(0,88px)_minmax(0,1fr)] items-start gap-3">
-                          <span className="text-muted-foreground">Document ID</span>
-                          <span className="min-w-0 break-all text-right font-medium">
-                            {document.human_readable_id}
-                          </span>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-
-                  <Card>
-                    <CardContent className="space-y-2 p-4">
-                      <h3 className="text-sm font-semibold">Quick Actions</h3>
-                      <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                        <Link href={returnTo || collectionInfo?.collectionHref || "/judgments"}>
-                          <ArrowLeft className="mr-2 h-4 w-4" />
-                          Back to {collectionInfo?.collectionLabel || "judgments"}
-                        </Link>
-                      </Button>
-                      <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                        <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
-                          <MessageSquare className="mr-2 h-4 w-4" />
-                          Ask AI about this judgment
-                        </Link>
-                      </Button>
-                    </CardContent>
-                  </Card>
-                </aside>
               </div>
             )}
 
@@ -853,96 +979,53 @@ function DocumentContent({ id }: { id: string }) {
               document.document_type === "regulation" ||
               document.document_type === "constitution") && (
                 <>
-                  {/* Sticky Reading Controls */}
-                  <div className="z-30 mb-4 rounded-lg border bg-background px-3 py-2 shadow-sm">
-                    <div className="flex flex-wrap items-center justify-between gap-2">
-                      <span className="text-sm text-muted-foreground">
-                      Text size:
-                      </span>
-                      <div className="flex items-center gap-1">
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={fontSize === "small" ? "secondary" : "ghost"}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setFontSize("small")}
-                            >
-                              <span className="text-xs">A</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Small text</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={fontSize === "medium" ? "secondary" : "ghost"}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setFontSize("medium")}
-                            >
-                              <span className="text-sm">A</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Medium text</TooltipContent>
-                        </Tooltip>
-                        <Tooltip>
-                          <TooltipTrigger asChild>
-                            <Button
-                              variant={fontSize === "large" ? "secondary" : "ghost"}
-                              size="icon"
-                              className="h-8 w-8"
-                              onClick={() => setFontSize("large")}
-                            >
-                              <span className="text-base">A</span>
-                            </Button>
-                          </TooltipTrigger>
-                          <TooltipContent>Large text</TooltipContent>
-                        </Tooltip>
-                      </div>
-
-                      <Sheet open={mobileTocOpen} onOpenChange={setMobileTocOpen}>
-                        <SheetTrigger asChild>
-                          <Button variant="outline" size="sm" className="lg:hidden">
-                            <List className="mr-2 h-4 w-4" />
-                            Contents
-                          </Button>
-                        </SheetTrigger>
-                        <SheetContent side="left" className="w-[90vw] max-w-sm p-0">
-                          <SheetHeader className="px-4 py-3 border-b">
-                            <SheetTitle>Table of Contents</SheetTitle>
-                            <SheetDescription>
-                              Jump to any section in this document.
-                            </SheetDescription>
-                          </SheetHeader>
-                          <div className="p-4">
-                            {document.hierarchical_structure && (
-                              <TableOfContents
-                                node={document.hierarchical_structure}
-                                onSectionSelect={(sectionId) => {
-                                  setManualHighlightId(sectionId);
-                                  setMobileTocOpen(false);
-                                }}
-                                onActiveSectionChange={setActiveSectionId}
-                                className="h-[calc(100vh-140px)] w-full"
-                              />
-                            )}
-                          </div>
-                        </SheetContent>
-                      </Sheet>
-                    </div>
+                  <div className="mb-3 flex justify-end lg:hidden">
+                    <Sheet open={mobileTocOpen} onOpenChange={setMobileTocOpen}>
+                      <SheetTrigger asChild>
+                        <Button variant="outline" size="sm">
+                          <List className="mr-2 h-4 w-4" />
+                          Contents
+                        </Button>
+                      </SheetTrigger>
+                      <SheetContent side="left" className="w-[90vw] max-w-sm p-0">
+                        <SheetHeader className="border-b px-4 py-3">
+                          <SheetTitle>Table of Contents</SheetTitle>
+                          <SheetDescription>
+                            Jump to any section in this document.
+                          </SheetDescription>
+                        </SheetHeader>
+                        <div className="p-4">
+                          {document.hierarchical_structure && (
+                            <TableOfContents
+                              node={document.hierarchical_structure}
+                              onSectionSelect={(sectionId) => {
+                                setManualHighlightId(sectionId);
+                                setMobileTocOpen(false);
+                              }}
+                              onActiveSectionChange={setActiveSectionId}
+                              className="h-[calc(100vh-140px)] w-full"
+                            />
+                          )}
+                        </div>
+                      </SheetContent>
+                    </Sheet>
                   </div>
 
                   {/* Main content with ToC + Reader + Context rail */}
-                  <div className="grid gap-5 lg:grid-cols-[260px_minmax(0,1fr)] xl:grid-cols-[260px_minmax(0,1fr)_260px]">
+                  <div
+                    className={cn(
+                      "grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]",
+                      relatedDocuments.length > 0 && "xl:grid-cols-[260px_minmax(0,1fr)_240px]"
+                    )}
+                  >
                     {/* Table of Contents - sticky sidebar */}
                     {document.hierarchical_structure && (
-                      <div className="hidden lg:block sticky top-20 self-start">
+                      <div className="hidden lg:block sticky top-[148px] self-start">
                         <TableOfContents
                           node={document.hierarchical_structure}
                           onSectionSelect={setManualHighlightId}
                           onActiveSectionChange={setActiveSectionId}
-                          className="shadow-sm"
+                          className="max-h-[calc(100vh-164px)] overflow-y-auto shadow-sm"
                         />
                       </div>
                     )}
@@ -964,7 +1047,7 @@ function DocumentContent({ id }: { id: string }) {
                               publication_date: document.publication_date,
                               commencement_date: document.commencement_date,
                             }}
-                            fontSize={fontSize}
+                            fontSize="medium"
                             highlightedSectionId={highlightedSectionId}
                             showDocumentHeader={false}
                           />
@@ -989,57 +1072,11 @@ function DocumentContent({ id }: { id: string }) {
                       </CardContent>
                     </Card>
 
-                    {/* Enterprise context rail */}
-                    <aside className="hidden xl:block sticky top-20 self-start space-y-4">
-                      <Card>
-                        <CardContent className="p-4 space-y-3">
-                          <h3 className="text-sm font-semibold">Document Trust</h3>
-                          <div className="space-y-2 text-sm">
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Status</span>
-                              <span className="font-medium text-green-600 dark:text-green-400">
-                                {document.status
-                                  ? document.status.replace(/_/g, " ")
-                                  : "Published"}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Version</span>
-                              <span className="font-medium">
-                                {document.version_number || "Current"}
-                              </span>
-                            </div>
-                            <div className="flex items-center justify-between">
-                              <span className="text-muted-foreground">Jurisdiction</span>
-                              <span className="font-medium">
-                                {document.jurisdiction || "UG"}
-                              </span>
-                            </div>
-                          </div>
-                        </CardContent>
-                      </Card>
-
-                      <Card>
-                        <CardContent className="p-4 space-y-2">
-                          <h3 className="text-sm font-semibold">Quick Actions</h3>
-                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                            <Link href={returnTo || collectionInfo?.collectionHref || "/browse"}>
-                              <ArrowLeft className="mr-2 h-4 w-4" />
-                              Back to {collectionInfo?.collectionLabel || "results"}
-                            </Link>
-                          </Button>
-                          <Button variant="outline" size="sm" className="w-full justify-start" asChild>
-                            <Link href={`/chat?doc=${encodeURIComponent(document.human_readable_id)}`}>
-                              <MessageSquare className="mr-2 h-4 w-4" />
-                              Ask AI about this document
-                            </Link>
-                          </Button>
-                        </CardContent>
-                      </Card>
-
-                      {relatedDocuments.length > 0 && (
+                    {/* Related documents rail */}
+                    {relatedDocuments.length > 0 && (
+                      <aside className="hidden xl:block sticky top-[148px] self-start">
                         <Card>
-                          <CardContent className="p-4 space-y-2">
+                          <CardContent className="max-h-[calc(100vh-164px)] overflow-y-auto p-4 space-y-2">
                             <h3 className="text-sm font-semibold">
                               Related {typeConfig?.label || "Documents"}
                             </h3>
@@ -1066,8 +1103,8 @@ function DocumentContent({ id }: { id: string }) {
                             </div>
                           </CardContent>
                         </Card>
-                      )}
-                    </aside>
+                      </aside>
+                    )}
                   </div>
                 </>
               )}
@@ -1160,6 +1197,94 @@ function DocumentContent({ id }: { id: string }) {
             </Card>
           </div>
         </div>
+
+        <CitationProvider>
+          <div className="hidden xl:block">
+            <aside
+              className={cn(
+                "fixed bottom-0 right-0 top-20 z-40 transition-[width,transform,opacity] duration-200",
+                documentChatOpen
+                  ? "translate-x-0 opacity-100"
+                  : "pointer-events-none translate-x-8 opacity-0"
+              )}
+              style={{ width: `${activeDesktopChatWidth}px` }}
+            >
+              {document && (
+                <div className="relative h-full">
+                  <button
+                    type="button"
+                    aria-label="Resize document chat panel"
+                    onPointerDown={() => setIsResizingDocumentChat(true)}
+                    className="absolute bottom-0 left-0 top-0 z-50 flex w-3 -translate-x-1/2 cursor-col-resize items-center justify-center"
+                  >
+                    <span
+                      className={cn(
+                        "h-20 w-1 rounded-full bg-border/80 transition-colors",
+                        isResizingDocumentChat && "bg-primary"
+                      )}
+                    />
+                  </button>
+                  <DocumentChatPanel
+                    document={document}
+                    input={documentChat.input}
+                    messages={documentChat.messages}
+                    conversationId={documentChat.conversationId}
+                    isLoading={documentChat.isLoading}
+                    isGenerating={documentChat.isGenerating}
+                    error={documentChat.error}
+                    starterPrompts={documentChat.starterPrompts}
+                    onInputChange={documentChat.setInput}
+                    onSend={documentChat.sendMessage}
+                    onStop={documentChat.stop}
+                    onSelectCitation={(citation) =>
+                      handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
+                    }
+                    onSelectFollowup={(question) => void documentChat.sendMessage(question)}
+                    onClose={() => setDocumentChatOpen(false)}
+                    className="h-[calc(100vh-5rem)] rounded-none border-y-0 border-r-0 shadow-xl"
+                  />
+                </div>
+              )}
+            </aside>
+          </div>
+
+          {!isDesktopDocumentChat && (
+            <Sheet open={documentChatOpen} onOpenChange={setDocumentChatOpen}>
+              <SheetContent side="right" className="w-full p-0 sm:max-w-lg">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>
+                    {document ? `Ask AI about ${document.title}` : "Ask AI about this document"}
+                  </SheetTitle>
+                  <SheetDescription>
+                    Chat with the current document while staying on the document page.
+                  </SheetDescription>
+                </SheetHeader>
+                {document && (
+                  <DocumentChatPanel
+                    document={document}
+                    input={documentChat.input}
+                    messages={documentChat.messages}
+                    conversationId={documentChat.conversationId}
+                    isLoading={documentChat.isLoading}
+                    isGenerating={documentChat.isGenerating}
+                    error={documentChat.error}
+                    starterPrompts={documentChat.starterPrompts}
+                    onInputChange={documentChat.setInput}
+                    onSend={documentChat.sendMessage}
+                    onStop={documentChat.stop}
+                    onSelectCitation={(citation) =>
+                      handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
+                    }
+                    onSelectFollowup={(question) => void documentChat.sendMessage(question)}
+                    onClose={() => setDocumentChatOpen(false)}
+                    className="h-full rounded-none border-0"
+                  />
+                )}
+              </SheetContent>
+            </Sheet>
+          )}
+          <ResponsiveSourceView />
+        </CitationProvider>
       </div>
     </TooltipProvider>
   );

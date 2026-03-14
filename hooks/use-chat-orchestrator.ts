@@ -29,6 +29,7 @@ export function useChatOrchestrator() {
     const { refresh: refreshEntitlements } = useEntitlements();
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q");
+    const initialConversationId = searchParams.get("conversation");
 
     // Global Chat Store
     const {
@@ -221,6 +222,11 @@ export function useChatOrchestrator() {
                         message: text,
                         conversation_id: activeConvId,
                         conversation_history: conversationHistory,
+                        document_scope:
+                            useChatStore
+                                .getState()
+                                .conversations.find((conversation) => conversation.id === activeConvId)
+                                ?.scope || undefined,
                         search_mode: "hybrid",
                         max_context_chunks: 10,
                         temperature: 0.3,
@@ -468,6 +474,16 @@ export function useChatOrchestrator() {
             setTimeout(() => handleSend(initialQuery, id), 100);
         }
     }, [initialQuery, currentConversationId, createConversation, handleSend]);
+
+    useEffect(() => {
+        if (!initialConversationId || currentConversationId === initialConversationId) {
+            return;
+        }
+        setCurrentConversation(initialConversationId);
+        if (isAuthenticated) {
+            fetchConversation(initialConversationId).catch(() => undefined);
+        }
+    }, [initialConversationId, currentConversationId, setCurrentConversation, isAuthenticated, fetchConversation]);
 
 
     // 4. Regenerate / Edit Wrappers

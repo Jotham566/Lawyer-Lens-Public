@@ -5,7 +5,7 @@
  * These endpoints only return validated/published documents.
  */
 
-import { apiGet, getApiBaseUrl } from "./client";
+import { apiGet } from "./client";
 import type {
   Document,
   DocumentFilters,
@@ -68,7 +68,7 @@ export async function getDocumentContent(
  * Get the URL for a document's PDF (public endpoint)
  */
 export function getDocumentPdfUrl(id: string): string {
-  return `${getApiBaseUrl()}/public/documents/${id}/pdf`;
+  return `/api/documents/${id}/pdf`;
 }
 
 /**

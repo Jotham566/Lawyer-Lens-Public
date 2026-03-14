@@ -3,6 +3,7 @@
 import { Suspense } from "react";
 import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import {
@@ -132,6 +133,17 @@ function ChatContent() {
 
             {/* Messages */}
             <div className="flex-1 overflow-hidden min-h-0" role="region" aria-label="Chat messages" aria-live="polite">
+              {state.currentConversation?.scope && (
+                <div className="border-b bg-muted/30 px-4 py-3">
+                  <div className="flex flex-wrap items-center gap-2 text-sm">
+                    <Badge variant="secondary">Scoped chat</Badge>
+                    <span className="font-medium">This conversation is pinned to one document.</span>
+                    <span className="text-muted-foreground">
+                      Document ID: {state.currentConversation.scope.document_id}
+                    </span>
+                  </div>
+                </div>
+              )}
               {!state.currentConversation || state.currentConversation.messages.length === 0 ? (
                 <div className="h-full overflow-y-auto">
                   <div className="h-full">

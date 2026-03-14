@@ -264,10 +264,16 @@ export interface ChatSource {
   chunk_id?: string;  // Chunk ID for precise expand-source lookup
 }
 
+export interface DocumentScope {
+  document_id: string;
+  mode: "strict" | "document_plus_related";
+}
+
 export interface ChatRequest {
   message: string;
   conversation_id?: string;
   conversation_history?: Array<{ role: string; content: string }>;
+  document_scope?: DocumentScope;
   search_mode?: "keyword" | "semantic" | "hybrid";
   max_context_chunks?: number;
   temperature?: number;
@@ -349,6 +355,7 @@ export interface ConversationSummary {
   created_at: string;
   updated_at: string;
   message_count: number;
+  scope?: DocumentScope | null;
 }
 
 export interface ConversationListResponse {
@@ -360,6 +367,7 @@ export interface ConversationDetail {
   title: string | null;
   created_at: string;
   updated_at: string;
+  scope?: DocumentScope | null;
   messages: Array<{
     id: string;
     role: "user" | "assistant";

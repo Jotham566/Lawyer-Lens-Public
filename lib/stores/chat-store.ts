@@ -13,6 +13,7 @@ import type {
   ChatSource,
   VerificationStatus,
   ConfidenceInfo,
+  DocumentScope,
 } from "@/lib/api/types";
 import { getConversations, getConversation, deleteConversation as deleteConversationApi, updateConversation } from "@/lib/api/chat";
 import { APIError } from "@/lib/api/client";
@@ -23,6 +24,7 @@ export interface Conversation {
   messages: ChatMessage[];
   createdAt: string;
   updatedAt: string;
+  scope?: DocumentScope | null;
   isLocalOnly?: boolean;
   // New fields for better management
   isArchived?: boolean;
@@ -512,6 +514,7 @@ export const useChatStore = create<ChatState>()(
                     isStarred: backendConv.is_starred ?? localConv.isStarred,
                     isArchived: backendConv.is_archived ?? localConv.isArchived,
                     updatedAt: backendConv.updated_at,
+                    scope: backendConv.scope ?? localConv.scope,
                     // Don't overwrite messages if we have them locally and they might be newer/optimistic
                     // But if we have no messages locally and backend does (unlikely for list endpoint),
                     // we'll fetch them in detail later.
@@ -535,6 +538,7 @@ export const useChatStore = create<ChatState>()(
               messages: [],
               createdAt: summary.created_at,
               updatedAt: summary.updated_at,
+              scope: summary.scope ?? null,
               isLocalOnly: false,
               isArchived: summary.is_archived ?? false,
               isStarred: summary.is_starred ?? false,
@@ -589,6 +593,7 @@ export const useChatStore = create<ChatState>()(
                 ...c,
                 title: detail.title || c.title,
                 updatedAt: detail.updated_at,
+                scope: detail.scope ?? c.scope ?? null,
                 isLocalOnly: false,
                 messages: messages
               };

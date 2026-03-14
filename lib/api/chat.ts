@@ -42,6 +42,12 @@ function sanitizeChatRequest(request: ChatRequest): ChatRequest {
     message: cleanMessage,
     conversation_id: cleanConversationId,
     conversation_history: cleanHistory,
+    document_scope: request.document_scope
+      ? {
+          document_id: request.document_scope.document_id.trim(),
+          mode: request.document_scope.mode,
+        }
+      : undefined,
     search_mode: request.search_mode?.trim?.().toLowerCase() as ChatRequest["search_mode"] | undefined,
   };
 }

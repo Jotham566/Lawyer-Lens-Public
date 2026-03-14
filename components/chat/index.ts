@@ -1,5 +1,11 @@
 export { MarkdownRenderer } from "./markdown-renderer";
-export { TrustBadge } from "./trust-indicator";
+export {
+  ConfidenceFactors,
+  TrustBadge,
+  TrustIndicatorPanel,
+  UncertaintyDisclaimer,
+} from "./trust-indicator";
+export { SourceTransparency, SourceTransparencyInline } from "./source-transparency";
 export {
   ToolsDropdown,
   ActiveToolIndicator,
