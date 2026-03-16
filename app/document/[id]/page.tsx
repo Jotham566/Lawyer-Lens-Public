@@ -1236,10 +1236,14 @@ function DocumentContent({ id }: { id: string }) {
                     isLoading={documentChat.isLoading}
                     isGenerating={documentChat.isGenerating}
                     error={documentChat.error}
+                    copiedId={documentChat.copiedId}
                     starterPrompts={documentChat.starterPrompts}
                     onInputChange={documentChat.setInput}
                     onSend={documentChat.sendMessage}
                     onStop={documentChat.stop}
+                    onCopy={documentChat.copyMessage}
+                    onRegenerate={documentChat.regenerateMessage}
+                    onFeedback={documentChat.submitFeedback}
                     onSelectCitation={(citation) =>
                       handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
                     }
@@ -1272,10 +1276,14 @@ function DocumentContent({ id }: { id: string }) {
                     isLoading={documentChat.isLoading}
                     isGenerating={documentChat.isGenerating}
                     error={documentChat.error}
+                    copiedId={documentChat.copiedId}
                     starterPrompts={documentChat.starterPrompts}
                     onInputChange={documentChat.setInput}
                     onSend={documentChat.sendMessage}
                     onStop={documentChat.stop}
+                    onCopy={documentChat.copyMessage}
+                    onRegenerate={documentChat.regenerateMessage}
+                    onFeedback={documentChat.submitFeedback}
                     onSelectCitation={(citation) =>
                       handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
                     }

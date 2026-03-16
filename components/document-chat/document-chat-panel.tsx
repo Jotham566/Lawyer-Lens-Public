@@ -4,9 +4,12 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
   ArrowUpRight,
+  Check,
   ChevronDown,
+  Copy,
   FileText,
   MessageSquare,
+  RefreshCw,
   Send,
   Square,
   X,
@@ -24,8 +27,9 @@ import {
   TrustIndicatorPanel,
   UncertaintyDisclaimer,
 } from "@/components/chat";
+import { MessageFeedback } from "@/components/chat/message-feedback";
 import { cn } from "@/lib/utils";
-import type { ChatMessage, ChatSource, Document } from "@/lib/api/types";
+import type { ChatFeedbackType, ChatMessage, ChatSource, Document } from "@/lib/api/types";
 
 interface DocumentChatPanelProps {
   document: Document;
@@ -35,10 +39,19 @@ interface DocumentChatPanelProps {
   isLoading: boolean;
   isGenerating: boolean;
   error: string | null;
+  copiedId: string | null;
   starterPrompts: string[];
   onInputChange: (value: string) => void;
   onSend: (message?: string) => Promise<void>;
   onStop: () => void;
+  onCopy: (messageId: string, content: string) => Promise<void>;
+  onRegenerate: (messageIndex: number) => Promise<void>;
+  onFeedback: (payload: {
+    messageId: string;
+    type: ChatFeedbackType;
+    reason?: string;
+    timestamp: string;
+  }) => Promise<void>;
   onSelectCitation?: (citation: ChatSource) => void;
   onSelectFollowup?: (question: string) => void;
   onClose?: () => void;
@@ -75,12 +88,27 @@ function SourceChip({
 
 function MessageBubble({
   message,
+  index,
   isStreaming = false,
+  copiedId,
+  onCopy,
+  onRegenerate,
+  onFeedback,
   onSelectCitation,
   onSelectFollowup,
 }: {
   message: ChatMessage;
+  index: number;
   isStreaming?: boolean;
+  copiedId: string | null;
+  onCopy: (messageId: string, content: string) => Promise<void>;
+  onRegenerate: (messageIndex: number) => Promise<void>;
+  onFeedback: (payload: {
+    messageId: string;
+    type: ChatFeedbackType;
+    reason?: string;
+    timestamp: string;
+  }) => Promise<void>;
   onSelectCitation?: (citation: ChatSource) => void;
   onSelectFollowup?: (question: string) => void;
 }) {
@@ -88,15 +116,16 @@ function MessageBubble({
   const [showTrustDetails, setShowTrustDetails] = useState(
     message.verification?.level === "unverified"
   );
+  const copyKey = message.id || `${message.role}-${index}`;
 
   return (
     <div className={cn("flex", isAssistant ? "justify-start" : "justify-end")}>
       <div
         className={cn(
-          "max-w-[96%] rounded-2xl px-4 py-3 text-sm shadow-sm",
+          "group max-w-[96%] text-sm",
           isAssistant
-            ? "border bg-card text-card-foreground"
-            : "bg-slate-900 text-slate-50 dark:bg-slate-100 dark:text-slate-900 selection:bg-white/25 dark:selection:bg-slate-900/20"
+            ? "rounded-2xl border bg-card px-4 py-3 text-card-foreground shadow-sm"
+            : "space-y-2"
         )}
       >
         {isAssistant ? (
@@ -187,11 +216,68 @@ function MessageBubble({
                 </div>
               </div>
             )}
+            {message.content && (
+              <div className="flex items-center gap-2 border-t pt-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7"
+                  onClick={() => void onCopy(copyKey, message.content)}
+                >
+                  {copiedId === copyKey ? (
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+                {!isStreaming && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className="h-7 w-7"
+                    onClick={() => void onRegenerate(index)}
+                  >
+                    <RefreshCw className="h-3.5 w-3.5" />
+                  </Button>
+                )}
+                {!isStreaming && (
+                  <MessageFeedback
+                    messageId={message.id || copyKey}
+                    disabled={!message.id}
+                    disabledReason="Feedback is available once this response is fully saved."
+                    onFeedback={onFeedback}
+                  />
+                )}
+              </div>
+            )}
           </div>
         ) : (
-          <p className="whitespace-pre-wrap leading-relaxed selection:text-inherit">
-            {message.content}
-          </p>
+          <div className="space-y-2">
+            <div className="inline-block rounded-3xl bg-slate-200 px-5 py-3.5 text-sm text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100">
+              <p className="whitespace-pre-wrap leading-relaxed selection:text-inherit">
+                {message.content}
+              </p>
+            </div>
+            {message.content && (
+              <div className="flex justify-end px-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-7 w-7 opacity-60 transition-opacity hover:opacity-100 group-hover:opacity-100"
+                  onClick={() => void onCopy(copyKey, message.content)}
+                >
+                  {copiedId === copyKey ? (
+                    <Check className="h-3.5 w-3.5 text-green-500" />
+                  ) : (
+                    <Copy className="h-3.5 w-3.5" />
+                  )}
+                </Button>
+              </div>
+            )}
+          </div>
         )}
       </div>
     </div>
@@ -206,10 +292,14 @@ export function DocumentChatPanel({
   isLoading,
   isGenerating,
   error,
+  copiedId,
   starterPrompts,
   onInputChange,
   onSend,
   onStop,
+  onCopy,
+  onRegenerate,
+  onFeedback,
   onSelectCitation,
   onSelectFollowup,
   onClose,
@@ -303,7 +393,12 @@ export function DocumentChatPanel({
                 <MessageBubble
                   key={message.id || `${message.role}-${index}`}
                   message={message}
+                  index={index}
                   isStreaming={isGenerating && index === messages.length - 1}
+                  copiedId={copiedId}
+                  onCopy={onCopy}
+                  onRegenerate={onRegenerate}
+                  onFeedback={onFeedback}
                   onSelectCitation={onSelectCitation}
                   onSelectFollowup={onSelectFollowup}
                 />

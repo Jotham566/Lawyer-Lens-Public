@@ -1,31 +1,44 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type {
   ChatMessage,
+  ChatFeedbackType,
   ChatSource,
   ConfidenceInfo,
+  ConversationDetail,
+  ConversationSummary,
   Document,
   VerificationStatus,
 } from "@/lib/api/types";
-import { streamChatWithTypewriter } from "@/lib/api";
+import { streamChatWithTypewriter, submitChatFeedback } from "@/lib/api";
+import { getConversation, getConversations } from "@/lib/api/chat";
 
 function buildStarterPrompts(document: Document | null): string[] {
   if (!document) return [];
   if (document.document_type === "judgment") {
     return [
-      "Summarize the holding in this judgment.",
+      "Summarize this judgment.",
       "What issues did the court decide?",
       "What was the court's reasoning?",
       "What is the practical effect of this judgment?",
     ];
   }
 
+  if (document.document_type === "act") {
+    return [
+      "What does this Act regulate and who does it apply to?",
+      "What are the main obligations or compliance duties in this Act?",
+      "What penalties, offences, or remedies should I know about?",
+      "Which sections matter most in practice?",
+    ];
+  }
+
   return [
-    "Summarize this document.",
+    "What does this document regulate?",
     "What are the key obligations in this document?",
-    "What penalties or remedies does this document provide?",
-    "Explain the most important sections in this document.",
+    "What penalties, remedies, or enforcement rules are included?",
+    "Which sections matter most in practice?",
   ];
 }
 
@@ -71,32 +84,92 @@ export function useDocumentChat(document: Document | null) {
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [copiedId, setCopiedId] = useState<string | null>(null);
   const abortControllerRef = useRef<AbortController | null>(null);
+  const restoreRequestRef = useRef(0);
 
   const starterPrompts = useMemo(() => buildStarterPrompts(document), [document]);
 
-  const sendMessage = useCallback(
-    async (rawMessage?: string) => {
-      const text = (rawMessage ?? input).trim();
-      if (!document || !text || isLoading) return;
+  useEffect(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setInput("");
+    setMessages([]);
+    setConversationId(null);
+    setIsLoading(false);
+    setIsGenerating(false);
+    setError(null);
+    setCopiedId(null);
 
-      const userMessage: ChatMessage = {
-        id: `user-${Date.now()}`,
-        role: "user",
-        content: text,
-        timestamp: new Date().toISOString(),
-      };
+    if (!document?.id) {
+      return;
+    }
+
+    const requestId = ++restoreRequestRef.current;
+    let cancelled = false;
+
+    const restoreScopedConversation = async () => {
+      try {
+        const { conversations } = await getConversations(100, 0);
+        if (cancelled || restoreRequestRef.current !== requestId) return;
+
+        const scopedConversation = conversations
+          .filter(
+            (conversation: ConversationSummary) =>
+              !conversation.is_archived &&
+              conversation.scope?.document_id === document.id
+          )
+          .sort(
+            (left: ConversationSummary, right: ConversationSummary) =>
+              new Date(right.updated_at).getTime() - new Date(left.updated_at).getTime()
+          )[0];
+
+        if (!scopedConversation) return;
+
+        const detail = await getConversation(scopedConversation.id);
+        if (cancelled || restoreRequestRef.current !== requestId) return;
+        if (detail.scope?.document_id !== document.id) return;
+
+        setConversationId(detail.id);
+        setMessages(
+          detail.messages.map((message: ConversationDetail["messages"][number]) => ({
+            id: message.id,
+            role: message.role,
+            content: message.content,
+            timestamp: message.timestamp,
+            sources: message.citations,
+            verification: message.verification || undefined,
+            confidence_info: message.confidence_info || undefined,
+            provider: message.provider || undefined,
+            tokens_used: message.tokens_used,
+          }))
+        );
+      } catch (restoreError) {
+        console.error("Failed to restore document chat conversation:", restoreError);
+      }
+    };
+
+    void restoreScopedConversation();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [document?.id]);
+
+  const runDocumentScopedStream = useCallback(
+    async (text: string, visibleMessages: ChatMessage[]) => {
+      if (!document) return;
+
       const assistantPlaceholder = createAssistantPlaceholder();
-      const historyBeforeSend = [...messages, userMessage].map((message) => ({
+      const historyBeforeSend = visibleMessages.map((message) => ({
         role: message.role,
         content: message.content,
       }));
 
-      setInput("");
       setError(null);
       setIsLoading(true);
       setIsGenerating(true);
-      setMessages((current) => [...current, userMessage, assistantPlaceholder]);
+      setMessages([...visibleMessages, assistantPlaceholder]);
 
       abortControllerRef.current?.abort();
       const controller = new AbortController();
@@ -233,7 +306,69 @@ export function useDocumentChat(document: Document | null) {
         setIsLoading(false);
       }
     },
-    [conversationId, document, input, isLoading, messages]
+    [conversationId, document]
+  );
+
+  const sendMessage = useCallback(
+    async (rawMessage?: string) => {
+      const text = (rawMessage ?? input).trim();
+      if (!document || !text || isLoading) return;
+
+      const userMessage: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: text,
+        timestamp: new Date().toISOString(),
+      };
+
+      setInput("");
+      await runDocumentScopedStream(text, [...messages, userMessage]);
+    },
+    [document, input, isLoading, messages, runDocumentScopedStream]
+  );
+
+  const regenerateMessage = useCallback(
+    async (assistantIndex: number) => {
+      if (isLoading || assistantIndex <= 0) return;
+
+      const assistantMessage = messages[assistantIndex];
+      const userMessage = messages[assistantIndex - 1];
+
+      if (!assistantMessage || assistantMessage.role !== "assistant") return;
+      if (!userMessage || userMessage.role !== "user") return;
+
+      const retainedMessages = messages.slice(0, assistantIndex);
+      await runDocumentScopedStream(userMessage.content, retainedMessages);
+    },
+    [isLoading, messages, runDocumentScopedStream]
+  );
+
+  const copyMessage = useCallback(async (messageId: string, content: string) => {
+    await navigator.clipboard.writeText(content);
+    setCopiedId(messageId);
+    window.setTimeout(() => setCopiedId((current) => (current === messageId ? null : current)), 2000);
+  }, []);
+
+  const submitFeedback = useCallback(
+    async (payload: {
+      messageId: string;
+      type: ChatFeedbackType;
+      reason?: string;
+      timestamp: string;
+    }) => {
+      await submitChatFeedback({
+        message_id: payload.messageId,
+        feedback_type: payload.type,
+        reason: payload.reason,
+        metadata: {
+          submitted_at: payload.timestamp,
+          surface: "document_chat",
+          document_id: document?.id,
+          conversation_id: conversationId,
+        },
+      });
+    },
+    [conversationId, document?.id]
   );
 
   const stop = useCallback(() => {
@@ -251,8 +386,12 @@ export function useDocumentChat(document: Document | null) {
     isLoading,
     isGenerating,
     error,
+    copiedId,
     starterPrompts,
     sendMessage,
+    regenerateMessage,
+    copyMessage,
+    submitFeedback,
     stop,
   };
 }
