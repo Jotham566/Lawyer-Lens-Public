@@ -148,7 +148,8 @@ export class APIError extends Error {
   ) {
     // Try to extract message from backend APIError format
     const backendError = data as BackendAPIError | undefined;
-    const message = backendError?.message || `API Error: ${status} ${statusText}`;
+    const validationMessage = extractValidationMessage(data);
+    const message = backendError?.message || validationMessage || `API Error: ${status} ${statusText}`;
     super(message);
     this.name = "APIError";
 
@@ -352,6 +353,27 @@ function isBackendAPIError(data: unknown): data is BackendAPIError {
     "error_code" in data &&
     "message" in data
   );
+}
+
+function extractValidationMessage(data: unknown): string | null {
+  if (typeof data !== "object" || data === null || !("detail" in data)) {
+    return null;
+  }
+
+  const detail = (data as { detail?: unknown }).detail;
+  if (!Array.isArray(detail) || detail.length === 0) {
+    return null;
+  }
+
+  const firstIssue = detail[0];
+  if (typeof firstIssue !== "object" || firstIssue === null) {
+    return null;
+  }
+
+  const issue = firstIssue as { loc?: unknown; msg?: unknown };
+  const path = Array.isArray(issue.loc) ? issue.loc.join(".") : "request";
+  const message = typeof issue.msg === "string" ? issue.msg : "Validation error";
+  return `${path}: ${message}`;
 }
 
 /**

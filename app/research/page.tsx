@@ -275,6 +275,24 @@ function ResearchContent() {
     setError(null);
 
     try {
+      const topicsSource = editedTopics.length > 0
+        ? editedTopics
+        : session.research_brief.topics?.map((topic) => ({
+            id: topic.id,
+            title: topic.title,
+            description: topic.description || "",
+            keywords: topic.keywords || [],
+            priority: topic.priority || 1,
+          })) || [];
+
+      const normalizedTopics = topicsSource.map((topic, index) => ({
+        title: topic.title,
+        description: topic.description || "",
+        keywords: topic.keywords || [],
+        // Reindex priorities defensively so edited/generated briefs stay valid.
+        priority: index + 1,
+      }));
+
       // Use edited values if in edit mode, otherwise use original brief
       const briefRequest: ApproveBriefRequest = {
         brief: {
@@ -283,17 +301,7 @@ function ResearchContent() {
           jurisdictions: editedJurisdictions.length > 0 ? editedJurisdictions : ["Uganda"],
           document_types: editedDocTypes.length > 0 ? editedDocTypes : ["legislation", "judgment"],
           time_scope: editedTimeScope || "current",
-          topics: editedTopics.length > 0 ? editedTopics.map((topic) => ({
-            title: topic.title,
-            description: topic.description || "",
-            keywords: topic.keywords || [],
-            priority: topic.priority || 1,
-          })) : session.research_brief.topics?.map((topic) => ({
-            title: topic.title,
-            description: topic.description || "",
-            keywords: topic.keywords || [],
-            priority: topic.priority || 1,
-          })) || [],
+          topics: normalizedTopics,
           report_format: editedReportFormat || "comprehensive",
           include_recommendations: session.research_brief.include_recommendations ?? true,
         },
