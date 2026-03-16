@@ -424,6 +424,10 @@ function DocumentContent({ id }: { id: string }) {
       .slice(0, 5);
   }, [contextualDocuments, document]);
 
+  const showRelatedDocumentsRail =
+    relatedDocuments.length > 0 &&
+    !(document?.document_type === "act" && documentChatOpen);
+
   const documentIndexInTypeList = useMemo(() => {
     if (!contextualDocuments.length || !document) return -1;
     return contextualDocuments.findIndex((item) => item.id === document.id);
@@ -1015,7 +1019,7 @@ function DocumentContent({ id }: { id: string }) {
                   <div
                     className={cn(
                       "grid gap-4 lg:grid-cols-[260px_minmax(0,1fr)]",
-                      relatedDocuments.length > 0 && "xl:grid-cols-[260px_minmax(0,1fr)_240px]"
+                      showRelatedDocumentsRail && "xl:grid-cols-[260px_minmax(0,1fr)_240px]"
                     )}
                   >
                     {/* Table of Contents - sticky sidebar */}
@@ -1073,7 +1077,7 @@ function DocumentContent({ id }: { id: string }) {
                     </Card>
 
                     {/* Related documents rail */}
-                    {relatedDocuments.length > 0 && (
+                    {showRelatedDocumentsRail && (
                       <aside className="hidden xl:block sticky top-[148px] self-start">
                         <Card>
                           <CardContent className="max-h-[calc(100vh-164px)] overflow-y-auto p-4 space-y-2">
