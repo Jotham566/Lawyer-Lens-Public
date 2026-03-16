@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { useSearchParams } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useChatStore, useCurrentConversation, useActiveConversations, useArchivedConversations } from "@/lib/stores";
 import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
@@ -27,6 +27,8 @@ import type { ToolProgress, ResearchResult } from "@/components/chat/tool-messag
 export function useChatOrchestrator() {
     const { isAuthenticated } = useAuth();
     const { refresh: refreshEntitlements } = useEntitlements();
+    const router = useRouter();
+    const pathname = usePathname();
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q");
     const initialConversationId = searchParams.get("conversation");
@@ -91,6 +93,7 @@ export function useChatOrchestrator() {
     const editInputRef = useRef<HTMLTextAreaElement>(null);
     const fetchingConversationRef = useRef<Set<string>>(new Set());
     const abortControllerRef = useRef<AbortController | null>(null);
+    const hydratedInitialConversationRef = useRef<string | null>(null);
 
     // Integration Hooks
     const {
@@ -476,14 +479,43 @@ export function useChatOrchestrator() {
     }, [initialQuery, currentConversationId, createConversation, handleSend]);
 
     useEffect(() => {
-        if (!initialConversationId || currentConversationId === initialConversationId) {
+        if (!initialConversationId) {
+            return;
+        }
+        if (hydratedInitialConversationRef.current === initialConversationId) {
+            return;
+        }
+        if (currentConversationId === initialConversationId) {
+            hydratedInitialConversationRef.current = initialConversationId;
             return;
         }
         setCurrentConversation(initialConversationId);
+        hydratedInitialConversationRef.current = initialConversationId;
         if (isAuthenticated) {
             fetchConversation(initialConversationId).catch(() => undefined);
         }
     }, [initialConversationId, currentConversationId, setCurrentConversation, isAuthenticated, fetchConversation]);
+
+    const clearChatRouteParams = useCallback(() => {
+        const params = new URLSearchParams(searchParams.toString());
+        let changed = false;
+
+        if (params.has("conversation")) {
+            params.delete("conversation");
+            changed = true;
+        }
+        if (params.has("q")) {
+            params.delete("q");
+            changed = true;
+        }
+
+        if (!changed) {
+            return;
+        }
+
+        const nextQuery = params.toString();
+        router.replace(nextQuery ? `${pathname}?${nextQuery}` : pathname, { scroll: false });
+    }, [pathname, router, searchParams]);
 
 
     // 4. Regenerate / Edit Wrappers
@@ -572,6 +604,7 @@ export function useChatOrchestrator() {
         createConversation();
         setInput("");
         setMobileHistoryOpen(false);
+        clearChatRouteParams();
     };
 
     const handleDeleteClick = (id: string, e?: React.MouseEvent) => {

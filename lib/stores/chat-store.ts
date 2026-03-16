@@ -163,6 +163,7 @@ export const useChatStore = create<ChatState>()(
       createConversation: () => {
         const existingEmptyConversation = get().conversations.find(
           (conversation) =>
+            conversation.isLocalOnly &&
             !conversation.isArchived &&
             conversation.messages.length === 0
         );
