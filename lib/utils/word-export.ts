@@ -25,6 +25,15 @@ function buildCitationLabel(citation: ResearchCitation): string {
   return citation.title;
 }
 
+function stripCitationArtifacts(html: string): string {
+  return html
+    .replace(/\[\s*Sources?\s*:\s*[a-f0-9]{6,8}(?:\s*,\s*[a-f0-9]{6,8})*\s*\]/gi, "")
+    .replace(/Citation IDs\s*:\s*[a-f0-9]{6,8}(?:\s*,\s*[a-f0-9]{6,8})*/gi, "")
+    .replace(/\[(?:[a-f0-9]{6,8})(?:\s*,\s*[a-f0-9]{6,8})*\]/gi, "")
+    .replace(/\s{2,}/g, " ")
+    .trim();
+}
+
 export function exportResearchReportToWord(
   report: ResearchReport,
   reportTitle: string,
@@ -34,10 +43,24 @@ export function exportResearchReportToWord(
   sectionRichContent?: Record<string, string>,
 ): void {
   const citationNumbers = new Map(report.citations.map((citation, index) => [citation.id, index + 1]));
+  const summaryCitationIds = report.publisher_payload?.executive_summary_citation_ids ?? [];
+  const endnotes = report.publisher_payload?.endnotes ?? [];
+  const sectionPublisherLookup = new Map(
+    (report.publisher_payload?.sections ?? []).map((section) => [section.section_id, section])
+  );
 
   const summaryHtml = sanitizeRichHtml(
-    ensureRichHtml(executiveSummary, executiveSummaryRich ?? report.executive_summary_rich)
+    stripCitationArtifacts(
+      ensureRichHtml(executiveSummary, executiveSummaryRich ?? report.executive_summary_rich)
+    )
   );
+  const summaryInlineCitations = summaryCitationIds
+    .map((citationId) => {
+      const number = citationNumbers.get(citationId);
+      return number ? `<sup><a href="#citation-${number}">[${number}]</a></sup>` : "";
+    })
+    .filter(Boolean)
+    .join(" ");
 
   const html = `
     <html xmlns:o="urn:schemas-microsoft-com:office:office"
@@ -67,15 +90,18 @@ export function exportResearchReportToWord(
         <div class="summary">
           <h2>Executive Summary</h2>
           ${summaryHtml}
+          ${summaryInlineCitations ? `<div class="inline-citations">${summaryInlineCitations}</div>` : ""}
         </div>
         ${report.sections.map((section) => {
           const content = sanitizeRichHtml(
-            ensureRichHtml(
-              sectionContent[section.id] ?? section.content,
-              sectionRichContent?.[section.id] ?? section.rich_content
+            stripCitationArtifacts(
+              ensureRichHtml(
+                sectionContent[section.id] ?? section.content,
+                sectionRichContent?.[section.id] ?? section.rich_content
+              )
             )
           );
-          const inlineCitations = (section.citations || [])
+          const inlineCitations = (sectionPublisherLookup.get(section.id)?.citation_ids || section.citations || [])
             .map((citationId) => {
               const number = citationNumbers.get(citationId);
               return number ? `<sup><a href="#citation-${number}">[${number}]</a></sup>` : "";
@@ -93,8 +119,23 @@ export function exportResearchReportToWord(
         }).join("")}
         <section class="endnotes">
           <h2>Sources and Endnotes</h2>
+          ${report.publisher_payload?.methodology_note ? `<p>${escapeHtml(report.publisher_payload.methodology_note)}</p>` : ""}
           <ol>
-            ${report.citations.map((citation, index) => `
+            ${(endnotes.length
+              ? endnotes.map((endnote) => {
+                  const citation = report.citations.find((item) => item.id === endnote.citation_id);
+                  const preferredUrl = endnote.url || citation?.document_url || citation?.external_url;
+                  return `
+              <li id="citation-${endnote.number}">
+                <strong>${escapeHtml(endnote.title || citation?.title || "Source")}</strong><br />
+                ${escapeHtml(endnote.label || (citation ? buildCitationLabel(citation) : ""))}
+                ${preferredUrl ? `<br /><a href="${escapeHtml(preferredUrl)}">${escapeHtml(preferredUrl)}</a>` : ""}
+                ${endnote.source_quality_label ? `<div>${escapeHtml(endnote.source_quality_label)}</div>` : ""}
+                ${endnote.quoted_text ? `<div class="quote">"${escapeHtml(endnote.quoted_text)}"</div>` : ""}
+              </li>
+            `;
+                }).join("")
+              : report.citations.map((citation, index) => `
               <li id="citation-${index + 1}">
                 <strong>${escapeHtml(citation.title)}</strong><br />
                 ${escapeHtml(buildCitationLabel(citation))}
@@ -102,7 +143,7 @@ export function exportResearchReportToWord(
                 ${citation.document_url ? `<br /><a href="${escapeHtml(citation.document_url)}">${escapeHtml(citation.document_url)}</a>` : ""}
                 ${citation.quoted_text ? `<div class="quote">"${escapeHtml(citation.quoted_text)}"</div>` : ""}
               </li>
-            `).join("")}
+            `).join(""))}
           </ol>
         </section>
       </body>

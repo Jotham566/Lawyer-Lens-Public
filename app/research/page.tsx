@@ -241,7 +241,7 @@ function stripCitationIdArtifactsFromHtml(html: string): string {
   const root = doc.body.firstElementChild as HTMLElement | null;
   if (!root) return html;
 
-  const artifactPattern = /\[(?:[a-f0-9]{6,8})(?:,\s*[a-f0-9]{6,8})*\]/gi;
+  const artifactPattern = /\[(?:[a-f0-9]{6,8})(?:,\s*[a-f0-9]{6,8})*\]|\[\s*Sources?\s*:\s*[a-f0-9]{6,8}(?:\s*,\s*[a-f0-9]{6,8})*\s*\]|Citation IDs\s*:\s*[a-f0-9]{6,8}(?:\s*,\s*[a-f0-9]{6,8})*/gi;
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
 
@@ -353,7 +353,10 @@ function buildResearchDocumentHtml(
   let summaryHtml = ensureRichHtml(report.executive_summary, executiveSummaryRich);
   summaryHtml = stripSourceUrlsFromHtml(summaryHtml);
   summaryHtml = stripCitationIdArtifactsFromHtml(summaryHtml);
-  let summaryCitationIds: string[] = [];
+  let summaryCitationIds: string[] = report.publisher_payload?.executive_summary_citation_ids || [];
+  const publisherSectionLookup = new Map(
+    (report.publisher_payload?.sections || []).map((section) => [section.section_id, section])
+  );
 
   if (!hasStructuredCitations) {
     const extractedSummary = extractFallbackCitationsFromHtml(summaryHtml, fallbackCitations, fallbackCitationByHref);
@@ -368,7 +371,7 @@ function buildResearchDocumentHtml(
       let bodyHtml = ensureRichHtml(section.content, sectionRichContent[section.id] ?? section.rich_content);
       bodyHtml = stripSourceUrlsFromHtml(bodyHtml);
       bodyHtml = stripCitationIdArtifactsFromHtml(bodyHtml);
-      let sectionCitationIds = section.citations || [];
+      let sectionCitationIds = publisherSectionLookup.get(section.id)?.citation_ids || section.citations || [];
 
       if (!hasStructuredCitations) {
         const extractedSection = extractFallbackCitationsFromHtml(bodyHtml, fallbackCitations, fallbackCitationByHref);

@@ -77,6 +77,14 @@ export function plainTextToRichHtml(content: string): string {
   let listType: "ul" | "ol" | null = null;
   let tableRows: string[][] = [];
 
+  const nextNonEmptyLine = (startIndex: number): string | null => {
+    for (let index = startIndex; index < lines.length; index += 1) {
+      const candidate = lines[index].trim();
+      if (candidate) return candidate;
+    }
+    return null;
+  };
+
   const closeList = () => {
     if (listType) {
       htmlParts.push(`</${listType}>`);
@@ -102,10 +110,16 @@ export function plainTextToRichHtml(content: string): string {
     tableRows = [];
   };
 
-  for (const rawLine of lines) {
+  for (let lineIndex = 0; lineIndex < lines.length; lineIndex += 1) {
+    const rawLine = lines[lineIndex];
     const line = rawLine.trim();
     if (!line) {
-      closeList();
+      const upcoming = nextNonEmptyLine(lineIndex + 1);
+      const continuesOrderedList = listType === "ol" && upcoming !== null && /^\d+\.\s/.test(upcoming);
+      const continuesBulletList = listType === "ul" && upcoming !== null && upcoming.startsWith("- ");
+      if (!continuesOrderedList && !continuesBulletList) {
+        closeList();
+      }
       closeTable();
       continue;
     }
@@ -126,6 +140,11 @@ export function plainTextToRichHtml(content: string): string {
 
     closeTable();
 
+    if (line.startsWith("#### ")) {
+      closeList();
+      htmlParts.push(`<h4>${formatInlineMarkdown(line.slice(5))}</h4>`);
+      continue;
+    }
     if (line.startsWith("### ")) {
       closeList();
       htmlParts.push(`<h3>${formatInlineMarkdown(line.slice(4))}</h3>`);
@@ -174,6 +193,14 @@ export function plainTextToRichHtml(content: string): string {
   return sanitizeRichHtml(htmlParts.join("") || "<p></p>");
 }
 
+function looksLikeHtml(value: string): boolean {
+  return /<\/?[a-z][\s\S]*>/i.test(value);
+}
+
+function looksLikeMarkdownDocument(value: string): boolean {
+  return /(^|\n)\s{0,3}(#{1,6}\s|>\s|- |\d+\.\s|\|.+\|)/m.test(value);
+}
+
 export function stripEditorArtifacts(html: string): string {
   if (typeof window === "undefined") return html;
   const doc = new DOMParser().parseFromString(html, "text/html");
@@ -205,6 +232,9 @@ export function richHtmlToPlainText(html: string): string {
 
 export function ensureRichHtml(content: string, richContent?: string | null): string {
   if (richContent && richContent.trim()) {
+    if (!looksLikeHtml(richContent) && looksLikeMarkdownDocument(richContent)) {
+      return plainTextToRichHtml(richContent);
+    }
     return sanitizeRichHtml(richContent);
   }
   return plainTextToRichHtml(content || "");

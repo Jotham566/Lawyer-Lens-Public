@@ -103,6 +103,7 @@ export interface ResearchReport {
   evidence_registry?: ResearchEvidenceObject[];
   claims?: ResearchReportClaim[];
   section_provenance?: ResearchSectionProvenance[];
+  publisher_payload?: ResearchPublisherPayload | null;
   generated_at: string;
   total_tokens_used: number;
   research_audit?: ResearchAudit | null;
@@ -245,6 +246,34 @@ export interface ResearchSectionProvenance {
   citation_ids: string[];
   source_document_ids: string[];
   source_chunk_ids: string[];
+}
+
+export interface ResearchPublisherSection {
+  section_id: string;
+  title: string;
+  order: number;
+  citation_ids: string[];
+  claim_ids: string[];
+  evidence_ids: string[];
+}
+
+export interface ResearchPublisherEndnote {
+  citation_id: string;
+  number: number;
+  title: string;
+  label: string;
+  url?: string | null;
+  quoted_text?: string | null;
+  source_quality_label?: string | null;
+}
+
+export interface ResearchPublisherPayload {
+  report_format: string;
+  executive_summary_citation_ids: string[];
+  sections: ResearchPublisherSection[];
+  endnotes: ResearchPublisherEndnote[];
+  methodology_note: string;
+  generated_at: string;
 }
 
 export interface StreamProgress {

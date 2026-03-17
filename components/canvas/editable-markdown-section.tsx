@@ -79,6 +79,7 @@ export function EditableMarkdownSection({
           "[&_h1]:mb-3 [&_h1]:text-3xl [&_h1]:font-bold",
           "[&_h2]:mb-3 [&_h2]:mt-6 [&_h2]:text-2xl [&_h2]:font-semibold",
           "[&_h3]:mb-2 [&_h3]:mt-4 [&_h3]:text-xl [&_h3]:font-semibold",
+          "[&_h4]:mb-2 [&_h4]:mt-3 [&_h4]:text-lg [&_h4]:font-semibold",
           "[&_p]:mb-4 [&_p:empty]:before:content-[attr(data-placeholder)] [&_p:empty]:before:text-muted-foreground/40",
           "[&_blockquote]:my-4 [&_blockquote]:border-l-2 [&_blockquote]:border-muted [&_blockquote]:pl-4 [&_blockquote]:italic",
           "[&_ol]:my-4 [&_ol]:list-decimal [&_ol]:pl-6",

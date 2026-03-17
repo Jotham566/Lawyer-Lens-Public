@@ -63,13 +63,17 @@ import {
   type SourceType,
 } from "@/components/contracts";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useRequireAuth } from "@/components/providers";
+import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useOnlineStatus } from "@/lib/hooks";
 import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
-
-
+import {
+  clearActiveContractSessionId,
+  clearLegacyActiveContractSessionId,
+  getActiveContractSessionId,
+  setActiveContractSessionId,
+} from "@/lib/utils/contract-session-storage";
 
 const defaultParty: PartyInfo = {
   role: "",
@@ -77,8 +81,6 @@ const defaultParty: PartyInfo = {
   address: "",
   registration_number: "",
 };
-
-const ACTIVE_CONTRACT_SESSION_KEY = "law-lens-active-contract-session";
 const CONTRACT_AUTOSAVE_DEBOUNCE_MS = 2500;
 const CONTRACT_RATE_LIMIT_BACKOFF_MS = 10000;
 
@@ -272,6 +274,7 @@ function parseContractRequirementsDocumentHtml(html: string, fallbackDescription
 function ContractsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
+  const { user } = useAuth();
   const { refresh: refreshEntitlements } = useEntitlements();
   const initialDescription = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
@@ -308,10 +311,14 @@ function ContractsContent() {
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftingResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const autoResumedSessionIdRef = useRef<string | null>(null);
   const draftRetryAtRef = useRef(0);
   const hydratedDraftRef = useRef(false);
   const lastSavedDraftRef = useRef<string | null>(null);
   const { isOnline, wasOffline, isHydrated } = useOnlineStatus();
+  const activeOrganizationId = (typeof window !== "undefined"
+    ? window.localStorage.getItem("selected_organization_id")
+    : null) || user?.default_organization_id;
   const requirementsDocumentHtml = useMemo(
     () =>
       session?.phase === "requirements"
@@ -321,23 +328,26 @@ function ContractsContent() {
   );
 
   useEffect(() => {
-    if (sessionIdParam || typeof window === "undefined") return;
-    const activeSessionId = window.localStorage.getItem(ACTIVE_CONTRACT_SESSION_KEY);
+    if (typeof window === "undefined") return;
+    clearLegacyActiveContractSessionId(window.localStorage);
+    if (sessionIdParam) return;
+    const activeSessionId = getActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
     if (activeSessionId) {
+      autoResumedSessionIdRef.current = activeSessionId;
       router.replace(`/contracts?session=${activeSessionId}`);
     }
-  }, [router, sessionIdParam]);
+  }, [activeOrganizationId, router, sessionIdParam, user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (session && !["complete", "failed", "approval"].includes(session.phase)) {
-      window.localStorage.setItem(ACTIVE_CONTRACT_SESSION_KEY, session.session_id);
+      setActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId, session.session_id);
       return;
     }
     if (session?.phase === "complete" || session?.phase === "failed" || session?.phase === "approval") {
-      window.localStorage.removeItem(ACTIVE_CONTRACT_SESSION_KEY);
+      clearActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
     }
-  }, [session]);
+  }, [activeOrganizationId, session, user?.id]);
 
   useEffect(() => {
     if (!session?.draft) return;
@@ -425,15 +435,32 @@ function ContractsContent() {
 
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
+    setError(null);
     try {
       const sessionData = await getContractSession(sessionId);
+      autoResumedSessionIdRef.current = null;
       setSession(sessionData);
     } catch (err) {
+      const isMissingOrForbidden = err instanceof APIError && (err.status === 404 || err.status === 403);
+      if (typeof window !== "undefined" && isMissingOrForbidden) {
+        const storedSessionId = getActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
+        const shouldResetRoute = sessionId === autoResumedSessionIdRef.current || sessionId === storedSessionId;
+        if (storedSessionId === sessionId) {
+          clearActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
+        }
+        autoResumedSessionIdRef.current = null;
+        if (shouldResetRoute) {
+          setSession(null);
+          setError(null);
+          router.replace("/contracts");
+          return;
+        }
+      }
       setError(err instanceof Error ? err.message : "Failed to load session");
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [activeOrganizationId, router, user?.id]);
 
   // Load existing session if session ID provided
   useEffect(() => {
