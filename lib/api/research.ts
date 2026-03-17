@@ -100,6 +100,9 @@ export interface ResearchReport {
   executive_summary_rich?: string | null;
   sections: ResearchSection[];
   citations: ResearchCitation[];
+  evidence_registry?: ResearchEvidenceObject[];
+  claims?: ResearchReportClaim[];
+  section_provenance?: ResearchSectionProvenance[];
   generated_at: string;
   total_tokens_used: number;
   research_audit?: ResearchAudit | null;
@@ -155,6 +158,7 @@ export interface ResearchAudit {
   topics: number;
   agents: number;
   findings: number;
+  evidence_objects: number;
   documents: number;
   chunks: number;
   legal_references: number;
@@ -187,6 +191,8 @@ export interface ResearchSection {
   content: string;
   rich_content?: string | null;
   citations: string[];
+  evidence_ids?: string[];
+  claim_ids?: string[];
   order: number;
 }
 
@@ -204,6 +210,41 @@ export interface ResearchCitation {
   document_url?: string;
   court?: string;
   quoted_text?: string;
+  retrieval_provider?: string;
+  source_domain?: string;
+  source_quality_score?: number;
+  source_quality_label?: string;
+}
+
+export interface ResearchEvidenceObject {
+  id: string;
+  finding_id: string;
+  topic_id: string;
+  agent_type: string;
+  evidence_type: string;
+  text: string;
+  citation_ids: string[];
+  source_document_ids: string[];
+  source_chunk_ids: string[];
+  legal_references: string[];
+  support_score?: number | null;
+}
+
+export interface ResearchReportClaim {
+  id: string;
+  section_id: string;
+  text: string;
+  evidence_ids: string[];
+  citation_ids: string[];
+}
+
+export interface ResearchSectionProvenance {
+  section_id: string;
+  evidence_ids: string[];
+  claim_ids: string[];
+  citation_ids: string[];
+  source_document_ids: string[];
+  source_chunk_ids: string[];
 }
 
 export interface StreamProgress {
