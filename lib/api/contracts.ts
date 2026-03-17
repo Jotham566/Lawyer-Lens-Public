@@ -58,6 +58,12 @@ export interface ContractSession {
   phase: ContractPhase;
   questions?: ContractQuestion[];
   requirements?: ContractRequirements;
+  legal_research?: ContractLegalResearchFinding[];
+  applicable_laws?: ContractLegalAuthority[];
+  mandatory_clauses?: string[];
+  mandatory_clause_guidance?: ContractMandatoryClauseGuidance[];
+  compliance_notes?: string[];
+  legal_evidence_registry?: ContractLegalEvidence[];
   draft?: ContractDraft;
   created_at: string;
   updated_at?: string;
@@ -89,6 +95,45 @@ export interface ContractDraft {
   sections: ContractSection[];
   compliance_notes: string[];
   warnings: string[];
+}
+
+export interface ContractLegalResearchFinding {
+  topic_id: string;
+  summary: string;
+  key_facts: string[];
+  relevant_provisions: string[];
+  citation_ids: string[];
+  status: string;
+}
+
+export interface ContractLegalAuthority {
+  id: string;
+  title: string;
+  legal_reference?: string | null;
+  source_type: string;
+  external_url?: string | null;
+  source_quality_label?: string | null;
+}
+
+export interface ContractMandatoryClauseGuidance {
+  clause_title: string;
+  rationale: string;
+  citation_ids: string[];
+  authority_labels: string[];
+}
+
+export interface ContractLegalEvidence {
+  id: string;
+  finding_id: string;
+  topic_id: string;
+  agent_type: string;
+  evidence_type: string;
+  text: string;
+  citation_ids: string[];
+  source_document_ids: string[];
+  source_chunk_ids: string[];
+  legal_references: string[];
+  support_score?: number | null;
 }
 
 export interface ContractSection {

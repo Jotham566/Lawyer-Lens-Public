@@ -11,6 +11,7 @@ import {
   AlertCircle,
   Download,
   Plus,
+  BookOpen,
   Trash2,
   Building2,
   User,
@@ -70,8 +71,11 @@ import { useOnlineStatus } from "@/lib/hooks";
 import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
 import {
   clearActiveContractSessionId,
+  clearContractSessionIdForPrompt,
   clearLegacyActiveContractSessionId,
   getActiveContractSessionId,
+  getContractSessionIdForPrompt,
+  setContractSessionIdForPrompt,
   setActiveContractSessionId,
 } from "@/lib/utils/contract-session-storage";
 
@@ -331,23 +335,45 @@ function ContractsContent() {
     if (typeof window === "undefined") return;
     clearLegacyActiveContractSessionId(window.localStorage);
     if (sessionIdParam) return;
+    if (initialDescription?.trim()) {
+      const matchedSessionId = getContractSessionIdForPrompt(
+        window.localStorage,
+        user?.id,
+        activeOrganizationId,
+        initialDescription,
+      );
+      if (matchedSessionId) {
+        autoResumedSessionIdRef.current = matchedSessionId;
+        router.replace(`/contracts?session=${matchedSessionId}`);
+      }
+      return;
+    }
     const activeSessionId = getActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
     if (activeSessionId) {
       autoResumedSessionIdRef.current = activeSessionId;
       router.replace(`/contracts?session=${activeSessionId}`);
     }
-  }, [activeOrganizationId, router, sessionIdParam, user?.id]);
+  }, [activeOrganizationId, initialDescription, router, sessionIdParam, user?.id]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (session && !["complete", "failed", "approval"].includes(session.phase)) {
       setActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId, session.session_id);
-      return;
-    }
-    if (session?.phase === "complete" || session?.phase === "failed" || session?.phase === "approval") {
+    } else if (session?.phase === "complete" || session?.phase === "failed" || session?.phase === "approval") {
       clearActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
     }
-  }, [activeOrganizationId, session, user?.id]);
+
+    const promptToRemember = initialDescription?.trim() || session?.description?.trim();
+    if (session?.session_id && promptToRemember) {
+      setContractSessionIdForPrompt(
+        window.localStorage,
+        user?.id,
+        activeOrganizationId,
+        promptToRemember,
+        session.session_id,
+      );
+    }
+  }, [activeOrganizationId, initialDescription, session, user?.id]);
 
   useEffect(() => {
     if (!session?.draft) return;
@@ -448,11 +474,19 @@ function ContractsContent() {
         if (storedSessionId === sessionId) {
           clearActiveContractSessionId(window.localStorage, user?.id, activeOrganizationId);
         }
+        if (initialDescription?.trim()) {
+          clearContractSessionIdForPrompt(
+            window.localStorage,
+            user?.id,
+            activeOrganizationId,
+            initialDescription,
+          );
+        }
         autoResumedSessionIdRef.current = null;
         if (shouldResetRoute) {
           setSession(null);
           setError(null);
-          router.replace("/contracts");
+          router.replace(initialDescription?.trim() ? `/contracts?q=${encodeURIComponent(initialDescription)}` : "/contracts");
           return;
         }
       }
@@ -460,7 +494,7 @@ function ContractsContent() {
     } finally {
       setIsLoading(false);
     }
-  }, [activeOrganizationId, router, user?.id]);
+  }, [activeOrganizationId, initialDescription, router, user?.id]);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -1447,6 +1481,69 @@ function ContractsContent() {
                         <ul className="text-xs text-green-700 dark:text-green-400 space-y-1.5 pl-6 list-disc">
                           {session.draft.compliance_notes.map((note, i) => (
                             <li key={i}>{note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {((session.mandatory_clause_guidance?.length ?? 0) > 0 || (session.applicable_laws?.length ?? 0) > 0) && (
+                  <div className="space-y-3">
+                    {(session.mandatory_clause_guidance?.length ?? 0) > 0 && (
+                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-2">
+                          <Scale className="h-4 w-4" />
+                          <span className="text-xs font-semibold uppercase tracking-wider">Mandatory Clause Guidance</span>
+                        </div>
+                        <ul className="space-y-2 text-xs text-blue-700 dark:text-blue-300">
+                          {session.mandatory_clause_guidance?.map((item, i) => (
+                            <li key={`${item.clause_title}-${i}`} className="rounded-md bg-white/60 dark:bg-black/10 px-2 py-2">
+                              <p className="font-semibold">{item.clause_title}</p>
+                              <p className="mt-1 text-[11px] leading-relaxed">{item.rationale}</p>
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {(session.legal_evidence_registry?.length ?? 0) > 0 && (
+                      <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300 mb-2">
+                          <FileText className="h-4 w-4" />
+                          <span className="text-xs font-semibold uppercase tracking-wider">Supporting Evidence</span>
+                        </div>
+                        <ul className="space-y-2 text-xs text-violet-700 dark:text-violet-300">
+                          {session.legal_evidence_registry?.slice(0, 4).map((item) => (
+                            <li key={item.id} className="rounded-md bg-white/70 dark:bg-black/10 px-2 py-2">
+                              <p className="font-medium capitalize">{item.evidence_type.replace(/_/g, " ")}</p>
+                              <p className="mt-1 text-[11px] leading-relaxed">{item.text}</p>
+                              {item.legal_references?.length > 0 && (
+                                <p className="mt-1 text-[11px] text-muted-foreground">
+                                  {item.legal_references.slice(0, 2).join(" · ")}
+                                </p>
+                              )}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                    {(session.applicable_laws?.length ?? 0) > 0 && (
+                      <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-2">
+                          <BookOpen className="h-4 w-4" />
+                          <span className="text-xs font-semibold uppercase tracking-wider">Applicable Authorities</span>
+                        </div>
+                        <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-2">
+                          {session.applicable_laws?.map((authority) => (
+                            <li key={authority.id} className="rounded-md bg-white/70 dark:bg-black/10 px-2 py-2">
+                              <p className="font-medium">{authority.title}</p>
+                              {authority.legal_reference && (
+                                <p className="mt-0.5 text-[11px] text-muted-foreground">{authority.legal_reference}</p>
+                              )}
+                              {authority.source_quality_label && (
+                                <p className="mt-1 text-[11px] uppercase tracking-wider text-muted-foreground">{authority.source_quality_label}</p>
+                              )}
+                            </li>
                           ))}
                         </ul>
                       </div>

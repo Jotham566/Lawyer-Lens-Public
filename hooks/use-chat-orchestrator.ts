@@ -10,6 +10,7 @@ import { useCitationOptional } from "@/components/citations";
 import {
     streamChatWithTypewriter,
     getSuggestedQuestions,
+    createContractSession,
     createResearchSession,
     submitChatFeedback,
 } from "@/lib/api";
@@ -23,6 +24,26 @@ import type {
 } from "@/lib/api/types";
 import type { ToolMode } from "@/components/chat";
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
+
+function inferContractType(text: string): string {
+    const lower = text.toLowerCase();
+    if (lower.includes("employ") || lower.includes("job") || lower.includes("work")) {
+        return "employment";
+    }
+    if (lower.includes("nda") || lower.includes("non-disclosure") || lower.includes("confidential")) {
+        return "nda";
+    }
+    if (lower.includes("service") || lower.includes("consult")) {
+        return "service";
+    }
+    if (lower.includes("sale") || lower.includes("purchase") || lower.includes("buy")) {
+        return "sale";
+    }
+    if (lower.includes("lease") || lower.includes("rent") || lower.includes("tenancy")) {
+        return "lease";
+    }
+    return "general";
+}
 
 export function useChatOrchestrator() {
     const { isAuthenticated } = useAuth();
@@ -400,12 +421,27 @@ export function useChatOrchestrator() {
 
                     if (session.current_step === "redirect_to_contract") {
                         setActiveToolExecution(null);
-                        const assistantMessage: ChatMessageType = {
-                            role: "assistant",
-                            content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
-                            timestamp: new Date().toISOString(),
-                        };
-                        addMessage(activeConvId, assistantMessage);
+                        try {
+                            const contractSession = await createContractSession({
+                                contract_type: inferContractType(text),
+                                description: text,
+                            });
+                            const assistantMessage: ChatMessageType = {
+                                role: "assistant",
+                                content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}) to continue this contract.`,
+                                timestamp: new Date().toISOString(),
+                            };
+                            addMessage(activeConvId, assistantMessage);
+                            refreshEntitlements();
+                        } catch (contractErr) {
+                            const assistantMessage: ChatMessageType = {
+                                role: "assistant",
+                                content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
+                                timestamp: new Date().toISOString(),
+                            };
+                            addMessage(activeConvId, assistantMessage);
+                            console.error("Failed to create contract session from research redirect:", contractErr);
+                        }
                         return;
                     }
 
@@ -458,12 +494,35 @@ export function useChatOrchestrator() {
                 };
                 addMessage(activeConvId, userMessage);
 
-                const assistantMessage: ChatMessageType = {
-                    role: "assistant",
-                    content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
-                    timestamp: new Date().toISOString(),
-                };
-                addMessage(activeConvId, assistantMessage);
+                try {
+                    const contractSession = await createContractSession({
+                        contract_type: inferContractType(text),
+                        description: text,
+                    });
+                    const assistantMessage: ChatMessageType = {
+                        role: "assistant",
+                        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo continue this contract, visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}).`,
+                        timestamp: new Date().toISOString(),
+                    };
+                    addMessage(activeConvId, assistantMessage);
+                    refreshEntitlements();
+                } catch (err) {
+                    if (err instanceof APIError && err.isFeatureGatingError()) {
+                        const gatingDetails = err.getFeatureGatingDetails();
+                        if (gatingDetails) {
+                            showUpgradeModal(gatingDetails);
+                            removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
+                            return;
+                        }
+                    }
+                    const assistantMessage: ChatMessageType = {
+                        role: "assistant",
+                        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
+                        timestamp: new Date().toISOString(),
+                    };
+                    addMessage(activeConvId, assistantMessage);
+                    console.error("Failed to create contract session from chat tool:", err);
+                }
                 return;
             }
 
