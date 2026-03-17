@@ -3,6 +3,8 @@
 # =============================================================================
 # Multi-stage build for Next.js application
 # Build context: monorepo root (docker build -f frontend-public/Dockerfile .)
+# Dependency graph: frontend-public is its own repo, with a local pnpm workspace
+# that links to shared packages copied in from ../packages.
 # Port: 3001
 # =============================================================================
 
@@ -14,24 +16,22 @@ FROM public.ecr.aws/docker/library/node:24.14.0-alpine AS builder
 # Install pnpm
 RUN corepack enable && corepack prepare pnpm@10.30.3 --activate
 
-WORKDIR /app
+WORKDIR /app/frontend-public
 
-# Copy workspace configuration
-COPY package.json pnpm-workspace.yaml pnpm-lock.yaml* turbo.json* ./
+# Copy frontend-public workspace configuration
+COPY frontend-public/package.json ./package.json
+COPY frontend-public/pnpm-workspace.yaml ./pnpm-workspace.yaml
+COPY frontend-public/pnpm-lock.yaml* ./pnpm-lock.yaml
 
-# Copy package.json files for all workspaces
-COPY packages/ui/package.json ./packages/ui/
-COPY packages/api-client/package.json ./packages/api-client/
-COPY packages/config/package.json ./packages/config/
-COPY packages/hooks/package.json ./packages/hooks/
-COPY frontend-public/package.json ./frontend-public/
+# Copy manifest files for shared workspace packages used by frontend-public
+COPY packages/ui/package.json /app/packages/ui/package.json
 
 # Install dependencies (this layer is cached if package.json files don't change)
 RUN pnpm install --frozen-lockfile
 
 # Copy source files
-COPY packages/ ./packages/
-COPY frontend-public/ ./frontend-public/
+COPY packages/ui/ /app/packages/ui/
+COPY frontend-public/ ./
 
 # Set build-time environment variables
 # Note: NEXT_PUBLIC_API_URL must include /api/v1 as the api-client uses it as the base URL
@@ -48,7 +48,6 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_ENV=production
 
 # Build the application
-WORKDIR /app/frontend-public
 RUN pnpm build
 
 # -----------------------------------------------------------------------------
