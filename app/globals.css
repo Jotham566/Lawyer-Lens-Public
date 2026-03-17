@@ -241,6 +241,91 @@
     @apply mb-4;
   }
 
+  /* Document canvas prose typography */
+  .prose-document {
+    font-family: Georgia, 'Times New Roman', serif;
+    font-size: 17px;
+    line-height: 1.8;
+    color: hsl(var(--foreground));
+  }
+
+  .prose-document p {
+    @apply mb-5 leading-[1.8];
+  }
+
+  .prose-document h1 {
+    @apply text-2xl font-bold mt-8 mb-4;
+  }
+
+  .prose-document h2 {
+    @apply text-xl font-semibold mt-8 mb-3;
+  }
+
+  .prose-document h3 {
+    @apply text-lg font-semibold mt-6 mb-2;
+  }
+
+  .prose-document ul,
+  .prose-document ol {
+    @apply mb-5 ml-6 space-y-1;
+  }
+
+  .prose-document ul {
+    list-style-type: disc;
+  }
+
+  .prose-document ol {
+    list-style-type: decimal;
+  }
+
+  .prose-document li {
+    @apply leading-[1.8];
+  }
+
+  .prose-document strong {
+    @apply font-bold text-foreground;
+  }
+
+  .prose-document em {
+    @apply italic;
+  }
+
+  .prose-document blockquote {
+    @apply border-l-4 border-primary/30 pl-4 my-5 italic text-muted-foreground;
+  }
+
+  .prose-document a {
+    @apply text-primary underline decoration-primary/30 underline-offset-2 hover:decoration-primary;
+  }
+
+  .prose-document table {
+    @apply w-full border-collapse my-5 text-sm;
+  }
+
+  .prose-document th {
+    @apply text-left p-3 font-semibold bg-muted/50 border-b;
+  }
+
+  .prose-document td {
+    @apply p-3 border-b border-border/50;
+  }
+
+  .prose-document hr {
+    @apply my-8 border-border;
+  }
+
+  .prose-document code {
+    @apply rounded bg-muted px-1.5 py-0.5 font-mono text-sm;
+  }
+
+  .prose-document pre {
+    @apply my-5 rounded-lg bg-muted p-4 overflow-x-auto;
+  }
+
+  .prose-document pre code {
+    @apply bg-transparent p-0;
+  }
+
   /* Search highlight */
   mark {
     @apply bg-yellow-200 dark:bg-yellow-800/50 px-0.5 rounded;

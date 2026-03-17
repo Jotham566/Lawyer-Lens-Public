@@ -9,7 +9,7 @@
  * 5. Get final report
  */
 
-import { apiPost, apiGet, getApiBaseUrl } from "./client";
+import { apiPost, apiGet, apiFetch, getApiBaseUrl } from "./client";
 
 // Backend uses these phases: triage, clarify, instruction, research, writing, complete
 // And statuses: created, clarifying, brief_review, researching, writing, complete, error
@@ -95,6 +95,7 @@ export interface ResearchReport {
   id: string;
   title: string;
   executive_summary: string;
+  executive_summary_rich?: string | null;
   sections: ResearchSection[];
   citations: ResearchCitation[];
   generated_at: string;
@@ -137,6 +138,7 @@ export interface ResearchSection {
   id: string;
   title: string;
   content: string;
+  rich_content?: string | null;
   citations: string[];
   order: number;
 }
@@ -185,6 +187,17 @@ export interface ApproveBriefRequest {
   modifications?: string;
 }
 
+export interface SaveResearchBriefRequest {
+  brief: ApproveBriefRequest["brief"];
+}
+
+export interface SaveResearchReportRequest {
+  title: string;
+  executive_summary: string;
+  executive_summary_rich?: string | null;
+  sections: ResearchSection[];
+}
+
 /**
  * Create a new research session
  */
@@ -225,6 +238,16 @@ export async function approveResearchBrief(
   return apiPost<ResearchSession>(`/research/${sessionId}/approve`, request);
 }
 
+export async function saveResearchBrief(
+  sessionId: string,
+  request: SaveResearchBriefRequest
+): Promise<ResearchSession> {
+  return apiFetch<ResearchSession>(`/research/${sessionId}/brief`, {
+    method: "PUT",
+    body: JSON.stringify(request),
+  });
+}
+
 /**
  * Resume a failed research session from the latest persisted checkpoint
  */
@@ -241,6 +264,16 @@ export async function getResearchReport(
   sessionId: string
 ): Promise<ResearchReport> {
   return apiGet<ResearchReport>(`/research/${sessionId}/report`);
+}
+
+export async function saveResearchReport(
+  sessionId: string,
+  request: SaveResearchReportRequest
+): Promise<ResearchReport> {
+  return apiFetch<ResearchReport>(`/research/${sessionId}/report`, {
+    method: "PUT",
+    body: JSON.stringify(request),
+  });
 }
 
 /**

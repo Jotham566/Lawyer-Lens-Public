@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useForm, Controller } from "react-hook-form";
@@ -80,10 +80,12 @@ function SocialLoginButtons({ mode, disabled, invitationToken, onError }: Social
     google: true,
     microsoft: true,
   });
+  const loadedProvidersRef = useRef(false);
 
   useEffect(() => {
     let mounted = true;
     const loadProviders = async () => {
+      if (loadedProvidersRef.current) return;
       try {
         const response = await getOAuthProviders();
         if (!mounted) return;
@@ -96,6 +98,7 @@ function SocialLoginButtons({ mode, disabled, invitationToken, onError }: Social
             nextState[provider.provider] = provider.enabled;
           }
         }
+        loadedProvidersRef.current = true;
         setProvidersEnabled(nextState);
       } catch {
         // Keep optimistic defaults; endpoint may be unavailable during partial deploys.

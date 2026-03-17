@@ -34,6 +34,7 @@ const inter = localFont({
   ],
   variable: "--font-inter",
   display: "swap",
+  preload: false,
   fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
 });
 
@@ -52,6 +53,7 @@ const jetbrainsMono = localFont({
   ],
   variable: "--font-jetbrains-mono",
   display: "swap",
+  preload: false,
   fallback: ["ui-monospace", "SFMono-Regular", "Menlo", "Monaco", "Consolas", "monospace"],
 });
 

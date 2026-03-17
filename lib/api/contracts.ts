@@ -9,7 +9,7 @@
  * 5. Download final contract
  */
 
-import { apiPost, apiGet, getApiBaseUrl } from "./client";
+import { apiPost, apiGet, apiFetch, getApiBaseUrl } from "./client";
 
 export type ContractPhase =
   | "requirements"
@@ -95,6 +95,7 @@ export interface ContractSection {
   id: string;
   title: string;
   content: string;
+  rich_content?: string;
   editable: boolean;
 }
 
@@ -141,6 +142,11 @@ export interface ContractReview {
   approved: boolean;
   edits?: SectionEdit[];
   notes?: string;
+}
+
+export interface SaveContractDraftRequest {
+  title: string;
+  sections: ContractSection[];
 }
 
 export interface SectionEdit {
@@ -200,6 +206,16 @@ export async function submitContractReview(
   review: ContractReview
 ): Promise<ContractSession> {
   return apiPost<ContractSession>(`/contracts/${sessionId}/review`, review);
+}
+
+export async function saveContractDraft(
+  sessionId: string,
+  draft: SaveContractDraftRequest
+): Promise<ContractSession> {
+  return apiFetch<ContractSession>(`/contracts/${sessionId}/draft`, {
+    method: "PUT",
+    body: JSON.stringify(draft),
+  });
 }
 
 /**

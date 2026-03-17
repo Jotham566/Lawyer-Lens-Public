@@ -20,6 +20,7 @@ import {
 } from "@/components/ui/popover";
 import { cn } from "@/lib/utils";
 import { useAuth } from "@/components/providers";
+import { APIError } from "@/lib/api/client";
 import {
   listOrganizations,
   switchOrganization,
@@ -51,11 +52,11 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
         const data = await listOrganizations();
         setOrganizations(data.items);
         // Select first org by default if none selected
-        if (data.items.length > 0 && !selectedOrg) {
-          setSelectedOrg(data.items[0]);
-        }
+        setSelectedOrg((current) => current ?? data.items[0] ?? null);
       } catch (err) {
-        console.error("Failed to load organizations:", err);
+        if (!(err instanceof APIError && err.status === 429)) {
+          console.error("Failed to load organizations:", err);
+        }
       } finally {
         setLoading(false);
       }
@@ -64,7 +65,7 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
     if (isAuthenticated) {
       loadOrganizations();
     }
-  }, [isAuthenticated, selectedOrg]);
+  }, [isAuthenticated]);
 
   const handleSelectOrg = async (org: Organization) => {
     if (org.id === selectedOrg?.id) {
@@ -82,7 +83,9 @@ export function OrgSwitcher({ className }: OrgSwitcherProps) {
       // Reload the page to refresh data with new org context
       window.location.reload();
     } catch (err) {
-      console.error("Failed to switch organization:", err);
+      if (!(err instanceof APIError && err.status === 429)) {
+        console.error("Failed to switch organization:", err);
+      }
       // Keep the current org selected on error
       setSwitching(false);
     }

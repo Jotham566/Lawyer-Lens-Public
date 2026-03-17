@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef } from "react";
+import { forwardRef, useEffect, useState } from "react";
 import { ArrowUp, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,31 +11,36 @@ import {
 
 interface ChatInputProps {
   value: string;
-  onChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  onKeyDown: (e: React.KeyboardEvent<HTMLTextAreaElement>) => void;
-  onSubmit: () => void;
+  onSubmit: (value: string, tool: ToolMode) => void;
   isLoading: boolean;
   isGenerating?: boolean;
   onStop?: () => void;
-  selectedTool: ToolMode;
-  onSelectTool: (tool: ToolMode) => void;
+  selectedTool?: ToolMode;
+  onSelectTool?: (tool: ToolMode) => void;
 }
 
 export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
   function ChatInput(
     {
       value,
-      onChange,
-      onKeyDown,
       onSubmit,
       isLoading,
       isGenerating,
       onStop,
-      selectedTool,
+      selectedTool: controlledTool,
       onSelectTool,
     },
     ref
   ) {
+    const [draft, setDraft] = useState(value);
+    const [internalTool, setInternalTool] = useState<ToolMode>("chat");
+    const selectedTool = controlledTool ?? internalTool;
+    const handleSelectTool = onSelectTool ?? setInternalTool;
+
+    useEffect(() => {
+      setDraft(value);
+    }, [value]);
+
     // Show stop button only while LLM is actively generating text
     const showStop = isGenerating ?? isLoading;
     return (
@@ -44,7 +49,13 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              onSubmit();
+              const trimmed = draft.trim();
+              if (!trimmed) return;
+              setTimeout(() => onSubmit(trimmed, selectedTool), 0);
+              setDraft("");
+              if (!onSelectTool) {
+                setInternalTool("chat");
+              }
             }}
             className="rounded-[28px] border border-muted-foreground/20 bg-background px-3 py-3 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring"
             role="search"
@@ -57,7 +68,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               <div className="absolute bottom-0 left-0 z-10">
                 <ToolsDropdown
                   selectedTool={selectedTool}
-                  onSelectTool={onSelectTool}
+                  onSelectTool={handleSelectTool}
                   disabled={isLoading}
                   showLabel
                   className="h-9 rounded-full border-0 bg-transparent px-2 text-sm shadow-none hover:bg-muted"
@@ -66,9 +77,20 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               <textarea
                 id="chat-input"
                 ref={ref}
-                value={value}
-                onChange={onChange}
-                onKeyDown={onKeyDown}
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    const trimmed = draft.trim();
+                    if (!trimmed) return;
+                    setTimeout(() => onSubmit(trimmed, selectedTool), 0);
+                    setDraft("");
+                    if (!onSelectTool) {
+                      setInternalTool("chat");
+                    }
+                  }
+                }}
                 placeholder={getToolPlaceholder(selectedTool)}
                 rows={1}
                 aria-label="Chat message input"
@@ -90,7 +112,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                     type="submit"
                     size="icon"
                     className="h-10 w-10 rounded-full"
-                    disabled={!value.trim()}
+                    disabled={!draft.trim()}
                     aria-label="Send message"
                   >
                     <ArrowUp className="h-5 w-5" />

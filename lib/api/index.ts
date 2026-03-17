@@ -52,8 +52,10 @@ export {
   getResearchSession,
   submitClarifyingAnswers,
   approveResearchBrief,
+  saveResearchBrief,
   resumeResearchSession,
   getResearchReport,
+  saveResearchReport,
   streamResearchProgress,
   type ResearchStatus,
   type ResearchPhase,
@@ -72,6 +74,8 @@ export {
   type StreamProgress,
   type ResearchTopicRequest,
   type ApproveBriefRequest,
+  type SaveResearchBriefRequest,
+  type SaveResearchReportRequest,
 } from "./research";
 
 // Contracts API
@@ -82,6 +86,7 @@ export {
   getContractSession,
   submitContractRequirements,
   submitContractReview,
+  saveContractDraft,
   getContractDownloadUrl,
   streamContractProgress,
   getMyContracts,
@@ -98,6 +103,7 @@ export {
   type ContractSection,
   type CreateContractRequest,
   type ContractReview,
+  type SaveContractDraftRequest,
   type SectionEdit,
   type SaveAsTemplateRequest,
   type ContractListItem,

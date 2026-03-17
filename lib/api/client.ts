@@ -140,18 +140,22 @@ export class APIError extends Error {
   public errorCode?: string;
   public traceId?: string;
   public details?: Record<string, unknown>;
+  public endpoint?: string;
 
   constructor(
     public status: number,
     public statusText: string,
-    public data?: unknown
+    public data?: unknown,
+    endpoint?: string,
   ) {
     // Try to extract message from backend APIError format
     const backendError = data as BackendAPIError | undefined;
     const validationMessage = extractValidationMessage(data);
-    const message = backendError?.message || validationMessage || `API Error: ${status} ${statusText}`;
+    const baseMessage = backendError?.message || validationMessage || `API Error: ${status} ${statusText}`;
+    const message = endpoint ? `${baseMessage} [${endpoint}]` : baseMessage;
     super(message);
     this.name = "APIError";
+    this.endpoint = endpoint;
 
     // Parse backend APIError format if present
     if (isBackendAPIError(data)) {
@@ -425,7 +429,7 @@ export async function apiFetch<T>(
       emitUnauthorized();
     }
 
-    throw new APIError(response.status, response.statusText, data);
+    throw new APIError(response.status, response.statusText, data, endpoint);
   }
 
   // Handle empty responses

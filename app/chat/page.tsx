@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Suspense } from "react";
 import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -22,6 +23,7 @@ import {
   MobileHistorySheet,
   ChatInput,
   EmptyState,
+  type ToolMode,
   VirtualizedMessageList,
   KeyboardShortcutsDialog,
   ExportDialog,
@@ -33,6 +35,45 @@ import {
   UpgradeRequiredModal,
 } from "@/components/entitlements/upgrade-required-modal";
 import { useChatOrchestrator } from "@/hooks/use-chat-orchestrator";
+
+function EmptyChatSurface({
+  input,
+  isLoading,
+  isGenerating,
+  onSelectQuestion,
+  onSubmit,
+  onStop,
+  setInputRef,
+}: {
+  input: string;
+  isLoading: boolean;
+  isGenerating: boolean;
+  onSelectQuestion: (question: string) => void;
+  onSubmit: (value: string, tool: ToolMode) => void;
+  onStop: (() => void) | undefined;
+  setInputRef: (node: HTMLTextAreaElement | null) => void;
+}) {
+  const [tool, setTool] = useState<ToolMode>("chat");
+
+  return (
+    <EmptyState
+      selectedTool={tool}
+      onSelectQuestion={onSelectQuestion}
+      composer={
+        <ChatInput
+          ref={setInputRef}
+          value={input}
+          selectedTool={tool}
+          onSelectTool={setTool}
+          onSubmit={onSubmit}
+          isLoading={isLoading}
+          isGenerating={isGenerating}
+          onStop={onStop}
+        />
+      }
+    />
+  );
+}
 
 function ChatContent() {
   // Require authentication to access chat
@@ -50,9 +91,6 @@ function ChatContent() {
     handleNewConversation,
     setMobileHistoryOpen,
     handleSelectQuestion,
-    setSelectedTool,
-    handleInputChange,
-    handleKeyDown,
     handleSend,
     handleStartEdit,
     handleCancelEdit,
@@ -147,23 +185,14 @@ function ChatContent() {
               {!state.currentConversation || state.currentConversation.messages.length === 0 ? (
                 <div className="h-full overflow-y-auto">
                   <div className="h-full">
-                    <EmptyState
-                      selectedTool={state.selectedTool}
+                    <EmptyChatSurface
+                      input={state.input}
+                      isLoading={state.isLoading}
+                      isGenerating={state.isGenerating}
                       onSelectQuestion={handleSelectQuestion}
-                      composer={
-                        <ChatInput
-                          ref={setInputRef}
-                          value={state.input}
-                          onChange={handleInputChange}
-                          onKeyDown={handleKeyDown}
-                          onSubmit={() => handleSend()}
-                          isLoading={state.isLoading}
-                          isGenerating={state.isGenerating}
-                          onStop={handleStop}
-                          selectedTool={state.selectedTool}
-                          onSelectTool={setSelectedTool}
-                        />
-                      }
+                      onSubmit={(value, tool) => handleSend(value, undefined, undefined, tool)}
+                      onStop={handleStop}
+                      setInputRef={setInputRef}
                     />
                   </div>
                 </div>
@@ -193,14 +222,10 @@ function ChatContent() {
               <ChatInput
                 ref={setInputRef}
                 value={state.input}
-                onChange={handleInputChange}
-                onKeyDown={handleKeyDown}
-                onSubmit={() => handleSend()}
+                onSubmit={(value, tool) => handleSend(value, undefined, undefined, tool)}
                 isLoading={state.isLoading}
                 isGenerating={state.isGenerating}
                 onStop={handleStop}
-                selectedTool={state.selectedTool}
-                onSelectTool={setSelectedTool}
               />
             )}
           </div>

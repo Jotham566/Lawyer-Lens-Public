@@ -108,6 +108,10 @@ const getStorageKey = (userId: string | null) => {
   return userId ? `law-lens-chat-${userId}` : "law-lens-chat-anonymous";
 };
 
+let fetchConversationsPromise: Promise<void> | null = null;
+let fetchConversationsRetryAt = 0;
+const FETCH_CONVERSATIONS_RATE_LIMIT_BACKOFF_MS = 10000;
+
 export const useChatStore = create<ChatState>()(
   persist(
     (set, get) => ({
@@ -493,7 +497,15 @@ export const useChatStore = create<ChatState>()(
         }),
 
       fetchConversations: async () => {
+        if (fetchConversationsPromise) {
+          return fetchConversationsPromise;
+        }
+        if (Date.now() < fetchConversationsRetryAt) {
+          return;
+        }
+
         set({ isFetchingHistory: true, error: null });
+        fetchConversationsPromise = (async () => {
         try {
           const response = await getConversations(50, 0);
 
@@ -563,9 +575,19 @@ export const useChatStore = create<ChatState>()(
             set({ isFetchingHistory: false, error: null });
             return;
           }
+          if (error instanceof APIError && error.status === 429) {
+            fetchConversationsRetryAt = Date.now() + FETCH_CONVERSATIONS_RATE_LIMIT_BACKOFF_MS;
+            set({ isFetchingHistory: false, error: null });
+            return;
+          }
           console.error("Failed to fetch conversations:", error);
           set({ isFetchingHistory: false, error: "Failed to load history" });
         }
+        })().finally(() => {
+          fetchConversationsPromise = null;
+        });
+
+        return fetchConversationsPromise;
       },
 
       fetchConversation: async (id: string) => {

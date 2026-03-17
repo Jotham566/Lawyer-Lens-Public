@@ -35,7 +35,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             height={height}
             className="dark:hidden"
             style={{ width: height, height: height }}
-            priority
+            loading="eager"
           />
           {/* Dark mode icon */}
           <Image
@@ -45,7 +45,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             height={height}
             className="hidden dark:block"
             style={{ width: height, height: height }}
-            priority
+            loading="eager"
           />
         </>
       ) : (
@@ -58,7 +58,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             height={height}
             className="dark:hidden"
             style={{ width: 'auto', height: height }}
-            priority
+            loading="eager"
           />
           {/* Dark mode logo */}
           <Image
@@ -68,7 +68,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             height={height}
             className="hidden dark:block"
             style={{ width: 'auto', height: height }}
-            priority
+            loading="eager"
           />
         </>
       )}

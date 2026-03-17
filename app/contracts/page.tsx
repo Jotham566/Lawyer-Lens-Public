@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, Suspense, useRef, useCallback } from "react";
+import { useState, useEffect, Suspense, useRef, useCallback, useMemo } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
@@ -9,24 +9,21 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
-  ChevronRight,
   Download,
   Plus,
   Trash2,
   Building2,
   User,
   Sparkles,
-  PenLine,
-  X,
-  Check,
-  List,
   Shield,
   Scale,
   Save,
+  WifiOff,
+  RefreshCcw,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Input } from "@/components/ui/input";
@@ -39,17 +36,16 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { APIError } from "@/lib/api/client";
 import {
   createContractSession,
   getContractSession,
   submitContractRequirements,
   submitContractReview,
+  saveContractDraft,
   getContractDownloadUrl,
   type ContractSession,
   type ContractRequirements,
@@ -58,9 +54,9 @@ import {
   type EnhancedTemplate,
   type ContractListItem,
 } from "@/lib/api";
-import { MarkdownRenderer } from "@/components/chat/markdown-renderer";
+import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import {
-  SourceSelection,
   TemplateBrowser,
   ContractBrowser,
   SaveAsTemplateDialog,
@@ -70,29 +66,10 @@ import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { useOnlineStatus } from "@/lib/hooks";
+import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
 
-const phaseLabels: Record<string, { label: string; description: string }> = {
-  requirements: {
-    label: "Requirements",
-    description: "Provide contract details",
-  },
-  drafting: {
-    label: "Drafting",
-    description: "Generating contract draft",
-  },
-  review: {
-    label: "Review",
-    description: "Review and edit the draft",
-  },
-  complete: {
-    label: "Complete",
-    description: "Contract ready for download",
-  },
-  failed: {
-    label: "Failed",
-    description: "An error occurred",
-  },
-};
+
 
 const defaultParty: PartyInfo = {
   role: "",
@@ -100,6 +77,197 @@ const defaultParty: PartyInfo = {
   address: "",
   registration_number: "",
 };
+
+const ACTIVE_CONTRACT_SESSION_KEY = "law-lens-active-contract-session";
+const CONTRACT_AUTOSAVE_DEBOUNCE_MS = 2500;
+const CONTRACT_RATE_LIMIT_BACKOFF_MS = 10000;
+
+function buildContractDocumentHtml(
+  session: ContractSession,
+  draftTitle: string,
+  sectionTitles: Record<string, string>,
+  sectionEditsRich: Record<string, string>,
+): string {
+  return sanitizeRichHtml(`
+    <header data-contract-part="header">
+      <h1>${draftTitle || session.draft?.title || "Contract Draft"}</h1>
+      <p>Generated ${formatDateOnly(session.created_at)}</p>
+    </header>
+    ${(session.draft?.sections || [])
+      .map((section, index) => {
+        const sectionId = section.id || `section-${index}`;
+        const richHtml = ensureRichHtml(section.content, sectionEditsRich[sectionId] ?? section.rich_content);
+        return `
+          <section id="${sectionId}" data-section-anchor="${sectionId}" data-contract-part="section" data-section-id="${sectionId}">
+            <h2>${index + 1}. ${sectionTitles[sectionId] || section.title || `Section ${index + 1}`}</h2>
+            <div data-contract-body="true">${richHtml}</div>
+          </section>
+        `;
+      })
+      .join("")}
+    <section data-contract-part="signature-block" contenteditable="false">
+      <h2>Signatures</h2>
+      <div class="grid gap-12 sm:grid-cols-2">
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">First Party</p>
+          <div class="mt-12 border-b border-border"></div>
+          <p class="mt-3 text-sm italic text-muted-foreground">Signature</p>
+          <div class="mt-8 border-b border-border"></div>
+          <p class="mt-3 text-sm italic text-muted-foreground">Date</p>
+        </div>
+        <div>
+          <p class="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Second Party</p>
+          <div class="mt-12 border-b border-border"></div>
+          <p class="mt-3 text-sm italic text-muted-foreground">Signature</p>
+          <div class="mt-8 border-b border-border"></div>
+          <p class="mt-3 text-sm italic text-muted-foreground">Date</p>
+        </div>
+      </div>
+    </section>
+  `);
+}
+
+function parseContractDocumentHtml(
+  html: string,
+  session: ContractSession,
+): {
+  title: string;
+  sectionTitles: Record<string, string>;
+  sectionPlain: Record<string, string>;
+  sectionRich: Record<string, string>;
+} {
+  if (typeof window === "undefined" || !session.draft) {
+    return {
+      title: session.draft?.title || "Contract Draft",
+      sectionTitles: Object.fromEntries((session.draft?.sections || []).map((section, index) => [section.id || `section-${index}`, section.title || `Section ${index + 1}`])),
+      sectionPlain: Object.fromEntries((session.draft?.sections || []).map((section, index) => [section.id || `section-${index}`, section.content])),
+      sectionRich: Object.fromEntries((session.draft?.sections || []).map((section, index) => [section.id || `section-${index}`, ensureRichHtml(section.content, section.rich_content)])),
+    };
+  }
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const title = doc.querySelector("header h1")?.textContent?.trim() || session.draft.title || "Contract Draft";
+  const sectionTitles: Record<string, string> = {};
+  const sectionPlain: Record<string, string> = {};
+  const sectionRich: Record<string, string> = {};
+
+  session.draft.sections.forEach((section, index) => {
+    const sectionId = section.id || `section-${index}`;
+    const sectionNode = doc.querySelector<HTMLElement>(`[data-contract-part='section'][data-section-id='${sectionId}']`);
+    const heading = sectionNode?.querySelector("h2")?.textContent?.trim();
+    const bodyHtml = sanitizeRichHtml(
+      sectionNode?.querySelector<HTMLElement>("[data-contract-body]")?.innerHTML ||
+      ensureRichHtml(section.content, section.rich_content)
+    );
+    sectionTitles[sectionId] = heading?.replace(/^\d+\.\s*/, "").trim() || section.title || `Section ${index + 1}`;
+    sectionRich[sectionId] = bodyHtml;
+    sectionPlain[sectionId] = richHtmlToPlainText(bodyHtml);
+  });
+
+  return { title, sectionTitles, sectionPlain, sectionRich };
+}
+
+function buildContractKickoffDocumentHtml(description: string): string {
+  return sanitizeRichHtml(`
+    <header data-contract-part="header">
+      <h1>Contract Brief</h1>
+      <p>Draft the commercial instruction for the contract you want generated.</p>
+    </header>
+    <section id="contract-objective" data-section-anchor="contract-objective" data-contract-part="section" data-section-id="contract-objective">
+      <h2>Instruction</h2>
+      <div data-contract-body="true">${ensureRichHtml(
+        description || "Describe the contract type, the parties, the commercial deal, and any clauses or risks that must be addressed."
+      )}</div>
+    </section>
+    <section id="contract-notes" data-section-anchor="contract-notes" data-contract-part="section" data-section-id="contract-notes" contenteditable="false">
+      <h2>What happens next</h2>
+      <p>The system will gather the key requirements, draft the contract in the document canvas, then let you revise and approve the full draft.</p>
+    </section>
+  `);
+}
+
+function parseContractKickoffDocumentHtml(html: string, fallbackDescription: string): string {
+  if (typeof window === "undefined") return fallbackDescription;
+
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const instructionNode = doc.querySelector<HTMLElement>("[data-section-id='contract-objective'] [data-contract-body]");
+  const instructionHtml = sanitizeRichHtml(instructionNode?.innerHTML || ensureRichHtml(fallbackDescription || ""));
+  return richHtmlToPlainText(instructionHtml).trim();
+}
+
+function buildContractRequirementsDocumentHtml(
+  session: ContractSession,
+  description: string,
+  parties: PartyInfo[],
+  jurisdiction: string,
+  keyTerms: Record<string, string>,
+  variableValues: Record<string, string>,
+): string {
+  const activeParties = parties.filter((party) => party.name.trim() || party.role.trim() || party.address?.trim());
+  const partyHtml = activeParties.length
+    ? activeParties
+        .map(
+          (party, index) => `
+            <div class="rounded-2xl border border-border/50 bg-[#f8f8fb] px-4 py-3 dark:bg-[#171b22] dark:border-white/10">
+              <h3>${party.role || `Party ${index + 1}`}</h3>
+              <p>${party.name || "Legal name pending"}</p>
+              ${party.address ? `<p>${party.address}</p>` : ""}
+            </div>
+          `
+        )
+        .join("")
+    : `<p>Add party information from the left rail to build the requirements memo.</p>`;
+
+  const questionRows = (session.questions || [])
+    .map((question) => {
+      const answer = variableValues[question.variable] || keyTerms[question.variable] || "";
+      return `
+        <tr>
+          <td>${question.variable.replace(/_/g, " ")}</td>
+          <td>${answer || "Pending input"}</td>
+        </tr>
+      `;
+    })
+    .join("");
+
+  return sanitizeRichHtml(`
+    <header data-contract-part="header">
+      <h1>Contract Requirements</h1>
+      <p>Refine the drafting memo while the left rail captures structured variables.</p>
+    </header>
+    <section id="contract-instruction" data-section-anchor="contract-instruction" data-contract-part="section" data-section-id="contract-instruction">
+      <h2>Drafting Instruction</h2>
+      <div data-contract-body="true">${ensureRichHtml(description || session.description || "")}</div>
+    </section>
+    <section id="contract-parties" data-section-anchor="contract-parties" data-contract-part="section" data-section-id="contract-parties" contenteditable="false">
+      <h2>Parties</h2>
+      <div class="grid gap-4">${partyHtml}</div>
+    </section>
+    <section id="contract-scope" data-section-anchor="contract-scope" data-contract-part="section" data-section-id="contract-scope" contenteditable="false">
+      <h2>Scope and Terms</h2>
+      <p><strong>Jurisdiction:</strong> ${jurisdiction}</p>
+      ${keyTerms.effective_date ? `<p><strong>Effective date:</strong> ${keyTerms.effective_date}</p>` : ""}
+      ${keyTerms.duration ? `<p><strong>Duration:</strong> ${keyTerms.duration}</p>` : ""}
+      ${keyTerms.value ? `<p><strong>Consideration:</strong> ${keyTerms.value}</p>` : ""}
+    </section>
+    <section id="contract-open-items" data-section-anchor="contract-open-items" data-contract-part="section" data-section-id="contract-open-items" contenteditable="false">
+      <h2>Open Variables</h2>
+      ${
+        questionRows
+          ? `<table><thead><tr><th>Variable</th><th>Current input</th></tr></thead><tbody>${questionRows}</tbody></table>`
+          : "<p>The contract is ready for generation.</p>"
+      }
+    </section>
+  `);
+}
+
+function parseContractRequirementsDocumentHtml(html: string, fallbackDescription: string): string {
+  if (typeof window === "undefined") return fallbackDescription;
+  const doc = new DOMParser().parseFromString(html, "text/html");
+  const instructionNode = doc.querySelector<HTMLElement>("[data-section-id='contract-instruction'] [data-contract-body]");
+  const instructionHtml = sanitizeRichHtml(instructionNode?.innerHTML || ensureRichHtml(fallbackDescription || ""));
+  return richHtmlToPlainText(instructionHtml).trim();
+}
 
 function ContractsContent() {
   const searchParams = useSearchParams();
@@ -110,6 +278,8 @@ function ContractsContent() {
 
   const [session, setSession] = useState<ContractSession | null>(null);
   const [description, setDescription] = useState(initialDescription || "");
+  const [kickoffEditor, setKickoffEditor] = useState<HTMLElement | null>(null);
+  const [contractKickoffHtml, setContractKickoffHtml] = useState(() => buildContractKickoffDocumentHtml(initialDescription || ""));
 
   // Source selection state
   const [selectedSource, setSelectedSource] = useState<SourceType>("fresh");
@@ -125,13 +295,133 @@ function ContractsContent() {
   const [keyTerms, setKeyTerms] = useState<Record<string, string>>({});
   const [variableValues, setVariableValues] = useState<Record<string, string>>({});
   const [jurisdiction, setJurisdiction] = useState("Uganda");
+  const [draftTitle, setDraftTitle] = useState("");
+  const [sectionTitles, setSectionTitles] = useState<Record<string, string>>({});
   const [sectionEdits, setSectionEdits] = useState<Record<string, string>>({});
-  const [editingSection, setEditingSection] = useState<string | null>(null);
+  const [sectionEditsRich, setSectionEditsRich] = useState<Record<string, string>>({});
   const [activeSection, setActiveSection] = useState<string | null>(null);
-  const showSidebar = true; // Always show sidebar in review phase
+  const [requirementsEditor, setRequirementsEditor] = useState<HTMLElement | null>(null);
+  const [contractEditor, setContractEditor] = useState<HTMLElement | null>(null);
+  const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error" | "rate_limited">("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
+  const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftingResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const draftRetryAtRef = useRef(0);
+  const hydratedDraftRef = useRef(false);
+  const lastSavedDraftRef = useRef<string | null>(null);
+  const { isOnline, wasOffline, isHydrated } = useOnlineStatus();
+  const requirementsDocumentHtml = useMemo(
+    () =>
+      session?.phase === "requirements"
+        ? buildContractRequirementsDocumentHtml(session, description, parties, jurisdiction, keyTerms, variableValues)
+        : "",
+    [description, jurisdiction, keyTerms, parties, session, variableValues]
+  );
+
+  useEffect(() => {
+    if (sessionIdParam || typeof window === "undefined") return;
+    const activeSessionId = window.localStorage.getItem(ACTIVE_CONTRACT_SESSION_KEY);
+    if (activeSessionId) {
+      router.replace(`/contracts?session=${activeSessionId}`);
+    }
+  }, [router, sessionIdParam]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (session && !["complete", "failed", "approval"].includes(session.phase)) {
+      window.localStorage.setItem(ACTIVE_CONTRACT_SESSION_KEY, session.session_id);
+      return;
+    }
+    if (session?.phase === "complete" || session?.phase === "failed" || session?.phase === "approval") {
+      window.localStorage.removeItem(ACTIVE_CONTRACT_SESSION_KEY);
+    }
+  }, [session]);
+
+  useEffect(() => {
+    if (!session?.draft) return;
+    setDraftTitle(session.draft.title || "");
+    setSectionTitles(
+      Object.fromEntries(
+        session.draft.sections.map((section, index) => [
+          section.id || `section-${index}`,
+          section.title || `Section ${index + 1}`,
+        ])
+      )
+    );
+    setSectionEdits(
+      Object.fromEntries(
+        session.draft.sections.map((section, index) => [
+          section.id || `section-${index}`,
+          section.content,
+        ])
+      )
+    );
+    setSectionEditsRich(
+      Object.fromEntries(
+        session.draft.sections.map((section, index) => [
+          section.id || `section-${index}`,
+          ensureRichHtml(section.content, section.rich_content),
+        ])
+      )
+    );
+  }, [session?.draft]);
+
+  useEffect(() => {
+    if (session?.phase !== "review" || !session.draft) return;
+    const currentDraft = session.draft;
+    if (!hydratedDraftRef.current) {
+      hydratedDraftRef.current = true;
+      return;
+    }
+
+    const draftToSave = {
+      title: draftTitle || currentDraft.title || "Contract Draft",
+      sections: currentDraft.sections.map((section, index) => {
+        const sectionId = section.id || `section-${index}`;
+        return {
+          ...section,
+          id: sectionId,
+          title: sectionTitles[sectionId] ?? section.title,
+          content: sectionEdits[sectionId] ?? section.content,
+          rich_content: sectionEditsRich[sectionId] ?? section.rich_content,
+        };
+      }),
+    };
+
+    const currentDraftHash = JSON.stringify(draftToSave);
+    if (lastSavedDraftRef.current === currentDraftHash) return;
+
+    if (draftSaveTimerRef.current) {
+      clearTimeout(draftSaveTimerRef.current);
+    }
+
+    const delay = Math.max(CONTRACT_AUTOSAVE_DEBOUNCE_MS, draftRetryAtRef.current - Date.now(), 0);
+    draftSaveTimerRef.current = setTimeout(async () => {
+      setDraftSaveState("saving");
+      try {
+        lastSavedDraftRef.current = currentDraftHash;
+        const updatedSession = await saveContractDraft(session.session_id, draftToSave);
+        setSession(updatedSession);
+        setDraftSaveState("saved");
+      } catch (error) {
+        lastSavedDraftRef.current = null;
+        if (error instanceof APIError && error.status === 429) {
+          draftRetryAtRef.current = Date.now() + CONTRACT_RATE_LIMIT_BACKOFF_MS;
+          setDraftSaveState("rate_limited");
+          return;
+        }
+        setDraftSaveState("error");
+      }
+    }, delay);
+
+    return () => {
+      if (draftSaveTimerRef.current) {
+        clearTimeout(draftSaveTimerRef.current);
+      }
+    };
+  }, [draftTitle, sectionEdits, sectionEditsRich, sectionTitles, session?.session_id, session?.phase, session?.draft]);
 
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
@@ -172,12 +462,25 @@ function ContractsContent() {
           setSession(updatedSession);
         }
       } catch (err) {
+        if (err instanceof APIError && err.status === 429) {
+          clearInterval(pollInterval);
+          draftingResumeTimerRef.current = setTimeout(() => {
+            void loadSession(session.session_id);
+          }, CONTRACT_RATE_LIMIT_BACKOFF_MS);
+          return;
+        }
         console.error("Polling error:", err);
       }
     }, 5000); // Poll every 5 seconds
 
-    return () => clearInterval(pollInterval);
-  }, [session?.session_id, session?.phase, session, refreshEntitlements]);
+    return () => {
+      clearInterval(pollInterval);
+      if (draftingResumeTimerRef.current) {
+        clearTimeout(draftingResumeTimerRef.current);
+        draftingResumeTimerRef.current = null;
+      }
+    };
+  }, [loadSession, refreshEntitlements, session?.session_id, session?.phase, session]);
 
   // Infer contract type from description
   const inferContractType = (text: string): string => {
@@ -280,18 +583,25 @@ function ContractsContent() {
   };
 
   const handleApproveContract = async () => {
-    if (!session) return;
+    if (!session?.draft) return;
 
     setIsLoading(true);
     setError(null);
 
     try {
-      const edits = Object.entries(sectionEdits)
-        .filter(([, content]) => content.trim())
-        .map(([sectionId, content]) => ({
+      const edits = session.draft.sections
+        .map((section, index) => {
+          const sectionId = section.id || `section-${index}`;
+          const content = sectionEdits[sectionId];
+          if (content === undefined || content === section.content) {
+            return null;
+          }
+          return {
           section_id: sectionId,
           new_content: content,
-        }));
+          };
+        })
+        .filter((edit): edit is { section_id: string; new_content: string } => Boolean(edit));
 
       const updatedSession = await submitContractReview(
         session.session_id,
@@ -307,7 +617,6 @@ function ContractsContent() {
       setIsLoading(false);
     }
   };
-
   const addParty = () => {
     setParties([...parties, { ...defaultParty, role: `Party ${parties.length + 1}` }]);
   };
@@ -399,142 +708,148 @@ function ContractsContent() {
     }
   };
 
-  const renderPhaseIndicator = () => {
-    if (!session) return null;
 
-    const phases = ["requirements", "drafting", "review", "complete"];
-    // Map "approval" phase to "complete" for display purposes
-    const displayPhase = session.phase === "approval" ? "complete" : session.phase;
-    const currentIndex = phases.indexOf(displayPhase);
-
-    return (
-      <div className="flex items-center gap-2 mb-6">
-        {phases.map((phase, index) => {
-          const isComplete = index < currentIndex;
-          const isCurrent = index === currentIndex;
-          const info = phaseLabels[phase];
-
-          return (
-            <div key={phase} className="flex items-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                      isComplete && "border-green-500 bg-green-500 text-white",
-                      isCurrent && "border-primary bg-primary/10 text-primary",
-                      !isComplete && !isCurrent && "border-muted text-muted-foreground"
-                    )}
-                  >
-                    {isComplete ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <span className="text-xs font-medium">{index + 1}</span>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="font-medium">{info.label}</p>
-                  <p className="text-xs text-muted-foreground">{info.description}</p>
-                </TooltipContent>
-              </Tooltip>
-              {index < phases.length - 1 && (
-                <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
 
   // Initial description input
   if (!session && !sessionIdParam) {
     return (
-      <div className="container mx-auto max-w-3xl px-4 py-8">
-        <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-8">
-          <ArrowLeft className="h-4 w-4" />
-          Back to Chat
-        </Link>
-
-        <div className="text-center mb-8">
-          <div className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10 mb-4">
-            <FileText className="h-8 w-8 text-green-500" />
-          </div>
-          <h1 className="text-3xl font-bold tracking-tight">Contract Drafting</h1>
-          <p className="mt-2 text-muted-foreground max-w-lg mx-auto">
-            Generate professional contracts based on Ugandan law. Our AI will create
-            a customized draft based on your requirements.
-          </p>
-        </div>
-
-        <Card>
-          <CardContent className="pt-6">
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="description">Describe Your Contract</Label>
-                <Textarea
-                  id="description"
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  placeholder="E.g., Employment contract for a software developer with a 3-month probation period..."
-                  className="mt-2 min-h-[100px]"
-                />
+      <TooltipProvider>
+        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
+          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-4">
+              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Chat
+              </Link>
+              <div className="hidden h-5 w-px bg-border sm:block" />
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-green-500" />
+                Contract Workspace
               </div>
-
-              <SourceSelection
-                onSelect={handleSourceSelect}
-                onOpenTemplateBrowser={() => setShowTemplateBrowser(true)}
-                onOpenContractBrowser={() => setShowContractBrowser(true)}
-                selectedSource={selectedSource}
-                selectedTemplateId={selectedTemplateData?.id}
-                selectedContractId={selectedContractData?.session_id}
-                templateName={selectedTemplateData?.name}
-                contractName={selectedContractData?.title || undefined}
-              />
-
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
-                </div>
-              )}
-
-              <Button
-                onClick={handleStartContract}
-                disabled={!description.trim() || isLoading}
-                className="w-full"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Drafting
-                  </>
-                )}
-              </Button>
             </div>
-          </CardContent>
-        </Card>
+            <Button
+              onClick={handleStartContract}
+              disabled={!description.trim() || isLoading}
+              className="rounded-full bg-green-600 px-5 hover:bg-green-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start Drafting
+                </>
+              )}
+            </Button>
+          </header>
 
-        {/* Browser Modals */}
-        <TemplateBrowser
-          open={showTemplateBrowser}
-          onClose={() => setShowTemplateBrowser(false)}
-          onSelect={handleTemplateSelect}
-          selectedId={selectedTemplateData?.id}
-        />
-        <ContractBrowser
-          open={showContractBrowser}
-          onClose={() => setShowContractBrowser(false)}
-          onSelect={handleContractSelect}
-          selectedId={selectedContractData?.session_id}
-        />
-      </div>
+          <div className="flex flex-1 overflow-hidden">
+            <aside className="hidden w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] lg:flex lg:flex-col lg:overflow-y-auto">
+              <div className="space-y-8 p-5">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Start Mode</h3>
+                  <div className="mt-3 space-y-2">
+                    <button
+                      type="button"
+                      onClick={() => handleSourceSelect("fresh")}
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
+                        selectedSource === "fresh" ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                      )}
+                    >
+                      <div className="font-medium">Start fresh</div>
+                      <div className="mt-1 text-muted-foreground">Generate a new contract from the brief in the canvas.</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowTemplateBrowser(true)}
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
+                        selectedSource === "template" || selectedTemplateData ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                      )}
+                    >
+                      <div className="font-medium">Use template</div>
+                      <div className="mt-1 text-muted-foreground">{selectedTemplateData?.name || "Start from an existing clause structure."}</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setShowContractBrowser(true)}
+                      className={cn(
+                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
+                        selectedSource === "clone" || selectedContractData ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                      )}
+                    >
+                      <div className="font-medium">Clone past contract</div>
+                      <div className="mt-1 text-muted-foreground">{selectedContractData?.title || "Reuse a prior contract as the starting point."}</div>
+                    </button>
+                  </div>
+                </div>
+
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Workflow</h3>
+                  <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
+                    <li className="text-foreground">1. Refine the drafting instruction</li>
+                    <li>2. Confirm variables and parties</li>
+                    <li>3. Edit and approve the full draft</li>
+                  </ol>
+                </div>
+
+                <div className="rounded-2xl border border-green-100 bg-green-50/80 p-4 text-sm text-green-900 dark:border-green-950 dark:bg-green-950/30 dark:text-green-200">
+                  Write the commercial instruction like a briefing note. The draft will open in the full contract canvas after generation.
+                </div>
+              </div>
+            </aside>
+
+            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
+              <div className="mx-auto max-w-6xl pb-24">
+                {error && (
+                  <div className="mb-6 flex items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                    <AlertCircle className="h-4 w-4" />
+                    {error}
+                  </div>
+                )}
+                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
+                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Scale className="h-4 w-4 text-green-600" />
+                      <div className="truncate text-sm font-medium">Contract Drafting</div>
+                    </div>
+                    <Badge variant="secondary" className="rounded-full">Editable brief</Badge>
+                  </div>
+                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
+                    <RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />
+                  </div>
+                  <EditableDocumentCanvas
+                    html={contractKickoffHtml}
+                    onEditorReady={setKickoffEditor}
+                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                    onChange={(html) => {
+                      setContractKickoffHtml(html);
+                      setDescription(parseContractKickoffDocumentHtml(html, description));
+                    }}
+                  />
+                </div>
+              </div>
+            </main>
+          </div>
+
+          <TemplateBrowser
+            open={showTemplateBrowser}
+            onClose={() => setShowTemplateBrowser(false)}
+            onSelect={handleTemplateSelect}
+            selectedId={selectedTemplateData?.id}
+          />
+          <ContractBrowser
+            open={showContractBrowser}
+            onClose={() => setShowContractBrowser(false)}
+            onSelect={handleContractSelect}
+            selectedId={selectedContractData?.session_id}
+          />
+        </div>
+      </TooltipProvider>
     );
   }
 
@@ -552,228 +867,26 @@ function ContractsContent() {
   if (session?.phase === "requirements") {
     return (
       <TooltipProvider>
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Chat
-          </Link>
-
-          {renderPhaseIndicator()}
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <FileText className="h-5 w-5 text-green-500" />
+        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
+          {/* Top Navigation Bar */}
+          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-4">
+              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Chat
+              </Link>
+              <div className="hidden h-5 w-px bg-border sm:block" />
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-green-500" />
                 Contract Requirements
-              </CardTitle>
-              <CardDescription>
-                Provide the details needed to draft your contract.
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div className="p-4 bg-muted/50 rounded-lg">
-                <p className="text-sm font-medium text-muted-foreground mb-1">
-                  Contract Description
-                </p>
-                <p className="text-sm">{session.description}</p>
               </div>
-
-              {/* Parties */}
-              <div className="space-y-4">
-                <div className="flex items-center justify-between">
-                  <Label className="text-base">Parties</Label>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={addParty}
-                  >
-                    <Plus className="h-4 w-4 mr-1" />
-                    Add Party
-                  </Button>
-                </div>
-
-                {parties.map((party, index) => (
-                  <Card key={index} className="p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-muted">
-                        {index === 0 ? (
-                          <User className="h-5 w-5 text-muted-foreground" />
-                        ) : (
-                          <Building2 className="h-5 w-5 text-muted-foreground" />
-                        )}
-                      </div>
-                      <div className="flex-1 space-y-3">
-                        <div className="grid grid-cols-2 gap-3">
-                          <div>
-                            <Label className="text-xs">Role</Label>
-                            <Input
-                              value={party.role}
-                              onChange={(e) =>
-                                updateParty(index, "role", e.target.value)
-                              }
-                              placeholder="E.g., Employer"
-                              className="mt-1"
-                            />
-                          </div>
-                          <div>
-                            <Label className="text-xs">Name</Label>
-                            <Input
-                              value={party.name}
-                              onChange={(e) =>
-                                updateParty(index, "name", e.target.value)
-                              }
-                              placeholder="Full legal name"
-                              className="mt-1"
-                            />
-                          </div>
-                        </div>
-                        <div>
-                          <Label className="text-xs">Address (Optional)</Label>
-                          <Input
-                            value={party.address}
-                            onChange={(e) =>
-                              updateParty(index, "address", e.target.value)
-                            }
-                            placeholder="Business or residential address"
-                            className="mt-1"
-                          />
-                        </div>
-                      </div>
-                      {parties.length > 2 && (
-                        <Button
-                          type="button"
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => removeParty(index)}
-                          className="h-8 w-8 text-muted-foreground hover:text-destructive"
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      )}
-                    </div>
-                  </Card>
-                ))}
-              </div>
-
-              {/* Key Terms - shown when no dynamic questions */}
-              {(!session.questions || session.questions.length === 0) && (
-                <div className="space-y-3">
-                  <Label className="text-base">Key Terms</Label>
-                  <div className="grid gap-3">
-                    <div>
-                      <Label className="text-xs">Effective Date</Label>
-                      <Input
-                        type="date"
-                        value={keyTerms.effective_date || ""}
-                        onChange={(e) =>
-                          setKeyTerms({ ...keyTerms, effective_date: e.target.value })
-                        }
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Duration/Term</Label>
-                      <Input
-                        value={keyTerms.duration || ""}
-                        onChange={(e) =>
-                          setKeyTerms({ ...keyTerms, duration: e.target.value })
-                        }
-                        placeholder="E.g., 2 years, indefinite, project completion"
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label className="text-xs">Value/Consideration</Label>
-                      <Input
-                        value={keyTerms.value || ""}
-                        onChange={(e) =>
-                          setKeyTerms({ ...keyTerms, value: e.target.value })
-                        }
-                        placeholder="E.g., UGX 5,000,000 per month"
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Dynamic Questions from Backend */}
-              {session.questions && session.questions.length > 0 && (
-                <div className="space-y-4">
-                  <div className="flex items-center gap-2">
-                    <Sparkles className="h-4 w-4 text-green-500" />
-                    <Label className="text-base">Contract Details</Label>
-                  </div>
-                  <p className="text-sm text-muted-foreground -mt-2">
-                    Please answer the following questions to customize your contract.
-                  </p>
-
-                  {/* Group questions by their group field */}
-                  {(() => {
-                    const groups = session.questions.reduce((acc, q) => {
-                      const group = q.group || "general";
-                      if (!acc[group]) acc[group] = [];
-                      acc[group].push(q);
-                      return acc;
-                    }, {} as Record<string, ContractQuestion[]>);
-
-                    return Object.entries(groups).map(([groupName, questions]) => (
-                      <div key={groupName} className="space-y-3">
-                        {Object.keys(groups).length > 1 && (
-                          <Label className="text-sm font-medium text-muted-foreground capitalize">
-                            {groupName.replace(/_/g, " ")}
-                          </Label>
-                        )}
-                        <div className="grid gap-4">
-                          {questions.map((question) => (
-                            <div key={question.id}>
-                              <Label className="text-sm">
-                                {question.question}
-                                {question.required && (
-                                  <span className="text-destructive ml-1">*</span>
-                                )}
-                              </Label>
-                              {renderQuestionInput(question)}
-                            </div>
-                          ))}
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              )}
-
-              {/* Jurisdiction */}
-              <div>
-                <Label>Jurisdiction</Label>
-                <Select value={jurisdiction} onValueChange={setJurisdiction}>
-                  <SelectTrigger className="mt-2">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="Uganda">Uganda</SelectItem>
-                    <SelectItem value="Kenya">Kenya</SelectItem>
-                    <SelectItem value="Tanzania">Tanzania</SelectItem>
-                    <SelectItem value="Rwanda">Rwanda</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              {error && (
-                <div className="flex items-center gap-2 text-sm text-destructive">
-                  <AlertCircle className="h-4 w-4" />
-                  {error}
-                </div>
-              )}
-
+            </div>
+            <div className="flex items-center gap-3">
               <Button
                 onClick={handleSubmitRequirements}
-                disabled={
-                  isLoading ||
-                  !parties.some((p) => p.name.trim())
-                }
-                className="w-full"
+                disabled={isLoading || !parties.some((p) => p.name.trim())}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
               >
                 {isLoading ? (
                   <>
@@ -787,8 +900,210 @@ function ContractsContent() {
                   </>
                 )}
               </Button>
-            </CardContent>
-          </Card>
+            </div>
+          </header>
+
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Configuration Options */}
+            <aside className="w-80 shrink-0 border-r bg-muted/10 flex flex-col overflow-y-auto z-10">
+              <div className="p-4 space-y-8">
+                {/* Parties Section */}
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">Parties</h3>
+                    <Button type="button" variant="ghost" size="sm" onClick={addParty} className="h-7 px-2 text-xs">
+                      <Plus className="h-3 w-3 mr-1" /> Add
+                    </Button>
+                  </div>
+                  
+                  <div className="space-y-4">
+                    {parties.map((party, index) => (
+                      <div key={index} className="bg-background rounded-xl p-3 border shadow-sm space-y-3 relative group">
+                        <div className="flex items-center gap-2 text-sm font-medium">
+                          {index === 0 ? <User className="h-4 w-4 text-muted-foreground" /> : <Building2 className="h-4 w-4 text-muted-foreground" />}
+                          Party {index + 1}
+                          {parties.length > 2 && (
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => removeParty(index)}
+                              className="absolute top-2 right-2 h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                            >
+                              <Trash2 className="h-3 w-3" />
+                            </Button>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <Input
+                            value={party.role}
+                            onChange={(e) => updateParty(index, "role", e.target.value)}
+                            placeholder="Role (e.g. Employer)"
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                          <Input
+                            value={party.name}
+                            onChange={(e) => updateParty(index, "name", e.target.value)}
+                            placeholder="Full legal name"
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                          <Input
+                            value={party.address}
+                            onChange={(e) => updateParty(index, "address", e.target.value)}
+                            placeholder="Address (Optional)"
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+
+                <div className="h-px bg-border" />
+
+                {/* Scope & Terms */}
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Scope & Terms</h3>
+                  
+                  <div className="space-y-4">
+                    <div className="space-y-1.5">
+                      <Label className="text-xs text-muted-foreground font-medium">Jurisdiction</Label>
+                      <Select value={jurisdiction} onValueChange={setJurisdiction}>
+                        <SelectTrigger className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors">
+                          <SelectValue />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="Uganda">Uganda</SelectItem>
+                          <SelectItem value="Kenya">Kenya</SelectItem>
+                          <SelectItem value="Tanzania">Tanzania</SelectItem>
+                          <SelectItem value="Rwanda">Rwanda</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Key Terms - shown when no dynamic questions */}
+                    {(!session.questions || session.questions.length === 0) && (
+                      <div className="space-y-4 pt-2">
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground font-medium">Effective Date</Label>
+                          <Input
+                            type="date"
+                            value={keyTerms.effective_date || ""}
+                            onChange={(e) => setKeyTerms({ ...keyTerms, effective_date: e.target.value })}
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground font-medium">Duration/Term</Label>
+                          <Input
+                            value={keyTerms.duration || ""}
+                            onChange={(e) => setKeyTerms({ ...keyTerms, duration: e.target.value })}
+                            placeholder="E.g. 2 years, indefinite"
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label className="text-xs text-muted-foreground font-medium">Value/Consideration</Label>
+                          <Input
+                            value={keyTerms.value || ""}
+                            onChange={(e) => setKeyTerms({ ...keyTerms, value: e.target.value })}
+                            placeholder="E.g. UGX 5,000,000"
+                            className="h-8 text-xs bg-muted/50 border-transparent hover:bg-muted focus:bg-background transition-colors"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* AI Questions */}
+                {session.questions && session.questions.length > 0 && (
+                  <>
+                    <div className="h-px bg-border" />
+                    <div>
+                      <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4">Contract Details</h3>
+                      
+                      {(() => {
+                        const groups = session.questions.reduce((acc, q) => {
+                          const group = q.group || "general";
+                          if (!acc[group]) acc[group] = [];
+                          acc[group].push(q);
+                          return acc;
+                        }, {} as Record<string, ContractQuestion[]>);
+
+                        return Object.entries(groups).map(([groupName, questions]) => (
+                          <div key={groupName} className="space-y-4 mb-6 last:mb-0">
+                            {Object.keys(groups).length > 1 && (
+                              <Label className="text-xs font-semibold text-muted-foreground capitalize">
+                                {groupName.replace(/_/g, " ")}
+                              </Label>
+                            )}
+                            <div className="space-y-4">
+                              {questions.map((question) => (
+                                <div key={question.id} className="space-y-1.5">
+                                  <Label className="text-xs font-medium text-foreground">
+                                    {question.question}
+                                    {question.required && <span className="text-destructive ml-1">*</span>}
+                                  </Label>
+                                  {renderQuestionInput(question)}
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ));
+                      })()}
+                    </div>
+                  </>
+                )}
+
+                {error && (
+                  <div className="bg-destructive/10 text-destructive p-3 rounded-lg text-xs flex items-start gap-2">
+                    <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                    <div>{error}</div>
+                  </div>
+                )}
+              </div>
+            </aside>
+
+            {/* Main Canvas - Requirements Document */}
+            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
+              <div className="mx-auto max-w-6xl pb-24">
+                {!isOnline && isHydrated && (
+                  <div className="mb-6 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                    <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div>You are offline. Contract drafting continues in the background and this session will reconnect automatically.</div>
+                  </div>
+                )}
+                
+                {wasOffline && (
+                  <div className="mb-6 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                    <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div>Connection restored. Re-syncing contract generation progress.</div>
+                  </div>
+                )}
+                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
+                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <FileText className="h-4 w-4 text-green-500" />
+                      <div className="truncate text-sm font-medium">Contract Requirements</div>
+                    </div>
+                    <Badge variant="secondary" className="rounded-full">Live memo</Badge>
+                  </div>
+                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
+                    <RichTextToolbar editor={requirementsEditor} disabled={!requirementsEditor} />
+                  </div>
+                  <EditableDocumentCanvas
+                    html={requirementsDocumentHtml}
+                    onEditorReady={setRequirementsEditor}
+                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                    onChange={(html) => {
+                      setDescription(parseContractRequirementsDocumentHtml(html, description));
+                    }}
+                  />
+                </div>
+              </div>
+            </main>
+          </div>
         </div>
       </TooltipProvider>
     );
@@ -805,35 +1120,80 @@ function ContractsContent() {
       if (percent < 95) return "Finalizing contract draft...";
       return "Almost complete...";
     };
+    const draftingStages = [
+      {
+        id: "intake",
+        title: "Validate requirements and parties",
+        description: "Checks the drafting memo, parties, jurisdiction, and variable inputs before clause generation starts.",
+        threshold: 0,
+        completeAt: 20,
+      },
+      {
+        id: "structure",
+        title: "Structure obligations and clauses",
+        description: "Builds the clause order, definitions, commercial terms, and the primary legal obligations in the draft.",
+        threshold: 20,
+        completeAt: 55,
+      },
+      {
+        id: "jurisdiction",
+        title: "Apply jurisdiction and compliance logic",
+        description: "Adjusts clauses for governing law, compliance requirements, and drafting consistency across the full document.",
+        threshold: 55,
+        completeAt: 85,
+      },
+      {
+        id: "finish",
+        title: "Finalize the draft for review",
+        description: "Polishes layout, reconciles variables, and prepares the contract canvas for line editing and approval.",
+        threshold: 85,
+        completeAt: 100,
+      },
+    ].map((stage, index, stages) => {
+      const nextThreshold = stages[index + 1]?.threshold ?? 100;
+      const status =
+        progress >= stage.completeAt
+          ? "completed"
+          : progress >= stage.threshold && progress < nextThreshold
+            ? "in_progress"
+            : "pending";
+      return { ...stage, status };
+    });
 
     return (
       <TooltipProvider>
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Chat
-          </Link>
+        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
+          {/* Top Navigation Bar */}
+          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-4">
+              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Chat
+              </Link>
+              <div className="hidden h-5 w-px bg-border sm:block" />
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <FileText className="h-4 w-4 text-green-500" />
+                Drafting Contract...
+              </div>
+            </div>
+          </header>
 
-          {renderPhaseIndicator()}
-
-          <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="relative">
-                  <div className="absolute inset-0 rounded-full bg-green-500/20 animate-ping" />
-                  <div className="relative flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                    <Loader2 className="h-8 w-8 text-green-500 animate-spin" />
-                  </div>
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Live Progress */}
+            <aside className="w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] flex flex-col overflow-y-auto">
+              <div className="p-6 space-y-6">
+                <div>
+                  <h3 className="font-semibold text-lg flex items-center gap-2">
+                    <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+                    Generating Draft
+                  </h3>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    {getProgressStep(progress)}
+                  </p>
                 </div>
 
-                <h3 className="mt-6 font-semibold text-lg">Drafting Your Contract</h3>
-                <p className="mt-2 text-sm text-muted-foreground max-w-md">
-                  {getProgressStep(progress)}
-                </p>
-
-                {/* Progress bar */}
-                <div className="w-full max-w-md mt-6 space-y-2">
-                  <div className="flex justify-between text-xs text-muted-foreground">
+                <div className="space-y-2 pt-4">
+                  <div className="flex justify-between text-xs text-muted-foreground font-medium">
                     <span>Progress</span>
                     <span>{progress}%</span>
                   </div>
@@ -845,71 +1205,160 @@ function ContractsContent() {
                   </div>
                 </div>
 
-                <p className="mt-4 text-xs text-muted-foreground">
-                  This typically takes 1-2 minutes for comprehensive contract generation.
-                </p>
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Drafting Stages</h3>
+                  <div className="space-y-2">
+                    {draftingStages.map((stage, index) => (
+                      <div
+                        key={stage.id}
+                        className={cn(
+                          "rounded-2xl border px-4 py-3 text-sm transition-colors",
+                          stage.status === "completed" && "border-green-500/20 bg-green-500/5",
+                          stage.status === "in_progress" && "border-green-500/30 bg-green-500/10",
+                          stage.status === "pending" && "border-border/60 bg-background/70 dark:bg-[#111318]"
+                        )}
+                      >
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <div className="text-xs text-muted-foreground">{index + 1}</div>
+                            <div className="font-medium text-foreground">{stage.title}</div>
+                          </div>
+                          {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
+                          {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-green-500 shrink-0" />}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-            </CardContent>
-          </Card>
+            </aside>
+
+            {/* Main Canvas - Live Draft Workspace */}
+            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
+              <div className="mx-auto max-w-6xl pb-24">
+                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
+                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
+                    <div className="flex min-w-0 items-center gap-3">
+                      <Loader2 className="h-4 w-4 animate-spin text-green-500" />
+                      <div className="truncate text-sm font-medium">Contract Draft Workspace</div>
+                    </div>
+                    <Badge variant="secondary" className="rounded-full">Live drafting</Badge>
+                  </div>
+
+                  <div className="px-10 py-8 md:px-14">
+                    <div className="mb-10">
+                      <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Working Draft</div>
+                      <h1 className="font-serif text-[2.2rem] font-semibold tracking-tight text-foreground">
+                        {description || "Contract instruction"}
+                      </h1>
+                      <p className="mt-4 max-w-3xl text-sm leading-7 text-muted-foreground">
+                        The drafting engine is turning your approved memo into a full contract. The workspace stays document-shaped so the transition into review feels continuous.
+                      </p>
+                    </div>
+
+                    <section className="mb-10 rounded-2xl border border-border/60 bg-muted/20 p-5 dark:bg-[#0f1318]">
+                      <div className="flex items-center justify-between gap-4">
+                        <div>
+                          <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current Activity</div>
+                          <p className="mt-2 text-sm font-medium text-foreground">{getProgressStep(progress)}</p>
+                        </div>
+                        <div className="min-w-[140px]">
+                          <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                            <span>Overall progress</span>
+                            <span>{progress}%</span>
+                          </div>
+                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                            <div className="h-full bg-green-500 transition-all duration-500 ease-out" style={{ width: `${Math.max(progress, 5)}%` }} />
+                          </div>
+                        </div>
+                      </div>
+                    </section>
+
+                    <div className="space-y-8">
+                      {draftingStages.map((stage, index) => (
+                        <section key={stage.id} className="border-b border-border/50 pb-8 last:border-b-0">
+                          <div className="mb-3 flex items-center gap-3">
+                            <div className="inline-flex h-7 min-w-7 items-center justify-center rounded-full bg-muted text-xs font-semibold text-muted-foreground">
+                              {index + 1}
+                            </div>
+                            <div className="flex items-center gap-2">
+                              <h2 className="text-xl font-semibold tracking-tight text-foreground">{stage.title}</h2>
+                              {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-green-500" />}
+                              {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                            </div>
+                          </div>
+                          <p className="max-w-4xl text-sm leading-7 text-muted-foreground">{stage.description}</p>
+                          <div className="mt-5 grid gap-3 md:grid-cols-3">
+                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</div>
+                              <div className="mt-2 font-medium text-foreground">{stage.status.replace("_", " ")}</div>
+                            </div>
+                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Input basis</div>
+                              <div className="mt-2 font-medium text-foreground">Brief + requirements memo</div>
+                            </div>
+                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Output state</div>
+                              <div className="mt-2 font-medium text-foreground">
+                                {stage.status === "completed" ? "Ready for review" : stage.status === "in_progress" ? "Drafting in progress" : "Waiting for prior stage"}
+                              </div>
+                            </div>
+                          </div>
+                        </section>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </main>
+          </div>
         </div>
       </TooltipProvider>
     );
   }
 
-  // Review phase - Document-centric design with sidebar navigation
-  if (session?.phase === "review" && session.draft) {
+  // Review and Complete phases - contract canvas
+  if ((session?.phase === "review" || session?.phase === "complete" || session?.phase === "approval") && session?.draft) {
+    const isComplete = session.phase === "complete" || session.phase === "approval";
     const scrollToSection = (sectionId: string) => {
-      const element = sectionRefs.current[sectionId];
+      const element = sectionRefs.current[sectionId] ?? document.getElementById(sectionId);
       if (element) {
         element.scrollIntoView({ behavior: "smooth", block: "start" });
         setActiveSection(sectionId);
       }
     };
-
-    const handleSaveSection = () => {
-      setEditingSection(null);
-    };
-
-    const handleCancelEdit = (sectionId: string) => {
-      // Revert to original content
-      const newEdits = { ...sectionEdits };
-      delete newEdits[sectionId];
-      setSectionEdits(newEdits);
-      setEditingSection(null);
-    };
-
-    const getSectionContent = (sectionId: string, originalContent: string) => {
-      return sectionEdits[sectionId] !== undefined ? sectionEdits[sectionId] : originalContent;
-    };
+    const contractDocumentHtml = buildContractDocumentHtml(session, draftTitle, sectionTitles, sectionEditsRich);
 
     return (
       <TooltipProvider>
-        <div className="min-h-screen bg-muted/30">
-          {/* Sticky Header */}
-          <div className="sticky top-0 z-50 border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
-            <div className="container mx-auto px-4">
-              <div className="flex h-16 items-center justify-between">
-                <div className="flex items-center gap-4">
-                  <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                    <ArrowLeft className="h-4 w-4" />
-                    <span className="hidden sm:inline">Back</span>
-                  </Link>
-                  <div className="hidden sm:block h-6 w-px bg-border" />
-                  <div className="flex items-center gap-2">
-                    <Scale className="h-5 w-5 text-green-600" />
-                    <h1 className="font-semibold truncate max-w-[200px] sm:max-w-none">
-                      {session.draft.title}
-                    </h1>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="secondary" className="hidden sm:flex">
-                    <FileText className="h-3 w-3 mr-1" />
-                    {session.draft.sections.length} sections
-                  </Badge>
+        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
+          {/* Top Navigation Bar */}
+          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
+            <div className="flex items-center gap-4">
+              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <ArrowLeft className="h-4 w-4" />
+                Back to Chat
+              </Link>
+              <div className="hidden h-5 w-px bg-border sm:block" />
+              <div className="flex items-center gap-2 text-sm font-medium">
+                <Scale className="h-4 w-4 text-green-600" />
+                <span className="truncate max-w-[200px] sm:max-w-[400px]">
+                  {draftTitle || session.draft.title}
+                </span>
+                {isComplete && <Badge variant="secondary" className="ml-2 bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200">Finalized</Badge>}
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              {!isComplete && (
+                <>
+                  {draftSaveState === "saving" && <span className="text-xs text-muted-foreground animate-pulse hidden sm:inline-block">Saving...</span>}
+                  {draftSaveState === "saved" && <span className="text-xs text-muted-foreground hidden sm:inline-block">Saved to cloud</span>}
+                  {draftSaveState === "rate_limited" && <span className="text-xs text-amber-600 dark:text-amber-400 hidden sm:inline-block">Autosave paused briefly</span>}
+                  {draftSaveState === "error" && <span className="text-xs text-destructive hidden sm:inline-block">Save failed</span>}
                   <Button
                     onClick={handleApproveContract}
                     disabled={isLoading}
+                    size="sm"
                     className="bg-green-600 hover:bg-green-700"
                   >
                     {isLoading ? (
@@ -917,417 +1366,179 @@ function ContractsContent() {
                     ) : (
                       <>
                         <CheckCircle2 className="h-4 w-4 mr-2" />
-                        <span className="hidden sm:inline">Approve & Finalize</span>
-                        <span className="sm:hidden">Approve</span>
+                        <span>Approve Draft</span>
                       </>
                     )}
                   </Button>
+                </>
+              )}
+              {isComplete && (
+                <div className="flex items-center gap-2">
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={getContractDownloadUrl(session.session_id, "docx")} download>
+                      <Download className="mr-2 h-4 w-4" /> Word
+                    </a>
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={getContractDownloadUrl(session.session_id, "pdf")} download>
+                      <Download className="mr-2 h-4 w-4" /> PDF
+                    </a>
+                  </Button>
+                  <Button variant="default" size="sm" onClick={() => setShowSaveAsTemplate(true)}>
+                    <Save className="mr-2 h-4 w-4" /> Save Template
+                  </Button>
                 </div>
-              </div>
+              )}
             </div>
-          </div>
+          </header>
 
-          <div className="container mx-auto px-4 py-6">
-            <div className="flex gap-6">
-              {/* Sidebar - Table of Contents */}
-              <aside className={cn(
-                "hidden lg:block w-64 shrink-0",
-                !showSidebar && "lg:hidden"
-              )}>
-                <div className="sticky top-24 space-y-4">
-                  {/* Info Cards */}
-                  {(session.draft.warnings?.length > 0 || session.draft.compliance_notes?.length > 0) && (
-                    <Card className="overflow-hidden">
-                      {session.draft.warnings && session.draft.warnings.length > 0 && (
-                        <div className="p-3 border-b bg-amber-50 dark:bg-amber-950/30">
-                          <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400">
-                            <AlertCircle className="h-4 w-4" />
-                            <span className="text-sm font-medium">
-                              {session.draft.warnings.length} Review Note{session.draft.warnings.length !== 1 && "s"}
-                            </span>
-                          </div>
+          <div className="flex flex-1 overflow-hidden">
+            {/* Left Sidebar - Outline & Notes */}
+            <aside className="w-80 shrink-0 border-r bg-muted/10 flex flex-col overflow-y-auto z-10">
+              <div className="p-4 space-y-6">
+                {(session.draft.warnings?.length > 0 || session.draft.compliance_notes?.length > 0) && (
+                  <div className="space-y-3">
+                    {session.draft.warnings && session.draft.warnings.length > 0 && (
+                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-2">
+                          <AlertCircle className="h-4 w-4" />
+                          <span className="text-xs font-semibold uppercase tracking-wider">Review Notes</span>
                         </div>
-                      )}
-                      {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
-                        <div className="p-3 bg-green-50 dark:bg-green-950/30">
-                          <div className="flex items-center gap-2 text-green-700 dark:text-green-400">
-                            <Shield className="h-4 w-4" />
-                            <span className="text-sm font-medium">
-                              {session.draft.compliance_notes.length} Compliance Note{session.draft.compliance_notes.length !== 1 && "s"}
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </Card>
-                  )}
-
-                  {/* Table of Contents */}
-                  <Card>
-                    <CardHeader className="py-3 px-4">
-                      <div className="flex items-center gap-2">
-                        <List className="h-4 w-4 text-muted-foreground" />
-                        <span className="text-sm font-medium">Contents</span>
-                      </div>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <nav className="max-h-[calc(100vh-320px)] overflow-y-auto">
-                        <ul className="py-2">
-                          {session.draft.sections.map((section, index) => {
-                            const sectionId = section.id || `section-${index}`;
-                            // Try to get a meaningful title: use section.title, or extract from content
-                            const extractTitle = (content: string) => {
-                              // Try to find a heading or first meaningful line
-                              const lines = content.split('\n').filter(l => l.trim());
-                              const firstLine = lines[0] || '';
-                              // Remove markdown heading markers and clean up
-                              return firstLine.replace(/^#+\s*/, '').replace(/^\*+\s*/, '').trim().slice(0, 50);
-                            };
-                            const sectionTitle = section.title && section.title !== `Section ${index + 1}`
-                              ? section.title
-                              : extractTitle(section.content) || `Section ${index + 1}`;
-                            const isActive = activeSection === sectionId;
-                            const isEdited = sectionEdits[sectionId] !== undefined;
-                            const contentLength = section.content?.length || 0;
-                            const isCurrentlyEditing = editingSection === sectionId;
-
-                            return (
-                              <li key={sectionId}>
-                                <button
-                                  onClick={() => scrollToSection(sectionId)}
-                                  className={cn(
-                                    "w-full text-left px-4 py-2.5 text-sm transition-colors group",
-                                    "hover:bg-muted/80",
-                                    isActive && "bg-muted border-l-2 border-primary",
-                                    !isActive && "border-l-2 border-transparent",
-                                    isCurrentlyEditing && "bg-primary/5 border-l-2 border-primary"
-                                  )}
-                                >
-                                  <div className="flex items-start gap-2">
-                                    <span className={cn(
-                                      "flex items-center justify-center h-5 w-5 rounded text-xs font-medium shrink-0 mt-0.5",
-                                      isActive || isCurrentlyEditing ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
-                                    )}>
-                                      {index + 1}
-                                    </span>
-                                    <div className="flex-1 min-w-0">
-                                      <div className="flex items-center gap-1">
-                                        <span className={cn(
-                                          "font-medium truncate",
-                                          isActive && "text-primary"
-                                        )}>
-                                          {sectionTitle}
-                                        </span>
-                                        {isCurrentlyEditing && (
-                                          <PenLine className="h-3 w-3 text-primary shrink-0" />
-                                        )}
-                                      </div>
-                                      <div className="flex items-center gap-2 mt-0.5 text-xs text-muted-foreground">
-                                        <span>{Math.ceil(contentLength / 100) * 100}+ chars</span>
-                                        {isEdited && (
-                                          <Badge variant="outline" className="h-4 px-1 text-[10px] text-amber-600 border-amber-300">
-                                            modified
-                                          </Badge>
-                                        )}
-                                        {!section.editable && (
-                                          <Badge variant="outline" className="h-4 px-1 text-[10px]">
-                                            locked
-                                          </Badge>
-                                        )}
-                                      </div>
-                                    </div>
-                                  </div>
-                                </button>
-                              </li>
-                            );
-                          })}
+                        <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1.5 pl-6 list-disc">
+                          {session.draft.warnings.map((warning, i) => (
+                            <li key={i}>{warning}</li>
+                          ))}
                         </ul>
-                      </nav>
-                    </CardContent>
-                  </Card>
-                </div>
-              </aside>
-
-              {/* Main Document Content */}
-              <main className="flex-1 min-w-0">
-                {/* Warnings Banner */}
-                {session.draft.warnings && session.draft.warnings.length > 0 && (
-                  <Card className="mb-6 border-amber-200 bg-amber-50/50 dark:border-amber-800 dark:bg-amber-950/20">
-                    <CardContent className="py-4">
-                      <div className="flex items-start gap-3">
-                        <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
-                        <div className="space-y-2 flex-1">
-                          <p className="font-medium text-amber-800 dark:text-amber-200">
-                            Review Notes
-                          </p>
-                          <ul className="text-sm text-amber-700 dark:text-amber-300 space-y-1">
-                            {session.draft.warnings.map((warning, i) => (
-                              <li key={i} className="flex items-start gap-2">
-                                <span className="text-amber-500">•</span>
-                                {warning}
-                              </li>
-                            ))}
-                          </ul>
-                        </div>
                       </div>
-                    </CardContent>
-                  </Card>
+                    )}
+                    {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
+                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg p-3">
+                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                          <Shield className="h-4 w-4" />
+                          <span className="text-xs font-semibold uppercase tracking-wider">Compliance</span>
+                        </div>
+                        <ul className="text-xs text-green-700 dark:text-green-400 space-y-1.5 pl-6 list-disc">
+                          {session.draft.compliance_notes.map((note, i) => (
+                            <li key={i}>{note}</li>
+                          ))}
+                        </ul>
+                      </div>
+                    )}
+                  </div>
                 )}
 
-                {/* Document */}
-                <Card className="shadow-lg">
-                  {/* Document Header */}
-                  <div className="border-b bg-muted/30 p-6 text-center">
-                    <h1 className="text-2xl font-bold tracking-tight">
-                      {session.draft.title}
-                    </h1>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Generated {formatDateOnly(session.created_at)}
-                    </p>
-                  </div>
-
-                  {/* Document Body - All sections visible */}
-                  <div className="divide-y">
+                <div>
+                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-4 flex items-center justify-between">
+                    <span>Contract Outline</span>
+                    <Badge variant="secondary" className="text-[10px] tabular-nums">{session.draft.sections.length}</Badge>
+                  </h3>
+                  <nav className="space-y-1">
                     {session.draft.sections.map((section, index) => {
                       const sectionId = section.id || `section-${index}`;
-                      const sectionTitle = section.title || `Section ${index + 1}`;
-                      const isEditing = editingSection === sectionId;
-                      const content = getSectionContent(sectionId, section.content);
+                      const content = sectionEdits[sectionId] !== undefined ? sectionEdits[sectionId] : section.content;
+                      const sectionTitle = sectionTitles[sectionId] || section.title || `Section ${index + 1}`;
+                      const isActive = activeSection === sectionId;
+                      const isEdited = content !== section.content;
 
                       return (
-                        <div
+                        <button
                           key={sectionId}
-                          ref={(el) => { sectionRefs.current[sectionId] = el; }}
+                          onClick={() => scrollToSection(sectionId)}
                           className={cn(
-                            "scroll-mt-24 transition-colors",
-                            activeSection === sectionId && "bg-primary/5"
+                            "w-full flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors text-left",
+                            isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
                           )}
                         >
-                          {/* Section Header */}
-                          <div className="sticky top-16 z-10 flex items-center justify-between px-6 py-3 bg-muted/50 border-b">
-                            <div className="flex items-center gap-3">
-                              <span className="flex items-center justify-center h-7 w-7 rounded-full bg-primary/10 text-primary text-sm font-medium">
-                                {index + 1}
-                              </span>
-                              <h2 className="font-semibold text-base">
-                                {sectionTitle}
-                              </h2>
-                            </div>
-                            {section.editable !== false && (
-                              <div className="flex items-center gap-2">
-                                {isEditing ? (
-                                  <Badge variant="secondary" className="bg-primary/10 text-primary border-primary/20">
-                                    <PenLine className="h-3 w-3 mr-1" />
-                                    Editing
-                                  </Badge>
-                                ) : (
-                                  <Tooltip>
-                                    <TooltipTrigger asChild>
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => setEditingSection(sectionId)}
-                                        className="text-muted-foreground hover:text-foreground"
-                                      >
-                                        <PenLine className="h-4 w-4 mr-1" />
-                                        Edit
-                                      </Button>
-                                    </TooltipTrigger>
-                                    <TooltipContent>
-                                      <p>Click to edit or double-click content</p>
-                                    </TooltipContent>
-                                  </Tooltip>
-                                )}
-                              </div>
-                            )}
-                          </div>
-
-                          {/* Section Content */}
-                          <div className="p-6">
-                            {isEditing ? (
-                              <div className="space-y-3">
-                                {/* Edit Mode Panel */}
-                                <div className="rounded-lg border-2 border-primary/30 bg-primary/5 overflow-hidden">
-                                  {/* Editor Header */}
-                                  <div className="flex items-center justify-between px-4 py-2 bg-primary/10 border-b border-primary/20">
-                                    <div className="flex items-center gap-2 text-sm text-primary">
-                                      <PenLine className="h-4 w-4" />
-                                      <span className="font-medium">Editing: {sectionTitle}</span>
-                                    </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      {content.length} characters
-                                    </div>
-                                  </div>
-
-                                  {/* Textarea */}
-                                  <Textarea
-                                    value={content}
-                                    onChange={(e) =>
-                                      setSectionEdits({
-                                        ...sectionEdits,
-                                        [sectionId]: e.target.value,
-                                      })
-                                    }
-                                    onKeyDown={(e) => {
-                                      // Escape to cancel
-                                      if (e.key === "Escape") {
-                                        handleCancelEdit(sectionId);
-                                      }
-                                      // Cmd/Ctrl + Enter to save
-                                      if (e.key === "Enter" && (e.metaKey || e.ctrlKey)) {
-                                        handleSaveSection();
-                                      }
-                                    }}
-                                    className="min-h-[250px] font-serif text-base leading-relaxed resize-y border-0 rounded-none focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-                                    autoFocus
-                                    placeholder="Enter section content..."
-                                  />
-
-                                  {/* Editor Footer with Actions */}
-                                  <div className="flex items-center justify-between px-4 py-3 bg-muted/50 border-t">
-                                    <div className="text-xs text-muted-foreground">
-                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Esc</kbd>
-                                      <span className="mx-1">to cancel</span>
-                                      <span className="mx-2">|</span>
-                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Cmd</kbd>
-                                      <span className="mx-0.5">+</span>
-                                      <kbd className="px-1.5 py-0.5 bg-muted rounded text-[10px] font-mono">Enter</kbd>
-                                      <span className="mx-1">to save</span>
-                                    </div>
-                                    <div className="flex items-center gap-2">
-                                      <Button
-                                        variant="ghost"
-                                        size="sm"
-                                        onClick={() => handleCancelEdit(sectionId)}
-                                      >
-                                        <X className="h-4 w-4 mr-1" />
-                                        Cancel
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        onClick={() => handleSaveSection()}
-                                        className="bg-primary"
-                                      >
-                                        <Check className="h-4 w-4 mr-1" />
-                                        Save Changes
-                                      </Button>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            ) : (
-                              <div
-                                className="prose prose-slate dark:prose-invert max-w-none
-                                  prose-headings:font-semibold prose-headings:tracking-tight
-                                  prose-p:leading-relaxed prose-p:text-justify
-                                  prose-li:marker:text-muted-foreground
-                                  group cursor-pointer rounded-lg transition-colors hover:bg-muted/30"
-                                onDoubleClick={() => {
-                                  if (section.editable !== false) {
-                                    setEditingSection(sectionId);
-                                  }
-                                }}
-                                title={section.editable !== false ? "Double-click to edit" : undefined}
-                              >
-                                <MarkdownRenderer content={content} />
-                                {section.editable !== false && (
-                                  <div className="opacity-0 group-hover:opacity-100 transition-opacity mt-2 text-xs text-muted-foreground flex items-center gap-1">
-                                    <PenLine className="h-3 w-3" />
-                                    Double-click to edit
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                          </div>
-                        </div>
+                          <span className="truncate flex-1">
+                            {index + 1}. {sectionTitle}
+                          </span>
+                          {isEdited && !isComplete && <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />}
+                        </button>
                       );
                     })}
-                  </div>
-
-                  {/* Signature Block Placeholder */}
-                  <div className="border-t p-6 bg-muted/20">
-                    <div className="grid sm:grid-cols-2 gap-8">
-                      <div className="space-y-4">
-                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                          First Party
-                        </p>
-                        <div className="border-b border-dashed pt-8" />
-                        <p className="text-sm text-muted-foreground">Signature</p>
-                        <div className="border-b border-dashed pt-8" />
-                        <p className="text-sm text-muted-foreground">Date</p>
-                      </div>
-                      <div className="space-y-4">
-                        <p className="text-sm font-medium text-muted-foreground uppercase tracking-wider">
-                          Second Party
-                        </p>
-                        <div className="border-b border-dashed pt-8" />
-                        <p className="text-sm text-muted-foreground">Signature</p>
-                        <div className="border-b border-dashed pt-8" />
-                        <p className="text-sm text-muted-foreground">Date</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-
-                {/* Compliance Notes */}
-                {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
-                  <Card className="mt-6">
-                    <CardHeader className="pb-3">
-                      <CardTitle className="text-base flex items-center gap-2">
-                        <Shield className="h-5 w-5 text-green-600" />
-                        Compliance Notes
-                      </CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <ul className="space-y-2">
-                        {session.draft.compliance_notes.map((note, i) => (
-                          <li key={i} className="flex items-start gap-3 text-sm">
-                            <CheckCircle2 className="h-4 w-4 mt-0.5 text-green-600 shrink-0" />
-                            <span className="text-muted-foreground">{note}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {error && (
-                  <div className="mt-6 flex items-center gap-2 text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
-                    <AlertCircle className="h-4 w-4" />
-                    {error}
-                  </div>
-                )}
-
-                {/* Mobile Actions */}
-                <div className="lg:hidden mt-6">
-                  <Button
-                    onClick={handleApproveContract}
-                    disabled={isLoading}
-                    className="w-full bg-green-600 hover:bg-green-700"
-                    size="lg"
-                  >
-                    {isLoading ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Finalizing...
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="mr-2 h-4 w-4" />
-                        Approve & Finalize Contract
-                      </>
-                    )}
-                  </Button>
+                  </nav>
                 </div>
-              </main>
-            </div>
+              </div>
+            </aside>
+
+	            {/* Main Canvas - Contract Document */}
+	            <main className="flex-1 overflow-y-auto bg-background p-8 md:p-14 lg:p-24 relative flex justify-center">
+	              <div className="w-full max-w-3xl">
+	                {!isComplete && (
+	                  <div className="sticky top-0 z-20 mb-8 flex justify-center bg-background/90 pb-4 pt-2 backdrop-blur">
+	                    <RichTextToolbar editor={contractEditor} disabled={!contractEditor && !activeSection} />
+	                  </div>
+	                )}
+	                {!isOnline && isHydrated && (
+                  <div className="mb-8 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                    <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div>You are offline. Canvas edits will resync when you reconnect.</div>
+                  </div>
+                )}
+                
+                {wasOffline && (
+                  <div className="mb-8 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                    <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
+                    <div>Connection restored. Re-syncing the contract canvas.</div>
+                  </div>
+                )}
+
+                <div className="space-y-12">
+                  <EditableDocumentCanvas
+                    html={contractDocumentHtml}
+                    readOnly={isComplete}
+                    onEditorReady={setContractEditor}
+                    onSectionFocus={setActiveSection}
+                    onChange={(html) => {
+                      const parsed = parseContractDocumentHtml(html, session);
+                      setDraftTitle(parsed.title);
+                      setSectionTitles(parsed.sectionTitles);
+                      setSectionEdits(parsed.sectionPlain);
+                      setSectionEditsRich(parsed.sectionRich);
+                    }}
+                  />
+                  
+                  {isComplete && (
+                    <div className="flex justify-center pb-24">
+                      <Button variant="outline" onClick={() => {
+                        setSession(null);
+                        setDescription("");
+                        setSelectedSource("fresh");
+                        setSelectedTemplateData(null);
+                        setSelectedContractData(null);
+                        router.replace("/contracts");
+                      }}>
+                        Draft Another Contract
+                      </Button>
+                    </div>
+                  )}
+
+                  {error && (
+                    <div className="flex items-center gap-2 text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
+                      <AlertCircle className="h-4 w-4" />
+                      {error}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </main>
           </div>
+          
+          {/* Save as Template Dialog (Only rendered here if it's open) */}
+          <SaveAsTemplateDialog
+            open={showSaveAsTemplate}
+            onClose={() => setShowSaveAsTemplate(false)}
+            sessionId={session.session_id}
+            contractType={session.contract_type || "general"}
+            onSuccess={() => {}}
+          />
         </div>
       </TooltipProvider>
     );
   }
 
-  // Complete/Approval phase - show success screen
-  if (session?.phase === "complete" || session?.phase === "approval") {
+  // Fallback complete state if there's no draft (e.g. error loading it)
+  if ((session?.phase === "complete" || session?.phase === "approval") && !session?.draft) {
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">
@@ -1335,76 +1546,12 @@ function ContractsContent() {
             <ArrowLeft className="h-4 w-4" />
             Back to Chat
           </Link>
-
-          {renderPhaseIndicator()}
-
           <Card>
-            <CardContent className="pt-6">
-              <div className="flex flex-col items-center justify-center py-8 text-center">
-                <div className="flex h-16 w-16 items-center justify-center rounded-full bg-green-500/10">
-                  <CheckCircle2 className="h-8 w-8 text-green-500" />
-                </div>
-                <h3 className="mt-4 font-semibold text-lg">Contract Ready!</h3>
-                <p className="mt-2 text-sm text-muted-foreground max-w-md">
-                  Your contract has been finalized and is ready for download.
-                </p>
-
-                <div className="flex flex-wrap gap-3 mt-6 justify-center">
-                  <Button asChild>
-                    <a
-                      href={getContractDownloadUrl(session.session_id, "pdf")}
-                      download
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download PDF
-                    </a>
-                  </Button>
-                  <Button variant="outline" asChild>
-                    <a
-                      href={getContractDownloadUrl(session.session_id, "docx")}
-                      download
-                    >
-                      <Download className="mr-2 h-4 w-4" />
-                      Download Word
-                    </a>
-                  </Button>
-                  <Button
-                    variant="outline"
-                    onClick={() => setShowSaveAsTemplate(true)}
-                  >
-                    <Save className="mr-2 h-4 w-4" />
-                    Save as Template
-                  </Button>
-                </div>
-
-                <Button
-                  variant="link"
-                  className="mt-4"
-                  onClick={() => {
-                    setSession(null);
-                    setDescription("");
-                    setSelectedSource("fresh");
-                    setSelectedTemplateData(null);
-                    setSelectedContractData(null);
-                    router.replace("/contracts");
-                  }}
-                >
-                  Draft Another Contract
-                </Button>
-              </div>
+            <CardContent className="pt-6 text-center py-12">
+              <Loader2 className="h-8 w-8 animate-spin text-green-500 mx-auto" />
+              <p className="mt-4 text-muted-foreground">Loading finalized contract...</p>
             </CardContent>
           </Card>
-
-          {/* Save as Template Dialog */}
-          <SaveAsTemplateDialog
-            open={showSaveAsTemplate}
-            onClose={() => setShowSaveAsTemplate(false)}
-            sessionId={session.session_id}
-            contractType={session.contract_type || "general"}
-            onSuccess={() => {
-              // Could show a toast notification here
-            }}
-          />
         </div>
       </TooltipProvider>
     );

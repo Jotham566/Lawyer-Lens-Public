@@ -65,7 +65,6 @@ export function useChatOrchestrator() {
 
     // Local UI State
     const [input, setInput] = useState(initialQuery || "");
-    const [selectedTool, setSelectedTool] = useState<ToolMode>("chat");
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [isGenerating, setIsGenerating] = useState(false);
 
@@ -94,6 +93,7 @@ export function useChatOrchestrator() {
     const fetchingConversationRef = useRef<Set<string>>(new Set());
     const abortControllerRef = useRef<AbortController | null>(null);
     const hydratedInitialConversationRef = useRef<string | null>(null);
+    const didFetchHistoryRef = useRef(false);
 
     // Integration Hooks
     const {
@@ -156,8 +156,12 @@ export function useChatOrchestrator() {
     // Fetch Conversations on Auth
     useEffect(() => {
         if (isAuthenticated) {
+            if (didFetchHistoryRef.current) return;
+            didFetchHistoryRef.current = true;
             fetchConversations();
+            return;
         }
+        didFetchHistoryRef.current = false;
     }, [isAuthenticated, fetchConversations]);
 
     // Citation Reset Logic
@@ -357,18 +361,23 @@ export function useChatOrchestrator() {
 
     // 3. Main Send Handler
     const handleSend = useCallback(
-        async (message?: string, conversationId?: string, messagesForHistory?: ChatMessageType[]) => {
+        async (
+            message?: string,
+            conversationId?: string,
+            messagesForHistory?: ChatMessageType[],
+            toolOverride?: ToolMode
+        ) => {
             if (isLoading) return;
             const text = message || input.trim();
             const convId = conversationId || currentConversationId;
+            const activeTool = toolOverride || "chat";
 
             if (!text) return;
 
             // Deep Research Tool
-            if (selectedTool === "deep-research") {
+            if (activeTool === "deep-research") {
                 setInput("");
-                const toolToUse = selectedTool;
-                setSelectedTool("chat");
+                const toolToUse = activeTool;
 
                 const activeConvId = convId || createConversation();
 
@@ -438,9 +447,8 @@ export function useChatOrchestrator() {
             }
 
             // Draft Contract Tool
-            if (selectedTool === "draft-contract") {
+            if (activeTool === "draft-contract") {
                 setInput("");
-                setSelectedTool("chat");
                 const activeConvId = convId || createConversation();
 
                 const userMessage: ChatMessageType = {
@@ -465,7 +473,7 @@ export function useChatOrchestrator() {
             await handleRegularChat(text, activeConvId, messagesForHistory);
 
         },
-        [isLoading, input, currentConversationId, createConversation, selectedTool, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
+        [isLoading, input, currentConversationId, createConversation, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
     );
 
     // Initial Query Handler
@@ -672,7 +680,6 @@ export function useChatOrchestrator() {
             isGenerating,
             isFetchingHistory,
             error,
-            selectedTool,
             conversations,
             archivedConversations,
             currentConversation,
@@ -689,7 +696,6 @@ export function useChatOrchestrator() {
         },
         actions: {
             setInput,
-            setSelectedTool,
             setInputRef,
             setEditInputRef,
             handleInputChange,
