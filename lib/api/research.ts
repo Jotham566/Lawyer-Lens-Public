@@ -70,6 +70,8 @@ export interface ResearchSession {
   research_brief?: ResearchBrief | null;
   report?: ResearchReport | null;
   graph_checkpoints?: ResearchGraphCheckpoint[] | null;
+  execution_plan?: ResearchExecutionPlan | null;
+  coverage_evaluation?: ResearchCoverageEvaluation | null;
   created_at: string;
   progress_percent?: number;
   current_step?: string;
@@ -102,6 +104,51 @@ export interface ResearchReport {
   total_tokens_used: number;
   research_audit?: ResearchAudit | null;
   execution_trace?: ResearchExecutionTraceEntry[] | null;
+  execution_plan?: ResearchExecutionPlan | null;
+  coverage_evaluation?: ResearchCoverageEvaluation | null;
+}
+
+export interface ResearchEvidenceTask {
+  id: string;
+  topic_id: string;
+  title: string;
+  agent_type: string;
+  objective: string;
+  query_hints: string[];
+  document_types: string[];
+  priority: number;
+  status: string;
+  last_error?: string | null;
+  completed_at?: string | null;
+}
+
+export interface ResearchCoverageGap {
+  id: string;
+  description: string;
+  severity: string;
+  suggested_search: string;
+  related_topic_ids: string[];
+  resolved: boolean;
+}
+
+export interface ResearchExecutionPlan {
+  id: string;
+  query: string;
+  jurisdictions: string[];
+  report_format: string;
+  tasks: ResearchEvidenceTask[];
+  coverage_gaps: ResearchCoverageGap[];
+  planning_notes: string[];
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ResearchCoverageEvaluation {
+  coverage_score: number;
+  sufficient: boolean;
+  reasoning: string;
+  gaps: ResearchCoverageGap[];
+  evaluated_at: string;
 }
 
 export interface ResearchAudit {
