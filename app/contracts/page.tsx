@@ -56,6 +56,7 @@ import {
   type ContractListItem,
 } from "@/lib/api";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import {
   TemplateBrowser,
@@ -775,19 +776,10 @@ function ContractsContent() {
   if (!session && !sessionIdParam) {
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-green-500" />
-                Contract Workspace
-              </div>
-            </div>
+        <DocumentWorkspaceShell
+          title="Contract Workspace"
+          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+          headerActions={
             <Button
               onClick={handleStartContract}
               disabled={!description.trim() || isLoading}
@@ -805,11 +797,10 @@ function ContractsContent() {
                 </>
               )}
             </Button>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            <aside className="hidden w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] lg:flex lg:flex-col lg:overflow-y-auto">
-              <div className="space-y-8 p-5">
+          }
+          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebar={
+            <div className="space-y-8 p-5">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Start Mode</h3>
                   <div className="mt-3 space-y-2">
@@ -861,40 +852,33 @@ function ContractsContent() {
                 <div className="rounded-2xl border border-green-100 bg-green-50/80 p-4 text-sm text-green-900 dark:border-green-950 dark:bg-green-950/30 dark:text-green-200">
                   Write the commercial instruction like a briefing note. The draft will open in the full contract canvas after generation.
                 </div>
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            {error && (
+              <div className="mb-6 flex items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                {error}
               </div>
-            </aside>
-
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                {error && (
-                  <div className="mb-6 flex items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    {error}
-                  </div>
-                )}
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Scale className="h-4 w-4 text-green-600" />
-                      <div className="truncate text-sm font-medium">Contract Drafting</div>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">Editable brief</Badge>
-                  </div>
-                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
-                    <RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />
-                  </div>
-                  <EditableDocumentCanvas
-                    html={contractKickoffHtml}
-                    onEditorReady={setKickoffEditor}
-                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
-                    onChange={(html) => {
-                      setContractKickoffHtml(html);
-                      setDescription(parseContractKickoffDocumentHtml(html, description));
-                    }}
-                  />
-                </div>
-              </div>
-            </main>
+            )}
+            <DocumentPanel
+              title="Contract Drafting"
+              titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+              badge={<Badge variant="secondary" className="rounded-full">Editable brief</Badge>}
+              toolbar={<RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />}
+            >
+              <EditableDocumentCanvas
+                html={contractKickoffHtml}
+                onEditorReady={setKickoffEditor}
+                surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                onChange={(html) => {
+                  setContractKickoffHtml(html);
+                  setDescription(parseContractKickoffDocumentHtml(html, description));
+                }}
+              />
+            </DocumentPanel>
           </div>
 
           <TemplateBrowser
@@ -909,7 +893,7 @@ function ContractsContent() {
             onSelect={handleContractSelect}
             selectedId={selectedContractData?.session_id}
           />
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -928,46 +912,32 @@ function ContractsContent() {
   if (session?.phase === "requirements") {
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-green-500" />
-                Contract Requirements
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Button
-                onClick={handleSubmitRequirements}
-                disabled={isLoading || !parties.some((p) => p.name.trim())}
-                size="sm"
-                className="bg-green-600 hover:bg-green-700"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Generate Draft
-                  </>
-                )}
-              </Button>
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Configuration Options */}
-            <aside className="w-80 shrink-0 border-r bg-muted/10 flex flex-col overflow-y-auto z-10">
-              <div className="p-4 space-y-8">
+        <DocumentWorkspaceShell
+          title="Contract Requirements"
+          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+          headerActions={
+            <Button
+              onClick={handleSubmitRequirements}
+              disabled={isLoading || !parties.some((p) => p.name.trim())}
+              size="sm"
+              className="bg-green-600 hover:bg-green-700"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Processing...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Generate Draft
+                </>
+              )}
+            </Button>
+          }
+          sidebarClassName="w-80 bg-muted/10"
+          sidebar={
+            <div className="space-y-8 p-4">
                 {/* Parties Section */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -1123,49 +1093,41 @@ function ContractsContent() {
                     <div>{error}</div>
                   </div>
                 )}
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            {!isOnline && isHydrated && (
+              <div className="mb-6 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>You are offline. Contract drafting continues in the background and this session will reconnect automatically.</div>
               </div>
-            </aside>
-
-            {/* Main Canvas - Requirements Document */}
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                {!isOnline && isHydrated && (
-                  <div className="mb-6 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
-                    <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>You are offline. Contract drafting continues in the background and this session will reconnect automatically.</div>
-                  </div>
-                )}
-                
-                {wasOffline && (
-                  <div className="mb-6 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
-                    <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>Connection restored. Re-syncing contract generation progress.</div>
-                  </div>
-                )}
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <FileText className="h-4 w-4 text-green-500" />
-                      <div className="truncate text-sm font-medium">Contract Requirements</div>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">Live memo</Badge>
-                  </div>
-                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
-                    <RichTextToolbar editor={requirementsEditor} disabled={!requirementsEditor} />
-                  </div>
-                  <EditableDocumentCanvas
-                    html={requirementsDocumentHtml}
-                    onEditorReady={setRequirementsEditor}
-                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
-                    onChange={(html) => {
-                      setDescription(parseContractRequirementsDocumentHtml(html, description));
-                    }}
-                  />
-                </div>
+            )}
+            
+            {wasOffline && (
+              <div className="mb-6 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
+                <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
+                <div>Connection restored. Re-syncing contract generation progress.</div>
               </div>
-            </main>
+            )}
+            <DocumentPanel
+              title="Contract Requirements"
+              titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Live memo</Badge>}
+              toolbar={<RichTextToolbar editor={requirementsEditor} disabled={!requirementsEditor} />}
+            >
+              <EditableDocumentCanvas
+                html={requirementsDocumentHtml}
+                onEditorReady={setRequirementsEditor}
+                surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                onChange={(html) => {
+                  setDescription(parseContractRequirementsDocumentHtml(html, description));
+                }}
+              />
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -1223,26 +1185,12 @@ function ContractsContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-green-500" />
-                Drafting Contract...
-              </div>
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Live Progress */}
-            <aside className="w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] flex flex-col overflow-y-auto">
-              <div className="p-6 space-y-6">
+        <DocumentWorkspaceShell
+          title="Drafting Contract..."
+          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebar={
+            <div className="space-y-6 p-6">
                 <div>
                   <h3 className="font-semibold text-lg flex items-center gap-2">
                     <Loader2 className="h-5 w-5 animate-spin text-green-500" />
@@ -1291,22 +1239,17 @@ function ContractsContent() {
                     ))}
                   </div>
                 </div>
-              </div>
-            </aside>
-
-            {/* Main Canvas - Live Draft Workspace */}
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-green-500" />
-                      <div className="truncate text-sm font-medium">Contract Draft Workspace</div>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">Live drafting</Badge>
-                  </div>
-
-                  <div className="px-10 py-8 md:px-14">
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            <DocumentPanel
+              title="Contract Draft Workspace"
+              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-green-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Live drafting</Badge>}
+              bodyClassName="px-10 py-8 md:px-14"
+            >
                     <div className="mb-10">
                       <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Working Draft</div>
                       <h1 className="font-serif text-[2.2rem] font-semibold tracking-tight text-foreground">
@@ -1368,12 +1311,9 @@ function ContractsContent() {
                         </section>
                       ))}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </main>
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -1392,71 +1332,64 @@ function ContractsContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Scale className="h-4 w-4 text-green-600" />
-                <span className="truncate max-w-[200px] sm:max-w-[400px]">
-                  {draftTitle || session.draft.title}
-                </span>
-                {isComplete && <Badge variant="secondary" className="ml-2 bg-green-500/10 text-green-700 hover:bg-green-500/20 border-green-200">Finalized</Badge>}
+        <DocumentWorkspaceShell
+          title={draftTitle || session.draft.title}
+          titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+          titleBadge={
+            isComplete ? (
+              <Badge variant="secondary" className="ml-2 border-green-200 bg-green-500/10 text-green-700 hover:bg-green-500/20">
+                Finalized
+              </Badge>
+            ) : undefined
+          }
+          headerMeta={
+            !isComplete ? (
+              <>
+                {draftSaveState === "saving" && <span className="hidden animate-pulse text-xs text-muted-foreground sm:inline-block">Saving...</span>}
+                {draftSaveState === "saved" && <span className="hidden text-xs text-muted-foreground sm:inline-block">Saved to cloud</span>}
+                {draftSaveState === "rate_limited" && <span className="hidden text-xs text-amber-600 dark:text-amber-400 sm:inline-block">Autosave paused briefly</span>}
+                {draftSaveState === "error" && <span className="hidden text-xs text-destructive sm:inline-block">Save failed</span>}
+              </>
+            ) : null
+          }
+          headerActions={
+            !isComplete ? (
+              <Button
+                onClick={handleApproveContract}
+                disabled={isLoading}
+                size="sm"
+                className="bg-green-600 hover:bg-green-700"
+              >
+                {isLoading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    <span>Approve Draft</span>
+                  </>
+                )}
+              </Button>
+            ) : (
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" asChild>
+                  <a href={getContractDownloadUrl(session.session_id, "docx")} download>
+                    <Download className="mr-2 h-4 w-4" /> Word
+                  </a>
+                </Button>
+                <Button variant="outline" size="sm" asChild>
+                  <a href={getContractDownloadUrl(session.session_id, "pdf")} download>
+                    <Download className="mr-2 h-4 w-4" /> PDF
+                  </a>
+                </Button>
+                <Button variant="default" size="sm" onClick={() => setShowSaveAsTemplate(true)}>
+                  <Save className="mr-2 h-4 w-4" /> Save Template
+                </Button>
               </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {!isComplete && (
-                <>
-                  {draftSaveState === "saving" && <span className="text-xs text-muted-foreground animate-pulse hidden sm:inline-block">Saving...</span>}
-                  {draftSaveState === "saved" && <span className="text-xs text-muted-foreground hidden sm:inline-block">Saved to cloud</span>}
-                  {draftSaveState === "rate_limited" && <span className="text-xs text-amber-600 dark:text-amber-400 hidden sm:inline-block">Autosave paused briefly</span>}
-                  {draftSaveState === "error" && <span className="text-xs text-destructive hidden sm:inline-block">Save failed</span>}
-                  <Button
-                    onClick={handleApproveContract}
-                    disabled={isLoading}
-                    size="sm"
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {isLoading ? (
-                      <Loader2 className="h-4 w-4 animate-spin" />
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-4 w-4 mr-2" />
-                        <span>Approve Draft</span>
-                      </>
-                    )}
-                  </Button>
-                </>
-              )}
-              {isComplete && (
-                <div className="flex items-center gap-2">
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={getContractDownloadUrl(session.session_id, "docx")} download>
-                      <Download className="mr-2 h-4 w-4" /> Word
-                    </a>
-                  </Button>
-                  <Button variant="outline" size="sm" asChild>
-                    <a href={getContractDownloadUrl(session.session_id, "pdf")} download>
-                      <Download className="mr-2 h-4 w-4" /> PDF
-                    </a>
-                  </Button>
-                  <Button variant="default" size="sm" onClick={() => setShowSaveAsTemplate(true)}>
-                    <Save className="mr-2 h-4 w-4" /> Save Template
-                  </Button>
-                </div>
-              )}
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Outline & Notes */}
-            <aside className="w-80 shrink-0 border-r bg-muted/10 flex flex-col overflow-y-auto z-10">
-              <div className="p-4 space-y-6">
+            )
+          }
+          sidebarClassName="w-80 bg-muted/10"
+          sidebar={
+            <div className="space-y-6 p-4">
                 {(session.draft.warnings?.length > 0 || session.draft.compliance_notes?.length > 0) && (
                   <div className="space-y-3">
                     {session.draft.warnings && session.draft.warnings.length > 0 && (
@@ -1582,72 +1515,91 @@ function ContractsContent() {
                     })}
                   </nav>
                 </div>
+            </div>
+          }
+          mainClassName="flex justify-center bg-background p-8 md:p-14 lg:p-24"
+        >
+          <div className="w-full max-w-4xl">
+            {!isOnline && isHydrated && (
+              <div className="mb-8 flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+                <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>You are offline. Canvas edits will resync when you reconnect.</div>
               </div>
-            </aside>
+            )}
 
-	            {/* Main Canvas - Contract Document */}
-	            <main className="flex-1 overflow-y-auto bg-background p-8 md:p-14 lg:p-24 relative flex justify-center">
-	              <div className="w-full max-w-3xl">
-	                {!isComplete && (
-	                  <div className="sticky top-0 z-20 mb-8 flex justify-center bg-background/90 pb-4 pt-2 backdrop-blur">
-	                    <RichTextToolbar editor={contractEditor} disabled={!contractEditor && !activeSection} />
-	                  </div>
-	                )}
-	                {!isOnline && isHydrated && (
-                  <div className="mb-8 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
-                    <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>You are offline. Canvas edits will resync when you reconnect.</div>
-                  </div>
-                )}
-                
-                {wasOffline && (
-                  <div className="mb-8 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
-                    <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>Connection restored. Re-syncing the contract canvas.</div>
-                  </div>
-                )}
+            {wasOffline && (
+              <div className="mb-8 flex items-start gap-3 rounded-xl bg-green-500/10 p-4 text-sm text-green-700 dark:text-green-400">
+                <RefreshCcw className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>Connection restored. Re-syncing the contract canvas.</div>
+              </div>
+            )}
 
-                <div className="space-y-12">
-                  <EditableDocumentCanvas
-                    html={contractDocumentHtml}
-                    readOnly={isComplete}
-                    onEditorReady={setContractEditor}
-                    onSectionFocus={setActiveSection}
-                    onChange={(html) => {
-                      const parsed = parseContractDocumentHtml(html, session);
-                      setDraftTitle(parsed.title);
-                      setSectionTitles(parsed.sectionTitles);
-                      setSectionEdits(parsed.sectionPlain);
-                      setSectionEditsRich(parsed.sectionRich);
-                    }}
-                  />
-                  
-                  {isComplete && (
-                    <div className="flex justify-center pb-24">
-                      <Button variant="outline" onClick={() => {
-                        setSession(null);
-                        setDescription("");
-                        setSelectedSource("fresh");
-                        setSelectedTemplateData(null);
-                        setSelectedContractData(null);
-                        router.replace("/contracts");
-                      }}>
-                        Draft Another Contract
+            <div className="space-y-12">
+              <DocumentPanel
+                title={draftTitle || session.draft.title}
+                titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+                badge={<Badge variant="secondary" className="rounded-full">{isComplete ? "Finalized" : "Drafting"}</Badge>}
+                actions={
+                  isComplete ? (
+                    <div className="flex items-center gap-2">
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={getContractDownloadUrl(session.session_id, "docx")} download>
+                          <Download className="mr-2 h-4 w-4" /> Word
+                        </a>
+                      </Button>
+                      <Button variant="outline" size="sm" asChild>
+                        <a href={getContractDownloadUrl(session.session_id, "pdf")} download>
+                          <Download className="mr-2 h-4 w-4" /> PDF
+                        </a>
                       </Button>
                     </div>
-                  )}
+                  ) : undefined
+                }
+                toolbar={
+                  !isComplete ? (
+                    <RichTextToolbar editor={contractEditor} disabled={!contractEditor && !activeSection} />
+                  ) : undefined
+                }
+              >
+                <EditableDocumentCanvas
+                  html={contractDocumentHtml}
+                  readOnly={isComplete}
+                  onEditorReady={setContractEditor}
+                  onSectionFocus={setActiveSection}
+                  onChange={(html) => {
+                    const parsed = parseContractDocumentHtml(html, session);
+                    setDraftTitle(parsed.title);
+                    setSectionTitles(parsed.sectionTitles);
+                    setSectionEdits(parsed.sectionPlain);
+                    setSectionEditsRich(parsed.sectionRich);
+                  }}
+                />
+              </DocumentPanel>
 
-                  {error && (
-                    <div className="flex items-center gap-2 text-sm text-destructive p-4 bg-destructive/10 rounded-lg">
-                      <AlertCircle className="h-4 w-4" />
-                      {error}
-                    </div>
-                  )}
+              {isComplete && (
+                <div className="flex justify-center pb-24">
+                  <Button variant="outline" onClick={() => {
+                    setSession(null);
+                    setDescription("");
+                    setSelectedSource("fresh");
+                    setSelectedTemplateData(null);
+                    setSelectedContractData(null);
+                    router.replace("/contracts");
+                  }}>
+                    Draft Another Contract
+                  </Button>
                 </div>
-              </div>
-            </main>
+              )}
+
+              {error && (
+                <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-4 text-sm text-destructive">
+                  <AlertCircle className="h-4 w-4" />
+                  {error}
+                </div>
+              )}
+            </div>
           </div>
-          
+
           {/* Save as Template Dialog (Only rendered here if it's open) */}
           <SaveAsTemplateDialog
             open={showSaveAsTemplate}
@@ -1656,7 +1608,7 @@ function ContractsContent() {
             contractType={session.contract_type || "general"}
             onSuccess={() => {}}
           />
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }

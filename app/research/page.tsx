@@ -65,6 +65,7 @@ import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
@@ -1449,106 +1450,89 @@ function ResearchContent() {
   if (!session && !sessionIdParam) {
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <LayoutPanelLeft className="h-4 w-4 text-blue-500" />
-                Research Workspace
+        <DocumentWorkspaceShell
+          title="Research Workspace"
+          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+          headerMeta={
+            <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <Clock className="h-4 w-4" />
+              View History
+            </Link>
+          }
+          headerActions={
+            <Button
+              onClick={handleStartResearch}
+              disabled={!query.trim() || isLoading}
+              className="rounded-full px-5"
+            >
+              {isLoading ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Starting Research...
+                </>
+              ) : (
+                <>
+                  <Sparkles className="mr-2 h-4 w-4" />
+                  Start Research
+                </>
+              )}
+            </Button>
+          }
+          sidebarClassName="w-72 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebar={
+            <div className="space-y-8 p-5">
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Workspace Mode</h3>
+                <p className="mt-3 text-sm text-foreground">Draft the opening research brief directly in the document.</p>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Flow</h3>
+                <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
+                  <li className="text-foreground">1. Refine the brief in the canvas</li>
+                  <li>2. Review the generated research plan</li>
+                  <li>3. Track execution and edit the final report</li>
+                </ol>
+              </div>
+              <div>
+                <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Output</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  <Badge variant="secondary" className="rounded-full">Plan canvas</Badge>
+                  <Badge variant="secondary" className="rounded-full">Cited report</Badge>
+                  <Badge variant="secondary" className="rounded-full">Word export</Badge>
+                </div>
+              </div>
+              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
+                The brief should read like an instruction memo, not a chat prompt fragment.
               </div>
             </div>
-            <div className="flex items-center gap-3">
-              <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <Clock className="h-4 w-4" />
-                View History
-              </Link>
-              <Button
-                onClick={handleStartResearch}
-                disabled={!query.trim() || isLoading}
-                className="rounded-full px-5"
-              >
-                {isLoading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Starting Research...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="mr-2 h-4 w-4" />
-                    Start Research
-                  </>
-                )}
-              </Button>
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            <aside className="hidden w-72 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] lg:flex lg:flex-col lg:overflow-y-auto">
-              <div className="space-y-8 p-5">
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Workspace Mode</h3>
-                  <p className="mt-3 text-sm text-foreground">Draft the opening research brief directly in the document.</p>
-                </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Flow</h3>
-                  <ol className="mt-3 space-y-3 text-sm text-muted-foreground">
-                    <li className="text-foreground">1. Refine the brief in the canvas</li>
-                    <li>2. Review the generated research plan</li>
-                    <li>3. Track execution and edit the final report</li>
-                  </ol>
-                </div>
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Output</h3>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge variant="secondary" className="rounded-full">Plan canvas</Badge>
-                    <Badge variant="secondary" className="rounded-full">Cited report</Badge>
-                    <Badge variant="secondary" className="rounded-full">Word export</Badge>
-                  </div>
-                </div>
-                <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
-                  The brief should read like an instruction memo, not a chat prompt fragment.
-                </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            {error && (
+              <div className="mb-6 flex items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
+                <AlertCircle className="h-4 w-4" />
+                {error}
               </div>
-            </aside>
-
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                {error && (
-                  <div className="mb-6 flex items-center gap-2 rounded-2xl border border-destructive/20 bg-destructive/5 px-4 py-3 text-sm text-destructive">
-                    <AlertCircle className="h-4 w-4" />
-                    {error}
-                  </div>
-                )}
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Search className="h-4 w-4 text-blue-500" />
-                      <div className="truncate text-sm font-medium">Deep Legal Research</div>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">Editable brief</Badge>
-                  </div>
-                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
-                    <RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />
-                  </div>
-                  <EditableDocumentCanvas
-                    html={researchKickoffHtml}
-                    onEditorReady={setKickoffEditor}
-                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
-                    onChange={(html) => {
-                      setResearchKickoffHtml(html);
-                      setQuery(parseResearchKickoffDocumentHtml(html, query));
-                    }}
-                  />
-                </div>
-              </div>
-            </main>
+            )}
+            <DocumentPanel
+              title="Deep Legal Research"
+              titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Editable brief</Badge>}
+              toolbar={<RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />}
+            >
+              <EditableDocumentCanvas
+                html={researchKickoffHtml}
+                onEditorReady={setKickoffEditor}
+                surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                onChange={(html) => {
+                  setResearchKickoffHtml(html);
+                  setQuery(parseResearchKickoffDocumentHtml(html, query));
+                }}
+              />
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -1571,25 +1555,13 @@ function ResearchContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Search className="h-4 w-4 text-blue-500" />
-                Research Intake Canvas
-              </div>
-            </div>
-            <div className="flex items-center gap-3">{renderPhaseIndicator()}</div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            <aside className="hidden w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] lg:flex lg:flex-col lg:overflow-y-auto">
-              <div className="space-y-8 p-5">
+        <DocumentWorkspaceShell
+          title="Research Intake Canvas"
+          titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+          headerActions={<div className="flex items-center gap-3">{renderPhaseIndicator()}</div>}
+          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebar={
+            <div className="space-y-8 p-5">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Clarification Status</h3>
                   <div className="mt-4 space-y-3">
@@ -1620,22 +1592,18 @@ function ResearchContent() {
                 <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
                   Treat this as annotating a memo. The next step opens the research plan using these answers.
                 </div>
-              </div>
-            </aside>
-
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-5xl pb-24">
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <Search className="h-4 w-4 text-blue-500" />
-                      <div className="text-sm font-medium">Help Us Understand Your Research</div>
-                      <Badge variant="secondary" className="rounded-full">Question canvas</Badge>
-                    </div>
-                    <div className="text-xs text-muted-foreground">{totalQuestions} prompts</div>
-                  </div>
-
-                  <div className="px-10 py-8 md:px-14">
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-5xl pb-24">
+            <DocumentPanel
+              title="Help Us Understand Your Research"
+              titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Question canvas</Badge>}
+              actions={<div className="text-xs text-muted-foreground">{totalQuestions} prompts</div>}
+              bodyClassName="px-10 py-8 md:px-14"
+            >
                     <div className="mb-8">
                       <h1 className="font-serif text-[2rem] font-semibold tracking-tight text-foreground">Clarification Notes</h1>
                       <p className="mt-3 max-w-3xl text-sm leading-6 text-muted-foreground">
@@ -1720,12 +1688,9 @@ function ResearchContent() {
                         )}
                       </Button>
                     </div>
-                  </div>
-                </div>
-              </div>
-            </main>
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -1751,43 +1716,31 @@ function ResearchContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <LayoutPanelLeft className="h-4 w-4 text-blue-500" />
-                Research Plan Canvas
-              </div>
+        <DocumentWorkspaceShell
+          title="Research Plan Canvas"
+          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+          headerMeta={
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
+              {briefSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+              {briefSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
+              {briefSaveState === "error" && <span className="text-destructive">Save failed</span>}
             </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
-                {briefSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-                {briefSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
-                {briefSaveState === "error" && <span className="text-destructive">Save failed</span>}
-              </div>
-              <Button
-                size="sm"
-                onClick={handleApproveBrief}
-                disabled={isLoading || editedTopics.length === 0}
-                className="gap-2 rounded-full px-4"
-              >
-                {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
-                {isLoading ? "Starting..." : "Start Research"}
-              </Button>
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Plan Context & Outline */}
-            <aside className="hidden w-80 shrink-0 flex-col border-r bg-muted/10 lg:flex overflow-y-auto">
-              <div className="p-4 space-y-6">
+          }
+          headerActions={
+            <Button
+              size="sm"
+              onClick={handleApproveBrief}
+              disabled={isLoading || editedTopics.length === 0}
+              className="gap-2 rounded-full px-4"
+            >
+              {isLoading ? <Loader2 className="h-4 w-4 animate-spin" /> : <Sparkles className="h-4 w-4" />}
+              {isLoading ? "Starting..." : "Start Research"}
+            </Button>
+          }
+          sidebarClassName="w-80 bg-muted/10"
+          sidebar={
+            <div className="space-y-6 p-4">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Topic Outline</h3>
                   <div className="space-y-1">
@@ -1890,59 +1843,53 @@ function ResearchContent() {
                   <Info className="h-4 w-4 shrink-0 mt-0.5" />
                   <p>Changes you make to this plan are saved automatically. When you are ready, click Start Research.</p>
                 </div>
-              </div>
-            </aside>
-
-            {/* Main Document Canvas */}
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex items-center gap-3">
-                      <LayoutPanelLeft className="h-4 w-4 text-blue-500" />
-                      <div className="text-sm font-medium">Research Plan</div>
-                      <Badge variant="secondary" className="rounded-full">Editable canvas</Badge>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-xs text-muted-foreground">
-                        {editedTopics.length} topics
-                      </div>
-                      <Button variant="outline" size="sm" onClick={addTopic} className="rounded-full">
-                        <Plus className="mr-2 h-4 w-4" /> Add Topic
-                      </Button>
-                    </div>
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            <DocumentPanel
+              title="Research Plan"
+              titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Editable canvas</Badge>}
+              actions={
+                <div className="flex items-center gap-3">
+                  <div className="text-xs text-muted-foreground">
+                    {editedTopics.length} topics
                   </div>
-                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
-                    <RichTextToolbar editor={briefEditor} disabled={!briefEditor} />
-                  </div>
-                  <EditableDocumentCanvas
-                    html={briefDocumentHtml}
-                    onEditorReady={setBriefEditor}
-                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
-                    onChange={(html) => {
-                      const parsedTopics = parseBriefDocumentHtml(html, editedTopics);
-                      setEditedTopics(parsedTopics);
-                    }}
-                  />
+                  <Button variant="outline" size="sm" onClick={addTopic} className="rounded-full">
+                    <Plus className="mr-2 h-4 w-4" /> Add Topic
+                  </Button>
                 </div>
+              }
+              toolbar={<RichTextToolbar editor={briefEditor} disabled={!briefEditor} />}
+            >
+              <EditableDocumentCanvas
+                html={briefDocumentHtml}
+                onEditorReady={setBriefEditor}
+                surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                onChange={(html) => {
+                  const parsedTopics = parseBriefDocumentHtml(html, editedTopics);
+                  setEditedTopics(parsedTopics);
+                }}
+              />
+            </DocumentPanel>
 
-                <div className="mt-6 flex items-center justify-between rounded-2xl border border-border/60 bg-white/90 px-5 py-4 text-sm shadow-sm dark:bg-[#111318]/90 dark:border-white/10">
-                  <div className="text-muted-foreground">
-                    Edit the plan as one working document. Use the left rail for scope and output settings.
-                  </div>
-                  <div className="text-xs text-muted-foreground">Autosaves to your account across devices.</div>
-                </div>
-
-                {error && (
-                  <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5" />
-                    {error}
-                  </div>
-                )}
+            <div className="mt-6 flex items-center justify-between rounded-2xl border border-border/60 bg-white/90 px-5 py-4 text-sm shadow-sm dark:bg-[#111318]/90 dark:border-white/10">
+              <div className="text-muted-foreground">
+                Edit the plan as one working document. Use the left rail for scope and output settings.
               </div>
-            </main>
+              <div className="text-xs text-muted-foreground">Autosaves to your account across devices.</div>
+            </div>
+
+            {error && (
+              <div className="rounded-lg border border-destructive/40 bg-destructive/5 p-4 text-sm text-destructive flex items-center gap-2">
+                <AlertCircle className="h-5 w-5" />
+                {error}
+              </div>
+            )}
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -1960,32 +1907,20 @@ function ResearchContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <Loader2 className="h-4 w-4 text-blue-500 animate-spin" />
-                {session.status === "researching" ? "Researching..." : "Writing Report..."}
-              </div>
-            </div>
+        <DocumentWorkspaceShell
+          title={session.status === "researching" ? "Researching..." : "Writing Report..."}
+          titleIcon={<Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+          headerActions={
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="animate-pulse bg-blue-500/10 text-blue-500 border-blue-500/20">
                 Execution in progress
               </Badge>
               {isResumedRun && <Badge variant="secondary">Resumed</Badge>}
             </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Process Workspace */}
-            <aside className="hidden w-80 shrink-0 border-r bg-[#fbfbf8] dark:bg-[#101317] lg:flex lg:flex-col lg:overflow-y-auto">
-              <div className="space-y-6 p-5">
+          }
+          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebar={
+            <div className="space-y-6 p-5">
                 <div>
                   <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Live Progress</h3>
                   <div className="mt-4 space-y-4">
@@ -2085,26 +2020,21 @@ function ResearchContent() {
                      {renderCheckpointList(session.graph_checkpoints)}
                    </div>
                 </div>
-              </div>
-            </aside>
-
-            {/* Main Canvas - Live Draft Workspace */}
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10">
-              <div className="mx-auto max-w-6xl pb-24">
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                      <div className="truncate text-sm font-medium">
-                        {session.status === "researching" ? "Research Draft Workspace" : "Report Assembly Workspace"}
-                      </div>
-                    </div>
-                    <Badge variant="secondary" className="rounded-full">
-                      {session.status === "researching" ? "Live gathering" : "Synthesizing report"}
-                    </Badge>
-                  </div>
-
-                  <div className="px-10 py-8 md:px-14">
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            <DocumentPanel
+              title={session.status === "researching" ? "Research Draft Workspace" : "Report Assembly Workspace"}
+              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+              badge={
+                <Badge variant="secondary" className="rounded-full">
+                  {session.status === "researching" ? "Live gathering" : "Synthesizing report"}
+                </Badge>
+              }
+              bodyClassName="px-10 py-8 md:px-14"
+            >
                     <div className="mb-10">
                       <div className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Working Draft</div>
                       <h1 className="font-serif text-[2.2rem] font-semibold tracking-tight text-foreground">
@@ -2177,12 +2107,9 @@ function ResearchContent() {
                         </div>
                       )}
                     </div>
-                  </div>
-                </div>
-              </div>
-            </main>
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
@@ -2206,142 +2133,122 @@ function ResearchContent() {
 
     return (
       <TooltipProvider>
-        <div className="flex h-screen w-full flex-col bg-background text-foreground overflow-hidden">
-          {/* Top Navigation Bar */}
-          <header className="flex h-14 shrink-0 items-center justify-between border-b bg-background px-4">
-            <div className="flex items-center gap-4">
-              <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-                <ArrowLeft className="h-4 w-4" />
-                Back to Chat
-              </Link>
-              <div className="hidden h-5 w-px bg-border sm:block" />
-              <div className="flex items-center gap-2 text-sm font-medium">
-                <FileText className="h-4 w-4 text-blue-500" />
-                <span className="truncate max-w-[200px] sm:max-w-xs">{editedReportTitle || report.title}</span>
-              </div>
+        <DocumentWorkspaceShell
+          title={editedReportTitle || report.title}
+          titleIcon={<FileText className="h-4 w-4 text-blue-500" />}
+          headerMeta={
+            <div className="mr-2 flex items-center gap-2 text-xs text-muted-foreground">
+              {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
+              {reportSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+              {reportSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
+              {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
             </div>
-            <div className="flex items-center gap-3 text-sm">
-              <div className="flex items-center gap-2 text-xs text-muted-foreground mr-2">
-                {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
-                {reportSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-                {reportSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
-                {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
-              </div>
-              <Button variant="outline" size="sm" onClick={handleExportWord} className="gap-2 rounded-full px-4">
-                <Download className="h-4 w-4" />
-                Share & Export
-              </Button>
-            </div>
-          </header>
-
-          <div className="flex flex-1 overflow-hidden">
-            {/* Left Sidebar - Table of Contents & Metadata */}
-            <aside className="hidden w-64 shrink-0 flex-col border-r bg-background lg:flex overflow-y-auto">
-              <div className="p-4 space-y-4">
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-3">Contents</h3>
-                  <div className="space-y-0.5">
+          }
+          headerActions={
+            <Button variant="outline" size="sm" onClick={handleExportWord} className="gap-2 rounded-full px-4">
+              <Download className="h-4 w-4" />
+              Share & Export
+            </Button>
+          }
+          sidebarClassName="w-64"
+          sidebar={
+            <div className="space-y-4 p-4">
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-wider text-muted-foreground">Contents</h3>
+                <div className="space-y-0.5">
+                  <button
+                    onClick={() => scrollToSection("executive-summary")}
+                    className={cn(
+                      "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
+                      activeReportSection === "executive-summary" && "bg-muted font-medium text-foreground"
+                    )}
+                  >
+                    Executive Summary
+                  </button>
+                  {report.sections.map((section, index) => (
                     <button
-                      onClick={() => scrollToSection("executive-summary")}
+                      key={section.id}
+                      onClick={() => scrollToSection(section.id)}
                       className={cn(
-                        "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
-                        activeReportSection === "executive-summary" && "bg-muted font-medium text-foreground"
+                        "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50 truncate",
+                        activeReportSection === section.id && "bg-muted font-medium text-foreground"
                       )}
+                      title={editedReportSectionTitles[section.id] ?? section.title}
                     >
-                      Executive Summary
+                      {index + 1}. {editedReportSectionTitles[section.id] ?? section.title}
                     </button>
-                    {report.sections.map((section, index) => (
-                      <button
-                        key={section.id}
-                        onClick={() => scrollToSection(section.id)}
-                        className={cn(
-                          "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50 truncate",
-                          activeReportSection === section.id && "bg-muted font-medium text-foreground"
-                        )}
-                        title={editedReportSectionTitles[section.id] ?? section.title}
-                      >
-                        {index + 1}. {editedReportSectionTitles[section.id] ?? section.title}
-                      </button>
-                    ))}
-                    <button
-                      onClick={() => scrollToSection("sources-endnotes")}
-                      className={cn(
-                        "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
-                        activeReportSection === "sources-endnotes" && "bg-muted font-medium text-foreground"
-                      )}
-                    >
-                      Sources used in the report
-                    </button>
-                  </div>
+                  ))}
+                  <button
+                    onClick={() => scrollToSection("sources-endnotes")}
+                    className={cn(
+                      "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
+                      activeReportSection === "sources-endnotes" && "bg-muted font-medium text-foreground"
+                    )}
+                  >
+                    Sources used in the report
+                  </button>
                 </div>
+              </div>
 
-                <div className="h-px bg-border" />
+              <div className="h-px bg-border" />
 
-                <div className="text-sm text-muted-foreground space-y-2">
+              <div className="space-y-2 text-sm text-muted-foreground">
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                  <span className="text-xs font-medium text-foreground">Execution complete</span>
+                </div>
+                {report.citations?.length > 0 && (
                   <div className="flex items-center gap-2">
-                    <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
-                    <span className="text-foreground text-xs font-medium">Execution complete</span>
-                  </div>
-                  {report.citations?.length > 0 && (
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                      <span className="text-xs">{report.citations.length} sources</span>
-                    </div>
-                  )}
-                </div>
-                
-                <div className="text-xs text-muted-foreground/80 p-2 rounded-md bg-muted/30">
-                  Click any section to edit. Changes auto-save.
-                </div>
-              </div>
-            </aside>
-
-            {/* Main Document Canvas */}
-            <main className="flex-1 overflow-y-auto bg-[#f7f6f2] dark:bg-[#0b0d10] p-5 md:p-8 lg:p-10 relative">
-	              <div className="mx-auto max-w-6xl pb-24">
-                {!isOnline && isHydrated && (
-                  <div className="mb-8 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
-                    <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
-                    <div>You are offline. Your report edits are cached locally and will sync when reconnected.</div>
+                    <BookOpen className="h-3.5 w-3.5 shrink-0" />
+                    <span className="text-xs">{report.citations.length} sources</span>
                   </div>
                 )}
-                <div className="rounded-[28px] border border-black/10 bg-white shadow-[0_24px_80px_-48px_rgba(15,23,42,0.28)] dark:border-white/10 dark:bg-[#111318] dark:shadow-[0_24px_80px_-48px_rgba(0,0,0,0.75)]">
-                  <div className="flex items-center justify-between border-b border-black/5 px-5 py-3 dark:border-white/10">
-                    <div className="flex min-w-0 items-center gap-3">
-                      <FileText className="h-4 w-4 text-blue-500" />
-                      <div className="truncate text-sm font-medium">{editedReportTitle || report.title}</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Badge variant="secondary" className="rounded-full">Contents</Badge>
-                      <Button variant="outline" size="sm" onClick={handleExportWord} className="rounded-full">
-                        <Download className="mr-2 h-4 w-4" />
-                        Share & Export
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="sticky top-0 z-20 flex justify-center bg-white/90 px-4 pb-4 pt-3 backdrop-blur dark:bg-[#111318]/90">
-                    <RichTextToolbar editor={reportEditor} disabled={!reportEditor && !activeReportSection} />
-                  </div>
-                  <EditableDocumentCanvas
-                    html={reportDocumentHtml}
-                    onEditorReady={setReportEditor}
-                    onSectionFocus={setActiveReportSection}
-                    surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
-                    onChange={(html) => {
-                      const parsed = parseResearchDocumentHtml(html, report);
-                      setEditedReportTitle(parsed.title);
-                      setEditedExecutiveSummary(parsed.executiveSummaryPlain);
-                      setEditedExecutiveSummaryRich(parsed.executiveSummaryRich);
-                      setEditedReportSectionTitles(parsed.sectionTitles);
-                      setEditedReportSections(parsed.sectionsPlain);
-                      setEditedReportSectionsRich(parsed.sectionsRich);
-                    }}
-                  />
-                </div>
               </div>
-            </main>
+
+              <div className="rounded-md bg-muted/30 p-2 text-xs text-muted-foreground/80">
+                Click any section to edit. Changes auto-save.
+              </div>
+            </div>
+          }
+          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+        >
+          <div className="mx-auto max-w-6xl pb-24">
+            {!isOnline && isHydrated && (
+              <div className="mb-8 flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+                <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
+                <div>You are offline. Your report edits are cached locally and will sync when reconnected.</div>
+              </div>
+            )}
+            <DocumentPanel
+              title={editedReportTitle || report.title}
+              titleIcon={<FileText className="h-4 w-4 text-blue-500" />}
+              badge={<Badge variant="secondary" className="rounded-full">Contents</Badge>}
+              actions={
+                <Button variant="outline" size="sm" onClick={handleExportWord} className="rounded-full">
+                  <Download className="mr-2 h-4 w-4" />
+                  Share & Export
+                </Button>
+              }
+              toolbar={<RichTextToolbar editor={reportEditor} disabled={!reportEditor && !activeReportSection} />}
+            >
+              <EditableDocumentCanvas
+                html={reportDocumentHtml}
+                onEditorReady={setReportEditor}
+                onSectionFocus={setActiveReportSection}
+                surfaceClassName="rounded-none border-0 bg-transparent px-14 py-8 shadow-none"
+                onChange={(html) => {
+                  const parsed = parseResearchDocumentHtml(html, report);
+                  setEditedReportTitle(parsed.title);
+                  setEditedExecutiveSummary(parsed.executiveSummaryPlain);
+                  setEditedExecutiveSummaryRich(parsed.executiveSummaryRich);
+                  setEditedReportSectionTitles(parsed.sectionTitles);
+                  setEditedReportSections(parsed.sectionsPlain);
+                  setEditedReportSectionsRich(parsed.sectionsRich);
+                }}
+              />
+            </DocumentPanel>
           </div>
-        </div>
+        </DocumentWorkspaceShell>
       </TooltipProvider>
     );
   }
