@@ -113,6 +113,7 @@ export interface ContractLegalAuthority {
   source_type: string;
   external_url?: string | null;
   source_quality_label?: string | null;
+  source_class?: string | null;
 }
 
 export interface ContractMandatoryClauseGuidance {

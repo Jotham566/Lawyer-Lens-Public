@@ -215,6 +215,7 @@ export interface ResearchCitation {
   source_domain?: string;
   source_quality_score?: number;
   source_quality_label?: string;
+  source_class?: string;
 }
 
 export interface ResearchEvidenceObject {
@@ -265,6 +266,7 @@ export interface ResearchPublisherEndnote {
   url?: string | null;
   quoted_text?: string | null;
   source_quality_label?: string | null;
+  source_class?: string | null;
 }
 
 export interface ResearchPublisherPayload {
