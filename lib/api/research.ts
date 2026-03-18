@@ -216,6 +216,7 @@ export interface ResearchCitation {
   source_quality_score?: number;
   source_quality_label?: string;
   source_class?: string;
+  source_tier?: number;
 }
 
 export interface ResearchEvidenceObject {
@@ -256,6 +257,15 @@ export interface ResearchPublisherSection {
   citation_ids: string[];
   claim_ids: string[];
   evidence_ids: string[];
+  structured_blocks: ResearchPublisherStructuredBlock[];
+}
+
+export interface ResearchPublisherStructuredBlock {
+  block_type: string;
+  title: string;
+  headers?: string[];
+  rows?: string[][];
+  items?: string[];
 }
 
 export interface ResearchPublisherEndnote {
@@ -267,12 +277,31 @@ export interface ResearchPublisherEndnote {
   quoted_text?: string | null;
   source_quality_label?: string | null;
   source_class?: string | null;
+  source_tier?: number | null;
+}
+
+export interface ResearchPublisherKeyAuthority {
+  citation_id: string;
+  title: string;
+  label: string;
+  source_class?: string | null;
+  source_tier?: number | null;
+  url?: string | null;
+}
+
+export interface ResearchPublisherSourceGroup {
+  source_class: string;
+  label: string;
+  citation_ids: string[];
+  count: number;
 }
 
 export interface ResearchPublisherPayload {
   report_format: string;
   executive_summary_citation_ids: string[];
   sections: ResearchPublisherSection[];
+  key_authorities: ResearchPublisherKeyAuthority[];
+  source_groups: ResearchPublisherSourceGroup[];
   endnotes: ResearchPublisherEndnote[];
   methodology_note: string;
   generated_at: string;

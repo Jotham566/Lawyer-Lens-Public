@@ -191,7 +191,7 @@ function stripSourceUrlsFromHtml(html: string): string {
   const root = doc.body.firstElementChild as HTMLElement | null;
   if (!root) return html;
 
-  const urlPattern = /\bhttps?:\/\/[^\s<>()]+/gi;
+  const urlPattern = /<?\bhttps?:\/\/[^\s<>()>]+>?/gi;
   const walker = doc.createTreeWalker(root, NodeFilter.SHOW_TEXT);
   const textNodes: Text[] = [];
 
@@ -340,6 +340,35 @@ function getFallbackStructuredCitationIds(
   return ids.slice(start, start + windowSize);
 }
 
+function normalizeDisplaySectionTitle(title: string): string {
+  return title.replace(/^\s*(?:\d+\.\s*){1,3}/, "").trim();
+}
+
+function formatSourceClassLabel(sourceClass?: string | null): string {
+  if (!sourceClass) return "Source";
+  const labels: Record<string, string> = {
+    internal_legal_rag: "Law Lens Corpus",
+    government: "Government",
+    parliament: "Parliament",
+    judiciary: "Judiciary",
+    legal_information_institute: "Legal Database",
+    international_organization: "International Body",
+    academia: "Academia",
+    professional_services: "Professional Analysis",
+    legal_analysis: "Legal Commentary",
+    general_web: "General Web",
+    browser_snapshot: "Browser Snapshot",
+  };
+  return labels[sourceClass] || sourceClass.replace(/_/g, " ");
+}
+
+function summarizeAuthorityLabel(label?: string | null, maxLength = 150): string {
+  if (!label) return "";
+  const cleaned = label.replace(/\s+/g, " ").trim();
+  if (cleaned.length <= maxLength) return cleaned;
+  return `${cleaned.slice(0, maxLength - 3).trimEnd()}...`;
+}
+
 function buildResearchDocumentHtml(
   report: ResearchReport,
   reportTitle: string,
@@ -389,9 +418,13 @@ function buildResearchDocumentHtml(
       const effectiveReport = { ...report, citations: effectiveCitations };
       const inlineCitations = buildInlineCitationHtml(effectiveReport, sectionCitationIds, effectiveLookup);
       const bodyWithInlineCitations = injectInlineCitations(bodyHtml, inlineCitations);
+      const structuredBlocksHtml = renderStructuredBlocks(
+        publisherSectionLookup.get(section.id)?.structured_blocks || []
+      );
       return `
         <section id="${section.id}" data-section-anchor="${section.id}" data-report-part="section" data-section-id="${section.id}">
-          <h2>${index + 1}. ${sectionTitles[section.id] ?? section.title}</h2>
+          <h2>${index + 1}. ${normalizeDisplaySectionTitle(sectionTitles[section.id] ?? section.title)}</h2>
+          ${structuredBlocksHtml}
           <div data-report-body="true">${bodyWithInlineCitations}</div>
         </section>
       `;
@@ -407,36 +440,15 @@ function buildResearchDocumentHtml(
     buildInlineCitationHtml({ ...report, citations: effectiveCitations }, summaryCitationIds, effectiveLookup)
   );
 
+  const keyAuthoritiesHtml = renderKeyAuthorities(report, effectiveCitations, effectiveLookup);
+
   const endnotesHtml = effectiveCitations?.length
     ? `
       <section id="sources-endnotes" data-section-anchor="sources-endnotes" data-report-part="endnotes" contenteditable="false">
         <h2>Sources used in the report</h2>
-        <p class="mb-4 text-sm text-muted-foreground">Hover or open inline citations in the report body, or review the full source list here.</p>
-        <div class="space-y-3">
-          ${effectiveCitations
-            .map((citation, index) => `
-              <details id="citation-${index + 1}" class="rounded-2xl border border-black/5 bg-[#f5f6f9] px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-[#141922]">
-                <summary class="flex cursor-pointer items-center gap-3 list-none">
-                  <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-muted-foreground dark:bg-[#0f1318]">[${index + 1}]</span>
-                  ${
-                    citation.document_url
-                      ? `<a href="${citation.document_url}" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-medium text-primary hover:underline">${citation.title}</a>`
-                      : `<span class="min-w-0 truncate font-medium text-foreground">${citation.title}</span>`
-                  }
-                  <span class="ml-auto text-[11px] uppercase tracking-[0.14em] text-muted-foreground">Source</span>
-                </summary>
-                <div class="mt-3 pl-9 text-muted-foreground leading-relaxed">
-                  ${getCitationMeta(citation) || "Primary supporting source used in the report."}
-                  ${
-                    (citation.document_url || citation.external_url)
-                      ? `<div class="mt-2"><a href="${citation.document_url || citation.external_url}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Open source in new tab</a></div>`
-                      : ""
-                  }
-                </div>
-              </details>
-            `)
-            .join("")}
-        </div>
+        <p class="mb-4 text-sm text-muted-foreground">Hover or open inline citations in the report body, or review the grouped source list here.</p>
+        ${keyAuthoritiesHtml}
+        ${renderSourceGroups(report, effectiveCitations, effectiveLookup)}
       </section>
     `
     : "";
@@ -452,6 +464,162 @@ function buildResearchDocumentHtml(
     ${sectionsHtml}
     ${endnotesHtml}
   `);
+}
+
+function renderKeyAuthorities(
+  report: ResearchReport,
+  effectiveCitations: ResearchReport["citations"],
+  citationIndexLookup: Map<string, number>,
+): string {
+  const authorities = report.publisher_payload?.key_authorities || [];
+  if (!authorities.length) return "";
+
+  return `
+    <div id="key-authorities" data-section-anchor="key-authorities" data-report-part="authorities" contenteditable="false" class="mb-5">
+      <div class="mb-3 flex items-center justify-between gap-3">
+        <p class="text-sm font-semibold text-foreground">Key authorities relied on</p>
+        <span class="inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${authorities.length} authorities</span>
+      </div>
+      <div class="space-y-3">
+        ${authorities
+          .map((authority) => {
+            const citationNumber = citationIndexLookup.get(authority.citation_id);
+            const citation = effectiveCitations.find((item) => item.id === authority.citation_id);
+            const href = authority.url || citation?.document_url || citation?.external_url;
+            const sourceClass = formatSourceClassLabel(authority.source_class);
+            const tier = authority.source_tier ? `Tier ${authority.source_tier}` : "Authority";
+            const meta = getCitationMeta(citation || ({ id: "", source_type: "", title: "", relevance_score: 0 } as ResearchReport["citations"][number]));
+            const summary = summarizeAuthorityLabel(authority.label);
+            return `
+              <article class="rounded-[18px] border border-black/5 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-[#10151d]">
+                <div class="mb-2 flex items-center gap-2">
+                  ${citationNumber ? `<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-muted-foreground dark:bg-[#0f1318]">[${citationNumber}]</span>` : ""}
+                  <span class="inline-flex rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${tier}</span>
+                  <span class="inline-flex rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${sourceClass}</span>
+                </div>
+                ${
+                  href
+                    ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="block text-sm font-semibold text-primary hover:underline">${authority.title}</a>`
+                    : `<p class="text-sm font-semibold text-foreground">${authority.title}</p>`
+                }
+                ${meta ? `<p class="mt-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">${meta}</p>` : ""}
+                ${summary ? `<p class="mt-2 text-sm leading-relaxed text-muted-foreground">${summary}</p>` : ""}
+              </article>
+            `;
+          })
+          .join("")}
+      </div>
+    </div>
+  `;
+}
+
+function renderSourceGroups(
+  report: ResearchReport,
+  effectiveCitations: ResearchReport["citations"],
+  citationIndexLookup: Map<string, number>,
+): string {
+  const payload = report.publisher_payload;
+  if (!payload?.source_groups?.length) {
+    return renderFlatSourceList(effectiveCitations, citationIndexLookup);
+  }
+
+  return payload.source_groups
+    .map((group) => {
+      const groupCitations = group.citation_ids
+        .map((citationId) => effectiveCitations.find((item) => item.id === citationId))
+        .filter(Boolean) as ResearchReport["citations"];
+      if (!groupCitations.length) return "";
+
+      return `
+        <div class="mb-5 rounded-[22px] border border-black/5 bg-[#f5f6f9] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <p class="text-sm font-semibold text-foreground">${group.label}</p>
+            <span class="inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${group.count} sources</span>
+          </div>
+          <div class="space-y-3">
+            ${groupCitations.map((citation) => renderSourceCard(citation, citationIndexLookup)).join("")}
+          </div>
+        </div>
+      `;
+    })
+    .join("");
+}
+
+function renderFlatSourceList(
+  citations: ResearchReport["citations"],
+  citationIndexLookup: Map<string, number>,
+): string {
+  return `<div class="space-y-3">${citations.map((citation) => renderSourceCard(citation, citationIndexLookup)).join("")}</div>`;
+}
+
+function renderSourceCard(
+  citation: ResearchReport["citations"][number],
+  citationIndexLookup: Map<string, number>,
+): string {
+  const number = citationIndexLookup.get(citation.id);
+  const href = citation.document_url || citation.external_url;
+  const meta = getCitationMeta(citation) || "Primary supporting source used in the report.";
+  const sourceClass = formatSourceClassLabel(citation.source_class);
+  const tier = citation.source_tier ? `Tier ${citation.source_tier}` : "Authority";
+
+  return `
+    <details id="citation-${number || citation.id}" class="rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-[#10151d]">
+      <summary class="flex cursor-pointer items-center gap-3 list-none">
+        ${number ? `<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#f4f5f7] text-xs font-semibold text-muted-foreground dark:bg-[#0f1318]">[${number}]</span>` : ""}
+        ${
+          href
+            ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-medium text-primary hover:underline">${citation.title}</a>`
+            : `<span class="min-w-0 truncate font-medium text-foreground">${citation.title}</span>`
+        }
+        <span class="ml-auto inline-flex rounded-full bg-[#f4f5f7] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${tier} · ${sourceClass}</span>
+      </summary>
+      <div class="mt-3 pl-9 text-muted-foreground leading-relaxed">
+        ${meta}
+        ${
+          href
+            ? `<div class="mt-2"><a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Open source in new tab</a></div>`
+            : ""
+        }
+      </div>
+    </details>
+  `;
+}
+
+function renderStructuredBlocks(
+  blocks: NonNullable<ResearchReport["publisher_payload"]>["sections"][number]["structured_blocks"],
+): string {
+  if (!blocks?.length) return "";
+
+  return blocks
+    .map((block) => {
+      if (block.block_type === "comparison_table" && block.headers?.length && block.rows?.length) {
+        const headerHtml = block.headers.map((header) => `<th>${header}</th>`).join("");
+        const rowHtml = block.rows
+          .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
+          .join("");
+        return `
+          <div data-structured-block="comparison_table" class="my-6 rounded-[20px] border border-black/5 bg-[#f8fafc] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+            <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Comparison"}</p>
+            <table>
+              <thead><tr>${headerHtml}</tr></thead>
+              <tbody>${rowHtml}</tbody>
+            </table>
+          </div>
+        `;
+      }
+
+      if (block.block_type === "checklist" && block.items?.length) {
+        return `
+          <div data-structured-block="checklist" class="my-6 rounded-[20px] border border-black/5 bg-[#f8fafc] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+            <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Recommended actions"}</p>
+            <ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>
+          </div>
+        `;
+      }
+
+      return "";
+    })
+    .join("");
 }
 
 function buildBriefDocumentHtml(
@@ -594,7 +762,7 @@ function parseResearchDocumentHtml(
     sectionsPlain[section.id] = richHtmlToPlainText(bodyHtml);
 
     const heading = sectionNode?.querySelector("h2")?.textContent?.trim();
-    sectionTitles[section.id] = heading?.replace(/^\d+\.\s*/, "").trim() || section.title;
+    sectionTitles[section.id] = normalizeDisplaySectionTitle(heading || section.title);
   });
 
   return {

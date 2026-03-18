@@ -19,6 +19,9 @@ import {
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 
+const experimentalBadgeClass =
+  "h-5 rounded-full border border-red-200 bg-red-50 px-2 text-[10px] font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200";
+
 export type ToolMode = "chat" | "deep-research" | "draft-contract";
 
 interface Tool {
@@ -36,6 +39,7 @@ const tools: Tool[] = [
     name: "Deep Research",
     description: "Comprehensive multi-step legal research with citations",
     icon: Search,
+    badge: "Experimental",
     color: "text-blue-500",
   },
   {
@@ -43,6 +47,7 @@ const tools: Tool[] = [
     name: "Draft Contract",
     description: "Generate contracts with templates and compliance review",
     icon: FileText,
+    badge: "Experimental",
     color: "text-green-500",
   },
 ];
@@ -100,7 +105,16 @@ export function ToolsDropdown({
                     {ActiveToolIcon ? (
                       <ActiveToolIcon className={cn("h-4 w-4", activeTool.color, "opacity-100")} />
                     ) : null}
-                    {showLabel && <span className="text-foreground">{activeTool.name}</span>}
+                    {showLabel && (
+                      <span className="flex items-center gap-2 text-foreground">
+                        <span>{activeTool.name}</span>
+                        {activeTool.badge ? (
+                          <Badge variant="secondary" className={experimentalBadgeClass}>
+                            {activeTool.badge}
+                          </Badge>
+                        ) : null}
+                      </span>
+                    )}
                     {showLabel && <ChevronDown className="h-3.5 w-3.5 text-muted-foreground" />}
                   </>
                 ) : (
@@ -163,7 +177,7 @@ export function ToolsDropdown({
                 <div className="flex items-center gap-2">
                   <span className="font-medium">{tool.name}</span>
                   {tool.badge && (
-                    <Badge variant="secondary" className="h-4 px-1 text-[10px]">
+                    <Badge variant="secondary" className={cn("h-5 px-2 text-[10px]", experimentalBadgeClass)}>
                       {tool.badge}
                     </Badge>
                   )}
@@ -197,6 +211,11 @@ export function ActiveToolIndicator({ tool, onClear }: ActiveToolIndicatorProps)
     <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20">
       <Icon className={cn("h-4 w-4", activeTool.color)} />
       <span className="text-sm font-medium">{activeTool.name}</span>
+      {activeTool.badge ? (
+        <Badge variant="secondary" className={experimentalBadgeClass}>
+          {activeTool.badge}
+        </Badge>
+      ) : null}
       <button
         onClick={onClear}
         className="ml-1 p-0.5 rounded-full hover:bg-primary/20 transition-colors"
