@@ -142,11 +142,6 @@ function buildInlineCitationHtml(
                     : `<span class="text-sm font-semibold text-foreground">${citation.title}</span>`
                 }
                 ${meta ? `<span class="mt-1 block text-xs text-muted-foreground">${meta}</span>` : ""}
-                ${
-                  preferredUrl
-                    ? `<a href="${preferredUrl}" target="_blank" rel="noopener noreferrer" class="pointer-events-auto mt-2 inline-flex text-xs font-medium text-primary hover:underline">Open source in new tab</a>`
-                    : ""
-                }
               </span>
             </span>
           </span>
@@ -362,13 +357,6 @@ function formatSourceClassLabel(sourceClass?: string | null): string {
   return labels[sourceClass] || sourceClass.replace(/_/g, " ");
 }
 
-function summarizeAuthorityLabel(label?: string | null, maxLength = 150): string {
-  if (!label) return "";
-  const cleaned = label.replace(/\s+/g, " ").trim();
-  if (cleaned.length <= maxLength) return cleaned;
-  return `${cleaned.slice(0, maxLength - 3).trimEnd()}...`;
-}
-
 function buildResearchDocumentHtml(
   report: ResearchReport,
   reportTitle: string,
@@ -387,6 +375,9 @@ function buildResearchDocumentHtml(
   const publisherSectionLookup = new Map(
     (report.publisher_payload?.sections || []).map((section) => [section.section_id, section])
   );
+  const provenanceLookup = new Map(
+    (report.section_provenance || []).map((item) => [item.section_id, item])
+  );
 
   if (!hasStructuredCitations) {
     const extractedSummary = extractFallbackCitationsFromHtml(summaryHtml, fallbackCitations, fallbackCitationByHref);
@@ -401,7 +392,11 @@ function buildResearchDocumentHtml(
       let bodyHtml = ensureRichHtml(section.content, sectionRichContent[section.id] ?? section.rich_content);
       bodyHtml = stripSourceUrlsFromHtml(bodyHtml);
       bodyHtml = stripCitationIdArtifactsFromHtml(bodyHtml);
-      let sectionCitationIds = publisherSectionLookup.get(section.id)?.citation_ids || section.citations || [];
+      let sectionCitationIds =
+        publisherSectionLookup.get(section.id)?.citation_ids ||
+        provenanceLookup.get(section.id)?.citation_ids ||
+        section.citations ||
+        [];
 
       if (!hasStructuredCitations) {
         const extractedSection = extractFallbackCitationsFromHtml(bodyHtml, fallbackCitations, fallbackCitationByHref);
@@ -440,14 +435,11 @@ function buildResearchDocumentHtml(
     buildInlineCitationHtml({ ...report, citations: effectiveCitations }, summaryCitationIds, effectiveLookup)
   );
 
-  const keyAuthoritiesHtml = renderKeyAuthorities(report, effectiveCitations, effectiveLookup);
-
   const endnotesHtml = effectiveCitations?.length
     ? `
       <section id="sources-endnotes" data-section-anchor="sources-endnotes" data-report-part="endnotes" contenteditable="false">
         <h2>Sources used in the report</h2>
         <p class="mb-4 text-sm text-muted-foreground">Hover or open inline citations in the report body, or review the grouped source list here.</p>
-        ${keyAuthoritiesHtml}
         ${renderSourceGroups(report, effectiveCitations, effectiveLookup)}
       </section>
     `
@@ -464,53 +456,6 @@ function buildResearchDocumentHtml(
     ${sectionsHtml}
     ${endnotesHtml}
   `);
-}
-
-function renderKeyAuthorities(
-  report: ResearchReport,
-  effectiveCitations: ResearchReport["citations"],
-  citationIndexLookup: Map<string, number>,
-): string {
-  const authorities = report.publisher_payload?.key_authorities || [];
-  if (!authorities.length) return "";
-
-  return `
-    <div id="key-authorities" data-section-anchor="key-authorities" data-report-part="authorities" contenteditable="false" class="mb-5">
-      <div class="mb-3 flex items-center justify-between gap-3">
-        <p class="text-sm font-semibold text-foreground">Key authorities relied on</p>
-        <span class="inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${authorities.length} authorities</span>
-      </div>
-      <div class="space-y-3">
-        ${authorities
-          .map((authority) => {
-            const citationNumber = citationIndexLookup.get(authority.citation_id);
-            const citation = effectiveCitations.find((item) => item.id === authority.citation_id);
-            const href = authority.url || citation?.document_url || citation?.external_url;
-            const sourceClass = formatSourceClassLabel(authority.source_class);
-            const tier = authority.source_tier ? `Tier ${authority.source_tier}` : "Authority";
-            const meta = getCitationMeta(citation || ({ id: "", source_type: "", title: "", relevance_score: 0 } as ResearchReport["citations"][number]));
-            const summary = summarizeAuthorityLabel(authority.label);
-            return `
-              <article class="rounded-[18px] border border-black/5 bg-white px-4 py-3 shadow-sm dark:border-white/10 dark:bg-[#10151d]">
-                <div class="mb-2 flex items-center gap-2">
-                  ${citationNumber ? `<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-white text-xs font-semibold text-muted-foreground dark:bg-[#0f1318]">[${citationNumber}]</span>` : ""}
-                  <span class="inline-flex rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${tier}</span>
-                  <span class="inline-flex rounded-full bg-white/80 px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${sourceClass}</span>
-                </div>
-                ${
-                  href
-                    ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="block text-sm font-semibold text-primary hover:underline">${authority.title}</a>`
-                    : `<p class="text-sm font-semibold text-foreground">${authority.title}</p>`
-                }
-                ${meta ? `<p class="mt-2 text-xs uppercase tracking-[0.12em] text-muted-foreground">${meta}</p>` : ""}
-                ${summary ? `<p class="mt-2 text-sm leading-relaxed text-muted-foreground">${summary}</p>` : ""}
-              </article>
-            `;
-          })
-          .join("")}
-      </div>
-    </div>
-  `;
 }
 
 function renderSourceGroups(
@@ -575,11 +520,6 @@ function renderSourceCard(
       </summary>
       <div class="mt-3 pl-9 text-muted-foreground leading-relaxed">
         ${meta}
-        ${
-          href
-            ? `<div class="mt-2"><a href="${href}" target="_blank" rel="noopener noreferrer" class="text-primary hover:underline">Open source in new tab</a></div>`
-            : ""
-        }
       </div>
     </details>
   `;
@@ -1209,6 +1149,15 @@ function ResearchContent() {
   const citationIndexLookup = useMemo(() => {
     if (!report?.citations) return new Map<string, number>();
     return new Map(report.citations.map((citation, index) => [citation.id, index + 1]));
+  }, [report]);
+
+  const visibleSourceCount = useMemo(() => {
+    if (!report) return 0;
+    const grouped = report.publisher_payload?.source_groups || [];
+    if (grouped.length > 0) {
+      return grouped.reduce((total, group) => total + (group.count || group.citation_ids.length || 0), 0);
+    }
+    return report.citations?.length || 0;
   }, [report]);
 
   const loadSession = useCallback(async (sessionId: string) => {
@@ -2365,10 +2314,10 @@ function ResearchContent() {
                   <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
                   <span className="text-xs font-medium text-foreground">Execution complete</span>
                 </div>
-                {report.citations?.length > 0 && (
+                {visibleSourceCount > 0 && (
                   <div className="flex items-center gap-2">
                     <BookOpen className="h-3.5 w-3.5 shrink-0" />
-                    <span className="text-xs">{report.citations.length} sources</span>
+                    <span className="text-xs">{visibleSourceCount} sources</span>
                   </div>
                 )}
               </div>
