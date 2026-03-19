@@ -116,6 +116,7 @@ export function useChatOrchestrator() {
     const editInputRef = useRef<HTMLTextAreaElement>(null);
     const fetchingConversationRef = useRef<Set<string>>(new Set());
     const abortControllerRef = useRef<AbortController | null>(null);
+    const submissionInFlightRef = useRef(false);
     const hydratedInitialConversationRef = useRef<string | null>(null);
     const didFetchHistoryRef = useRef(false);
     const migratingConversationIdsRef = useRef<Set<string>>(new Set());
@@ -559,256 +560,267 @@ export function useChatOrchestrator() {
             messagesForHistory?: ChatMessageType[],
             toolOverride?: ToolMode
         ) => {
-            if (isLoading) return;
             const text = message || input.trim();
             const convId = conversationId || currentConversationId;
             const activeTool = toolOverride || "chat";
 
-            if (!text) return;
+            if (!text || isLoading || submissionInFlightRef.current) return;
 
-            // Deep Research Tool
-            if (activeTool === "deep-research") {
-                setInput("");
-                const toolToUse = activeTool;
+            submissionInFlightRef.current = true;
 
-                let activeConvId = convId || createConversation();
+            try {
+                // Deep Research Tool
+                if (activeTool === "deep-research") {
+                    setInput("");
+                    setLoading(true);
+                    const toolToUse = activeTool;
 
-                const userMessage: ChatMessageType = {
-                    role: "user",
-                    content: `🔍 **Deep Research:** ${text}`,
-                    timestamp: new Date().toISOString(),
-                };
-                addMessage(activeConvId, userMessage);
+                    let activeConvId = convId || createConversation();
 
-                setActiveToolExecution({
-                    tool: toolToUse,
-                    query: text,
-                    status: "running",
-                    progress: { phase: "starting", message: "Starting deep research..." },
-                });
-
-                try {
-                    const session = await createResearchSession({ query: text, force_research: true });
-                    activeConvId = await persistToolMessage(activeConvId, {
+                    const userMessage: ChatMessageType = {
                         role: "user",
-                        content: userMessage.content,
-                        title: text,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "deep_research",
-                            message_kind: "tool_user_prompt",
-                        },
+                        content: `🔍 **Deep Research:** ${text}`,
+                        timestamp: new Date().toISOString(),
+                    };
+                    addMessage(activeConvId, userMessage);
+
+                    setActiveToolExecution({
+                        tool: toolToUse,
+                        query: text,
+                        status: "running",
+                        progress: { phase: "starting", message: "Starting deep research..." },
                     });
 
-                    if (session.current_step === "redirect_to_contract") {
+                    try {
+                        const session = await createResearchSession({ query: text, force_research: true });
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "user",
+                            content: userMessage.content,
+                            title: text,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "deep_research",
+                                message_kind: "tool_user_prompt",
+                            },
+                        });
+
+                        if (session.current_step === "redirect_to_contract") {
+                            setActiveToolExecution(null);
+                            try {
+                                const contractSession = await createContractSession({
+                                    contract_type: inferContractType(text),
+                                    description: text,
+                                });
+                                const assistantMessage: ChatMessageType = {
+                                    role: "assistant",
+                                    content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}) to continue this contract.`,
+                                    timestamp: new Date().toISOString(),
+                                };
+                                addMessage(activeConvId, assistantMessage);
+                                activeConvId = await persistToolMessage(activeConvId, {
+                                    role: "assistant",
+                                    content: assistantMessage.content,
+                                    metadata: {
+                                        source: "chat_page",
+                                        tool: "deep_research",
+                                        redirect_tool: "draft_contract",
+                                        contract_session_id: contractSession.session_id,
+                                        message_kind: "tool_assistant_redirect",
+                                    },
+                                });
+                                await syncPersistedConversation(activeConvId);
+                                refreshEntitlements();
+                            } catch (contractErr) {
+                                const assistantMessage: ChatMessageType = {
+                                    role: "assistant",
+                                    content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
+                                    timestamp: new Date().toISOString(),
+                                };
+                                addMessage(activeConvId, assistantMessage);
+                                activeConvId = await persistToolMessage(activeConvId, {
+                                    role: "assistant",
+                                    content: assistantMessage.content,
+                                    metadata: {
+                                        source: "chat_page",
+                                        tool: "deep_research",
+                                        redirect_tool: "draft_contract",
+                                        message_kind: "tool_assistant_redirect_fallback",
+                                    },
+                                });
+                                await syncPersistedConversation(activeConvId);
+                                console.error("Failed to create contract session from research redirect:", contractErr);
+                            }
+                            return;
+                        }
+
+                        setActiveToolExecution((prev) => prev ? {
+                            ...prev,
+                            progress: {
+                                phase: session.status === "clarifying" ? "clarifying" : "researching",
+                                message: session.status === "clarifying" ? "This query requires clarification..." : "Research in progress...",
+                            }
+                        } : null);
+
+                        const assistantMessage: ChatMessageType = {
+                            role: "assistant",
+                            content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
+                            timestamp: new Date().toISOString(),
+                        };
+                        addMessage(activeConvId, assistantMessage);
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "assistant",
+                            content: assistantMessage.content,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "deep_research",
+                                research_session_id: session.session_id,
+                                research_status: session.status,
+                                research_phase: session.phase,
+                                message_kind: "tool_assistant_status",
+                            },
+                        });
+                        await syncPersistedConversation(activeConvId);
                         setActiveToolExecution(null);
-                        try {
-                            const contractSession = await createContractSession({
-                                contract_type: inferContractType(text),
-                                description: text,
-                            });
-                            const assistantMessage: ChatMessageType = {
-                                role: "assistant",
-                                content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}) to continue this contract.`,
-                                timestamp: new Date().toISOString(),
-                            };
-                            addMessage(activeConvId, assistantMessage);
-                            activeConvId = await persistToolMessage(activeConvId, {
-                                role: "assistant",
-                                content: assistantMessage.content,
-                                metadata: {
-                                    source: "chat_page",
-                                    tool: "deep_research",
-                                    redirect_tool: "draft_contract",
-                                    contract_session_id: contractSession.session_id,
-                                    message_kind: "tool_assistant_redirect",
-                                },
-                            });
-                            await syncPersistedConversation(activeConvId);
-                            refreshEntitlements();
-                        } catch (contractErr) {
-                            const assistantMessage: ChatMessageType = {
-                                role: "assistant",
-                                content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
-                                timestamp: new Date().toISOString(),
-                            };
-                            addMessage(activeConvId, assistantMessage);
-                            activeConvId = await persistToolMessage(activeConvId, {
-                                role: "assistant",
-                                content: assistantMessage.content,
-                                metadata: {
-                                    source: "chat_page",
-                                    tool: "deep_research",
-                                    redirect_tool: "draft_contract",
-                                    message_kind: "tool_assistant_redirect_fallback",
-                                },
-                            });
-                            await syncPersistedConversation(activeConvId);
-                            console.error("Failed to create contract session from research redirect:", contractErr);
-                        }
                         return;
-                    }
-
-                    setActiveToolExecution((prev) => prev ? {
-                        ...prev,
-                        progress: {
-                            phase: session.status === "clarifying" ? "clarifying" : "researching",
-                            message: session.status === "clarifying" ? "This query requires clarification..." : "Research in progress...",
+                    } catch (err) {
+                        setActiveToolExecution(null);
+                        if (err instanceof APIError && err.isFeatureGatingError()) {
+                            const gatingDetails = err.getFeatureGatingDetails();
+                            if (gatingDetails) {
+                                showUpgradeModal(gatingDetails);
+                                removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
+                                return;
+                            }
                         }
-                    } : null);
-
-                    const assistantMessage: ChatMessageType = {
-                        role: "assistant",
-                        content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
-                        timestamp: new Date().toISOString(),
-                    };
-                    addMessage(activeConvId, assistantMessage);
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "assistant",
-                        content: assistantMessage.content,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "deep_research",
-                            research_session_id: session.session_id,
-                            research_status: session.status,
-                            research_phase: session.phase,
-                            message_kind: "tool_assistant_status",
-                        },
-                    });
-                    await syncPersistedConversation(activeConvId);
-                    setActiveToolExecution(null);
-
-                } catch (err) {
-                    setActiveToolExecution(null);
-                    if (err instanceof APIError && err.isFeatureGatingError()) {
-                        const gatingDetails = err.getFeatureGatingDetails();
-                        if (gatingDetails) {
-                            showUpgradeModal(gatingDetails);
-                            removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
-                            return;
-                        }
+                        console.error("Research error:", err);
+                        const errorMessage: ChatMessageType = {
+                            role: "assistant",
+                            content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
+                            timestamp: new Date().toISOString(),
+                        };
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "user",
+                            content: userMessage.content,
+                            title: text,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "deep_research",
+                                message_kind: "tool_user_prompt",
+                            },
+                        });
+                        addMessage(activeConvId, errorMessage);
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "assistant",
+                            content: errorMessage.content,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "deep_research",
+                                message_kind: "tool_assistant_error",
+                            },
+                        });
+                        await syncPersistedConversation(activeConvId);
+                        return;
+                    } finally {
+                        setLoading(false);
                     }
-                    console.error("Research error:", err);
-                    const errorMessage: ChatMessageType = {
-                        role: "assistant",
-                        content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
-                        timestamp: new Date().toISOString(),
-                    };
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "user",
-                        content: userMessage.content,
-                        title: text,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "deep_research",
-                            message_kind: "tool_user_prompt",
-                        },
-                    });
-                    addMessage(activeConvId, errorMessage);
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "assistant",
-                        content: errorMessage.content,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "deep_research",
-                            message_kind: "tool_assistant_error",
-                        },
-                    });
-                    await syncPersistedConversation(activeConvId);
                 }
-                return;
-            }
 
-            // Draft Contract Tool
-            if (activeTool === "draft-contract") {
+                // Draft Contract Tool
+                if (activeTool === "draft-contract") {
+                    setInput("");
+                    setLoading(true);
+                    let activeConvId = convId || createConversation();
+
+                    const userMessage: ChatMessageType = {
+                        role: "user",
+                        content: `📄 **Draft Contract:** ${text}`,
+                        timestamp: new Date().toISOString(),
+                    };
+                    addMessage(activeConvId, userMessage);
+
+                    try {
+                        const contractSession = await createContractSession({
+                            contract_type: inferContractType(text),
+                            description: text,
+                        });
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "user",
+                            content: userMessage.content,
+                            title: text,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "draft_contract",
+                                message_kind: "tool_user_prompt",
+                            },
+                        });
+                        const assistantMessage: ChatMessageType = {
+                            role: "assistant",
+                            content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo continue this contract, visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}).`,
+                            timestamp: new Date().toISOString(),
+                        };
+                        addMessage(activeConvId, assistantMessage);
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "assistant",
+                            content: assistantMessage.content,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "draft_contract",
+                                contract_session_id: contractSession.session_id,
+                                message_kind: "tool_assistant_status",
+                            },
+                        });
+                        await syncPersistedConversation(activeConvId);
+                        refreshEntitlements();
+                        return;
+                    } catch (err) {
+                        if (err instanceof APIError && err.isFeatureGatingError()) {
+                            const gatingDetails = err.getFeatureGatingDetails();
+                            if (gatingDetails) {
+                                showUpgradeModal(gatingDetails);
+                                removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
+                                return;
+                            }
+                        }
+                        const assistantMessage: ChatMessageType = {
+                            role: "assistant",
+                            content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
+                            timestamp: new Date().toISOString(),
+                        };
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "user",
+                            content: userMessage.content,
+                            title: text,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "draft_contract",
+                                message_kind: "tool_user_prompt",
+                            },
+                        });
+                        addMessage(activeConvId, assistantMessage);
+                        activeConvId = await persistToolMessage(activeConvId, {
+                            role: "assistant",
+                            content: assistantMessage.content,
+                            metadata: {
+                                source: "chat_page",
+                                tool: "draft_contract",
+                                message_kind: "tool_assistant_fallback",
+                            },
+                        });
+                        await syncPersistedConversation(activeConvId);
+                        console.error("Failed to create contract session from chat tool:", err);
+                        return;
+                    } finally {
+                        setLoading(false);
+                    }
+                }
+
+                // Regular Chat
+                const activeConvId = convId || createConversation();
                 setInput("");
-                let activeConvId = convId || createConversation();
-
-                const userMessage: ChatMessageType = {
-                    role: "user",
-                    content: `📄 **Draft Contract:** ${text}`,
-                    timestamp: new Date().toISOString(),
-                };
-                addMessage(activeConvId, userMessage);
-
-                try {
-                    const contractSession = await createContractSession({
-                        contract_type: inferContractType(text),
-                        description: text,
-                    });
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "user",
-                        content: userMessage.content,
-                        title: text,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "draft_contract",
-                            message_kind: "tool_user_prompt",
-                        },
-                    });
-                    const assistantMessage: ChatMessageType = {
-                        role: "assistant",
-                        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo continue this contract, visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}).`,
-                        timestamp: new Date().toISOString(),
-                    };
-                    addMessage(activeConvId, assistantMessage);
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "assistant",
-                        content: assistantMessage.content,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "draft_contract",
-                            contract_session_id: contractSession.session_id,
-                            message_kind: "tool_assistant_status",
-                        },
-                    });
-                    await syncPersistedConversation(activeConvId);
-                    refreshEntitlements();
-                } catch (err) {
-                    if (err instanceof APIError && err.isFeatureGatingError()) {
-                        const gatingDetails = err.getFeatureGatingDetails();
-                        if (gatingDetails) {
-                            showUpgradeModal(gatingDetails);
-                            removeMessagesFrom(activeConvId, messagesForHistory?.length ?? 0);
-                            return;
-                        }
-                    }
-                    const assistantMessage: ChatMessageType = {
-                        role: "assistant",
-                        content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
-                        timestamp: new Date().toISOString(),
-                    };
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "user",
-                        content: userMessage.content,
-                        title: text,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "draft_contract",
-                            message_kind: "tool_user_prompt",
-                        },
-                    });
-                    addMessage(activeConvId, assistantMessage);
-                    activeConvId = await persistToolMessage(activeConvId, {
-                        role: "assistant",
-                        content: assistantMessage.content,
-                        metadata: {
-                            source: "chat_page",
-                            tool: "draft_contract",
-                            message_kind: "tool_assistant_fallback",
-                        },
-                    });
-                    await syncPersistedConversation(activeConvId);
-                    console.error("Failed to create contract session from chat tool:", err);
-                }
-                return;
+                await handleRegularChat(text, activeConvId, messagesForHistory);
+            } finally {
+                submissionInFlightRef.current = false;
             }
-
-            // Regular Chat
-            const activeConvId = convId || createConversation();
-            setInput("");
-            await handleRegularChat(text, activeConvId, messagesForHistory);
-
         },
         [
             isLoading,
@@ -817,6 +829,7 @@ export function useChatOrchestrator() {
             createConversation,
             handleRegularChat,
             addMessage,
+            setLoading,
             showUpgradeModal,
             removeMessagesFrom,
             persistToolMessage,

@@ -184,23 +184,23 @@ export const useLibraryStore = create<LibraryState>()(
     {
       name: "law-lens-library",
       storage: {
-        getItem: (_name) => {
+        getItem: (name) => {
           if (typeof window === "undefined") return null;
           const state = useLibraryStore.getState?.();
-          const key = getStorageKey(state?.userId || null);
+          const key = state?.userId ? getStorageKey(state.userId) : name;
           const value = localStorage.getItem(key);
           return value ? JSON.parse(value) : null;
         },
-        setItem: (_name, value) => {
+        setItem: (name, value) => {
           if (typeof window === "undefined") return;
           const state = useLibraryStore.getState?.();
-          const key = getStorageKey(state?.userId || null);
+          const key = state?.userId ? getStorageKey(state.userId) : name;
           localStorage.setItem(key, JSON.stringify(value));
         },
-        removeItem: (_name) => {
+        removeItem: (name) => {
           if (typeof window === "undefined") return;
           const state = useLibraryStore.getState?.();
-          const key = getStorageKey(state?.userId || null);
+          const key = state?.userId ? getStorageKey(state.userId) : name;
           localStorage.removeItem(key);
         },
       },

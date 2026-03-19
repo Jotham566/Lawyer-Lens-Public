@@ -1,6 +1,6 @@
 "use client";
 
-import { forwardRef, useEffect, useState } from "react";
+import { forwardRef, useCallback, useEffect, useState } from "react";
 import { ArrowUp, Square } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -37,6 +37,22 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
     const selectedTool = controlledTool ?? internalTool;
     const handleSelectTool = onSelectTool ?? setInternalTool;
 
+    const submitDraft = useCallback(() => {
+      if (isLoading) return;
+
+      const trimmed = draft.trim();
+      if (!trimmed) return;
+
+      const tool = selectedTool;
+      setDraft("");
+
+      if (!onSelectTool) {
+        setInternalTool("chat");
+      }
+
+      onSubmit(trimmed, tool);
+    }, [draft, isLoading, onSelectTool, onSubmit, selectedTool]);
+
     useEffect(() => {
       setDraft(value);
     }, [value]);
@@ -49,13 +65,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
           <form
             onSubmit={(e) => {
               e.preventDefault();
-              const trimmed = draft.trim();
-              if (!trimmed) return;
-              setTimeout(() => onSubmit(trimmed, selectedTool), 0);
-              setDraft("");
-              if (!onSelectTool) {
-                setInternalTool("chat");
-              }
+              submitDraft();
             }}
             className="rounded-[28px] border border-muted-foreground/20 bg-background px-3 py-3 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring"
             role="search"
@@ -82,13 +92,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 onKeyDown={(e) => {
                   if (e.key === "Enter" && !e.shiftKey) {
                     e.preventDefault();
-                    const trimmed = draft.trim();
-                    if (!trimmed) return;
-                    setTimeout(() => onSubmit(trimmed, selectedTool), 0);
-                    setDraft("");
-                    if (!onSelectTool) {
-                      setInternalTool("chat");
-                    }
+                    submitDraft();
                   }
                 }}
                 placeholder={getToolPlaceholder(selectedTool)}
