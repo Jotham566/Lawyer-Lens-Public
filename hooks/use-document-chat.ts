@@ -90,6 +90,26 @@ export function useDocumentChat(document: Document | null) {
 
   const starterPrompts = useMemo(() => buildStarterPrompts(document), [document]);
 
+  const hydrateConversation = useCallback(async (targetConversationId: string, expectedDocumentId: string) => {
+    const detail = await getConversation(targetConversationId);
+    if (detail.scope?.document_id !== expectedDocumentId) return;
+
+    setConversationId(detail.id);
+    setMessages(
+      detail.messages.map((message: ConversationDetail["messages"][number]) => ({
+        id: message.id,
+        role: message.role,
+        content: message.content,
+        timestamp: message.timestamp,
+        sources: message.citations,
+        verification: message.verification || undefined,
+        confidence_info: message.confidence_info || undefined,
+        provider: message.provider || undefined,
+        tokens_used: message.tokens_used,
+      }))
+    );
+  }, []);
+
   useEffect(() => {
     abortControllerRef.current?.abort();
     abortControllerRef.current = null;
@@ -126,24 +146,7 @@ export function useDocumentChat(document: Document | null) {
 
         if (!scopedConversation) return;
 
-        const detail = await getConversation(scopedConversation.id);
-        if (cancelled || restoreRequestRef.current !== requestId) return;
-        if (detail.scope?.document_id !== document.id) return;
-
-        setConversationId(detail.id);
-        setMessages(
-          detail.messages.map((message: ConversationDetail["messages"][number]) => ({
-            id: message.id,
-            role: message.role,
-            content: message.content,
-            timestamp: message.timestamp,
-            sources: message.citations,
-            verification: message.verification || undefined,
-            confidence_info: message.confidence_info || undefined,
-            provider: message.provider || undefined,
-            tokens_used: message.tokens_used,
-          }))
-        );
+        await hydrateConversation(scopedConversation.id, document.id);
       } catch (restoreError) {
         console.error("Failed to restore document chat conversation:", restoreError);
       }
@@ -151,10 +154,20 @@ export function useDocumentChat(document: Document | null) {
 
     void restoreScopedConversation();
 
+    const handleVisibilityRefresh = () => {
+      if (globalThis.document.visibilityState === "hidden") return;
+      void restoreScopedConversation();
+    };
+
+    window.addEventListener("focus", handleVisibilityRefresh);
+    globalThis.document.addEventListener("visibilitychange", handleVisibilityRefresh);
+
     return () => {
       cancelled = true;
+      window.removeEventListener("focus", handleVisibilityRefresh);
+      globalThis.document.removeEventListener("visibilitychange", handleVisibilityRefresh);
     };
-  }, [document?.id]);
+  }, [document?.id, hydrateConversation]);
 
   const runDocumentScopedStream = useCallback(
     async (text: string, visibleMessages: ChatMessage[]) => {
@@ -174,6 +187,7 @@ export function useDocumentChat(document: Document | null) {
       abortControllerRef.current?.abort();
       const controller = new AbortController();
       abortControllerRef.current = controller;
+      let activeConversationId = conversationId;
 
       try {
         let fullContent = "";
@@ -284,6 +298,7 @@ export function useDocumentChat(document: Document | null) {
               });
               break;
             case "conversation_id":
+              activeConversationId = event.id;
               setConversationId(event.id);
               break;
             case "generation_done":
@@ -301,12 +316,19 @@ export function useDocumentChat(document: Document | null) {
           setError(err instanceof Error ? err.message : "Failed to get response");
         }
       } finally {
+        if (!controller.signal.aborted && activeConversationId && document?.id) {
+          try {
+            await hydrateConversation(activeConversationId, document.id);
+          } catch (hydrateError) {
+            console.error("Failed to rehydrate document chat conversation:", hydrateError);
+          }
+        }
         abortControllerRef.current = null;
         setIsGenerating(false);
         setIsLoading(false);
       }
     },
-    [conversationId, document]
+    [conversationId, document, hydrateConversation]
   );
 
   const sendMessage = useCallback(

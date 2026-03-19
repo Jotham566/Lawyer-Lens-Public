@@ -12,6 +12,7 @@ import {
     getSuggestedQuestions,
     createContractSession,
     createResearchSession,
+    persistConversationMessage,
     submitChatFeedback,
 } from "@/lib/api";
 import { APIError } from "@/lib/api/client";
@@ -22,6 +23,7 @@ import type {
     VerificationStatus,
     ConfidenceInfo,
 } from "@/lib/api/types";
+import type { Conversation } from "@/lib/stores";
 import type { ToolMode } from "@/components/chat";
 import type { ToolProgress, ResearchResult } from "@/components/chat/tool-message";
 
@@ -82,6 +84,7 @@ export function useChatOrchestrator() {
     const conversations = useActiveConversations();
     const archivedConversations = useArchivedConversations();
     const currentConversation = useCurrentConversation();
+    const allConversations = useChatStore((state) => state.conversations);
     const citationContext = useCitationOptional();
 
     // Local UI State
@@ -115,6 +118,10 @@ export function useChatOrchestrator() {
     const abortControllerRef = useRef<AbortController | null>(null);
     const hydratedInitialConversationRef = useRef<string | null>(null);
     const didFetchHistoryRef = useRef(false);
+    const migratingConversationIdsRef = useRef<Set<string>>(new Set());
+    const conversationIdPatternRef = useRef(
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    );
 
     // Integration Hooks
     const {
@@ -179,11 +186,54 @@ export function useChatOrchestrator() {
         if (isAuthenticated) {
             if (didFetchHistoryRef.current) return;
             didFetchHistoryRef.current = true;
-            fetchConversations();
+            void fetchConversations();
             return;
         }
         didFetchHistoryRef.current = false;
     }, [isAuthenticated, fetchConversations]);
+
+    useEffect(() => {
+        if (!isAuthenticated) {
+            return;
+        }
+
+        const refreshFromServer = () => {
+            if (document.visibilityState === "hidden") {
+                return;
+            }
+
+            void fetchConversations();
+
+            const { currentConversationId: activeConversationId, isLoading: storeIsLoading } =
+                useChatStore.getState();
+
+            if (storeIsLoading || !activeConversationId) {
+                return;
+            }
+
+            if (!conversationIdPatternRef.current.test(activeConversationId)) {
+                return;
+            }
+
+            const activeConversation = useChatStore
+                .getState()
+                .conversations.find((conversation) => conversation.id === activeConversationId);
+
+            if (!activeConversation || activeConversation.isLocalOnly) {
+                return;
+            }
+
+            void fetchConversation(activeConversationId);
+        };
+
+        window.addEventListener("focus", refreshFromServer);
+        document.addEventListener("visibilitychange", refreshFromServer);
+
+        return () => {
+            window.removeEventListener("focus", refreshFromServer);
+            document.removeEventListener("visibilitychange", refreshFromServer);
+        };
+    }, [isAuthenticated, fetchConversations, fetchConversation]);
 
     // Citation Reset Logic
     const resetCitationsRef = useRef(citationContext?.resetCitations);
@@ -197,22 +247,130 @@ export function useChatOrchestrator() {
 
     // Auto-fetch deep conversation details
     useEffect(() => {
-        if (!currentConversationId || !isAuthenticated) return;
+        if (!currentConversationId || !isAuthenticated || isLoading || isGenerating) return;
         if (fetchingConversationRef.current.has(currentConversationId)) return;
 
-        const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
-        if (!uuidRegex.test(currentConversationId)) return;
+        if (!conversationIdPatternRef.current.test(currentConversationId)) return;
 
         const conv = useChatStore.getState().conversations.find(c => c.id === currentConversationId);
-        if (conv && !conv.isLocalOnly && conv.messages.length === 0) {
+        if (conv && !conv.isLocalOnly && (conv.messages.length === 0 || conv.needsHydration)) {
             fetchingConversationRef.current.add(currentConversationId);
             fetchConversation(currentConversationId).finally(() => {
                 fetchingConversationRef.current.delete(currentConversationId);
             });
         }
-    }, [currentConversationId, isAuthenticated, fetchConversation]);
+    }, [currentConversationId, isAuthenticated, isLoading, isGenerating, fetchConversation]);
 
     // --- Logic Helpers ---
+
+    const persistToolMessage = useCallback(
+        async (
+            conversationId: string,
+            payload: {
+                role: "user" | "assistant";
+                content: string;
+                title?: string;
+                metadata?: Record<string, unknown>;
+            }
+        ): Promise<string> => {
+            if (!isAuthenticated) {
+                return conversationId;
+            }
+
+            try {
+                const persisted = await persistConversationMessage({
+                    conversation_id: conversationIdPatternRef.current.test(conversationId)
+                        ? conversationId
+                        : undefined,
+                    role: payload.role,
+                    content: payload.content,
+                    title: payload.title,
+                    metadata: payload.metadata,
+                });
+
+                if (conversationId !== persisted.conversation_id) {
+                    replaceConversationId(conversationId, persisted.conversation_id);
+                    return persisted.conversation_id;
+                }
+
+                return conversationId;
+            } catch (error) {
+                console.error("Failed to persist tool chat message:", error);
+                return conversationId;
+            }
+        },
+        [isAuthenticated, replaceConversationId]
+    );
+
+    const syncPersistedConversation = useCallback(
+        async (conversationId: string) => {
+            if (!isAuthenticated || !conversationIdPatternRef.current.test(conversationId)) {
+                return;
+            }
+
+            await fetchConversation(conversationId).catch(() => undefined);
+            await fetchConversations().catch(() => undefined);
+        },
+        [isAuthenticated, fetchConversation, fetchConversations]
+    );
+
+    const migrateLocalConversation = useCallback(
+        async (conversation: Conversation) => {
+            if (!isAuthenticated || !conversation.isLocalOnly || conversation.messages.length === 0) {
+                return;
+            }
+
+            if (migratingConversationIdsRef.current.has(conversation.id)) {
+                return;
+            }
+
+            migratingConversationIdsRef.current.add(conversation.id);
+
+            try {
+                let activeConversationId = conversation.id;
+                const inferredTitle =
+                    conversation.title && conversation.title !== "New Conversation"
+                        ? conversation.title
+                        : conversation.messages.find((message) => message.role === "user")?.content;
+
+                for (let index = 0; index < conversation.messages.length; index += 1) {
+                    const message = conversation.messages[index];
+                    activeConversationId = await persistToolMessage(activeConversationId, {
+                        role: message.role,
+                        content: message.content,
+                        title: index === 0 ? inferredTitle : undefined,
+                        metadata: {
+                            source: "chat_page",
+                            migrated_local_conversation: true,
+                            original_local_conversation_id: conversation.id,
+                            original_message_id: message.id,
+                            original_timestamp: message.timestamp,
+                            message_kind: "migrated_history",
+                        },
+                    });
+                }
+
+                await syncPersistedConversation(activeConversationId);
+            } finally {
+                migratingConversationIdsRef.current.delete(conversation.id);
+            }
+        },
+        [isAuthenticated, persistToolMessage, syncPersistedConversation]
+    );
+
+    useEffect(() => {
+        if (!isAuthenticated || isLoading) {
+            return;
+        }
+
+        const pendingMigrations = allConversations.filter(
+            (conversation) => conversation.isLocalOnly && conversation.messages.length > 0
+        );
+
+        for (const conversation of pendingMigrations) {
+            void migrateLocalConversation(conversation);
+        }
+    }, [allConversations, isAuthenticated, isLoading, migrateLocalConversation]);
 
     // 1. Core Streaming Logic
     const streamResponse = useCallback(
@@ -330,13 +488,26 @@ export function useChatOrchestrator() {
                     setError(err instanceof Error ? err.message : "Failed to get response");
                 }
             } finally {
+                if (!controller.signal.aborted && conversationIdPatternRef.current.test(activeConvId)) {
+                    void fetchConversation(activeConvId);
+                    void fetchConversations();
+                }
                 abortControllerRef.current = null;
                 setIsGenerating(false);
                 setLoading(false);
                 refreshEntitlements();
             }
         },
-        [addMessage, updateLastMessage, setLoading, setError, refreshEntitlements, replaceConversationId]
+        [
+            addMessage,
+            updateLastMessage,
+            setLoading,
+            setError,
+            refreshEntitlements,
+            replaceConversationId,
+            fetchConversation,
+            fetchConversations,
+        ]
     );
 
     const handleMessageFeedback = useCallback(
@@ -400,7 +571,7 @@ export function useChatOrchestrator() {
                 setInput("");
                 const toolToUse = activeTool;
 
-                const activeConvId = convId || createConversation();
+                let activeConvId = convId || createConversation();
 
                 const userMessage: ChatMessageType = {
                     role: "user",
@@ -418,6 +589,16 @@ export function useChatOrchestrator() {
 
                 try {
                     const session = await createResearchSession({ query: text, force_research: true });
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "user",
+                        content: userMessage.content,
+                        title: text,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "deep_research",
+                            message_kind: "tool_user_prompt",
+                        },
+                    });
 
                     if (session.current_step === "redirect_to_contract") {
                         setActiveToolExecution(null);
@@ -432,6 +613,18 @@ export function useChatOrchestrator() {
                                 timestamp: new Date().toISOString(),
                             };
                             addMessage(activeConvId, assistantMessage);
+                            activeConvId = await persistToolMessage(activeConvId, {
+                                role: "assistant",
+                                content: assistantMessage.content,
+                                metadata: {
+                                    source: "chat_page",
+                                    tool: "deep_research",
+                                    redirect_tool: "draft_contract",
+                                    contract_session_id: contractSession.session_id,
+                                    message_kind: "tool_assistant_redirect",
+                                },
+                            });
+                            await syncPersistedConversation(activeConvId);
                             refreshEntitlements();
                         } catch (contractErr) {
                             const assistantMessage: ChatMessageType = {
@@ -440,6 +633,17 @@ export function useChatOrchestrator() {
                                 timestamp: new Date().toISOString(),
                             };
                             addMessage(activeConvId, assistantMessage);
+                            activeConvId = await persistToolMessage(activeConvId, {
+                                role: "assistant",
+                                content: assistantMessage.content,
+                                metadata: {
+                                    source: "chat_page",
+                                    tool: "deep_research",
+                                    redirect_tool: "draft_contract",
+                                    message_kind: "tool_assistant_redirect_fallback",
+                                },
+                            });
+                            await syncPersistedConversation(activeConvId);
                             console.error("Failed to create contract session from research redirect:", contractErr);
                         }
                         return;
@@ -459,6 +663,19 @@ export function useChatOrchestrator() {
                         timestamp: new Date().toISOString(),
                     };
                     addMessage(activeConvId, assistantMessage);
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "assistant",
+                        content: assistantMessage.content,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "deep_research",
+                            research_session_id: session.session_id,
+                            research_status: session.status,
+                            research_phase: session.phase,
+                            message_kind: "tool_assistant_status",
+                        },
+                    });
+                    await syncPersistedConversation(activeConvId);
                     setActiveToolExecution(null);
 
                 } catch (err) {
@@ -477,7 +694,27 @@ export function useChatOrchestrator() {
                         content: `Sorry, I couldn't start the deep research. ${err instanceof Error ? err.message : "Please try again."}`,
                         timestamp: new Date().toISOString(),
                     };
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "user",
+                        content: userMessage.content,
+                        title: text,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "deep_research",
+                            message_kind: "tool_user_prompt",
+                        },
+                    });
                     addMessage(activeConvId, errorMessage);
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "assistant",
+                        content: errorMessage.content,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "deep_research",
+                            message_kind: "tool_assistant_error",
+                        },
+                    });
+                    await syncPersistedConversation(activeConvId);
                 }
                 return;
             }
@@ -485,7 +722,7 @@ export function useChatOrchestrator() {
             // Draft Contract Tool
             if (activeTool === "draft-contract") {
                 setInput("");
-                const activeConvId = convId || createConversation();
+                let activeConvId = convId || createConversation();
 
                 const userMessage: ChatMessageType = {
                     role: "user",
@@ -499,12 +736,33 @@ export function useChatOrchestrator() {
                         contract_type: inferContractType(text),
                         description: text,
                     });
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "user",
+                        content: userMessage.content,
+                        title: text,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "draft_contract",
+                            message_kind: "tool_user_prompt",
+                        },
+                    });
                     const assistantMessage: ChatMessageType = {
                         role: "assistant",
                         content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo continue this contract, visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}).`,
                         timestamp: new Date().toISOString(),
                     };
                     addMessage(activeConvId, assistantMessage);
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "assistant",
+                        content: assistantMessage.content,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "draft_contract",
+                            contract_session_id: contractSession.session_id,
+                            message_kind: "tool_assistant_status",
+                        },
+                    });
+                    await syncPersistedConversation(activeConvId);
                     refreshEntitlements();
                 } catch (err) {
                     if (err instanceof APIError && err.isFeatureGatingError()) {
@@ -520,7 +778,27 @@ export function useChatOrchestrator() {
                         content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
                         timestamp: new Date().toISOString(),
                     };
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "user",
+                        content: userMessage.content,
+                        title: text,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "draft_contract",
+                            message_kind: "tool_user_prompt",
+                        },
+                    });
                     addMessage(activeConvId, assistantMessage);
+                    activeConvId = await persistToolMessage(activeConvId, {
+                        role: "assistant",
+                        content: assistantMessage.content,
+                        metadata: {
+                            source: "chat_page",
+                            tool: "draft_contract",
+                            message_kind: "tool_assistant_fallback",
+                        },
+                    });
+                    await syncPersistedConversation(activeConvId);
                     console.error("Failed to create contract session from chat tool:", err);
                 }
                 return;
@@ -532,7 +810,19 @@ export function useChatOrchestrator() {
             await handleRegularChat(text, activeConvId, messagesForHistory);
 
         },
-        [isLoading, input, currentConversationId, createConversation, handleRegularChat, addMessage, showUpgradeModal, removeMessagesFrom]
+        [
+            isLoading,
+            input,
+            currentConversationId,
+            createConversation,
+            handleRegularChat,
+            addMessage,
+            showUpgradeModal,
+            removeMessagesFrom,
+            persistToolMessage,
+            syncPersistedConversation,
+            refreshEntitlements,
+        ]
     );
 
     // Initial Query Handler

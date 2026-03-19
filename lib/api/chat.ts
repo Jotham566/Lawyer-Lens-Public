@@ -17,6 +17,22 @@ import type {
   ConversationDetail,
 } from "./types";
 
+export interface PersistConversationMessageRequest {
+  conversation_id?: string;
+  role: "user" | "assistant";
+  content: string;
+  title?: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface PersistConversationMessageResponse {
+  conversation_id: string;
+  message_id: string;
+  title: string | null;
+  created_at: string;
+  is_new_conversation: boolean;
+}
+
 function sanitizeChatRequest(request: ChatRequest): ChatRequest {
   const cleanMessage = request.message.trim();
   const cleanConversationId = request.conversation_id?.trim() || undefined;
@@ -135,6 +151,21 @@ export async function updateConversationTitle(
   title: string
 ): Promise<{ id: string; title: string }> {
   return updateConversation(conversationId, { title });
+}
+
+/**
+ * Persist a non-streaming chat/tool message into conversation history
+ */
+export async function persistConversationMessage(
+  request: PersistConversationMessageRequest
+): Promise<PersistConversationMessageResponse> {
+  return apiPost<PersistConversationMessageResponse>("/chat/conversations/messages", {
+    conversation_id: request.conversation_id?.trim() || undefined,
+    role: request.role,
+    content: request.content.trim(),
+    title: request.title?.trim() || undefined,
+    metadata: request.metadata || {},
+  });
 }
 
 /**

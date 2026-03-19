@@ -39,11 +39,14 @@ export {
   sendChatMessage,
   getChatHealth,
   submitChatFeedback,
+  persistConversationMessage,
   streamChatMessage,
   streamChatWithTypewriter,
   getSuggestedQuestions,
   mapCitationsToSources,
   type StreamEvent,
+  type PersistConversationMessageRequest,
+  type PersistConversationMessageResponse,
 } from "./chat";
 
 // Research API

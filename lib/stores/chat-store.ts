@@ -26,6 +26,7 @@ export interface Conversation {
   updatedAt: string;
   scope?: DocumentScope | null;
   isLocalOnly?: boolean;
+  needsHydration?: boolean;
   // New fields for better management
   isArchived?: boolean;
   isStarred?: boolean;
@@ -186,6 +187,7 @@ export const useChatStore = create<ChatState>()(
           createdAt: now,
           updatedAt: now,
           isLocalOnly: true,
+          needsHydration: false,
           isArchived: false,
           isStarred: false,
         };
@@ -369,6 +371,7 @@ export const useChatStore = create<ChatState>()(
               createdAt: now,
               updatedAt: now,
               isLocalOnly: true,
+              needsHydration: false,
               isArchived: false,
               isStarred: false,
             };
@@ -392,6 +395,7 @@ export const useChatStore = create<ChatState>()(
               title,
               messages: updatedMessages,
               updatedAt: new Date().toISOString(),
+              needsHydration: !conv.isLocalOnly,
             };
           });
 
@@ -432,6 +436,7 @@ export const useChatStore = create<ChatState>()(
               ...conv,
               messages,
               updatedAt: new Date().toISOString(),
+              needsHydration: !conv.isLocalOnly,
             };
           });
 
@@ -463,6 +468,7 @@ export const useChatStore = create<ChatState>()(
               title,
               messages,
               updatedAt: new Date().toISOString(),
+              needsHydration: !conv.isLocalOnly,
             };
           });
 
@@ -479,6 +485,7 @@ export const useChatStore = create<ChatState>()(
               ...conv,
               messages: conv.messages.slice(0, fromIndex),
               updatedAt: new Date().toISOString(),
+              needsHydration: !conv.isLocalOnly,
             };
           });
 
@@ -520,17 +527,23 @@ export const useChatStore = create<ChatState>()(
                 const backendConv = backendMap.get(localConv.id);
                 if (backendConv) {
                   backendMap.delete(localConv.id); // Mark as handled
+                  const backendUpdatedAt = new Date(backendConv.updated_at).getTime();
+                  const localUpdatedAt = new Date(localConv.updatedAt).getTime();
+                  const backendIsNewer = Number.isFinite(backendUpdatedAt)
+                    && Number.isFinite(localUpdatedAt)
+                    && backendUpdatedAt > localUpdatedAt;
                   return {
                     ...localConv, // Keep local state (messages)
                     title: backendConv.title || localConv.title,
                     isLocalOnly: false,
+                    needsHydration:
+                      localConv.needsHydration === true
+                        || localConv.messages.length === 0
+                        || backendIsNewer,
                     isStarred: backendConv.is_starred ?? localConv.isStarred,
                     isArchived: backendConv.is_archived ?? localConv.isArchived,
                     updatedAt: backendConv.updated_at,
                     scope: backendConv.scope ?? localConv.scope,
-                    // Don't overwrite messages if we have them locally and they might be newer/optimistic
-                    // But if we have no messages locally and backend does (unlikely for list endpoint),
-                    // we'll fetch them in detail later.
                   };
                 }
 
@@ -553,6 +566,7 @@ export const useChatStore = create<ChatState>()(
               updatedAt: summary.updated_at,
               scope: summary.scope ?? null,
               isLocalOnly: false,
+              needsHydration: true,
               isArchived: summary.is_archived ?? false,
               isStarred: summary.is_starred ?? false,
             }));
@@ -618,6 +632,7 @@ export const useChatStore = create<ChatState>()(
                 updatedAt: detail.updated_at,
                 scope: detail.scope ?? c.scope ?? null,
                 isLocalOnly: false,
+                needsHydration: false,
                 messages: messages
               };
             });
@@ -654,7 +669,7 @@ export const useChatStore = create<ChatState>()(
         set((state) => {
           const conversations = state.conversations.map((c) => {
             if (c.id !== oldId) return c;
-            return { ...c, id: newId, isLocalOnly: false };
+            return { ...c, id: newId, isLocalOnly: false, needsHydration: true };
           });
 
           return {
