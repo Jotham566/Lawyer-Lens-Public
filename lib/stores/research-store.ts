@@ -23,8 +23,10 @@ export interface ResearchSessionSummary {
 interface ResearchSessionsState {
   // Sessions list (most recent first)
   sessions: ResearchSessionSummary[];
+  userId: string | null;
 
   // Actions
+  setUserId: (userId: string | null) => void;
   addSession: (session: Omit<ResearchSessionSummary, "updatedAt">) => void;
   updateSession: (id: string, updates: Partial<ResearchSessionSummary>) => void;
   removeSession: (id: string) => void;
@@ -39,10 +41,44 @@ const generateTitle = (query: string): string => {
   return title.length < cleaned.length ? `${title}...` : title;
 };
 
+const getStorageKey = (userId: string | null) =>
+  userId ? `law-lens-research-sessions-${userId}` : "law-lens-research-sessions-anonymous";
+
 export const useResearchSessionsStore = create<ResearchSessionsState>()(
   persist(
     (set, get) => ({
       sessions: [],
+      userId: null,
+
+      setUserId: (userId) => {
+        const currentUserId = get().userId;
+
+        if (currentUserId !== userId) {
+          let newSessions: ResearchSessionSummary[] = [];
+
+          if (typeof window !== "undefined" && userId) {
+            const stored = localStorage.getItem(getStorageKey(userId));
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                if (parsed.state) {
+                  newSessions = parsed.state.sessions || [];
+                }
+              } catch (error) {
+                console.error("Failed to load user research session data:", error);
+              }
+            }
+          }
+
+          set({
+            userId,
+            sessions: newSessions,
+          });
+          return;
+        }
+
+        set({ userId });
+      },
 
       addSession: (session) => {
         const now = new Date().toISOString();
@@ -102,9 +138,32 @@ export const useResearchSessionsStore = create<ResearchSessionsState>()(
     }),
     {
       name: "law-lens-research-sessions",
-      partialize: (state) => ({
-        sessions: state.sessions.slice(0, 100), // Keep last 100 sessions
-      }),
+      storage: {
+        getItem: (_name) => {
+          if (typeof window === "undefined") return null;
+          const state = useResearchSessionsStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: (_name, value) => {
+          if (typeof window === "undefined") return;
+          const state = useResearchSessionsStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          localStorage.setItem(key, JSON.stringify(value));
+        },
+        removeItem: (_name) => {
+          if (typeof window === "undefined") return;
+          const state = useResearchSessionsStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          localStorage.removeItem(key);
+        },
+      },
+      partialize: (state) =>
+        ({
+          sessions: state.sessions.slice(0, 100), // Keep last 100 sessions
+          userId: state.userId,
+        }) as ResearchSessionsState,
     }
   )
 );

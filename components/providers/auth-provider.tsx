@@ -23,6 +23,8 @@ import {
 } from "@/lib/api/auth";
 import { onUnauthorized } from "@/lib/api/client";
 import { useChatStore } from "@/lib/stores/chat-store";
+import { useLibraryStore } from "@/lib/stores/library-store";
+import { useResearchSessionsStore } from "@/lib/stores/research-store";
 
 const REFRESH_INTERVAL_MS = 50 * 60 * 1000;
 
@@ -71,6 +73,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
       // Set userId in chat store for user-scoped chat history
       useChatStore.getState().setUserId(user.id);
+      useLibraryStore.getState().setUserId(user.id);
+      useResearchSessionsStore.getState().setUserId(user.id);
 
       return true;
     } catch {
@@ -81,6 +85,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       });
       // Clear userId in chat store
       useChatStore.getState().setUserId(null);
+      useLibraryStore.getState().setUserId(null);
+      useResearchSessionsStore.getState().setUserId(null);
       return false;
     }
   }, []);
@@ -98,6 +104,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
         });
         // Set userId in chat store for user-scoped chat history
         useChatStore.getState().setUserId(user.id);
+        useLibraryStore.getState().setUserId(user.id);
+        useResearchSessionsStore.getState().setUserId(user.id);
       } catch {
         // Token might be invalid, try refresh
         await refreshSession();
@@ -131,6 +139,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
           isAuthenticated: false,
         });
         useChatStore.getState().setUserId(null);
+        useLibraryStore.getState().setUserId(null);
+        useResearchSessionsStore.getState().setUserId(null);
         router.push("/");
       })();
     });
@@ -154,6 +164,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
     useChatStore.getState().setUserId(user.id);
+    useLibraryStore.getState().setUserId(user.id);
+    useResearchSessionsStore.getState().setUserId(user.id);
 
     return { requiresVerification: response.requires_email_verification };
   }, []);
@@ -174,6 +186,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
     useChatStore.getState().setUserId(user.id);
+    useLibraryStore.getState().setUserId(user.id);
+    useResearchSessionsStore.getState().setUserId(user.id);
 
     return { emailSent: response.email_verification_sent };
   }, []);
@@ -192,6 +206,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
     void issueCsrfToken();
     // Set userId in chat store for user-scoped chat history
     useChatStore.getState().setUserId(user.id);
+    useLibraryStore.getState().setUserId(user.id);
+    useResearchSessionsStore.getState().setUserId(user.id);
   }, []);
 
   // Logout
@@ -205,6 +221,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
 
     // Clear userId in chat store (clears chat history for this session)
     useChatStore.getState().setUserId(null);
+    useLibraryStore.getState().setUserId(null);
+    useResearchSessionsStore.getState().setUserId(null);
 
     // Then call API (fire and forget)
     try {

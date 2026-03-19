@@ -36,6 +36,9 @@ export interface ReadingHistoryEntry {
 }
 
 interface LibraryState {
+  userId: string | null;
+  setUserId: (userId: string | null) => void;
+
   // Saved documents (bookmarks)
   savedDocuments: SavedDocument[];
   saveDocument: (doc: Omit<SavedDocument, "savedAt">) => void;
@@ -56,9 +59,46 @@ interface LibraryState {
   // addToCollection: (collectionId: string, documentId: string) => void;
 }
 
+const getStorageKey = (userId: string | null) =>
+  userId ? `law-lens-library-${userId}` : "law-lens-library-anonymous";
+
 export const useLibraryStore = create<LibraryState>()(
   persist(
     (set, get) => ({
+      userId: null,
+      setUserId: (userId) => {
+        const currentUserId = get().userId;
+
+        if (currentUserId !== userId) {
+          let newSavedDocuments: SavedDocument[] = [];
+          let newReadingHistory: ReadingHistoryEntry[] = [];
+
+          if (typeof window !== "undefined" && userId) {
+            const stored = localStorage.getItem(getStorageKey(userId));
+            if (stored) {
+              try {
+                const parsed = JSON.parse(stored);
+                if (parsed.state) {
+                  newSavedDocuments = parsed.state.savedDocuments || [];
+                  newReadingHistory = parsed.state.readingHistory || [];
+                }
+              } catch (error) {
+                console.error("Failed to load user library data:", error);
+              }
+            }
+          }
+
+          set({
+            userId,
+            savedDocuments: newSavedDocuments,
+            readingHistory: newReadingHistory,
+          });
+          return;
+        }
+
+        set({ userId });
+      },
+
       // Saved documents
       savedDocuments: [],
 
@@ -143,7 +183,34 @@ export const useLibraryStore = create<LibraryState>()(
     }),
     {
       name: "law-lens-library",
+      storage: {
+        getItem: (_name) => {
+          if (typeof window === "undefined") return null;
+          const state = useLibraryStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          const value = localStorage.getItem(key);
+          return value ? JSON.parse(value) : null;
+        },
+        setItem: (_name, value) => {
+          if (typeof window === "undefined") return;
+          const state = useLibraryStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          localStorage.setItem(key, JSON.stringify(value));
+        },
+        removeItem: (_name) => {
+          if (typeof window === "undefined") return;
+          const state = useLibraryStore.getState?.();
+          const key = getStorageKey(state?.userId || null);
+          localStorage.removeItem(key);
+        },
+      },
       version: 1,
+      partialize: (state) =>
+        ({
+          userId: state.userId,
+          savedDocuments: state.savedDocuments,
+          readingHistory: state.readingHistory,
+        }) as LibraryState,
     }
   )
 );

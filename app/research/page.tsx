@@ -63,7 +63,7 @@ import {
 } from "@/lib/api";
 import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
-import { useRequireAuth } from "@/components/providers";
+import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
@@ -101,8 +101,10 @@ const statusLabels: Record<string, { label: string; description: string }> = {
   },
 };
 
-const ACTIVE_RESEARCH_SESSION_KEY = "law-lens-active-research-session";
-const researchReportDraftKey = (sessionId: string) => `law-lens-research-report-draft:${sessionId}`;
+const activeResearchSessionKey = (userId: string | null | undefined) =>
+  `law-lens-active-research-session:${userId || "anonymous"}`;
+const researchReportDraftKey = (userId: string | null | undefined, sessionId: string) =>
+  `law-lens-research-report-draft:${userId || "anonymous"}:${sessionId}`;
 const BRIEF_AUTOSAVE_DEBOUNCE_MS = 1800;
 const REPORT_AUTOSAVE_DEBOUNCE_MS = 2500;
 const RATE_LIMIT_BACKOFF_MS = 10000;
@@ -806,8 +808,10 @@ function ResearchContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { refresh: refreshEntitlements } = useEntitlements();
+  const { user } = useAuth();
   const initialQuery = searchParams.get("q");
   const sessionIdParam = searchParams.get("session");
+  const activeSessionStorageKey = activeResearchSessionKey(user?.id);
 
   const [session, setSession] = useState<ResearchSession | null>(null);
   const [report, setReport] = useState<ResearchReport | null>(null);
@@ -861,22 +865,22 @@ function ResearchContent() {
 
   useEffect(() => {
     if (sessionIdParam || typeof window === "undefined") return;
-    const activeSessionId = window.localStorage.getItem(ACTIVE_RESEARCH_SESSION_KEY);
+    const activeSessionId = window.localStorage.getItem(activeSessionStorageKey);
     if (activeSessionId) {
       router.replace(`/research?session=${activeSessionId}`);
     }
-  }, [router, sessionIdParam]);
+  }, [activeSessionStorageKey, router, sessionIdParam]);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
     if (session && !["complete", "error"].includes(session.status)) {
-      window.localStorage.setItem(ACTIVE_RESEARCH_SESSION_KEY, session.session_id);
+      window.localStorage.setItem(activeSessionStorageKey, session.session_id);
       return;
     }
     if (session?.status === "complete" || session?.status === "error") {
-      window.localStorage.removeItem(ACTIVE_RESEARCH_SESSION_KEY);
+      window.localStorage.removeItem(activeSessionStorageKey);
     }
-  }, [session]);
+  }, [activeSessionStorageKey, session]);
 
   // Initialize editing state when brief is available
   useEffect(() => {
@@ -908,7 +912,7 @@ function ResearchContent() {
 
   useEffect(() => {
     if (!report || typeof window === "undefined") return;
-    const storedDraft = window.localStorage.getItem(researchReportDraftKey(report.id));
+    const storedDraft = window.localStorage.getItem(researchReportDraftKey(user?.id, report.id));
     if (!storedDraft) {
       setEditedReportTitle(report.title);
       setEditedExecutiveSummary(report.executive_summary);
@@ -987,7 +991,7 @@ function ResearchContent() {
         )
       );
     }
-  }, [report]);
+  }, [report, user?.id]);
 
   const buildBriefDraft = useCallback((): ApproveBriefRequest["brief"] | null => {
     if (!session?.research_brief) return null;
@@ -1029,7 +1033,7 @@ function ResearchContent() {
   useEffect(() => {
     if (!report || typeof window === "undefined") return;
     window.localStorage.setItem(
-      researchReportDraftKey(report.id),
+      researchReportDraftKey(user?.id, report.id),
       JSON.stringify({
         title: editedReportTitle,
         executiveSummary: editedExecutiveSummary,
@@ -1039,7 +1043,7 @@ function ResearchContent() {
         sectionsRich: editedReportSectionsRich,
       })
     );
-  }, [editedExecutiveSummary, editedExecutiveSummaryRich, editedReportSectionTitles, editedReportSections, editedReportSectionsRich, editedReportTitle, report]);
+  }, [editedExecutiveSummary, editedExecutiveSummaryRich, editedReportSectionTitles, editedReportSections, editedReportSectionsRich, editedReportTitle, report, user?.id]);
 
   useEffect(() => {
     if (session?.status !== "brief_review" || !session.research_brief) return;
