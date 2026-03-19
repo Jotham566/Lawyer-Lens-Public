@@ -79,6 +79,7 @@ export async function GET(request: NextRequest) {
     }
 
     const response = await fetch(`${BACKEND_URL}/billing/entitlements`, {
+      cache: "no-store",
       headers: {
         Authorization: authHeader,
         "Content-Type": "application/json",

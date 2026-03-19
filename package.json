@@ -8,7 +8,8 @@
     "pnpm": ">=10.30.3 <11"
   },
   "scripts": {
-    "dev": "next dev -p 3001",
+    "dev": "next dev --webpack -p 3001",
+    "dev:turbo": "next dev -p 3001",
     "build": "pnpm lint && pnpm type-check && next build",
     "analyze": "ANALYZE=true next build --webpack",
     "start": "next start -p 3001",
