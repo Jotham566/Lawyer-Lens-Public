@@ -199,7 +199,7 @@ function ActsContent() {
           </p>
         </div>
 
-        <div className="rounded-2xl border bg-muted/20 px-4 py-3 text-sm lg:min-w-[180px]">
+        <div className="rounded-2xl border border-transparent bg-muted/20 px-4 py-3 text-sm dark:border-glass lg:min-w-[180px]">
           <p className="font-medium">{data?.length ?? "..."} total acts indexed</p>
           <p className="text-muted-foreground">{resultLabel} in current view</p>
         </div>
@@ -207,7 +207,7 @@ function ActsContent() {
 
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <Card className="border-border/70">
+          <Card className="border-border/70 dark:border-glass">
             <CardContent className="space-y-5 pt-5">
               <div className="space-y-2">
                 <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -477,7 +477,7 @@ function ActsContent() {
                 const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent(currentActsUrl)}&from=acts`;
                 return (
                   <Link key={act.id} href={documentHref} className="group block">
-                    <Card className={cn("h-full border-border/70", surfaceClasses.pagePanelInteractive)}>
+                    <Card className={cn("h-full border-border/70 dark:border-glass", surfaceClasses.pagePanelInteractive)}>
                       <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-2">
@@ -507,13 +507,10 @@ function ActsContent() {
                           {act.act_number && <span className={surfaceClasses.chipButton}>Act No. {act.act_number}</span>}
                           {act.publication_date && <span className={surfaceClasses.chipButton}>Published text</span>}
                         </div>
-                        <div className="flex items-center justify-between gap-3 text-sm">
-                          <span className="text-muted-foreground">
-                            Open full Act, contents, and metadata
-                          </span>
-                          <span className="inline-flex items-center font-medium text-primary">
+                        <div className="flex items-center justify-end text-sm">
+                          <span className="inline-flex items-center font-medium text-brand-gold ll-transition group-hover:text-brand-gold-soft">
                             Open Act
-                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            <ArrowRight className="ml-1 h-4 w-4 ll-transition group-hover:translate-x-1" />
                           </span>
                         </div>
                       </CardContent>

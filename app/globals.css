@@ -243,13 +243,13 @@
     --surface-container-high: #1a2b41;
     --surface-container-highest: #283549;
 
-    --sidebar: #051426;
+    --sidebar: #0a1929;
     --sidebar-foreground: #d5e3fd;
     --sidebar-primary: #ffdea5;
     --sidebar-primary-foreground: #412d00;
     --sidebar-accent: #394857;
     --sidebar-accent-foreground: #edf4ff;
-    --sidebar-border: rgb(78 70 57 / 0.14);
+    --sidebar-border: rgb(255 222 165 / 0.18);
     --sidebar-ring: rgb(255 222 165 / 0.28);
 
     --chart-1: #ffdea5;
@@ -426,6 +426,14 @@
 
   .ll-surface-panel {
     @apply rounded-panel border border-border/50 bg-card text-card-foreground shadow-floating;
+  }
+
+  /* ── Dark mode: boost borders so cards/panels are visually distinct from
+     the dark background. Shadows are invisible on dark surfaces, so we
+     rely on borders to define section boundaries instead. ── */
+  .dark .ll-surface-card,
+  .dark .ll-surface-panel {
+    border-color: var(--glass-outline);
   }
 
   .ll-surface-inset {
@@ -1215,6 +1223,13 @@
 
   .ll-page-panel-interactive {
     @apply rounded-panel border border-border/60 bg-surface-container shadow-soft transition-[background-color,border-color,box-shadow,transform,color] duration-200;
+  }
+
+  /* Dark mode: boost borders on page-level panels/heroes */
+  .dark .ll-page-hero,
+  .dark .ll-page-panel,
+  .dark .ll-page-panel-interactive {
+    border-color: var(--glass-outline);
   }
 
   .ll-page-panel-interactive:hover,

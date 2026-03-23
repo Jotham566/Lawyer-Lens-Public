@@ -181,7 +181,7 @@ export default function JudgmentsPage() {
               >
                 <Card
                   className={cn(
-                    "ml-0 border-2 md:ml-12",
+                    "ml-0 border-2 md:ml-12 dark:border-glass",
                     surfaceClasses.pagePanelInteractive,
                     court.borderColor
                   )}
@@ -244,7 +244,7 @@ export default function JudgmentsPage() {
       </div>
 
       {/* Browse All */}
-      <div className="border-t border-border/60 pt-8">
+      <div className="border-t border-border/60 dark:border-glass pt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">All Judgments</h2>
           <Button variant="outline" asChild>
@@ -255,7 +255,7 @@ export default function JudgmentsPage() {
           </Button>
         </div>
 
-        <Card className="border-glass bg-muted/30">
+        <Card className="border-glass bg-muted/30 dark:border-glass">
           <CardContent className="py-6">
             <p className="text-sm text-muted-foreground mb-4">
               Browse the complete collection of court decisions without filtering by court level.
@@ -278,7 +278,7 @@ export default function JudgmentsPage() {
       </div>
 
       {/* Information Section */}
-      <div className="mt-8 border-t border-border/60 pt-8">
+      <div className="mt-8 border-t border-border/60 dark:border-glass pt-8">
         <h2 className="text-lg font-semibold mb-4">About Uganda&apos;s Court System</h2>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">

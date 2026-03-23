@@ -183,6 +183,12 @@ export {
   type UsageStats,
 } from "./integrations";
 
+// Citations API
+export {
+  getTopCitedDocuments,
+  type CitedDocumentSummary,
+} from "./citations";
+
 // Types
 export type {
   // Document types
