@@ -47,7 +47,7 @@ export function DocumentWorkspaceShell({
 }: DocumentWorkspaceShellProps) {
   return (
     <div className="flex h-screen w-full flex-col overflow-hidden bg-background text-foreground">
-      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/88 px-4 shadow-[var(--shadow-soft)] backdrop-blur-2xl">
+      <header className="flex h-14 shrink-0 items-center justify-between border-b border-border/60 bg-background/88 px-4 shadow-soft backdrop-blur-2xl">
         <div className="flex min-w-0 items-center gap-4">
           <Link
             href={backHref}
@@ -99,7 +99,7 @@ export function DocumentPanel({
   return (
     <div
       className={cn(
-        "ll-surface-panel rounded-[28px]",
+        "ll-surface-panel rounded-panel",
         className,
       )}
     >

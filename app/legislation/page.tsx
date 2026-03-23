@@ -91,7 +91,7 @@ export default function LegislationPage() {
       <div className={cn("mb-8", surfaceClasses.pageHero)}>
         <div className="flex items-center gap-3 mb-4">
           <div className={surfaceClasses.pageIconTile}>
-            <Scale className="h-6 w-6 text-[color:var(--brand-gold)] dark:text-primary" />
+            <Scale className="h-6 w-6 text-brand-gold dark:text-primary" />
           </div>
           <div>
             <p className={surfaceClasses.pageEyebrow}>Legal Framework</p>
@@ -142,7 +142,7 @@ export default function LegislationPage() {
                 <div className="flex items-center justify-between">
                   <div
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
+                      "flex h-12 w-12 items-center justify-center rounded-xl border border-glass bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
                       type.bgColor
                     )}
                   >
@@ -187,7 +187,7 @@ export default function LegislationPage() {
               <div className="flex items-center justify-between">
                 <div
                   className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]"
+                    "flex h-12 w-12 items-center justify-center rounded-xl border border-glass bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]"
                   )}
                 >
                   <Gavel className="ll-icon-muted h-6 w-6 text-primary" />

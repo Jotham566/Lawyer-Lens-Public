@@ -29,7 +29,6 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Logo } from "./logo";
 import { useUIStore } from "@/lib/stores";
@@ -99,13 +98,13 @@ export function Sidebar({ className }: SidebarProps) {
     <TooltipProvider delayDuration={0}>
       <aside
         className={cn(
-          "flex h-screen flex-col border-r bg-sidebar transition-all duration-300",
+          "flex h-screen flex-col bg-sidebar transition-all duration-300",
           isCollapsed ? "w-16" : "w-64",
           className
         )}
       >
         {/* Header */}
-        <div className="flex h-14 items-center justify-between border-b px-3">
+        <div className="flex h-14 items-center justify-between bg-sidebar-accent/40 px-3">
           <Logo collapsed={isCollapsed} />
           <Button
             variant="ghost"
@@ -137,7 +136,7 @@ export function Sidebar({ className }: SidebarProps) {
               ))}
             </div>
 
-            <Separator className="mx-2" />
+            <div className="h-2" />
 
             {/* Tools Section - Premium Features */}
             <div className="space-y-1">
@@ -157,7 +156,7 @@ export function Sidebar({ className }: SidebarProps) {
               ))}
             </div>
 
-            <Separator className="mx-2" />
+            <div className="h-2" />
 
             {/* Browse Section */}
             <div className="space-y-1">
@@ -176,7 +175,7 @@ export function Sidebar({ className }: SidebarProps) {
               ))}
             </div>
 
-            <Separator className="mx-2" />
+            <div className="h-2" />
 
             {/* Account Section */}
             <div className="space-y-1">
@@ -198,7 +197,7 @@ export function Sidebar({ className }: SidebarProps) {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="border-t p-2">
+        <div className="bg-sidebar-accent/40 p-2">
           {secondaryNavItems.map((item) => (
             <NavLink
               key={item.href}

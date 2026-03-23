@@ -36,6 +36,73 @@ export const surfaceClasses = {
 
 export const sharedSurfaceClasses = surfaceClasses;
 
+/* ───────────────────────────────────────────────────────────
+   Typography — pre-composed classes that bake in font-family,
+   size, weight, tracking, and color so pages/components never
+   assemble these individually.
+   ─────────────────────────────────────────────────────────── */
+export const typographyClasses = {
+  /** Display — hero stats, landing page headlines (Manrope) */
+  displayLg: "ll-display-lg",
+  displayMd: "ll-display-md",
+  displaySm: "ll-display-sm",
+
+  /** Headline — page titles, section headings (Manrope) */
+  headingXl: "ll-heading-xl",
+  headingLg: "ll-heading-lg",
+  headingMd: "ll-heading-md",
+  headingSm: "ll-heading-sm",
+
+  /** Body — paragraph / prose text (Newsreader for lg/md, Manrope for sm) */
+  bodyLg: "ll-body-lg",
+  bodyMd: "ll-body-md",
+  bodySm: "ll-body-sm",
+
+  /** Label — metadata, status tags (Manrope, all-caps, tracked) */
+  labelMd: "ll-label-md",
+  labelSm: "ll-label-sm",
+  labelXs: "ll-label-xs",
+} as const;
+
+/* ───────────────────────────────────────────────────────────
+   Page layout — container, section, spacing patterns so every
+   page gets the same widths, padding, and vertical rhythm.
+   ─────────────────────────────────────────────────────────── */
+export const layoutClasses = {
+  /** Standard 6xl max-width page container */
+  pageContainer: "ll-page-container",
+  /** Narrow 3xl max-width (settings, forms) */
+  pageContainerNarrow: "ll-page-container-narrow",
+  /** Wide 7xl max-width (dashboards, browse) */
+  pageContainerWide: "ll-page-container-wide",
+  /** Vertical section with consistent spacing */
+  pageSection: "ll-page-section",
+} as const;
+
+/* ───────────────────────────────────────────────────────────
+   Transitions — standard durations for hover/focus animations.
+   ─────────────────────────────────────────────────────────── */
+export const transitionClasses = {
+  /** Standard 200ms multi-property transition */
+  base: "ll-transition",
+  /** Fast 150ms for small interactive elements */
+  fast: "ll-transition-fast",
+  /** Slow 300ms for panels, overlays */
+  slow: "ll-transition-slow",
+  /** Micro-lift hover effect (-1px translateY) */
+  hoverLift: "ll-hover-lift",
+} as const;
+
+/* ───────────────────────────────────────────────────────────
+   Shadows — named shadow scale (maps to Tailwind boxShadow).
+   ─────────────────────────────────────────────────────────── */
+export const shadowClasses = {
+  soft: "shadow-soft",
+  floating: "shadow-floating",
+  ambient: "shadow-ambient",
+  none: "shadow-none",
+} as const;
+
 export type ToneName = "success" | "info" | "warning" | "neutral" | "danger";
 export type RelevanceLevel = "high" | "medium" | "low";
 

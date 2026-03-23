@@ -245,7 +245,7 @@ function SearchContent() {
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         {/* Filters Sidebar */}
         <aside
-          className="space-y-4 rounded-[28px] border border-border/60 bg-surface-container p-4 shadow-[var(--shadow-soft)]"
+          className="space-y-4 rounded-panel border border-border/60 bg-surface-container p-4 shadow-soft"
           role="region"
           aria-label="Search filters"
         >
@@ -356,7 +356,7 @@ function SearchContent() {
           {/* Results Header */}
           {query && (
             <div
-              className="flex items-center justify-between rounded-2xl border border-border/60 bg-surface-container px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-soft)]"
+              className="flex items-center justify-between rounded-2xl border border-border/60 bg-surface-container px-4 py-3 text-sm text-muted-foreground shadow-soft"
               aria-live="polite"
             >
               <span>
@@ -388,7 +388,7 @@ function SearchContent() {
           {isLoading && (
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Card key={i} className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+                <Card key={i} className="border-border/60 bg-surface-container shadow-soft">
                   <CardHeader className="pb-2">
                     <Skeleton className="h-5 w-3/4" />
                   </CardHeader>
@@ -403,7 +403,7 @@ function SearchContent() {
 
           {/* Error State */}
           {error && (
-            <Card className="border-destructive/30 bg-destructive/5 shadow-[var(--shadow-soft)]" role="alert" aria-live="assertive">
+            <Card className="border-destructive/30 bg-destructive/5 shadow-soft" role="alert" aria-live="assertive">
               <CardContent className="pt-6">
                 <p className="text-sm text-destructive">
                   An error occurred while searching. Please try again.
@@ -414,7 +414,7 @@ function SearchContent() {
 
           {/* No Query State */}
           {!query && !isLoading && (
-            <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+            <Card className="border-border/60 bg-surface-container shadow-soft">
               <CardContent className="py-12 text-center">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium">
@@ -429,7 +429,7 @@ function SearchContent() {
 
           {/* No Results State */}
           {query && !isLoading && results.length === 0 && !error && (
-            <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+            <Card className="border-border/60 bg-surface-container shadow-soft">
               <CardContent className="py-12 text-center">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium">No results found</h3>
@@ -520,7 +520,7 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
 
   return (
     <Link href={`/document/${result.document_id}?from=search&returnTo=${encodeURIComponent(returnTo)}`}>
-      <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:border-primary/35">
+      <Card className="border-border/60 bg-surface-container shadow-soft transition-all hover:-translate-y-0.5 hover:border-primary/35">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-medium leading-tight">{result.title}</h3>
@@ -532,7 +532,7 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
         <CardContent>
           {content && (
             <p
-              className="line-clamp-2 text-sm text-muted-foreground [&_mark]:rounded-[0.35rem] [&_mark]:bg-primary/16 [&_mark]:px-1 [&_mark]:text-foreground dark:[&_mark]:bg-primary/28 dark:[&_mark]:text-primary-foreground"
+              className="line-clamp-2 text-sm text-muted-foreground [&_mark]:rounded-[0.35rem] [&_mark]:bg-primary/16 [&_mark]:px-1 [&_mark]:text-foreground dark:[&_mark]:bg-primary/24 dark:[&_mark]:text-foreground"
               dangerouslySetInnerHTML={{
                 __html: sanitizeSearchHighlight(content),
               }}

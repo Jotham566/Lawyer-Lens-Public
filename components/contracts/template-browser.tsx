@@ -195,7 +195,7 @@ export function TemplateBrowser({
                   )}
                   onClick={() => handleSelect(template)}
                 >
-                  <div className="rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high p-2">
+                  <div className="rounded-lg border border-glass bg-surface-container-high p-2">
                     {contractTypeIcons[template.contract_type] || (
                       <FileText className="h-4 w-4" />
                     )}

@@ -4,11 +4,29 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  /* ── Font families ── */
+  --font-sans: var(--font-manrope), system-ui, sans-serif;
+  --font-serif: var(--font-newsreader), Georgia, serif;
+  --font-mono: var(--font-jetbrains-mono), monospace;
+  --font-display: var(--font-manrope), system-ui, sans-serif;
+
+  /* ── Border radius scale ── */
   --radius-sm: calc(var(--radius) - 6px);
   --radius-md: calc(var(--radius) - 3px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 6px);
+  --radius-2xl: 1rem;
+  --radius-3xl: 1.25rem;
+  --radius-card: 1.5rem;
+  --radius-panel: 1.75rem;
+  --radius-hero: 2rem;
 
+  /* ── Shadow scale ── */
+  --shadow-soft: var(--shadow-soft);
+  --shadow-floating: var(--shadow-floating);
+  --shadow-ambient: 0 8px 24px -12px rgb(21 35 54 / 0.1);
+
+  /* ── Semantic color tokens ── */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --color-card: var(--card);
@@ -28,6 +46,8 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  /* ── Surface hierarchy ── */
   --color-surface: var(--surface);
   --color-surface-dim: var(--surface-dim);
   --color-surface-bright: var(--surface-bright);
@@ -36,6 +56,51 @@
   --color-surface-container: var(--surface-container);
   --color-surface-container-high: var(--surface-container-high);
   --color-surface-container-highest: var(--surface-container-highest);
+
+  /* ── Brand colors ── */
+  --color-brand-gold: var(--brand-gold);
+  --color-brand-gold-soft: var(--brand-gold-soft);
+  --color-brand-slate: var(--brand-slate);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-cta-fg: var(--brand-cta-foreground);
+
+  /* ── Glass / outline ── */
+  --color-glass: var(--glass-outline);
+
+  /* ── Interactive hover tokens ── */
+  --color-hover-surface: var(--interactive-hover-surface);
+  --color-hover-surface-strong: var(--interactive-hover-surface-strong);
+  --color-hover-fg: var(--interactive-hover-foreground);
+  --color-hover-icon: var(--interactive-hover-icon);
+  --color-hover-border: var(--interactive-hover-border);
+
+  /* ── Status tokens ── */
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-fg: var(--status-success-fg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-success-solid: var(--status-success-solid);
+  --color-status-info-bg: var(--status-info-bg);
+  --color-status-info-fg: var(--status-info-fg);
+  --color-status-info-border: var(--status-info-border);
+  --color-status-info-solid: var(--status-info-solid);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-warning-solid: var(--status-warning-solid);
+  --color-status-neutral-bg: var(--status-neutral-bg);
+  --color-status-neutral-fg: var(--status-neutral-fg);
+  --color-status-neutral-border: var(--status-neutral-border);
+  --color-status-neutral-solid: var(--status-neutral-solid);
+  --color-status-danger-bg: var(--status-danger-bg);
+  --color-status-danger-fg: var(--status-danger-fg);
+  --color-status-danger-border: var(--status-danger-border);
+  --color-status-danger-solid: var(--status-danger-solid);
+  --color-status-low-bg: var(--status-low-bg);
+  --color-status-low-fg: var(--status-low-fg);
+  --color-status-low-border: var(--status-low-border);
+  --color-status-low-solid: var(--status-low-solid);
+
+  /* ── Sidebar ── */
   --color-sidebar: var(--sidebar);
   --color-sidebar-foreground: var(--sidebar-foreground);
   --color-sidebar-primary: var(--sidebar-primary);
@@ -44,6 +109,8 @@
   --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
   --color-sidebar-border: var(--sidebar-border);
   --color-sidebar-ring: var(--sidebar-ring);
+
+  /* ── Chart ── */
   --color-chart-1: var(--chart-1);
   --color-chart-2: var(--chart-2);
   --color-chart-3: var(--chart-3);
@@ -103,6 +170,7 @@
     --brand-gold-soft: #e9c176;
     --brand-slate: #36454f;
     --brand-ink: #002344;
+    --brand-cta-foreground: #412d00;
     --status-success-bg: #edf6f1;
     --status-success-fg: #1f5a44;
     --status-success-border: rgb(47 124 90 / 0.26);
@@ -123,6 +191,10 @@
     --status-danger-fg: #9a3529;
     --status-danger-border: rgb(180 35 24 / 0.24);
     --status-danger-solid: #b42318;
+    --status-low-bg: #fff7ed;
+    --status-low-fg: #9a3e12;
+    --status-low-border: rgb(234 88 12 / 0.22);
+    --status-low-solid: #ea580c;
     --selection-bg: rgb(0 35 68 / 0.18);
     --selection-foreground: #152336;
     --mark-bg: rgb(0 35 68 / 0.12);
@@ -190,6 +262,7 @@
     --brand-gold-soft: #e9c176;
     --brand-slate: #b8c8da;
     --brand-ink: #051426;
+    --brand-cta-foreground: #412d00;
     --status-success-bg: rgb(25 55 42 / 0.74);
     --status-success-fg: #bde8cf;
     --status-success-border: rgb(81 174 128 / 0.28);
@@ -210,6 +283,10 @@
     --status-danger-fg: #ffc8c1;
     --status-danger-border: rgb(255 141 132 / 0.26);
     --status-danger-solid: #ff8d84;
+    --status-low-bg: rgb(71 38 12 / 0.74);
+    --status-low-fg: #ffd4a8;
+    --status-low-border: rgb(255 168 85 / 0.26);
+    --status-low-solid: #ffa855;
     --selection-bg: rgb(255 222 165 / 0.52);
     --selection-foreground: #241800;
     --mark-bg: rgb(255 222 165 / 0.3);
@@ -246,6 +323,15 @@
     background-image: var(--brand-wash);
     background-attachment: fixed;
     font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  button,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  summary {
+    cursor: pointer;
   }
 
   h1,
@@ -335,15 +421,15 @@
 
 @layer components {
   .ll-surface-card {
-    @apply rounded-[1.5rem] border border-border/55 bg-card/95 text-card-foreground shadow-[var(--shadow-soft)] backdrop-blur-sm;
+    @apply rounded-card border border-glass/15 bg-card/95 text-card-foreground shadow-soft backdrop-blur-sm;
   }
 
   .ll-surface-panel {
-    @apply rounded-[1.75rem] border border-border/50 bg-card text-card-foreground shadow-[var(--shadow-floating)];
+    @apply rounded-panel border border-border/50 bg-card text-card-foreground shadow-floating;
   }
 
   .ll-surface-inset {
-    @apply rounded-2xl border border-[color:var(--glass-outline)] bg-surface-container-lowest/95 text-foreground;
+    @apply rounded-2xl border border-glass bg-surface-container-lowest/95 text-foreground;
     box-shadow:
       inset 0 0 0 1px var(--border),
       0 10px 24px -18px rgb(21 35 54 / 0.2);
@@ -378,25 +464,23 @@
   }
 
   .ll-field {
-    @apply rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-lowest text-foreground placeholder:text-muted-foreground/70 transition-[background-color,box-shadow,border-color];
-    box-shadow:
-      inset 0 0 0 1px var(--border),
-      0 1px 0 rgb(255 255 255 / 0.03);
+    @apply rounded-xl border-0 border-b-2 bg-surface-container-low text-foreground placeholder:text-muted-foreground/70 transition-[background-color,box-shadow,border-color,color];
+    border-bottom-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
   }
 
   .ll-field:hover {
-    border-color: color-mix(in srgb, var(--primary) 18%, var(--glass-outline));
+    border-bottom-color: color-mix(in srgb, var(--primary) 60%, transparent);
+    background: color-mix(in srgb, var(--surface-container-low) 80%, var(--surface-container-lowest));
   }
 
   .ll-field:focus-visible {
     background: var(--card);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--primary) 42%, transparent),
-      0 0 0 4px var(--ring);
+    border-bottom-color: var(--primary);
+    box-shadow: 0 2px 0 0 color-mix(in srgb, var(--primary) 28%, transparent);
   }
 
   .ll-chip {
-    @apply inline-flex items-center rounded-full border border-border/60 bg-card text-foreground shadow-[var(--shadow-soft)];
+    @apply inline-flex items-center rounded-full border border-border/60 bg-card text-foreground shadow-soft;
   }
 
   .ll-chip-interactive {
@@ -451,18 +535,30 @@
   }
 
   .ll-link-muted {
-    @apply text-muted-foreground transition-[color,text-decoration-color] duration-200 hover:underline;
+    @apply text-muted-foreground transition-[color,text-decoration-color] duration-200;
     text-decoration-color: transparent;
+    text-underline-offset: 3px;
   }
 
   .ll-link-muted:hover,
   .ll-link-muted:focus-visible {
     color: var(--interactive-hover-icon);
+    text-decoration-line: underline;
     text-decoration-color: currentColor;
   }
 
+  .dark .ll-link-muted {
+    color: var(--brand-slate);
+  }
+
+  .dark .ll-link-muted:hover,
+  .dark .ll-link-muted:focus-visible {
+    color: var(--brand-gold);
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 70%, transparent);
+  }
+
   .ll-button-primary {
-    @apply border shadow-[var(--shadow-soft)] transition-[transform,background-color,color,box-shadow,border-color] duration-200;
+    @apply border shadow-soft transition-[transform,background-color,color,box-shadow,border-color] duration-200;
     background: linear-gradient(
       180deg,
       color-mix(in srgb, var(--primary) 95%, white),
@@ -470,6 +566,19 @@
     );
     color: var(--primary-foreground);
     border-color: color-mix(in srgb, var(--primary) 22%, var(--glass-outline));
+  }
+
+  .ll-button-primary:disabled {
+    background: var(--surface-container-highest);
+    color: var(--muted-foreground);
+    border-color: color-mix(in srgb, var(--border) 40%, transparent);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .dark .ll-button-primary:disabled {
+    background: var(--surface-container-high);
+    color: color-mix(in srgb, var(--muted-foreground) 60%, transparent);
   }
 
   .ll-button-primary:hover {
@@ -504,7 +613,7 @@
   }
 
   .ll-button-secondary {
-    @apply border shadow-[var(--shadow-soft)] transition-[transform,background-color,color,box-shadow,border-color] duration-200;
+    @apply border shadow-soft transition-[transform,background-color,color,box-shadow,border-color] duration-200;
     background: color-mix(in srgb, var(--secondary) 92%, var(--surface-container-lowest));
     color: var(--secondary-foreground);
     border-color: color-mix(in srgb, var(--secondary) 40%, var(--glass-outline));
@@ -523,7 +632,7 @@
   }
 
   .ll-button-outline {
-    @apply border bg-surface-container-lowest/92 text-foreground shadow-[var(--shadow-soft)] transition-[transform,background-color,color,box-shadow,border-color] duration-200;
+    @apply border bg-surface-container-lowest/92 text-foreground shadow-soft transition-[transform,background-color,color,box-shadow,border-color] duration-200;
     border-color: color-mix(in srgb, var(--glass-outline) 92%, transparent);
   }
 
@@ -555,8 +664,33 @@
       var(--shadow-soft);
   }
 
+  .ll-button-tertiary {
+    @apply border-0 bg-transparent text-sm font-medium underline underline-offset-4 transition-[color,text-decoration-color,transform] duration-200;
+    color: var(--brand-cta-foreground);
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 50%, transparent);
+    text-decoration-thickness: 2px;
+  }
+
+  .ll-button-tertiary:hover,
+  .ll-button-tertiary:focus-visible {
+    color: color-mix(in srgb, var(--brand-gold) 90%, var(--brand-cta-foreground));
+    text-decoration-color: var(--brand-gold);
+    transform: translateY(-1px);
+  }
+
+  .dark .ll-button-tertiary {
+    color: var(--brand-gold);
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 42%, transparent);
+  }
+
+  .dark .ll-button-tertiary:hover,
+  .dark .ll-button-tertiary:focus-visible {
+    color: var(--brand-gold-soft);
+    text-decoration-color: var(--brand-gold-soft);
+  }
+
   .ll-menu-content {
-    @apply rounded-2xl border border-[color:var(--glass-outline)] bg-popover p-1.5 text-popover-foreground shadow-[var(--shadow-floating)] backdrop-blur-xl;
+    @apply rounded-2xl border border-glass bg-popover p-1.5 text-popover-foreground shadow-floating backdrop-blur-xl;
   }
 
   .ll-menu-item {
@@ -574,7 +708,7 @@
   }
 
   .ll-nav-card {
-    @apply block select-none rounded-[1.35rem] border border-border/40 bg-surface-container-low p-3.5 leading-none no-underline outline-none transition-[background-color,color,border-color,box-shadow,transform] duration-200;
+    @apply block select-none rounded-3xl border border-border/40 bg-surface-container-low p-3.5 leading-none no-underline outline-none transition-[background-color,color,border-color,box-shadow,transform] duration-200;
   }
 
   .ll-nav-card:hover,
@@ -587,7 +721,7 @@
   }
 
   .ll-nav-card-active {
-    @apply bg-secondary text-secondary-foreground shadow-[var(--shadow-soft)];
+    @apply bg-secondary text-secondary-foreground shadow-soft;
   }
 
   .ll-nav-card-active .ll-icon-muted,
@@ -639,23 +773,23 @@
   }
 
   .ll-slide-panel {
-    @apply border-l border-border/30 bg-card shadow-[var(--shadow-floating)];
+    @apply bg-card shadow-floating;
   }
 
   .ll-report-card {
-    @apply rounded-2xl border border-border/60 bg-surface-container-lowest px-4 py-3 text-foreground shadow-[var(--shadow-soft)];
+    @apply rounded-2xl border border-border/60 bg-surface-container-lowest px-4 py-3 text-foreground shadow-soft;
   }
 
   .ll-report-chip {
-    @apply inline-flex rounded-full border border-border/50 bg-surface-container-lowest px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground;
+    @apply inline-flex rounded-full border border-border/50 bg-surface-container-lowest px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.05em] text-muted-foreground;
   }
 
   .ll-report-section {
-    @apply my-6 rounded-[20px] border border-border/60 bg-surface-container-low p-4 shadow-[var(--shadow-soft)];
+    @apply my-6 rounded-3xl border border-border/60 bg-surface-container-low p-4 shadow-soft;
   }
 
   .ll-tooltip-card {
-    @apply rounded-2xl border border-[color:var(--glass-outline)] bg-card p-3 shadow-[var(--shadow-floating)];
+    @apply rounded-2xl border border-glass bg-card p-3 shadow-floating;
   }
 
   .badge-act {
@@ -1024,11 +1158,11 @@
   }
 
   .surface-panel {
-    @apply rounded-[28px] border border-border/60 bg-surface-container shadow-[var(--shadow-soft)];
+    @apply rounded-panel border border-border/60 bg-surface-container shadow-soft;
   }
 
   .surface-panel-strong {
-    @apply rounded-[28px] border border-border/60 bg-card shadow-[var(--shadow-floating)];
+    @apply rounded-panel border border-border/60 bg-card shadow-floating;
   }
 
   .surface-inset {
@@ -1055,7 +1189,7 @@
   }
 
   .workspace-note-surface {
-    @apply rounded-2xl border border-border/60 px-4 py-4 shadow-sm;
+    @apply rounded-2xl border border-border/60 px-4 py-4 shadow-ambient;
     background: color-mix(in srgb, var(--surface-container-lowest) 92%, transparent);
   }
 
@@ -1065,22 +1199,22 @@
   }
 
   .workspace-meta-chip {
-    @apply inline-flex rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em];
+    @apply inline-flex rounded-full px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.05em];
     background: color-mix(in srgb, var(--surface-container-lowest) 92%, transparent);
     color: var(--muted-foreground);
     box-shadow: inset 0 0 0 1px color-mix(in srgb, var(--border) 82%, transparent);
   }
 
   .ll-page-hero {
-    @apply rounded-[32px] border border-border/60 bg-surface-container px-6 py-7 shadow-[var(--shadow-soft)] sm:px-8;
+    @apply rounded-hero border border-border/60 bg-surface-container px-6 py-7 shadow-soft sm:px-8;
   }
 
   .ll-page-panel {
-    @apply rounded-[28px] border border-border/60 bg-surface-container shadow-[var(--shadow-soft)];
+    @apply rounded-panel border border-border/60 bg-surface-container shadow-soft;
   }
 
   .ll-page-panel-interactive {
-    @apply rounded-[28px] border border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-[background-color,border-color,box-shadow,transform,color] duration-200;
+    @apply rounded-panel border border-border/60 bg-surface-container shadow-soft transition-[background-color,border-color,box-shadow,transform,color] duration-200;
   }
 
   .ll-page-panel-interactive:hover,
@@ -1123,29 +1257,28 @@
   }
 
   .ll-page-icon-tile {
-    @apply flex h-12 w-12 items-center justify-center rounded-2xl border border-[color:var(--glass-outline)] bg-surface-container-high shadow-sm;
+    @apply flex h-12 w-12 items-center justify-center rounded-2xl border border-glass bg-surface-container-high shadow-ambient;
   }
 
   .ll-search-field {
-    @apply rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-lowest text-foreground placeholder:text-muted-foreground/70 transition-[background-color,box-shadow,border-color];
-    box-shadow:
-      inset 0 0 0 1px var(--border),
-      0 10px 24px -18px rgb(21 35 54 / 0.25);
+    @apply rounded-xl border-0 border-b-2 bg-surface-container-low text-foreground placeholder:text-muted-foreground/70 transition-[background-color,box-shadow,border-color,color];
+    border-bottom-color: color-mix(in srgb, var(--muted-foreground) 40%, transparent);
+    box-shadow: 0 10px 24px -18px rgb(21 35 54 / 0.12);
   }
 
   .ll-search-field:hover {
-    border-color: color-mix(in srgb, var(--primary) 18%, var(--glass-outline));
+    border-bottom-color: color-mix(in srgb, var(--primary) 60%, transparent);
+    background: color-mix(in srgb, var(--surface-container-low) 80%, var(--surface-container-lowest));
   }
 
   .ll-search-field:focus-visible {
     background: var(--card);
-    box-shadow:
-      inset 0 0 0 1px color-mix(in srgb, var(--primary) 42%, transparent),
-      0 0 0 4px var(--ring);
+    border-bottom-color: var(--primary);
+    box-shadow: 0 2px 0 0 color-mix(in srgb, var(--primary) 28%, transparent);
   }
 
   .ll-chip-muted {
-    @apply inline-flex items-center rounded-full border border-border/60 bg-surface-container-high text-foreground shadow-[var(--shadow-soft)];
+    @apply inline-flex items-center rounded-full border border-border/60 bg-surface-container-high text-foreground shadow-soft;
   }
 
   .ll-row-interactive {
@@ -1309,12 +1442,24 @@
     @apply transition-[color,text-decoration-color] duration-200;
     color: var(--muted-foreground);
     text-decoration-color: transparent;
+    text-underline-offset: 3px;
   }
 
   .ll-text-link:hover,
   .ll-text-link:focus-visible {
     color: var(--interactive-hover-icon);
+    text-decoration-line: underline;
     text-decoration-color: currentColor;
+  }
+
+  .dark .ll-text-link {
+    color: var(--brand-slate);
+  }
+
+  .dark .ll-text-link:hover,
+  .dark .ll-text-link:focus-visible {
+    color: var(--brand-gold);
+    text-decoration-color: color-mix(in srgb, var(--brand-gold) 70%, transparent);
   }
 
   .ll-inline-citation-button {
@@ -1343,25 +1488,38 @@
   }
 
   .ll-floating-panel {
-    @apply rounded-2xl border border-[color:var(--glass-outline)] bg-popover text-popover-foreground shadow-[var(--shadow-floating)] backdrop-blur-xl;
+    @apply rounded-2xl border border-glass bg-popover text-popover-foreground shadow-floating backdrop-blur-xl;
   }
 
   .ll-workspace-inset {
-    @apply rounded-2xl border border-border/60 px-4 py-4 text-sm text-foreground shadow-sm;
+    @apply rounded-2xl border border-border/60 px-4 py-4 text-sm text-foreground shadow-ambient;
     background: color-mix(in srgb, var(--surface-container-lowest) 92%, transparent);
   }
 
   .ll-workspace-callout {
-    @apply rounded-2xl border border-border/60 px-5 py-4 text-sm shadow-[var(--shadow-soft)] backdrop-blur-xl;
+    @apply rounded-2xl border border-border/60 px-5 py-4 text-sm shadow-soft backdrop-blur-xl;
     background: color-mix(in srgb, var(--surface-container-lowest) 88%, transparent);
   }
 
   .ll-cta-brand {
     @apply border text-sm font-semibold transition-[transform,background-color,color,box-shadow,border-color] duration-200;
     background: linear-gradient(135deg, var(--brand-gold-soft), var(--brand-gold));
-    color: #412d00;
+    color: var(--brand-cta-foreground);
     box-shadow: var(--shadow-soft);
     border-color: color-mix(in srgb, var(--brand-gold) 34%, var(--glass-outline));
+  }
+
+  .ll-cta-brand:disabled {
+    background: var(--surface-container-highest);
+    color: var(--muted-foreground);
+    border-color: color-mix(in srgb, var(--border) 40%, transparent);
+    box-shadow: none;
+    transform: none;
+  }
+
+  .dark .ll-cta-brand:disabled {
+    background: var(--surface-container-high);
+    color: color-mix(in srgb, var(--muted-foreground) 60%, transparent);
   }
 
   .ll-cta-brand:hover {
@@ -1432,7 +1590,9 @@
   }
 
   .ll-status-pill-low {
-    @apply border border-orange-200/90 bg-orange-50 text-orange-900 dark:border-orange-900/60 dark:bg-orange-950/45 dark:text-orange-100;
+    background: var(--status-low-bg);
+    color: var(--status-low-fg);
+    box-shadow: inset 0 0 0 1px var(--status-low-border);
   }
 
   .ll-status-badge-high {
@@ -1448,7 +1608,9 @@
   }
 
   .ll-status-badge-low {
-    @apply border border-orange-200/90 bg-orange-50 text-orange-900 dark:border-orange-900/60 dark:bg-orange-950/45 dark:text-orange-100;
+    background: var(--status-low-bg);
+    color: var(--status-low-fg);
+    box-shadow: inset 0 0 0 1px var(--status-low-border);
   }
 
   .ll-status-compact-high {
@@ -1466,8 +1628,10 @@
   }
 
   .ll-status-compact-low {
-    @apply border border-orange-200 px-1.5 py-0 text-[10px] text-orange-800 dark:border-orange-900/60 dark:bg-orange-950/40 dark:text-orange-300;
-    background: rgb(255 237 213 / 0.7);
+    @apply px-1.5 py-0 text-[10px];
+    background: var(--status-low-bg);
+    color: var(--status-low-fg);
+    box-shadow: inset 0 0 0 1px var(--status-low-border);
   }
 
   .ll-status-dot-high {
@@ -1479,7 +1643,7 @@
   }
 
   .ll-status-dot-low {
-    @apply bg-orange-500 dark:bg-orange-400;
+    background: var(--status-low-solid);
   }
 
   .ll-status-dot-neutral {
@@ -1495,7 +1659,7 @@
   }
 
   .ll-status-text-low {
-    @apply text-orange-700 dark:text-orange-300;
+    color: var(--status-low-fg);
   }
 
   .ll-status-text-reviewed {
@@ -1515,7 +1679,7 @@
   }
 
   .ll-status-bar-low {
-    @apply bg-orange-500 dark:bg-orange-400;
+    background: var(--status-low-solid);
   }
 
   .ll-status-bar-reviewed {
@@ -1586,6 +1750,180 @@
       color-mix(in srgb, var(--brand-ink) 10%, transparent)
     );
     color: var(--foreground);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     TYPOGRAPHY — Centralised heading / body / label classes
+     so pages never need to assemble font + size + weight inline.
+     ═══════════════════════════════════════════════════════════ */
+
+  /* Display — sparingly, for hero stats / section heroes (Manrope) */
+  .ll-display-lg {
+    font-family: var(--font-display);
+    font-size: 3.5rem;
+    line-height: 1.1;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--foreground);
+    text-wrap: balance;
+  }
+
+  .ll-display-md {
+    font-family: var(--font-display);
+    font-size: 2.5rem;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--foreground);
+    text-wrap: balance;
+  }
+
+  .ll-display-sm {
+    font-family: var(--font-display);
+    font-size: 2rem;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--foreground);
+    text-wrap: balance;
+  }
+
+  /* Headline — authoritative signposts (Manrope) */
+  .ll-heading-xl {
+    font-family: var(--font-sans);
+    font-size: 1.75rem;
+    line-height: 1.25;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .ll-heading-lg {
+    font-family: var(--font-sans);
+    font-size: 1.5rem;
+    line-height: 1.3;
+    letter-spacing: -0.02em;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .ll-heading-md {
+    font-family: var(--font-sans);
+    font-size: 1.25rem;
+    line-height: 1.35;
+    letter-spacing: -0.015em;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  .ll-heading-sm {
+    font-family: var(--font-sans);
+    font-size: 1.125rem;
+    line-height: 1.4;
+    letter-spacing: -0.01em;
+    font-weight: 600;
+    color: var(--foreground);
+  }
+
+  /* Body — Newsreader for prose, Manrope for UI text */
+  .ll-body-lg {
+    font-family: var(--font-serif);
+    font-size: 1.0625rem;
+    line-height: 1.9;
+    color: var(--foreground);
+  }
+
+  .ll-body-md {
+    font-family: var(--font-serif);
+    font-size: 1rem;
+    line-height: 1.7;
+    color: var(--foreground);
+  }
+
+  .ll-body-sm {
+    font-family: var(--font-sans);
+    font-size: 0.875rem;
+    line-height: 1.6;
+    color: var(--foreground);
+  }
+
+  /* Labels — Manrope, all-caps, tracked out */
+  .ll-label-md {
+    font-family: var(--font-sans);
+    font-size: 0.75rem;
+    line-height: 1.125rem;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .ll-label-sm {
+    font-family: var(--font-sans);
+    font-size: 0.6875rem;
+    line-height: 1rem;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  .ll-label-xs {
+    font-family: var(--font-sans);
+    font-size: 0.625rem;
+    line-height: 1rem;
+    letter-spacing: 0.05em;
+    font-weight: 600;
+    text-transform: uppercase;
+    color: var(--muted-foreground);
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     PAGE LAYOUT — Container, section, hero patterns
+     so every page gets consistent spacing/widths automatically.
+     ═══════════════════════════════════════════════════════════ */
+
+  .ll-page-container {
+    @apply mx-auto w-full max-w-6xl px-4 py-8 sm:px-6;
+  }
+
+  .ll-page-container-narrow {
+    @apply mx-auto w-full max-w-3xl px-4 py-8 sm:px-6;
+  }
+
+  .ll-page-container-wide {
+    @apply mx-auto w-full max-w-7xl px-4 py-8 sm:px-6;
+  }
+
+  .ll-page-section {
+    @apply space-y-6;
+  }
+
+  .ll-page-section + .ll-page-section {
+    @apply mt-12;
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     INTERACTIVE TRANSITIONS — Standard durations so hover/focus
+     animations are consistent everywhere.
+     ═══════════════════════════════════════════════════════════ */
+
+  .ll-transition {
+    @apply transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-200;
+  }
+
+  .ll-transition-fast {
+    @apply transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-150;
+  }
+
+  .ll-transition-slow {
+    @apply transition-[background-color,border-color,color,box-shadow,transform,opacity] duration-300;
+  }
+
+  /* Standard micro-lift on hover (used by buttons, cards, rows) */
+  .ll-hover-lift:hover,
+  .ll-hover-lift:focus-visible {
+    transform: translateY(-1px);
   }
 }
 

@@ -9,11 +9,11 @@ const badgeVariants = cva(
     variants: {
       variant: {
         default:
-          "bg-primary text-primary-foreground shadow-[var(--shadow-soft)] hover:opacity-90",
+          "bg-primary text-primary-foreground shadow-soft hover:opacity-90",
         secondary:
           "ll-chip border-border/50 bg-secondary text-secondary-foreground hover:bg-secondary/90",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-[var(--shadow-soft)] hover:opacity-90",
+          "bg-destructive text-destructive-foreground shadow-soft hover:opacity-90",
         outline: "ll-chip bg-transparent text-foreground shadow-none",
         success: "tone-success",
         info: "tone-info",

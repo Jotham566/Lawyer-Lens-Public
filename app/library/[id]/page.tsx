@@ -225,7 +225,7 @@ export default function CollectionDetailPage(props: PageProps) {
                             <Card key={item.id} className={cn("group", surfaceClasses.pagePanelInteractive)}>
                                 <div className="flex items-start p-6">
                                     <div className="flex-shrink-0 mr-4 mt-1">
-                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high">
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-glass bg-surface-container-high">
                                             <Icon className="ll-icon-muted h-5 w-5" />
                                         </div>
                                     </div>

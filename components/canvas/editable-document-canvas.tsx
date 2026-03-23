@@ -113,7 +113,7 @@ export function EditableDocumentCanvas({
           scheduleFlushPendingChange();
         }}
         className={cn(
-          "min-h-[640px] w-full rounded-[28px] bg-background px-10 py-12 sm:px-14",
+          "min-h-[640px] w-full rounded-panel bg-background px-10 py-12 sm:px-14",
           "font-serif text-[17px] leading-[1.85] text-foreground antialiased outline-none",
           "[&_header]:mb-10 [&_header]:space-y-5",
           "[&_section]:scroll-mt-28 [&_section]:py-7",
@@ -141,12 +141,12 @@ export function EditableDocumentCanvas({
           "[&_[data-inline-citations='true']:hover>span:last-child]:translate-y-0",
           "[&_[data-report-part='endnotes']]:mt-8 [&_[data-report-part='endnotes']]:border-t [&_[data-report-part='endnotes']]:border-border/40 [&_[data-report-part='endnotes']]:pt-8",
           "[&_[data-report-part='endnotes']_details]:mb-3",
-          "[&_[data-report-part='endnotes']_details]:rounded-[20px]",
+          "[&_[data-report-part='endnotes']_details]:rounded-3xl",
           "[&_[data-report-part='endnotes']_details]:border",
           "[&_[data-report-part='endnotes']_details]:border-border/30",
           "[&_[data-report-part='endnotes']_details]:bg-card/80",
           "[&_[data-report-part='endnotes']_details]:shadow-sm",
-          "[&_[data-report-part='endnotes']_summary]:rounded-[20px]",
+          "[&_[data-report-part='endnotes']_summary]:rounded-3xl",
           "[&_[data-report-part='endnotes']_summary]:px-1",
           "[&_[data-report-part='endnotes']_summary]:py-1",
           "[&_[data-contract-part='signature-block']]:mt-10 [&_[data-contract-part='signature-block']]:border-t [&_[data-contract-part='signature-block']]:border-border/40 [&_[data-contract-part='signature-block']]:pt-8",

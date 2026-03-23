@@ -95,7 +95,7 @@ export function HeaderRedesign({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 shadow-[var(--shadow-soft)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/72",
+        "sticky top-0 z-50 w-full border-b border-glass/15 bg-background/85 shadow-soft backdrop-blur-2xl supports-[backdrop-filter]:bg-background/72",
         className
       )}
     >

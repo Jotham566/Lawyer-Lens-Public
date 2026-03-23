@@ -91,7 +91,7 @@ export default function HelpPage() {
     <div className="container mx-auto max-w-5xl px-4 py-6">
       <Breadcrumbs className="mb-6" />
 
-      <section className="rounded-[32px] border border-border/60 bg-surface-container px-6 py-8 shadow-[var(--shadow-soft)] sm:px-8 sm:py-10">
+      <section className="rounded-hero border border-border/60 bg-surface-container px-6 py-8 shadow-soft sm:px-8 sm:py-10">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div className="flex items-start gap-4">
             <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/15">
@@ -109,7 +109,7 @@ export default function HelpPage() {
               </p>
             </div>
           </div>
-          <div className="rounded-[28px] bg-surface-container-high px-5 py-4 sm:max-w-xs">
+          <div className="rounded-panel bg-surface-container-high px-5 py-4 sm:max-w-xs">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
               Guidance
             </p>
@@ -126,7 +126,7 @@ export default function HelpPage() {
         <div className="grid gap-3 sm:grid-cols-2">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="h-full border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/80">
+              <Card className="h-full border-border/60 bg-surface-container shadow-soft transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/80">
                 <CardContent className="flex items-center gap-3 p-4">
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-primary">
                     <link.icon className="h-5 w-5 text-primary" />
@@ -148,7 +148,7 @@ export default function HelpPage() {
       {/* FAQ */}
       <section className="mt-10">
         <h2 className="font-serif text-3xl font-semibold tracking-[-0.02em] text-foreground">Frequently Asked Questions</h2>
-        <Card className="mt-4 border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+        <Card className="mt-4 border-border/60 bg-surface-container shadow-soft">
           <CardContent className="p-0">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
@@ -171,7 +171,7 @@ export default function HelpPage() {
       </section>
 
       {/* Contact */}
-      <section className="mt-10 rounded-[28px] border border-border/60 bg-surface-container px-6 py-6 shadow-[var(--shadow-soft)]">
+      <section className="mt-10 rounded-panel border border-border/60 bg-surface-container px-6 py-6 shadow-soft">
         <h2 className="font-serif text-2xl font-semibold tracking-[-0.02em] text-foreground">Need More Help?</h2>
         <p className="mt-4 text-sm leading-7 text-muted-foreground">
           If you couldn&apos;t find the answer to your question, please reach out

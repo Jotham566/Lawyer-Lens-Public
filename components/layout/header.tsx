@@ -25,7 +25,7 @@ export function Header({ className }: HeaderProps) {
   return (
     <header
       className={cn(
-        "sticky top-0 z-40 flex h-14 items-center gap-4 border-b bg-background/95 px-4 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        "sticky top-0 z-40 flex h-14 items-center gap-4 bg-background/85 px-4 shadow-soft backdrop-blur-2xl supports-[backdrop-filter]:bg-background/72",
         className
       )}
     >
@@ -56,7 +56,7 @@ export function Header({ className }: HeaderProps) {
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-72">
-            <div className="px-3 py-2 border-b">
+            <div className="px-3 py-2 bg-surface-container-low rounded-t-xl">
               <p className="text-sm font-medium">Notifications</p>
             </div>
             <div className="px-3 py-8 text-center">

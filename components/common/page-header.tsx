@@ -33,7 +33,7 @@ export function PageHeader({
   return (
     <div
       className={cn(
-        "space-y-5 rounded-[28px] border border-border/60 bg-surface-container p-6 shadow-[var(--shadow-soft)] sm:p-8",
+        "space-y-5 rounded-panel border border-border/60 bg-surface-container p-6 shadow-soft sm:p-8",
         className
       )}
     >

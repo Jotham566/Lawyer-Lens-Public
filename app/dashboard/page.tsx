@@ -183,7 +183,7 @@ export default function DashboardPage() {
             <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                  <div className="p-2 rounded-lg border border-glass bg-surface-container-high text-primary">
                     <FileText className="ll-icon-muted h-5 w-5" />
                   </div>
                   <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -203,7 +203,7 @@ export default function DashboardPage() {
             <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                  <div className="p-2 rounded-lg border border-glass bg-surface-container-high text-primary">
                     <Gavel className="ll-icon-muted h-5 w-5" />
                   </div>
                   <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -223,7 +223,7 @@ export default function DashboardPage() {
             <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                  <div className="p-2 rounded-lg border border-glass bg-surface-container-high text-primary">
                     <ScrollText className="ll-icon-muted h-5 w-5" />
                   </div>
                   <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -243,7 +243,7 @@ export default function DashboardPage() {
             <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                  <div className="p-2 rounded-lg border border-glass bg-surface-container-high text-primary">
                     <Search className="ll-icon-muted h-5 w-5" />
                   </div>
                   <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />

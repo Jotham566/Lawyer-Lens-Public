@@ -143,7 +143,7 @@ export function SourceSelection({
                 <div className="flex items-start justify-between">
                   <div
                     className={cn(
-                      "rounded-lg border border-[color:var(--glass-outline)] p-2",
+                      "rounded-lg border border-glass p-2",
                       selected ? "bg-primary/10 text-primary" : "bg-surface-container-high"
                     )}
                   >

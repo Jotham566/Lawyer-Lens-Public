@@ -10,20 +10,22 @@ const buttonVariants = cva(
     variants: {
       variant: {
         default:
-          "ll-cta-brand disabled:bg-surface-container-highest disabled:text-muted-foreground disabled:shadow-none",
+          "ll-cta-brand",
         ink:
-          "ll-button-primary disabled:bg-surface-container-highest disabled:text-muted-foreground disabled:shadow-none",
+          "ll-button-primary",
         brand:
-          "ll-cta-brand disabled:bg-surface-container-highest disabled:text-muted-foreground disabled:shadow-none",
+          "ll-cta-brand",
         destructive:
-          "bg-destructive text-destructive-foreground shadow-[var(--shadow-soft)] hover:-translate-y-px hover:opacity-95 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 disabled:bg-destructive/20 disabled:text-destructive/70 disabled:shadow-none",
+          "bg-destructive text-destructive-foreground shadow-soft hover:-translate-y-px hover:opacity-95 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 disabled:bg-destructive/20 disabled:text-destructive/70 disabled:shadow-none",
         outline:
           "ll-button-outline disabled:border-border/50 disabled:bg-surface-container disabled:text-muted-foreground disabled:shadow-none",
         secondary:
           "ll-button-secondary disabled:bg-surface-container-high disabled:text-muted-foreground disabled:shadow-none",
         ghost:
           "ll-button-ghost bg-transparent disabled:text-muted-foreground",
-        link: "ll-text-link text-primary underline-offset-4 hover:underline disabled:text-muted-foreground",
+        tertiary:
+          "ll-button-tertiary disabled:text-muted-foreground disabled:no-underline",
+        link: "ll-text-link underline-offset-4 disabled:text-muted-foreground",
       },
       size: {
         default: "h-10 px-4 py-2.5 has-[>svg]:px-3.5",

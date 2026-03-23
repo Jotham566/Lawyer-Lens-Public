@@ -66,7 +66,7 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5">
+    <Card className="border-border/60 bg-surface-container shadow-soft transition-transform duration-200 hover:-translate-y-0.5">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
@@ -122,7 +122,7 @@ function QuickActionCard({
   return (
     <Link href={href}>
       <Card
-        className={`cursor-pointer border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5 ${
+        className={`cursor-pointer border-border/60 bg-surface-container shadow-soft transition-transform duration-200 hover:-translate-y-0.5 ${
           variant === "primary" ? "border-primary/25 bg-[linear-gradient(135deg,rgba(201,160,89,0.18),rgba(0,35,68,0.04))]" : ""
         }`}
       >
@@ -272,7 +272,7 @@ function AdminDashboardContent() {
   return (
     <div className="container max-w-7xl py-8 space-y-8">
       {/* Header */}
-      <div className="rounded-[32px] border border-border/60 bg-surface-container px-6 py-7 shadow-[var(--shadow-soft)] sm:px-8">
+      <div className="rounded-hero border border-border/60 bg-surface-container px-6 py-7 shadow-soft sm:px-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
@@ -386,7 +386,7 @@ function AdminDashboardContent() {
 
       {/* Recent Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+        <Card className="border-border/60 bg-surface-container shadow-soft">
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
             <CardDescription>Latest actions by team members</CardDescription>
@@ -429,7 +429,7 @@ function AdminDashboardContent() {
         </Card>
 
         {/* Team Overview */}
-        <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+        <Card className="border-border/60 bg-surface-container shadow-soft">
           <CardHeader>
             <CardTitle className="text-lg">Team Overview</CardTitle>
             <CardDescription>Your organization members</CardDescription>

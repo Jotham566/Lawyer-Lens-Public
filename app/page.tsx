@@ -21,7 +21,7 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublicBetaMode, getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
-import { surfaceClasses } from "@/lib/design-system";
+import { surfaceClasses, typographyClasses, layoutClasses } from "@/lib/design-system";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { BetaAnnouncementBanner, BetaAccessModal } from "@/components/beta";
@@ -177,20 +177,20 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="flex-1 flex flex-col items-center justify-center px-4 py-12 md:py-20">
-        <div className="w-full max-w-3xl mx-auto text-center">
+        <div className={cn(layoutClasses.pageContainerNarrow, "py-0 text-center")}>
           {/* Badge */}
           <Badge
             variant="secondary"
             className={`mb-6 px-4 py-1.5 text-sm font-medium ${surfaceClasses.chip}`}
           >
-            <Sparkles className="mr-2 h-3.5 w-3.5 text-[color:var(--brand-gold)] dark:text-primary" />
+            <Sparkles className="mr-2 h-3.5 w-3.5 text-brand-gold dark:text-primary" />
             Professional Legal Research
           </Badge>
 
           {/* Main Heading */}
-          <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
+          <h1 className={cn(typographyClasses.displayLg, "text-3xl sm:text-4xl md:text-5xl lg:text-6xl")}>
             Search Uganda&apos;s Laws{" "}
-            <span className="text-[color:var(--brand-gold)] dark:text-primary">in Plain English</span>
+            <span className="text-brand-gold dark:text-primary">in Plain English</span>
           </h1>
 
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -200,33 +200,33 @@ export default function HomePage() {
 
           {/* Trust Strip */}
           <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />Natural Language</span>
+            <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-brand-gold dark:text-primary" />Natural Language</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />99% Traceable</span>
+            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-brand-gold dark:text-primary" />99% Traceable</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />No Hallucinations</span>
+            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-brand-gold dark:text-primary" />No Hallucinations</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />Amendment Detection</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-brand-gold dark:text-primary" />Amendment Detection</span>
           </div>
 
           {/* Stats Bar - Prominently Visible */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-8">
             <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
-              <BookOpen className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
+              <BookOpen className="h-4 w-4 text-brand-gold dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? stats.total_documents.toLocaleString() : "—"}
               </span>
               <span className="text-sm text-muted-foreground">Documents</span>
             </div>
             <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
-              <FileText className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
+              <FileText className="h-4 w-4 text-brand-gold dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("act").toLocaleString() : "—"}
               </span>
               <span className="text-sm text-muted-foreground">Acts</span>
             </div>
             <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
-              <Gavel className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
+              <Gavel className="h-4 w-4 text-brand-gold dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("judgment").toLocaleString() : "—"}
               </span>
@@ -260,7 +260,7 @@ export default function HomePage() {
                         <Lock className="h-3 w-3 text-muted-foreground" />
                       )}
                       {!mode.requiresAuth && (
-                        <span className="text-[10px] font-medium text-[color:var(--brand-gold)] dark:text-primary">
+                        <span className="text-[10px] font-medium text-brand-gold dark:text-primary">
                           FREE
                         </span>
                       )}
@@ -279,7 +279,7 @@ export default function HomePage() {
               <div className="relative flex-1">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2">
                   {searchMode === "ai" ? (
-                    <Sparkles className="h-5 w-5 text-[color:var(--brand-gold)] dark:text-primary" />
+                    <Sparkles className="h-5 w-5 text-brand-gold dark:text-primary" />
                   ) : (
                     <Search className="h-5 w-5 text-muted-foreground" />
                   )}
@@ -327,7 +327,7 @@ export default function HomePage() {
                   className={cn("group gap-2", surfaceClasses.chipButton)}
                 >
                   {item.mode === "ai" ? (
-                    <Sparkles className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />
+                    <Sparkles className="h-3 w-3 text-brand-gold dark:text-primary" />
                   ) : (
                     <Search className="ll-icon-muted h-3 w-3" />
                   )}
@@ -338,7 +338,7 @@ export default function HomePage() {
                     {item.query}
                   </span>
                   {item.mode === "keyword" && (
-                    <span className="text-[10px] font-medium text-[color:var(--brand-gold)] dark:text-primary">
+                    <span className="text-[10px] font-medium text-brand-gold dark:text-primary">
                       FREE
                     </span>
                   )}
@@ -350,7 +350,7 @@ export default function HomePage() {
       </section>
 
       {/* Source Attribution */}
-      <section className="border-t border-border/60 px-4 py-6 bg-muted/10">
+      <section className="px-4 py-6 bg-surface-container-low">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm text-muted-foreground">
             Powered by Uganda&apos;s official legal publications including the Uganda Gazette,
@@ -363,7 +363,7 @@ export default function HomePage() {
       </section>
 
       {/* Footer */}
-      <footer className="border-t px-4 py-4 bg-muted/20">
+      <footer className="px-4 py-4 bg-surface-container">
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">

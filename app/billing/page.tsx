@@ -125,10 +125,10 @@ export default function BillingPage() {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="animate-pulse space-y-6">
-          <div className="h-36 rounded-[28px] bg-muted"></div>
+          <div className="h-36 rounded-panel bg-muted"></div>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-48 rounded-[28px] bg-muted"></div>
+              <div key={i} className="h-48 rounded-panel bg-muted"></div>
             ))}
           </div>
         </div>
@@ -173,7 +173,7 @@ export default function BillingPage() {
       )}
 
       <Tabs defaultValue="overview" className="space-y-6">
-        <TabsList className="h-auto rounded-2xl border border-border/60 bg-surface-container p-1 shadow-[var(--shadow-soft)]">
+        <TabsList className="h-auto rounded-2xl border border-border/60 bg-surface-container p-1 shadow-soft">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="usage">Usage</TabsTrigger>
           <TabsTrigger value="invoices">Invoices</TabsTrigger>
@@ -182,7 +182,7 @@ export default function BillingPage() {
 
         <TabsContent value="overview" className="space-y-6">
           {/* Subscription Card */}
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -264,7 +264,7 @@ export default function BillingPage() {
 
           {/* Quick Usage Summary */}
           {usage && (
-            <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+            <Card className="border-border/60 bg-surface-container shadow-soft">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <BarChart3 className="h-5 w-5" />
@@ -312,7 +312,7 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="usage">
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader>
               <CardTitle>Detailed Usage</CardTitle>
               <CardDescription>View your usage history and trends</CardDescription>
@@ -326,7 +326,7 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="invoices">
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>
@@ -349,7 +349,7 @@ export default function BillingPage() {
         </TabsContent>
 
         <TabsContent value="payment">
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader>
               <div className="flex items-center justify-between">
                 <div>

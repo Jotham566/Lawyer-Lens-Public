@@ -164,7 +164,7 @@ export function CitationHoverPreview({
       <TooltipContent
         side="top"
         align="start"
-        className="w-[380px] border border-border/80 bg-background p-0 text-foreground shadow-[var(--shadow-floating)]"
+        className="w-[380px] border border-border/80 bg-background p-0 text-foreground shadow-floating"
         sideOffset={8}
       >
         {/* Header */}

@@ -67,7 +67,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
               e.preventDefault();
               submitDraft();
             }}
-            className="rounded-[28px] border border-muted-foreground/20 bg-background px-3 py-3 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring"
+            className="rounded-panel border border-muted-foreground/20 bg-background px-3 py-3 shadow-sm transition-shadow focus-within:ring-2 focus-within:ring-ring"
             role="search"
             aria-label="Chat input"
           >

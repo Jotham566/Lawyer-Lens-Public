@@ -146,7 +146,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                   href="/dashboard"
                   onClick={() => onOpenChange(false)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-[1.25rem] border border-transparent px-3 py-3",
+                  "group flex items-center gap-3 rounded-3xl border border-transparent px-3 py-3",
                   isActive("/dashboard")
                     ? surfaceClasses.rowInteractiveActive
                     : surfaceClasses.rowInteractive
@@ -173,7 +173,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 href={item.href}
                 onClick={() => onOpenChange(false)}
                 className={cn(
-                  "group flex items-center gap-3 rounded-[1.25rem] border border-transparent px-3 py-3",
+                  "group flex items-center gap-3 rounded-3xl border border-transparent px-3 py-3",
                   isActive(item.href)
                     ? surfaceClasses.rowInteractiveActive
                     : surfaceClasses.rowInteractive
@@ -201,7 +201,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "h-auto w-full justify-between rounded-[1.25rem] border border-transparent px-3 py-3",
+                    "h-auto w-full justify-between rounded-3xl border border-transparent px-3 py-3",
                     isActive("/legislation") && surfaceClasses.navPillActive
                   )}
                 >
@@ -250,7 +250,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                 <Button
                   variant="ghost"
                   className={cn(
-                    "h-auto w-full justify-between rounded-[1.25rem] border border-transparent px-3 py-3",
+                    "h-auto w-full justify-between rounded-3xl border border-transparent px-3 py-3",
                     isActive("/judgments") && surfaceClasses.navPillActive
                   )}
                 >
@@ -301,7 +301,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                   href="/settings"
                   onClick={() => onOpenChange(false)}
                   className={cn(
-                    "group flex items-center gap-3 rounded-[1.25rem] px-3 py-3",
+                    "group flex items-center gap-3 rounded-3xl px-3 py-3",
                     isActive("/settings") && !pathname.includes("/organization")
                       ? surfaceClasses.rowInteractiveActive
                       : surfaceClasses.rowInteractive
@@ -314,7 +314,7 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
                   href="/settings/organization"
                   onClick={() => onOpenChange(false)}
                   className={cn(
-                    "group flex items-center gap-3 rounded-[1.25rem] px-3 py-3",
+                    "group flex items-center gap-3 rounded-3xl px-3 py-3",
                     isActive("/settings/organization")
                       ? surfaceClasses.rowInteractiveActive
                       : surfaceClasses.rowInteractive
@@ -356,7 +356,7 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-2 left-3 right-3 z-50 rounded-full bg-popover/90 p-1.5 shadow-[var(--shadow-floating)] backdrop-blur-xl lg:hidden">
+    <nav className="fixed bottom-2 left-3 right-3 z-50 rounded-full bg-popover/90 p-1.5 shadow-floating backdrop-blur-xl lg:hidden">
       <div className="flex h-14 items-center justify-around">
         {tabs.map((tab) => (
           <Link

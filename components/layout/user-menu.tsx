@@ -74,7 +74,7 @@ export function UserMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size="sm" className="gap-2 rounded-full px-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium overflow-hidden shadow-[var(--shadow-soft)]">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium overflow-hidden shadow-soft">
             {user.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img

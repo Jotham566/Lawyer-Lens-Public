@@ -145,7 +145,7 @@ export function TrustBadge({
       </TooltipTrigger>
       <TooltipContent
         side="top"
-        className="max-w-xs border border-border/80 bg-background p-3 shadow-[var(--shadow-floating)]"
+        className="max-w-xs border border-border/80 bg-background p-3 shadow-floating"
       >
         <TrustTooltipContent
           verification={verification}

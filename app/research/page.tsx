@@ -491,7 +491,7 @@ function renderSourceGroups(
       if (!groupCitations.length) return "";
 
       return `
-        <div class="workspace-note-surface mb-5 rounded-[22px] p-4">
+        <div class="workspace-note-surface mb-5 rounded-3xl p-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <p class="text-sm font-semibold text-foreground">${group.label}</p>
             <span class="workspace-meta-chip">${group.count} sources</span>
@@ -553,7 +553,7 @@ function renderStructuredBlocks(
           .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
           .join("");
         return `
-          <div data-structured-block="comparison_table" class="workspace-note-surface my-6 rounded-[20px] p-4">
+          <div data-structured-block="comparison_table" class="workspace-note-surface my-6 rounded-3xl p-4">
             <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Comparison"}</p>
             <table>
               <thead><tr>${headerHtml}</tr></thead>
@@ -565,7 +565,7 @@ function renderStructuredBlocks(
 
       if (block.block_type === "checklist" && block.items?.length) {
         return `
-          <div data-structured-block="checklist" class="workspace-note-surface my-6 rounded-[20px] p-4">
+          <div data-structured-block="checklist" class="workspace-note-surface my-6 rounded-3xl p-4">
             <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Recommended actions"}</p>
             <ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>
           </div>
@@ -2236,8 +2236,8 @@ function ResearchContent() {
                       }) : (
                         <div className="space-y-8">
                           <Skeleton className="h-10 w-3/4" />
-                          <Skeleton className="h-32 w-full rounded-[24px]" />
-                          <Skeleton className="h-32 w-full rounded-[24px]" />
+                          <Skeleton className="h-32 w-full rounded-card" />
+                          <Skeleton className="h-32 w-full rounded-card" />
                         </div>
                       )}
                     </div>

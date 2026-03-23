@@ -7,7 +7,7 @@ export default function AboutPage() {
     <div className="container mx-auto max-w-5xl px-4 py-6">
       <Breadcrumbs className="mb-6" />
 
-      <section className="rounded-[32px] border border-border/60 bg-surface-container px-6 py-8 shadow-[var(--shadow-soft)] sm:px-8 sm:py-10">
+      <section className="rounded-hero border border-border/60 bg-surface-container px-6 py-8 shadow-soft sm:px-8 sm:py-10">
         <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
           About
         </p>
@@ -18,7 +18,7 @@ export default function AboutPage() {
           Uganda&apos;s Legal Intelligence Platform
         </p>
         <div className="mt-8 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-[28px] bg-surface-container-high px-6 py-6">
+          <div className="rounded-panel bg-surface-container-high px-6 py-6">
             <h2 className="text-xl font-semibold">Our Mission</h2>
             <p className="mt-4 leading-8 text-muted-foreground">
               Law Lens Uganda is dedicated to making Uganda&apos;s legal information accessible,
@@ -27,7 +27,7 @@ export default function AboutPage() {
               and regulatory documents.
             </p>
           </div>
-          <div className="rounded-[28px] bg-surface-container-high px-6 py-6">
+          <div className="rounded-panel bg-surface-container-high px-6 py-6">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
               Positioning
             </p>
@@ -49,7 +49,7 @@ export default function AboutPage() {
           </h2>
         </div>
         <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <BookOpen className="h-5 w-5 text-primary" />
@@ -64,7 +64,7 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Target className="h-5 w-5 text-primary" />
@@ -79,7 +79,7 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Users className="h-5 w-5 text-primary" />
@@ -94,7 +94,7 @@ export default function AboutPage() {
             </CardContent>
           </Card>
 
-          <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
+          <Card className="border-border/60 bg-surface-container shadow-soft">
             <CardHeader className="pb-2">
               <CardTitle className="flex items-center gap-2 text-base">
                 <Scale className="h-5 w-5 text-primary" />
@@ -112,7 +112,7 @@ export default function AboutPage() {
       </section>
 
       {/* Disclaimer */}
-      <section className="mt-10 rounded-[28px] border border-border/60 bg-surface-container px-6 py-6 shadow-[var(--shadow-soft)]">
+      <section className="mt-10 rounded-panel border border-border/60 bg-surface-container px-6 py-6 shadow-soft">
         <h2 className="font-serif text-2xl font-semibold tracking-[-0.02em] text-foreground">Legal Disclaimer</h2>
         <p className="mt-4 text-sm leading-7 text-muted-foreground">
           The information provided on Law Lens Uganda is for general informational purposes

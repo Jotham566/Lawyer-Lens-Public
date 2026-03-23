@@ -25,7 +25,7 @@ export default function AuthLayout({
 
       <main className="container flex flex-1 items-center justify-center px-4 py-8 sm:px-6 lg:px-8">
         <div className="grid w-full max-w-6xl gap-8 lg:grid-cols-[1.05fr_minmax(0,460px)] lg:items-center">
-          <section className="hidden rounded-[32px] border border-border/60 bg-surface-container px-8 py-10 shadow-[var(--shadow-soft)] lg:block">
+          <section className="hidden rounded-hero border border-border/60 bg-surface-container px-8 py-10 shadow-soft lg:block">
             <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
               Law Lens Uganda
             </p>

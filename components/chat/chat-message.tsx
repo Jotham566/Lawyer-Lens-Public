@@ -296,7 +296,7 @@ function ChatMessageComponent({
               onCancel={onCancelEdit}
             />
           ) : (
-            <div className="inline-block rounded-3xl bg-surface-container-high px-5 py-3.5 text-sm text-foreground shadow-sm selection:bg-primary/28 selection:text-[color:var(--selection-foreground)] dark:selection:bg-primary/24 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+            <div className="inline-block rounded-3xl bg-surface-container-high dark:bg-surface-container-highest px-5 py-3.5 text-sm text-foreground shadow-ambient selection:bg-primary/28 selection:text-[color:var(--selection-foreground)] dark:selection:bg-primary/24 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
               <MarkdownRenderer
                 content={message.content}
                 className="text-foreground [&_p]:text-foreground [&_strong]:text-foreground [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary"
@@ -326,17 +326,17 @@ function ChatMessageComponent({
   // Assistant message: left-aligned with icon
   return (
     <div className="flex gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-br from-primary/20 to-primary/10 border border-primary/20 dark:from-primary/15 dark:to-primary/8 dark:border-primary/25">
         <Bot className="h-4 w-4 text-primary" />
       </div>
 
       <div className="group space-y-3 max-w-[90%]">
         {message.content === "" && isLoading ? (
-          <div className="rounded-2xl bg-muted/50 px-4 py-3">
+          <div className="rounded-2xl bg-muted/50 dark:bg-surface-container px-4 py-3">
             <TypingIndicator />
           </div>
         ) : (
-          <div className="rounded-2xl bg-muted/50 px-4 py-3">
+          <div className="rounded-2xl bg-muted/50 dark:bg-surface-container px-4 py-3">
             <MarkdownRenderer
               content={message.content}
               sources={message.sources}

@@ -171,7 +171,7 @@ export function ToolsDropdown({
             >
               <div
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[color:var(--glass-outline)]",
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-glass",
                   isSelected
                     ? "bg-[color:var(--interactive-hover-surface-strong)]"
                     : "bg-surface-container-high"

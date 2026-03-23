@@ -111,7 +111,7 @@ export default function JudgmentsPage() {
       <div className={`mb-8 ${surfaceClasses.pageHero}`}>
         <div className="flex items-center gap-3 mb-4">
           <div className={surfaceClasses.pageIconTile}>
-            <Gavel className="h-6 w-6 text-[color:var(--brand-gold)] dark:text-primary" />
+            <Gavel className="h-6 w-6 text-brand-gold dark:text-primary" />
           </div>
           <div>
             <p className={surfaceClasses.pageEyebrow}>
@@ -205,7 +205,7 @@ export default function JudgmentsPage() {
 
                         <div
                           className={cn(
-                            "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
+                            "flex h-12 w-12 items-center justify-center rounded-xl border border-glass bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
                             court.bgColor
                           )}
                         >
@@ -214,7 +214,7 @@ export default function JudgmentsPage() {
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             {court.name}
-                        <Badge variant="secondary" className="border border-[color:var(--glass-outline)] text-xs">
+                        <Badge variant="secondary" className="border border-glass text-xs">
                               {court.shortName}
                             </Badge>
                           </CardTitle>
@@ -228,7 +228,7 @@ export default function JudgmentsPage() {
                         {isLoading ? (
                           <Skeleton className="h-6 w-12" />
                         ) : (
-                        <Badge variant="outline" className="border-[color:var(--glass-outline)] font-semibold">
+                        <Badge variant="outline" className="border-glass font-semibold">
                           Browse
                         </Badge>
                         )}
@@ -255,7 +255,7 @@ export default function JudgmentsPage() {
           </Button>
         </div>
 
-        <Card className="border-[color:var(--glass-outline)] bg-muted/30">
+        <Card className="border-glass bg-muted/30">
           <CardContent className="py-6">
             <p className="text-sm text-muted-foreground mb-4">
               Browse the complete collection of court decisions without filtering by court level.

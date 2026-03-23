@@ -263,7 +263,7 @@ export function SourceCitation({
             sideOffset={5}
             className={cn(
               "max-w-sm p-3 text-left",
-              "border border-border/80 bg-background text-foreground shadow-[var(--shadow-floating)]"
+              "border border-border/80 bg-background text-foreground shadow-floating"
             )}
           >
             {(source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)) && (
@@ -354,7 +354,7 @@ export function SourceCitation({
           sideOffset={5}
           className={cn(
             "max-w-md p-3 text-left",
-            "border border-border/80 bg-background text-foreground shadow-[var(--shadow-floating)]"
+            "border border-border/80 bg-background text-foreground shadow-floating"
           )}
         >
           <span className="block font-medium text-sm text-foreground mb-2">
