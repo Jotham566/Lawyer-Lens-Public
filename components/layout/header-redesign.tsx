@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
+import { surfaceClasses } from "@/lib/design-system";
 import {
   NavigationMenu,
   NavigationMenuContent,
@@ -94,14 +95,14 @@ export function HeaderRedesign({
   return (
     <header
       className={cn(
-        "sticky top-0 z-50 w-full border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60",
+        "sticky top-0 z-50 w-full border-b border-border/60 bg-background/85 shadow-[var(--shadow-soft)] backdrop-blur-2xl supports-[backdrop-filter]:bg-background/72",
         className
       )}
     >
-      <div className="container flex h-16 items-center gap-4 px-4">
+      <div className="container flex h-18 items-center gap-4 px-4 py-3">
         {/* Logo */}
-        <div className="mr-4">
-          <Logo height={155} />
+        <div className="mr-3 flex shrink-0 items-center">
+          <Logo height={148} />
         </div>
 
         {/* Desktop Navigation - Only render after mount to prevent hydration mismatch */}
@@ -116,28 +117,28 @@ export function HeaderRedesign({
                     isActive("/legislation") && "bg-accent text-accent-foreground"
                   )}
                 >
-                  <FileText className="h-4 w-4 mr-2" />
+                  <FileText className="ll-icon-muted mr-2 h-4 w-4" />
                   Legislation
                 </NavigationMenuTrigger>
                 <NavigationMenuContent>
-                  <ul className="grid w-[400px] gap-3 p-4 md:w-[500px] md:grid-cols-2">
+                  <ul className="grid w-[420px] gap-3 p-4 md:w-[520px] md:grid-cols-2">
                     {legislationItems.map((item) => (
                       <li key={item.href}>
                         <NavigationMenuLink asChild>
                           <Link
                             href={item.href}
                             className={cn(
-                              "block select-none space-y-1 rounded-md p-3 leading-none no-underline outline-none transition-colors hover:bg-accent hover:text-accent-foreground focus:bg-accent focus:text-accent-foreground",
-                              pathname === item.href && "bg-accent"
+                              "group ll-nav-card space-y-1",
+                              pathname === item.href && "ll-nav-card-active"
                             )}
                           >
                             <div className="flex items-center gap-2">
-                              <item.icon className="h-4 w-4 text-muted-foreground" />
+                              <item.icon className={cn("ll-icon-muted h-4 w-4", pathname === item.href && "text-secondary-foreground")} />
                               <div className="text-sm font-medium leading-none">
                                 {item.title}
                               </div>
                             </div>
-                            <p className="line-clamp-2 text-sm leading-snug text-muted-foreground">
+                            <p className={cn("ll-subtext-muted line-clamp-2 text-sm leading-snug", pathname === item.href && "text-secondary-foreground/80")}>
                               {item.description}
                             </p>
                           </Link>
@@ -148,7 +149,7 @@ export function HeaderRedesign({
                       <NavigationMenuLink asChild>
                         <Link
                           href="/legislation"
-                          className="flex items-center gap-2 rounded-md p-3 text-sm font-medium text-primary hover:bg-accent"
+                          className="group ll-menu-item flex items-center gap-2 rounded-2xl p-3 text-sm font-medium text-primary"
                         >
                           View all legislation
                           <ChevronDown className="h-3 w-3 rotate-[-90deg]" />
@@ -165,29 +166,29 @@ export function HeaderRedesign({
         )}
 
         {/* Direct Case Law Link */}
-        <Button
+          <Button
           variant="ghost"
           size="sm"
           asChild
           className={cn(
-            "hidden lg:flex gap-2",
-            isActive("/judgments") && "bg-accent text-accent-foreground"
+            "hidden rounded-full lg:flex gap-2",
+            isActive("/judgments") && surfaceClasses.navPillActive
           )}
         >
-          <Link href="/judgments">
-            <Gavel className="h-4 w-4" />
+              <Link href="/judgments">
+            <Gavel className="ll-icon-muted h-4 w-4" />
             Case Law
           </Link>
         </Button>
 
         {/* Search Bar - Desktop */}
-        <form onSubmit={handleSearch} className="hidden md:flex flex-1 max-w-md mx-4">
+        <form onSubmit={handleSearch} className="mx-2 hidden max-w-xl flex-1 md:flex">
           <div className="relative w-full">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="ll-icon-muted absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
             <Input
               type="search"
               placeholder="Search legislation, cases, or ask a question..."
-              className="pl-10 pr-4 h-9 w-full"
+              className="ll-field h-10 w-full rounded-full pl-10 pr-4"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />
@@ -195,7 +196,7 @@ export function HeaderRedesign({
         </form>
 
         {/* Right Side Actions */}
-        <div className="flex items-center gap-1 ml-auto">
+        <div className="ml-auto flex items-center gap-1.5">
           {/* Dashboard Link - Authenticated Users */}
           {isAuthenticated && (
             <Button
@@ -203,12 +204,12 @@ export function HeaderRedesign({
               size="sm"
               asChild
               className={cn(
-                "hidden md:flex gap-2",
-                isActive("/dashboard") && "bg-accent text-accent-foreground"
+                "hidden rounded-full md:flex gap-2",
+                isActive("/dashboard") && surfaceClasses.navPillActive
               )}
             >
               <Link href="/dashboard">
-                <Activity className="h-4 w-4" />
+                <Activity className="ll-icon-muted h-4 w-4" />
                 <span className="hidden xl:inline">Dashboard</span>
               </Link>
             </Button>
@@ -220,12 +221,12 @@ export function HeaderRedesign({
             size="sm"
             asChild
             className={cn(
-              "hidden md:flex gap-2",
-              isActive("/chat") && "bg-accent text-accent-foreground"
+              "hidden rounded-full md:flex gap-2",
+              isActive("/chat") && surfaceClasses.navPillActive
             )}
-          >
-            <Link
-              href="/chat"
+            >
+              <Link
+                href="/chat"
               onClick={(e) => {
                 if (!isAuthenticated) {
                   e.preventDefault();
@@ -233,8 +234,8 @@ export function HeaderRedesign({
                   openLogin("/chat");
                 }
               }}
-            >
-              <Sparkles className="h-4 w-4 text-primary" />
+              >
+              <Sparkles className="h-4 w-4 text-primary transition-colors group-hover:text-current" />
               <span className="hidden xl:inline">Ask in Plain English</span>
             </Link>
           </Button>
@@ -246,12 +247,12 @@ export function HeaderRedesign({
               size="sm"
               asChild
               className={cn(
-                "hidden md:flex gap-2",
-                isActive("/library") && "bg-accent text-accent-foreground"
+                "hidden rounded-full md:flex gap-2",
+                isActive("/library") && surfaceClasses.navPillActive
               )}
             >
               <Link href="/library">
-                <BookMarked className="h-4 w-4" />
+                <BookMarked className="ll-icon-muted h-4 w-4" />
                 <span className="hidden xl:inline">Library</span>
               </Link>
             </Button>
@@ -263,10 +264,10 @@ export function HeaderRedesign({
               variant="outline"
               size="sm"
               asChild
-              className="hidden sm:flex gap-2 border-amber-300 hover:bg-amber-50 dark:border-amber-700 dark:hover:bg-amber-950/50"
+              className="hidden rounded-full sm:flex gap-2"
             >
               <Link href="/pricing">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkles className="h-4 w-4 text-primary transition-colors group-hover:text-current" />
                 <span>Pricing</span>
               </Link>
             </Button>
@@ -302,11 +303,11 @@ export function HeaderRedesign({
       <div className={cn("container px-4 pb-3 md:hidden", pathname.startsWith("/chat") && "hidden")}>
         <form onSubmit={handleSearch}>
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+            <Search className="ll-icon-muted absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2" />
             <Input
               type="search"
               placeholder="Search..."
-              className="pl-10 pr-4 h-9 w-full"
+              className="h-10 w-full rounded-full pl-10 pr-4"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
             />

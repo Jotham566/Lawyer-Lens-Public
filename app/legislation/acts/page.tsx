@@ -30,6 +30,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { useAllDocumentsByType } from "@/lib/hooks";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { resolveDocumentYear } from "@/lib/utils/document-year";
 
@@ -189,7 +190,7 @@ function ActsContent() {
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-50 text-blue-600">
+          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary dark:bg-primary/15">
             <FileText className="h-5 w-5" />
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Acts of Parliament</h1>
@@ -322,7 +323,7 @@ function ActsContent() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  variant="default"
+                  variant="brand"
                   size="sm"
                   onClick={() =>
                     updateParams({
@@ -353,13 +354,15 @@ function ActsContent() {
                     Quick jump
                   </p>
                   {letter && (
-                    <button
+                    <Button
                       type="button"
-                      className="text-xs text-muted-foreground transition-colors hover:text-foreground"
+                      variant="ghost"
+                      size="sm"
+                      className="h-auto px-0 py-0 text-xs"
                       onClick={() => updateParams({ letter: undefined, page: "1" })}
                     >
                       Clear
-                    </button>
+                    </Button>
                   )}
                 </div>
                 <div className="flex flex-wrap gap-1.5">
@@ -396,7 +399,7 @@ function ActsContent() {
                   {filter.label}
                   <button
                     type="button"
-                    className="rounded-full hover:bg-black/10"
+                    className={cn("rounded-full", surfaceClasses.iconButton)}
                     onClick={() => {
                       if (filter.key === "q") {
                         setSearchInput("");
@@ -474,7 +477,7 @@ function ActsContent() {
                 const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent(currentActsUrl)}&from=acts`;
                 return (
                   <Link key={act.id} href={documentHref} className="group block">
-                    <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                    <Card className={cn("h-full border-border/70", surfaceClasses.pagePanelInteractive)}>
                       <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-2">
@@ -486,7 +489,7 @@ function ActsContent() {
                                 <span className="truncate text-foreground/65">{act.human_readable_id}</span>
                               )}
                             </div>
-                            <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
+                            <h3 className={cn("font-medium leading-tight", view === "grid" && "line-clamp-2 text-sm")}>
                               {act.title}
                             </h3>
                             {act.short_title && act.short_title !== act.title && (
@@ -500,9 +503,9 @@ function ActsContent() {
                       </CardHeader>
                       <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
                         <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
-                          {act.chapter && <span className="rounded-full bg-muted px-2.5 py-1">Chapter {act.chapter}</span>}
-                          {act.act_number && <span className="rounded-full bg-muted px-2.5 py-1">Act No. {act.act_number}</span>}
-                          {act.publication_date && <span className="rounded-full bg-muted px-2.5 py-1">Published text</span>}
+                          {act.chapter && <span className={surfaceClasses.chipButton}>Chapter {act.chapter}</span>}
+                          {act.act_number && <span className={surfaceClasses.chipButton}>Act No. {act.act_number}</span>}
+                          {act.publication_date && <span className={surfaceClasses.chipButton}>Published text</span>}
                         </div>
                         <div className="flex items-center justify-between gap-3 text-sm">
                           <span className="text-muted-foreground">

@@ -141,7 +141,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
                     <Separator />
                     <div className="flex justify-between text-sm">
                       <span className="text-muted-foreground">Change</span>
-                      <span className={seatDiff > 0 ? "text-green-600" : seatDiff < 0 ? "text-amber-600" : ""}>
+                      <span className={seatDiff > 0 ? "text-secondary-foreground" : seatDiff < 0 ? "text-primary" : ""}>
                         {seatDiff > 0 ? `+${seatDiff}` : seatDiff} seats
                       </span>
                     </div>
@@ -166,7 +166,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
                               </TooltipContent>
                             </Tooltip>
                           </span>
-                          <span className={seatDiff > 0 ? "text-green-600" : "text-amber-600"}>
+                          <span className={seatDiff > 0 ? "text-secondary-foreground" : "text-primary"}>
                             {seatDiff > 0 ? "+" : "-"}${Math.abs(proratedAmount).toFixed(2)}
                           </span>
                         </div>
@@ -176,7 +176,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
 
                   {/* Warning for decreasing below usage */}
                   {!canDecrease && seatDiff < 0 && (
-                    <div className="flex items-start gap-2 p-3 bg-amber-50 text-amber-800 rounded-lg text-sm">
+                    <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-secondary/50 p-3 text-sm text-foreground">
                       <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                       <span>
                         Cannot reduce below {seatInfo.used} seats while they are in use.
@@ -186,7 +186,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
                   )}
 
                   {error && (
-                    <div className="flex items-start gap-2 p-3 bg-red-50 text-red-800 rounded-lg text-sm">
+                    <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-destructive/10 p-3 text-sm text-foreground">
                       <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
                       <span>{error}</span>
                     </div>
@@ -242,11 +242,11 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
         {/* Seat status */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="rounded-lg border p-4 text-center">
-            <div className="text-2xl font-semibold text-green-600">{seatInfo.used}</div>
+            <div className="text-2xl font-semibold text-secondary-foreground">{seatInfo.used}</div>
             <p className="text-xs text-muted-foreground mt-1">Active Members</p>
           </div>
           <div className="rounded-lg border p-4 text-center">
-            <div className="text-2xl font-semibold text-blue-600">{available}</div>
+            <div className="text-2xl font-semibold text-primary">{available}</div>
             <p className="text-xs text-muted-foreground mt-1">Available Seats</p>
           </div>
         </div>
@@ -261,11 +261,11 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
 
         {/* Warnings/Info */}
         {available === 0 && (
-          <div className="flex items-start gap-2 p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-sm">
+          <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-secondary/50 p-3 text-sm text-foreground">
             <AlertCircle className="h-4 w-4 mt-0.5 shrink-0" />
             <div>
               <p className="font-medium">All seats are in use</p>
-              <p className="text-amber-600 mt-1">
+              <p className="text-primary mt-1">
                 Add more seats to invite additional team members.
               </p>
             </div>
@@ -273,7 +273,7 @@ export function SeatManagement({ seatInfo, onUpdateSeats }: SeatManagementProps)
         )}
 
         {available > 0 && available <= 2 && (
-          <div className="flex items-start gap-2 p-3 bg-blue-50 border border-blue-200 text-blue-800 rounded-lg text-sm">
+          <div className="flex items-start gap-2 rounded-lg border border-border/60 bg-primary/10 p-3 text-sm text-foreground">
             <Info className="h-4 w-4 mt-0.5 shrink-0" />
             <span>
               You have {available} seat{available !== 1 ? "s" : ""} available for new team members.
@@ -314,7 +314,7 @@ export function SeatUsageCompact({
       )}
       <Progress
         value={percent}
-        className={`h-2 ${isAtLimit ? "bg-red-100" : isNearLimit ? "bg-amber-100" : ""}`}
+        className={`h-2 ${isAtLimit ? "bg-destructive/10" : isNearLimit ? "bg-secondary/50" : ""}`}
       />
     </div>
   );

@@ -247,7 +247,7 @@ export function CitationExport({ source, sectionRef, className }: CitationExport
         >
           {copied ? (
             <>
-              <Check className="h-3.5 w-3.5 mr-1.5 text-green-500" />
+              <Check className="mr-1.5 h-3.5 w-3.5 text-primary" />
               <span className="text-xs">Copied!</span>
             </>
           ) : (
@@ -269,7 +269,7 @@ export function CitationExport({ source, sectionRef, className }: CitationExport
             >
               {label}
               {copied && lastFormat === format && (
-                <Check className="h-3 w-3 ml-auto text-green-500" />
+                <Check className="ml-auto h-3 w-3 text-primary" />
               )}
             </DropdownMenuItem>
           )

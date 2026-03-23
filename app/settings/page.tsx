@@ -337,13 +337,13 @@ export default function SettingsPage() {
             </div>
           ) : deletionStatus?.status === "scheduled" ? (
             <div className="space-y-4">
-              <div className="flex items-start gap-3 rounded-lg border border-orange-200 dark:border-orange-800 bg-orange-50 dark:bg-orange-900/20 p-4">
-                <Calendar className="h-5 w-5 text-orange-600 dark:text-orange-400 mt-0.5 flex-shrink-0" />
+              <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-primary/10 p-4">
+                <Calendar className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
                 <div className="flex-1">
-                  <p className="font-medium text-orange-800 dark:text-orange-200">
+                  <p className="font-medium text-foreground">
                     Account scheduled for deletion
                   </p>
-                  <p className="text-sm text-orange-700 dark:text-orange-300 mt-1">
+                  <p className="text-sm text-primary mt-1">
                     Your account will be permanently deleted on{" "}
                     <strong>
                       {deletionStatus.scheduled_for
@@ -361,7 +361,7 @@ export default function SettingsPage() {
                     .
                   </p>
                   {deletionStatus.days_remaining !== undefined && (
-                    <p className="text-sm text-orange-600 dark:text-orange-400 mt-1">
+                    <p className="text-sm text-primary mt-1">
                       {deletionStatus.days_remaining} days remaining to cancel
                     </p>
                   )}
@@ -385,13 +385,13 @@ export default function SettingsPage() {
               </Button>
             </div>
           ) : deletionStatus?.status === "pending" ? (
-            <div className="flex items-start gap-3 rounded-lg border border-yellow-200 dark:border-yellow-800 bg-yellow-50 dark:bg-yellow-900/20 p-4">
-              <AlertTriangle className="h-5 w-5 text-yellow-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" />
+            <div className="flex items-start gap-3 rounded-lg border border-border/60 bg-primary/10 p-4">
+              <AlertTriangle className="h-5 w-5 text-primary mt-0.5 flex-shrink-0" />
               <div>
-                <p className="font-medium text-yellow-800 dark:text-yellow-200">
+                <p className="font-medium text-foreground">
                   Deletion pending confirmation
                 </p>
-                <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                <p className="text-sm text-primary mt-1">
                   Please check your email to confirm or cancel the account deletion.
                 </p>
               </div>

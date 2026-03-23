@@ -24,6 +24,7 @@ import { PageHeader, PageLoading } from "@/components/common";
 import { fetchSubscription, fetchUsage, fetchInvoices } from "@/lib/api/billing";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useRequireAuth } from "@/components/providers";
+import { surfaceClasses } from "@/lib/design-system";
 
 interface Subscription {
   tier: string;
@@ -166,7 +167,7 @@ export default function BillingPage() {
               </div>
 
               {subscription.cancelAtPeriodEnd && (
-                <div className="flex items-center gap-2 p-3 bg-yellow-50 text-yellow-800 rounded-md">
+                <div className="flex items-center gap-2 rounded-md border border-primary/15 bg-primary/10 p-3 text-foreground">
                   <AlertCircle className="h-4 w-4" />
                   <span className="text-sm">
                     Your subscription will be cancelled on {formatDateOnly(subscription.currentPeriodEnd)}
@@ -217,7 +218,7 @@ export default function BillingPage() {
                   {!item.is_unlimited && item.limit && (
                     <Progress
                       value={item.percentage || 0}
-                      className={item.percentage && item.percentage > 80 ? "bg-yellow-100" : ""}
+                      className={item.percentage && item.percentage > 80 ? "bg-primary/10" : ""}
                     />
                   )}
                   {item.is_unlimited && (
@@ -236,11 +237,11 @@ export default function BillingPage() {
 
       {/* Quick Links */}
       <div className="grid gap-4 sm:grid-cols-2">
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-          <Link href="/settings/billing/invoices">
+        <Link href="/settings/billing/invoices" className="group block">
+          <Card className={surfaceClasses.pagePanelInteractive}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <FileText className="h-5 w-5" />
+                <FileText className="ll-icon-muted h-5 w-5" />
                 Invoices & Receipts
               </CardTitle>
               <CardDescription>
@@ -254,22 +255,22 @@ export default function BillingPage() {
                 </div>
               </CardContent>
             )}
-          </Link>
-        </Card>
+          </Card>
+        </Link>
 
-        <Card className="cursor-pointer hover:bg-muted/50 transition-colors">
-          <Link href="/settings/billing/payment-methods">
+        <Link href="/settings/billing/payment-methods" className="group block">
+          <Card className={surfaceClasses.pagePanelInteractive}>
             <CardHeader>
               <CardTitle className="flex items-center gap-2 text-base">
-                <CreditCard className="h-5 w-5" />
+                <CreditCard className="ll-icon-muted h-5 w-5" />
                 Payment Methods
               </CardTitle>
               <CardDescription>
                 Manage your payment methods
               </CardDescription>
             </CardHeader>
-          </Link>
-        </Card>
+          </Card>
+        </Link>
       </div>
     </div>
   );

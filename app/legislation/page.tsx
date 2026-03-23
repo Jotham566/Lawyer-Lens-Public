@@ -17,6 +17,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
@@ -28,9 +29,9 @@ const legislationTypes = [
       "Primary legislation enacted by Parliament. Browse acts by year, alphabetically, or search by title.",
     icon: FileText,
     href: "/legislation/acts",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
-    borderColor: "border-blue-200 dark:border-blue-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     countKey: "act",
   },
   {
@@ -39,9 +40,9 @@ const legislationTypes = [
       "Statutory instruments, rules, and subsidiary legislation made under Acts of Parliament.",
     icon: ScrollText,
     href: "/legislation/regulations",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
-    borderColor: "border-green-200 dark:border-green-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     countKey: "regulation",
   },
   {
@@ -50,9 +51,9 @@ const legislationTypes = [
       "The Constitution of the Republic of Uganda, 1995, as amended. The supreme law of the land.",
     icon: BookOpen,
     href: "/legislation/constitution",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
-    borderColor: "border-amber-200 dark:border-amber-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     countKey: "constitution",
   },
 ];
@@ -87,12 +88,13 @@ export default function LegislationPage() {
       <Breadcrumbs className="mb-6" />
 
       {/* Header */}
-      <div className="mb-8">
+      <div className={cn("mb-8", surfaceClasses.pageHero)}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <Scale className="h-6 w-6 text-primary" />
+          <div className={surfaceClasses.pageIconTile}>
+            <Scale className="h-6 w-6 text-[color:var(--brand-gold)] dark:text-primary" />
           </div>
           <div>
+            <p className={surfaceClasses.pageEyebrow}>Legal Framework</p>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
               Legislation
             </h1>
@@ -111,11 +113,12 @@ export default function LegislationPage() {
               placeholder="Search within legislation..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-24"
+              className={cn("pl-10 pr-24", surfaceClasses.searchField)}
             />
             <Button
               type="submit"
               size="sm"
+              variant="brand"
               className="absolute right-1 top-1/2 -translate-y-1/2"
             >
               Search
@@ -130,7 +133,8 @@ export default function LegislationPage() {
           <Link key={type.href} href={type.href} className="group">
             <Card
               className={cn(
-                "h-full transition-all hover:shadow-lg hover:border-primary/40 border-2",
+                "h-full border-2",
+                surfaceClasses.pagePanelInteractive,
                 type.borderColor
               )}
             >
@@ -138,11 +142,11 @@ export default function LegislationPage() {
                 <div className="flex items-center justify-between">
                   <div
                     className={cn(
-                      "flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
+                      "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
                       type.bgColor
                     )}
                   >
-                    <type.icon className={cn("h-6 w-6", type.color)} />
+                    <type.icon className={cn("ll-icon-muted h-6 w-6", type.color)} />
                   </div>
                   {isLoading ? (
                     <Skeleton className="h-8 w-16" />
@@ -158,9 +162,9 @@ export default function LegislationPage() {
                 <p className="text-sm text-muted-foreground mb-4">
                   {type.description}
                 </p>
-                <div className="flex items-center text-sm text-primary font-medium group-hover:underline">
+                <div className="flex items-center text-sm font-medium text-primary">
                   Browse {type.title.toLowerCase()}
-                  <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                  <ArrowRight className="ll-icon-muted ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </CardContent>
             </Card>
@@ -172,21 +176,21 @@ export default function LegislationPage() {
       <div className="mb-12">
         <h2 className="text-lg font-semibold mb-4">Case Law</h2>
         <Link href="/judgments" className="group">
-          <Card
-            className={cn(
-              "transition-all hover:shadow-lg hover:border-primary/40 border-2",
-              "border-purple-200 dark:border-purple-800"
+        <Card
+          className={cn(
+              "border-2",
+              surfaceClasses.pagePanelInteractive,
+              "border-border/60"
             )}
           >
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <div
                   className={cn(
-                    "flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
-                    "bg-purple-50 dark:bg-purple-950/50"
+                    "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]"
                   )}
                 >
-                  <Gavel className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  <Gavel className="ll-icon-muted h-6 w-6 text-primary" />
                 </div>
                 {isLoading ? (
                   <Skeleton className="h-8 w-16" />
@@ -202,9 +206,9 @@ export default function LegislationPage() {
               <p className="text-sm text-muted-foreground mb-4">
                 Court decisions and case law from the Supreme Court, Court of Appeal, High Court, and other tribunals.
               </p>
-              <div className="flex items-center text-sm text-primary font-medium group-hover:underline">
+              <div className="flex items-center text-sm font-medium text-primary">
                 Browse judgments
-                <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                <ArrowRight className="ll-icon-muted ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
               </div>
             </CardContent>
           </Card>
@@ -212,7 +216,7 @@ export default function LegislationPage() {
       </div>
 
       {/* Quick Links Section */}
-      <div className="border-t pt-8">
+      <div className="border-t border-border/60 pt-8">
         <h2 className="text-lg font-semibold mb-4">Quick Links</h2>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
           <QuickLink
@@ -251,11 +255,11 @@ function QuickLink({
   href: string;
 }) {
   return (
-    <Link
+      <Link
       href={href}
-      className="flex items-center gap-3 rounded-lg border p-3 transition-colors hover:bg-muted hover:border-primary/30"
+      className={cn("group flex items-center gap-3 rounded-lg border border-border/60 p-3", surfaceClasses.rowInteractive)}
     >
-      <FileText className="h-5 w-5 text-muted-foreground shrink-0" />
+      <FileText className="ll-icon-muted h-5 w-5 shrink-0" />
       <div className="min-w-0">
         <p className="font-medium text-sm truncate">{title}</p>
         <p className="text-xs text-muted-foreground">{subtitle}</p>

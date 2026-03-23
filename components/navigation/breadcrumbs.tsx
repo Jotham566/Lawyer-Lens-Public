@@ -4,6 +4,7 @@ import { Fragment } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ChevronRight, Home } from "lucide-react";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
 /**
@@ -184,7 +185,7 @@ export function Breadcrumbs({
           <li className="flex items-center">
             <Link
               href="/"
-              className="text-muted-foreground hover:text-foreground transition-colors"
+              className={surfaceClasses.textLink}
               aria-label="Home"
             >
               <Home className="h-4 w-4" />
@@ -214,7 +215,7 @@ export function Breadcrumbs({
               ) : (
                 <Link
                   href={item.href}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
+                  className={surfaceClasses.textLink}
                 >
                   {item.label}
                 </Link>

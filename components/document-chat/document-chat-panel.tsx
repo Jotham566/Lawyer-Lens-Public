@@ -28,6 +28,7 @@ import {
   UncertaintyDisclaimer,
 } from "@/components/chat";
 import { MessageFeedback } from "@/components/chat/message-feedback";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import type { ChatFeedbackType, ChatMessage, ChatSource, Document } from "@/lib/api/types";
 
@@ -71,7 +72,7 @@ function SourceChip({
     <button
       type="button"
       onClick={() => onClick?.(source)}
-      className="flex items-start gap-2 rounded-lg border bg-background px-2.5 py-2 text-left text-xs transition-colors hover:border-primary/40 hover:bg-muted/40"
+      className={cn("group flex items-start gap-2 px-2.5 py-2 text-left text-xs", surfaceClasses.rowInteractive)}
     >
       <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-muted text-[10px] font-semibold text-muted-foreground">
         {index + 1}
@@ -151,7 +152,7 @@ function MessageBubble({
                 <button
                   type="button"
                   onClick={() => setShowTrustDetails((value) => !value)}
-                  className="inline-flex items-center gap-1 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                  className={cn("inline-flex items-center gap-1 text-xs font-medium", surfaceClasses.textLink)}
                 >
                   Why this answer
                   <ChevronDown
@@ -208,7 +209,7 @@ function MessageBubble({
                       key={followup}
                       type="button"
                       onClick={() => onSelectFollowup(followup)}
-                      className="rounded-full border bg-muted px-2.5 py-1 text-xs font-medium transition-colors hover:border-primary/40 hover:bg-muted/70"
+                      className={surfaceClasses.chipButton}
                     >
                       {followup}
                     </button>
@@ -222,11 +223,11 @@ function MessageBubble({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7"
+                  className={cn("h-7 w-7", surfaceClasses.iconButton)}
                   onClick={() => void onCopy(copyKey, message.content)}
                 >
                   {copiedId === copyKey ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    <Check className="h-3.5 w-3.5 text-secondary-foreground" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
@@ -236,7 +237,7 @@ function MessageBubble({
                     type="button"
                     variant="ghost"
                     size="icon"
-                    className="h-7 w-7"
+                    className={cn("h-7 w-7", surfaceClasses.iconButton)}
                     onClick={() => void onRegenerate(index)}
                   >
                     <RefreshCw className="h-3.5 w-3.5" />
@@ -255,8 +256,8 @@ function MessageBubble({
           </div>
         ) : (
           <div className="space-y-2">
-            <div className="inline-block rounded-3xl bg-slate-200 px-5 py-3.5 text-sm text-slate-900 shadow-sm dark:bg-slate-700 dark:text-slate-100">
-              <p className="whitespace-pre-wrap leading-relaxed selection:text-inherit">
+            <div className="inline-block rounded-3xl bg-surface-container-high px-5 py-3.5 text-sm text-foreground shadow-sm">
+              <p className="whitespace-pre-wrap leading-relaxed selection:bg-primary/28 dark:selection:bg-primary/24 dark:selection:text-[#fff7e7] selection:text-inherit">
                 {message.content}
               </p>
             </div>
@@ -266,11 +267,11 @@ function MessageBubble({
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-7 w-7 opacity-60 transition-opacity hover:opacity-100 group-hover:opacity-100"
+                  className={cn("h-7 w-7 opacity-60 transition-opacity hover:opacity-100 group-hover:opacity-100", surfaceClasses.iconButton)}
                   onClick={() => void onCopy(copyKey, message.content)}
                 >
                   {copiedId === copyKey ? (
-                    <Check className="h-3.5 w-3.5 text-green-500" />
+                    <Check className="h-3.5 w-3.5 text-secondary-foreground" />
                   ) : (
                     <Copy className="h-3.5 w-3.5" />
                   )}
@@ -321,7 +322,7 @@ export function DocumentChatPanel({
 
   return (
     <Card className={cn("flex h-full min-h-0 flex-col overflow-hidden border-border/70", className)}>
-      <CardHeader className="border-b bg-muted/20 px-4 pb-3 pt-4">
+      <CardHeader className="border-b bg-surface-container-low px-4 pb-3 pt-4">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 space-y-1.5">
             <div className="flex items-center gap-2">
@@ -352,8 +353,8 @@ export function DocumentChatPanel({
               </Button>
             ) : null}
             {onClose ? (
-              <Button variant="ghost" size="icon" className="h-8 w-8" onClick={onClose}>
-                <X className="h-4 w-4" />
+              <Button variant="ghost" size="icon" className={cn("h-8 w-8", surfaceClasses.iconButton)} onClick={onClose}>
+                <X className="ll-icon-muted h-4 w-4" />
               </Button>
             ) : null}
           </div>
@@ -371,7 +372,7 @@ export function DocumentChatPanel({
         <CardContent className="space-y-4 p-3.5">
           {messages.length === 0 ? (
             <div className="space-y-4">
-              <div className="rounded-2xl border border-dashed bg-muted/20 p-3.5 text-sm text-muted-foreground">
+              <div className="rounded-2xl border border-dashed bg-surface-container-low p-3.5 text-sm text-muted-foreground">
                 Ask focused questions about this document without losing your place in the reader.
               </div>
               <div className="grid gap-2">
@@ -380,7 +381,7 @@ export function DocumentChatPanel({
                     key={prompt}
                     type="button"
                     onClick={() => void onSend(prompt)}
-                    className="rounded-xl border bg-background px-3.5 py-3 text-left text-sm transition-colors hover:border-primary/40 hover:bg-muted/40"
+                    className={cn("rounded-xl border bg-background px-3.5 py-3 text-left text-sm", surfaceClasses.rowInteractive)}
                   >
                     {prompt}
                   </button>
@@ -431,7 +432,7 @@ export function DocumentChatPanel({
               }
             }}
             placeholder={`Ask about this ${document.document_type}...`}
-            className="min-h-[88px] resize-none bg-background text-foreground placeholder:text-muted-foreground/70 selection:bg-primary/20 selection:text-foreground"
+            className="min-h-[88px] resize-none bg-background text-foreground placeholder:text-muted-foreground/70 selection:bg-primary/28 dark:selection:bg-primary/24 dark:selection:text-[#fff7e7] selection:text-foreground"
           />
           <div className="border-t border-dashed pt-3">
           <div className="flex items-center justify-between gap-2">

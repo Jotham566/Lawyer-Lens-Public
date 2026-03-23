@@ -105,8 +105,8 @@ function ConfirmDeletionContent() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-orange-100 dark:bg-orange-900/30">
-            <Calendar className="h-6 w-6 text-orange-600 dark:text-orange-400" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Calendar className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Deletion Scheduled
@@ -117,11 +117,11 @@ function ConfirmDeletionContent() {
         </CardHeader>
 
         <CardContent className="space-y-4">
-          <div className="rounded-lg bg-orange-50 dark:bg-orange-900/20 border border-orange-200 dark:border-orange-800 p-4">
-            <p className="text-sm text-orange-800 dark:text-orange-200">
+          <div className="rounded-lg bg-primary/10 border border-border/60 p-4">
+            <p className="text-sm text-foreground">
               <strong>Scheduled for:</strong> {scheduledFor}
             </p>
-            <p className="text-sm text-orange-700 dark:text-orange-300 mt-2">
+            <p className="text-sm text-primary mt-2">
               You have 90 days to cancel this deletion if you change your mind. After this date, all your data will be permanently removed.
             </p>
           </div>

@@ -25,6 +25,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
+import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
 
@@ -181,38 +183,38 @@ function getTypeColor(type: DocumentType) {
   switch (type) {
     case "act":
       return {
-        bg: "bg-blue-50 dark:bg-blue-950/50",
-        border: "border-blue-200 dark:border-blue-800",
-        text: "text-blue-700 dark:text-blue-300",
-        icon: "text-blue-600 dark:text-blue-400",
+        bg: "bg-primary/10",
+        border: "border-border/30",
+        text: "text-primary",
+        icon: "text-primary",
       };
     case "judgment":
       return {
-        bg: "bg-purple-50 dark:bg-purple-950/50",
-        border: "border-purple-200 dark:border-purple-800",
-        text: "text-purple-700 dark:text-purple-300",
-        icon: "text-purple-600 dark:text-purple-400",
+        bg: "bg-secondary",
+        border: "border-border/30",
+        text: "text-foreground",
+        icon: "text-foreground",
       };
     case "regulation":
       return {
-        bg: "bg-green-50 dark:bg-green-950/50",
-        border: "border-green-200 dark:border-green-800",
-        text: "text-green-700 dark:text-green-300",
-        icon: "text-green-600 dark:text-green-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
     case "constitution":
       return {
-        bg: "bg-amber-50 dark:bg-amber-950/50",
-        border: "border-amber-200 dark:border-amber-800",
-        text: "text-amber-700 dark:text-amber-300",
-        icon: "text-amber-600 dark:text-amber-400",
+        bg: "bg-accent/20",
+        border: "border-border/30",
+        text: "text-primary",
+        icon: "text-primary",
       };
     default:
       return {
-        bg: "bg-gray-50 dark:bg-gray-950/50",
-        border: "border-gray-200 dark:border-gray-800",
-        text: "text-gray-700 dark:text-gray-300",
-        icon: "text-gray-600 dark:text-gray-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
   }
 }
@@ -283,10 +285,10 @@ function parseTableFromText(text: string): { headers: string[]; rows: string[][]
  */
 function TableDisplay({ headers, rows }: { headers: string[]; rows: string[][] }) {
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border/30 bg-card/70">
       <table className="w-full text-sm">
         <thead>
-          <tr className="bg-muted/50 border-b border-border">
+          <tr className="bg-muted/50">
             {headers.map((header, idx) => (
               <th
                 key={idx}
@@ -334,7 +336,7 @@ function ExpandedTableDisplay({ table }: { table: ExpandedTable }) {
   const headerRowIndices = new Set(table.header_rows || [0]);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border/30 bg-card/70">
       <table className="w-full text-sm">
         <tbody className="divide-y divide-border">
           {table.rows.map((row, rowIdx) => {
@@ -367,17 +369,13 @@ function ExpandedTableDisplay({ table }: { table: ExpandedTable }) {
  */
 function RelevanceIndicator({ score }: { score: number }) {
   const percentage = Math.round(score * 100);
-  const getColor = () => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-orange-500";
-  };
+  const barColor = getRelevanceTheme(score).bar;
 
   return (
     <div className="flex items-center gap-2">
-      <div className="flex-1 h-2 bg-muted rounded-full overflow-hidden max-w-24">
+      <div className="flex-1 h-2 rounded-full bg-muted overflow-hidden max-w-24">
         <div
-          className={`h-full ${getColor()} transition-all`}
+          className={`h-full ${barColor} transition-all`}
           style={{ width: `${percentage}%` }}
         />
       </div>
@@ -614,7 +612,7 @@ export function SourceDetailDialog({
                       variant="ghost"
                       size="sm"
                       onClick={() => setShowRaw(!showRaw)}
-                      className="h-8 px-2 text-muted-foreground hover:text-foreground text-xs"
+                      className={cn("h-8 px-2 text-xs", surfaceClasses.textLink)}
                     >
                       {showRaw ? (htmlContent ? "Show Formatted" : "Show Table") : "Show Raw"}
                     </Button>
@@ -623,11 +621,11 @@ export function SourceDetailDialog({
                     variant="ghost"
                     size="sm"
                     onClick={handleCopy}
-                    className="h-8 px-2 text-muted-foreground hover:text-foreground"
+                    className={cn("h-8 px-2", surfaceClasses.textLink)}
                   >
                     {copied ? (
                       <>
-                        <Check className="h-4 w-4 mr-1.5 text-green-500" />
+                        <Check className="h-4 w-4 mr-1.5 text-primary" />
                         Copied
                       </>
                     ) : (
@@ -651,7 +649,7 @@ export function SourceDetailDialog({
               {/* Show HTML content from AKN XML section when available */}
               {!isExpanding && htmlContent && !showRaw && (
                 <div
-                  className="rounded-lg border border-border bg-muted/30 p-4 prose prose-sm max-w-none dark:prose-invert"
+                  className="rounded-lg border border-border/30 bg-muted/30 p-4 prose prose-sm max-w-none dark:prose-invert"
                   dangerouslySetInnerHTML={{ __html: sanitizeDocumentHtml(htmlContent) }}
                 />
               )}
@@ -679,7 +677,7 @@ export function SourceDetailDialog({
 
               {/* Show plain text content when no HTML, no tables, and not raw mode */}
               {!isExpanding && !htmlContent && !showRaw && expandedTables.length === 0 && !hasTable && (
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <div className="rounded-lg border border-border/30 bg-muted/30 p-4">
                   <pre className="text-sm leading-relaxed text-foreground whitespace-pre-wrap font-sans">
                     {displayExcerpt}
                   </pre>
@@ -688,7 +686,7 @@ export function SourceDetailDialog({
 
               {/* Show raw content when toggled */}
               {!isExpanding && showRaw && (
-                <div className="rounded-lg border border-border bg-muted/30 p-4">
+                <div className="rounded-lg border border-border/30 bg-muted/30 p-4">
                   <pre className="text-sm leading-relaxed text-foreground whitespace-pre-wrap font-sans">
                     {displayExcerpt}
                   </pre>

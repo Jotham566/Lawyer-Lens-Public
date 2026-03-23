@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { Sparkles, MessageSquare, Search, FileText } from "lucide-react";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import {
   getToolEmptyStateDescription,
@@ -67,12 +68,12 @@ export function EmptyState({
           {getToolSuggestedQuestions(selectedTool).map((question) => (
             <button
               key={question}
+              type="button"
               onClick={() => onSelectQuestion(question)}
               aria-label={`Ask: ${question}`}
               className={cn(
-                "inline-flex items-center gap-2 rounded-full border border-border/70 bg-background px-4 py-3 text-sm text-foreground/80 shadow-sm transition-all hover:border-primary/30 hover:bg-muted hover:text-foreground",
-                selectedTool === "deep-research" && "hover:border-blue-400/30",
-                selectedTool === "draft-contract" && "hover:border-green-400/30"
+                "px-4 py-3 text-sm",
+                surfaceClasses.chipButton
               )}
             >
               <MessageSquare className="h-4 w-4 text-primary" />

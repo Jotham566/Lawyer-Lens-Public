@@ -23,6 +23,11 @@ import {
 } from "@/components/ui/tooltip";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  getDocumentAccentClass,
+  getRelevanceTheme,
+  surfaceClasses,
+} from "@/lib/design-system";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
 
 interface SourceTransparencyProps {
@@ -54,31 +59,31 @@ function getDocTypeInfo(type: DocumentType): {
       return {
         icon: Scale,
         label: "Constitution",
-        color: "text-amber-600 dark:text-amber-400",
+        color: getDocumentAccentClass(type),
       };
     case "act":
       return {
         icon: FileText,
         label: "Acts",
-        color: "text-blue-600 dark:text-blue-400",
+        color: getDocumentAccentClass(type),
       };
     case "regulation":
       return {
         icon: ScrollText,
         label: "Regulations",
-        color: "text-green-600 dark:text-green-400",
+        color: getDocumentAccentClass(type),
       };
     case "judgment":
       return {
         icon: Gavel,
         label: "Judgments",
-        color: "text-purple-600 dark:text-purple-400",
+        color: getDocumentAccentClass(type),
       };
     default:
       return {
         icon: FileText,
         label: "Documents",
-        color: "text-slate-600 dark:text-slate-400",
+        color: "text-muted-foreground",
       };
   }
 }
@@ -126,6 +131,14 @@ function getAverageRelevance(sources: ChatSource[]): number {
   return total / sources.length;
 }
 
+function getAverageRelevanceStyle(score: number) {
+  const tone = getRelevanceTheme(score);
+  return {
+    label: tone.label,
+    className: tone.compact,
+  };
+}
+
 /**
  * SourceTransparency - Shows information about sources used in response
  *
@@ -143,23 +156,24 @@ export function SourceTransparency({
   const sourcesByType = groupSourcesByType(sources);
   const avgRelevance = getAverageRelevance(sources);
   const uniqueDocuments = new Set(sources.map((s) => s.document_id)).size;
+  const relevanceStyle = getAverageRelevanceStyle(avgRelevance);
 
   if (sources.length === 0) {
     return (
-      <div
+        <div
         className={cn(
-          "flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-50 dark:bg-slate-900/50 border border-slate-200 dark:border-slate-800",
+          "flex items-center gap-2 rounded-lg border border-border/60 bg-surface-container-low px-3 py-2",
           className
         )}
         role="status"
       >
-        <Info className="h-4 w-4 text-slate-500" />
-        <span className="text-xs text-slate-600 dark:text-slate-400">
+        <Info className="h-4 w-4 text-muted-foreground" />
+        <span className="text-xs text-muted-foreground">
           No specific sources cited for this response
         </span>
         <Tooltip>
           <TooltipTrigger asChild>
-            <button className="text-slate-400 hover:text-slate-600 dark:hover:text-slate-300">
+            <button type="button" className={cn("h-6 w-6", surfaceClasses.iconButton)}>
               <Info className="h-3.5 w-3.5" />
               <span className="sr-only">More information</span>
             </button>
@@ -179,36 +193,37 @@ export function SourceTransparency({
     <Collapsible open={isOpen} onOpenChange={setIsOpen}>
       <div
         className={cn(
-          "rounded-lg border bg-muted/30 overflow-hidden",
+          "overflow-hidden rounded-xl border border-border/60 bg-surface-container-low/55",
           className
         )}
       >
         {/* Summary header - always visible */}
         <CollapsibleTrigger asChild>
           <button
-            className="flex items-center justify-between w-full px-3 py-2 hover:bg-muted/50 transition-colors text-left"
+            type="button"
+            className={cn(
+              "flex w-full items-center justify-between px-3 py-2 text-left",
+              surfaceClasses.rowInteractive
+            )}
             aria-expanded={isOpen}
             aria-controls="source-details"
           >
             <div className="flex items-center gap-2">
-              <Database className="h-4 w-4 text-muted-foreground" />
+              <Database className="ll-icon-muted h-4 w-4" />
               <span className="text-xs font-medium">
                 {uniqueDocuments} source{uniqueDocuments !== 1 ? "s" : ""} from{" "}
                 {sourcesByType.length} document type
                 {sourcesByType.length !== 1 ? "s" : ""}
               </span>
-              {avgRelevance >= 0.7 && (
-                <Badge
-                  variant="secondary"
-                  className="text-[10px] px-1.5 py-0 bg-emerald-100 text-emerald-700 dark:bg-emerald-900/50 dark:text-emerald-300"
-                >
-                  High relevance
+              {avgRelevance > 0 && (
+                <Badge className={relevanceStyle.className}>
+                  {relevanceStyle.label}
                 </Badge>
               )}
             </div>
             <ChevronDown
               className={cn(
-                "h-4 w-4 text-muted-foreground transition-transform",
+                "ll-icon-muted h-4 w-4 transition-transform",
                 isOpen && "rotate-180"
               )}
             />

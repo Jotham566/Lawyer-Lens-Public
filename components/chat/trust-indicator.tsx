@@ -14,6 +14,7 @@ import {
 } from "@/components/ui/collapsible";
 import { ShieldCheck, Info, ChevronDown, HelpCircle, AlertTriangle, Loader2 } from "lucide-react";
 import type { VerificationStatus, ConfidenceInfo } from "@/lib/api/types";
+import { getConfidenceTone, getToneStyles, getVerificationTone, surfaceClasses } from "@/lib/design-system";
 
 interface TrustIndicatorProps {
   verification?: VerificationStatus;
@@ -28,47 +29,54 @@ interface TrustIndicatorProps {
  * Uses encouraging visual cues - no alarming colors.
  */
 function getVerificationStyle(level: string) {
+  const tone = getToneStyles(getVerificationTone(level));
+
   switch (level) {
     case "verified":
       return {
         icon: ShieldCheck,
-        bgColor: "bg-emerald-50 dark:bg-emerald-950/50",
-        borderColor: "border-emerald-200 dark:border-emerald-800",
-        textColor: "text-emerald-700 dark:text-emerald-300",
-        iconColor: "text-emerald-600 dark:text-emerald-400",
+        surfaceClass: tone.surface,
+        textColor: tone.text,
+        iconColor: tone.icon,
         label: "Verified",
         animate: false,
       };
     case "partially_verified":
-      return {
-        icon: ShieldCheck,
-        bgColor: "bg-blue-50 dark:bg-blue-950/50",
-        borderColor: "border-blue-200 dark:border-blue-800",
-        textColor: "text-blue-700 dark:text-blue-300",
-        iconColor: "text-blue-600 dark:text-blue-400",
-        label: "Mostly Verified",
-        animate: false,
-      };
+      {
+        const infoTone = getToneStyles(getVerificationTone(level));
+        return {
+          icon: ShieldCheck,
+          surfaceClass: infoTone.surface,
+          textColor: infoTone.text,
+          iconColor: infoTone.icon,
+          label: "Mostly Verified",
+          animate: false,
+        };
+      }
     case "analyzing":
-      return {
-        icon: Loader2,
-        bgColor: "bg-amber-50 dark:bg-amber-950/50",
-        borderColor: "border-amber-200 dark:border-amber-800",
-        textColor: "text-amber-700 dark:text-amber-300",
-        iconColor: "text-amber-600 dark:text-amber-400 animate-spin",
-        label: "Analyzing Sources...",
-        animate: true,
-      };
+      {
+        const warningTone = getToneStyles(getVerificationTone(level));
+        return {
+          icon: Loader2,
+          surfaceClass: warningTone.surface,
+          textColor: warningTone.text,
+          iconColor: `${warningTone.icon} animate-spin`,
+          label: "Analyzing Sources...",
+          animate: true,
+        };
+      }
     default: // unverified
-      return {
-        icon: Info,
-        bgColor: "bg-slate-50 dark:bg-slate-950/50",
-        borderColor: "border-slate-200 dark:border-slate-700",
-        textColor: "text-slate-600 dark:text-slate-400",
-        iconColor: "text-slate-500 dark:text-slate-500",
-        label: "Review Suggested",
-        animate: false,
-      };
+      {
+        const neutralTone = getToneStyles(getVerificationTone(level));
+        return {
+          icon: Info,
+          surfaceClass: neutralTone.surface,
+          textColor: neutralTone.text,
+          iconColor: neutralTone.icon,
+          label: "Review Suggested",
+          animate: false,
+        };
+      }
   }
 }
 
@@ -77,25 +85,32 @@ function getVerificationStyle(level: string) {
  * All levels use positive/neutral language.
  */
 function getConfidenceStyle(level: string) {
+  const tone = getToneStyles(getConfidenceTone(level));
   switch (level) {
     case "high":
       return {
-        barColor: "bg-emerald-500",
-        textColor: "text-emerald-700 dark:text-emerald-300",
+        barColor: tone.bar,
+        textColor: tone.text,
         label: "High Confidence",
       };
     case "good":
-      return {
-        barColor: "bg-blue-500",
-        textColor: "text-blue-700 dark:text-blue-300",
-        label: "Good Confidence",
-      };
+      {
+        const infoTone = getToneStyles(getConfidenceTone(level));
+        return {
+          barColor: infoTone.bar,
+          textColor: infoTone.text,
+          label: "Good Confidence",
+        };
+      }
     default: // moderate
-      return {
-        barColor: "bg-slate-400",
-        textColor: "text-slate-600 dark:text-slate-400",
-        label: "Moderate Confidence",
-      };
+      {
+        const neutralTone = getToneStyles(getConfidenceTone(level));
+        return {
+          barColor: neutralTone.bar,
+          textColor: neutralTone.text,
+          label: "Moderate Confidence",
+        };
+      }
   }
 }
 
@@ -118,9 +133,8 @@ export function TrustBadge({
       <TooltipTrigger asChild>
         <button
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium transition-colors hover:opacity-80",
-            style.bgColor,
-            style.borderColor,
+            "ll-status-button inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium",
+            style.surfaceClass,
             style.textColor,
             className
           )}
@@ -131,7 +145,7 @@ export function TrustBadge({
       </TooltipTrigger>
       <TooltipContent
         side="top"
-        className="max-w-xs p-3 bg-popover border shadow-lg"
+        className="max-w-xs border border-border/80 bg-background p-3 shadow-[var(--shadow-floating)]"
       >
         <TrustTooltipContent
           verification={verification}
@@ -228,9 +242,8 @@ export function TrustIndicatorPanel({
   return (
     <div
       className={cn(
-        "rounded-lg border p-3 space-y-3",
-        verificationStyle.bgColor,
-        verificationStyle.borderColor,
+        "rounded-lg p-3 space-y-3",
+        verificationStyle.surfaceClass,
         className
       )}
     >
@@ -264,7 +277,7 @@ export function TrustIndicatorPanel({
           </div>
           <div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
             <div
-              className="h-full rounded-full bg-emerald-500 transition-all"
+              className={cn("h-full rounded-full transition-all", getToneStyles("success").bar)}
               style={{ width: `${Math.round(verification.source_grounding * 100)}%` }}
             />
           </div>
@@ -280,7 +293,7 @@ export function TrustIndicatorPanel({
           </div>
           <div className="h-1 w-full rounded-full bg-muted/50 overflow-hidden">
             <div
-              className="h-full rounded-full bg-blue-500 transition-all"
+              className={cn("h-full rounded-full transition-all", getToneStyles("info").bar)}
               style={{ width: `${Math.round(verification.claim_support * 100)}%` }}
             />
           </div>
@@ -393,7 +406,7 @@ export function ConfidenceFactors({
   return (
     <Collapsible open={isOpen} onOpenChange={setIsOpen} className={className}>
       <CollapsibleTrigger
-        className="flex items-center gap-1.5 text-xs text-muted-foreground hover:text-foreground transition-colors"
+        className={cn("flex items-center gap-1.5 text-xs", surfaceClasses.textLink)}
         aria-expanded={isOpen}
       >
         <HelpCircle className="h-3 w-3" />
@@ -406,7 +419,7 @@ export function ConfidenceFactors({
         />
       </CollapsibleTrigger>
       <CollapsibleContent className="pt-2">
-        <div className="space-y-2 p-2 rounded-md bg-muted/50 border border-border/50">
+        <div className="space-y-2 rounded-md border border-border/50 bg-muted/50 p-2">
           <p className="text-[11px] text-muted-foreground">
             Confidence is calculated based on multiple factors:
           </p>
@@ -427,10 +440,10 @@ export function ConfidenceFactors({
                           className={cn(
                             "h-full rounded-full transition-all",
                             scorePercent >= 80
-                              ? "bg-emerald-500"
+                              ? getToneStyles("success").bar
                               : scorePercent >= 60
-                                ? "bg-blue-500"
-                                : "bg-slate-400"
+                                ? getToneStyles("info").bar
+                                : getToneStyles("neutral").bar
                           )}
                           style={{ width: `${scorePercent}%` }}
                         />
@@ -468,18 +481,18 @@ export function UncertaintyDisclaimer({
   return (
     <div
       className={cn(
-        "flex items-start gap-2 p-3 rounded-lg bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800",
+        "tone-neutral flex items-start gap-2 rounded-lg p-3",
         className
       )}
       role="alert"
       aria-live="polite"
     >
-      <AlertTriangle className="h-4 w-4 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+      <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-[color:var(--status-neutral-solid)]" />
       <div className="space-y-1">
-        <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+        <p className="text-sm font-medium text-foreground">
           Verify this response
         </p>
-        <p className="text-xs text-amber-700 dark:text-amber-300">
+        <p className="text-xs text-[color:var(--status-neutral-fg)]">
           This response has limited source support. We recommend verifying the
           information with primary legal sources before relying on it.
         </p>
@@ -488,7 +501,7 @@ export function UncertaintyDisclaimer({
             href="https://ulii.org"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-xs text-amber-700 dark:text-amber-300 underline hover:no-underline"
+            className={cn("text-xs underline-offset-4", surfaceClasses.textLink)}
           >
             Uganda Legal Information Institute →
           </a>
@@ -511,7 +524,7 @@ export function VerifyThisPrompt({
       <TooltipTrigger asChild>
         <span
           className={cn(
-            "inline-flex items-center gap-1 text-xs text-amber-600 dark:text-amber-400 cursor-help",
+            "inline-flex items-center gap-1 text-xs text-primary cursor-help",
             className
           )}
         >

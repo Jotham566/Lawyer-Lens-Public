@@ -33,6 +33,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import { useAllDocumentsByType, useDocument } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
@@ -64,29 +65,29 @@ const documentTypeConfig: Record<
     label: "Act",
     icon: FileText,
     className: "badge-act",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
   },
   judgment: {
     label: "Judgment",
     icon: Gavel,
     className: "badge-judgment",
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
+    color: "text-secondary-foreground",
+    bgColor: "bg-secondary/70",
   },
   regulation: {
     label: "Regulation",
     icon: ScrollText,
     className: "badge-regulation",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
+    color: "text-secondary-foreground",
+    bgColor: "bg-secondary/60",
   },
   constitution: {
     label: "Constitution",
     icon: BookOpen,
     className: "badge-constitution",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
   },
 };
 
@@ -1089,7 +1090,7 @@ function DocumentContent({ id }: { id: string }) {
                                 <Link
                                   key={item.id}
                                   href={buildDocumentHref(item.id)}
-                                  className="block min-w-0 rounded-md px-2 py-1.5 text-sm transition-colors hover:bg-accent/50"
+                                  className={cn("group block min-w-0 px-2 py-1.5 text-sm", surfaceClasses.rowInteractive)}
                                 >
                                   <p className="line-clamp-2 break-words">
                                     {item.short_title || item.title}
@@ -1193,7 +1194,7 @@ function DocumentContent({ id }: { id: string }) {
                   {!document.status && (
                     <div className="space-y-1">
                       <dt className="text-muted-foreground">Status:</dt>
-                      <dd className="capitalize text-green-600">Published</dd>
+                      <dd className="capitalize text-secondary-foreground">Published</dd>
                     </div>
                   )}
                 </dl>
@@ -1219,12 +1220,13 @@ function DocumentContent({ id }: { id: string }) {
                     type="button"
                     aria-label="Resize document chat panel"
                     onPointerDown={() => setIsResizingDocumentChat(true)}
-                    className="absolute bottom-0 left-0 top-0 z-50 flex w-3 -translate-x-1/2 cursor-col-resize items-center justify-center"
+                    className="ll-sidebar-rail-button absolute bottom-0 left-0 top-0 z-50 flex w-3 -translate-x-1/2 cursor-col-resize items-center justify-center"
                   >
                     <span
                       className={cn(
-                        "h-20 w-1 rounded-full bg-border/80 transition-colors",
-                        isResizingDocumentChat && "bg-primary"
+                        "h-20 w-1",
+                        surfaceClasses.dragHandleButton,
+                        isResizingDocumentChat && "bg-[color:var(--interactive-hover-icon)]"
                       )}
                     />
                   </button>

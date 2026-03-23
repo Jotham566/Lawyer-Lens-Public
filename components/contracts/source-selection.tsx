@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
 export type SourceType = "fresh" | "template" | "clone" | "upload";
@@ -128,9 +129,10 @@ export function SourceSelection({
             <Card
               key={option.id}
               className={cn(
-                "relative cursor-pointer transition-all duration-200",
-                selected && "ring-2 ring-primary border-primary",
-                hoveredOption === option.id && !disabled && "border-primary/50 shadow-md",
+                "relative cursor-pointer",
+                surfaceClasses.pagePanelInteractive,
+                selected && "border-primary/30 bg-primary/10 ring-1 ring-primary/30",
+                hoveredOption === option.id && !disabled && "border-[color:var(--interactive-hover-border)]",
                 disabled && "opacity-50 cursor-not-allowed"
               )}
               onMouseEnter={() => !disabled && setHoveredOption(option.id)}
@@ -141,8 +143,8 @@ export function SourceSelection({
                 <div className="flex items-start justify-between">
                   <div
                     className={cn(
-                      "p-2 rounded-lg",
-                      selected ? "bg-primary/10 text-primary" : "bg-muted"
+                      "rounded-lg border border-[color:var(--glass-outline)] p-2",
+                      selected ? "bg-primary/10 text-primary" : "bg-surface-container-high"
                     )}
                   >
                     {option.icon}
@@ -152,8 +154,8 @@ export function SourceSelection({
                       className={cn(
                         "text-xs px-2 py-0.5 rounded-full",
                         option.badge === "Recommended"
-                          ? "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400"
-                          : "bg-muted text-muted-foreground"
+                          ? "bg-primary/10 text-primary"
+                          : "bg-surface-container-high text-muted-foreground"
                       )}
                     >
                       {option.badge}
@@ -167,7 +169,7 @@ export function SourceSelection({
               </CardHeader>
               <CardContent className="pt-0">
                 {selectionLabel ? (
-                  <div className="flex items-center justify-between bg-primary/5 rounded-md px-3 py-2 text-sm">
+                  <div className="flex items-center justify-between rounded-md border border-primary/20 bg-primary/10 px-3 py-2 text-sm">
                     <span className="text-primary font-medium truncate">{selectionLabel}</span>
                     <Button
                       variant="ghost"

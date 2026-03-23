@@ -42,6 +42,7 @@ import {
   type OrgDocument,
   type DocumentStatus,
 } from "@/lib/api/knowledge-base";
+import { getDocumentFileTypeClass } from "@/lib/design-system";
 import { toast } from "sonner";
 
 interface DocumentListProps {
@@ -117,12 +118,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
   };
 
   const getFileTypeIcon = (fileType: string) => {
-    const colors: Record<string, string> = {
-      pdf: "text-red-500",
-      docx: "text-blue-500",
-      txt: "text-gray-500",
-    };
-    return colors[fileType] || "text-gray-500";
+    return getDocumentFileTypeClass(fileType);
   };
 
   // Filter documents by search query
@@ -305,7 +301,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
                             <Button
                               variant="ghost"
                               size="icon"
-                              className="text-destructive hover:text-destructive"
+                              className="ll-icon-button ll-icon-button-danger"
                               disabled={deleting === doc.id}
                             >
                               {deleting === doc.id ? (
@@ -326,7 +322,7 @@ export function DocumentList({ refreshTrigger }: DocumentListProps) {
                             <AlertDialogFooter>
                               <AlertDialogCancel>Cancel</AlertDialogCancel>
                               <AlertDialogAction
-                                className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                variant="destructive"
                                 onClick={() => handleDelete(doc.id, doc.title)}
                               >
                                 Delete

@@ -21,10 +21,12 @@ import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublicBetaMode, getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
+import { surfaceClasses } from "@/lib/design-system";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { BetaAnnouncementBanner, BetaAccessModal } from "@/components/beta";
 import { useHasMounted } from "@/hooks/use-has-mounted";
+import { cn } from "@/lib/utils";
 
 const searchModes = [
   {
@@ -179,16 +181,16 @@ export default function HomePage() {
           {/* Badge */}
           <Badge
             variant="secondary"
-            className="mb-6 px-4 py-1.5 text-sm font-medium"
+            className={`mb-6 px-4 py-1.5 text-sm font-medium ${surfaceClasses.chip}`}
           >
-            <Sparkles className="mr-2 h-3.5 w-3.5" />
+            <Sparkles className="mr-2 h-3.5 w-3.5 text-[color:var(--brand-gold)] dark:text-primary" />
             Professional Legal Research
           </Badge>
 
           {/* Main Heading */}
           <h1 className="text-3xl font-bold tracking-tight sm:text-4xl md:text-5xl lg:text-6xl">
             Search Uganda&apos;s Laws{" "}
-            <span className="text-primary">in Plain English</span>
+            <span className="text-[color:var(--brand-gold)] dark:text-primary">in Plain English</span>
           </h1>
 
           <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
@@ -197,34 +199,34 @@ export default function HomePage() {
           </p>
 
           {/* Trust Strip */}
-          <div className="mt-4 flex items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
-            <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-primary" />Natural Language</span>
+          <div className="mt-4 flex flex-wrap items-center justify-center gap-2 text-xs sm:text-sm text-muted-foreground">
+            <span className="flex items-center gap-1"><Sparkles className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />Natural Language</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-primary" />99% Traceable</span>
+            <span className="flex items-center gap-1"><Shield className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />99% Traceable</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-primary" />No Hallucinations</span>
+            <span className="flex items-center gap-1"><Zap className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />No Hallucinations</span>
             <span className="text-muted-foreground/40">•</span>
-            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-primary" />Amendment Detection</span>
+            <span className="flex items-center gap-1"><Clock className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />Amendment Detection</span>
           </div>
 
           {/* Stats Bar - Prominently Visible */}
           <div className="mt-6 flex flex-wrap items-center justify-center gap-4 sm:gap-8">
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-muted/50">
-              <BookOpen className="h-4 w-4 text-primary" />
+            <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
+              <BookOpen className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? stats.total_documents.toLocaleString() : "—"}
               </span>
               <span className="text-sm text-muted-foreground">Documents</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-blue-50 dark:bg-blue-950/50">
-              <FileText className="h-4 w-4 text-blue-600 dark:text-blue-400" />
+            <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
+              <FileText className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("act").toLocaleString() : "—"}
               </span>
               <span className="text-sm text-muted-foreground">Acts</span>
             </div>
-            <div className="flex items-center gap-2 px-4 py-2 rounded-full bg-purple-50 dark:bg-purple-950/50">
-              <Gavel className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+            <div className={`flex items-center gap-2 px-4 py-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
+              <Gavel className="h-4 w-4 text-[color:var(--brand-gold)] dark:text-primary" />
               <span className="text-xl sm:text-2xl font-bold text-foreground">
                 {stats ? getTypeCount("judgment").toLocaleString() : "—"}
               </span>
@@ -241,7 +243,7 @@ export default function HomePage() {
                 onValueChange={setSearchMode}
                 className="mb-4"
               >
-                <TabsList className="grid w-full max-w-md mx-auto grid-cols-2 h-11">
+                <TabsList className={`grid h-11 w-full max-w-md mx-auto grid-cols-2 ring-1 ring-border/40 ${surfaceClasses.chip}`}>
                   {searchModes.map((mode) => (
                     <TabsTrigger
                       key={mode.value}
@@ -258,7 +260,7 @@ export default function HomePage() {
                         <Lock className="h-3 w-3 text-muted-foreground" />
                       )}
                       {!mode.requiresAuth && (
-                        <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                        <span className="text-[10px] font-medium text-[color:var(--brand-gold)] dark:text-primary">
                           FREE
                         </span>
                       )}
@@ -277,7 +279,7 @@ export default function HomePage() {
               <div className="relative flex-1">
                 <div className="absolute left-4 top-1/2 -translate-y-1/2">
                   {searchMode === "ai" ? (
-                    <Sparkles className="h-5 w-5 text-primary" />
+                    <Sparkles className="h-5 w-5 text-[color:var(--brand-gold)] dark:text-primary" />
                   ) : (
                     <Search className="h-5 w-5 text-muted-foreground" />
                   )}
@@ -292,13 +294,14 @@ export default function HomePage() {
                       ? 'e.g. "Income Tax Act 1997" or "constitutional petition"...'
                       : "e.g. What are the grounds for divorce in Uganda?"
                   }
-                  className="w-full h-14 sm:h-16 rounded-xl border bg-background pl-12 pr-4 text-base sm:text-lg focus:outline-none focus:ring-2 focus:ring-ring placeholder:text-muted-foreground/60"
+                  className={`h-14 w-full rounded-xl pl-12 pr-4 text-base placeholder:text-muted-foreground/60 focus:outline-none focus:ring-2 focus:ring-primary/30 sm:h-16 sm:text-lg ${surfaceClasses.searchField}`}
                 />
               </div>
               <Button
                 type="submit"
                 size="lg"
-                className="h-14 sm:h-16 rounded-xl px-4 sm:px-6"
+                variant="brand"
+                className="h-14 rounded-xl px-4 sm:h-16 sm:px-6"
                 disabled={!searchQuery.trim()}
               >
                 <span className="hidden sm:inline mr-2">Search</span>
@@ -319,22 +322,23 @@ export default function HomePage() {
               {suggestedQueries.map((item) => (
                 <button
                   key={item.query}
+                  type="button"
                   onClick={() => handleSuggestedQuery(item.query, item.mode)}
-                  className="group inline-flex items-center gap-2 rounded-full border bg-background px-3 py-2 text-sm transition-colors hover:bg-muted hover:border-primary/50"
+                  className={cn("group gap-2", surfaceClasses.chipButton)}
                 >
                   {item.mode === "ai" ? (
-                    <Sparkles className="h-3 w-3 text-primary" />
+                    <Sparkles className="h-3 w-3 text-[color:var(--brand-gold)] dark:text-primary" />
                   ) : (
-                    <Search className="h-3 w-3 text-muted-foreground" />
+                    <Search className="ll-icon-muted h-3 w-3" />
                   )}
-                  <span className="text-xs text-muted-foreground">
+                  <span className="ll-subtext-muted text-xs">
                     {item.category}
                   </span>
-                  <span className="text-foreground/80 group-hover:text-foreground">
+                  <span>
                     {item.query}
                   </span>
                   {item.mode === "keyword" && (
-                    <span className="text-[10px] text-green-600 dark:text-green-400 font-medium">
+                    <span className="text-[10px] font-medium text-[color:var(--brand-gold)] dark:text-primary">
                       FREE
                     </span>
                   )}
@@ -346,7 +350,7 @@ export default function HomePage() {
       </section>
 
       {/* Source Attribution */}
-      <section className="border-t px-4 py-6 bg-muted/10">
+      <section className="border-t border-border/60 px-4 py-6 bg-muted/10">
         <div className="mx-auto max-w-3xl text-center">
           <p className="text-sm text-muted-foreground">
             Powered by Uganda&apos;s official legal publications including the Uganda Gazette,
@@ -363,19 +367,19 @@ export default function HomePage() {
         <div className="mx-auto max-w-6xl">
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground">
-              Law Lens - Uganda Legal Intelligence Platform
+              Law Lens Uganda - Uganda Legal Intelligence Platform
             </p>
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
-              <Link href="/about" className="hover:text-foreground transition-colors">
+              <Link href="/about" className={surfaceClasses.textLink}>
                 About
               </Link>
-              <Link href="/help" className="hover:text-foreground transition-colors">
+              <Link href="/help" className={surfaceClasses.textLink}>
                 Help
               </Link>
-              <Link href="/privacy" className="hover:text-foreground transition-colors">
+              <Link href="/privacy" className={surfaceClasses.textLink}>
                 Privacy
               </Link>
-              <Link href="/terms" className="hover:text-foreground transition-colors">
+              <Link href="/terms" className={surfaceClasses.textLink}>
                 Terms
               </Link>
             </div>

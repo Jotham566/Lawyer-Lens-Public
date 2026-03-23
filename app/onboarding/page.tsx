@@ -34,6 +34,7 @@ import {
 } from "@/lib/api/organizations";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner, PageLoading } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
 
 // Form validation schema
 const createOrgSchema = z.object({
@@ -202,12 +203,13 @@ export default function OnboardingPage() {
         {/* Step: Choice */}
         {step === "choice" && (
           <div className="space-y-4">
-            <Card
-              className="cursor-pointer hover:border-primary transition-colors"
+            <button
+              type="button"
+              className={surfaceClasses.optionCard}
               onClick={() => setStep("create")}
             >
-              <CardContent className="flex items-center gap-4 p-6">
-                <div className="flex-shrink-0 p-3 rounded-lg bg-primary/10">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 rounded-lg bg-surface-container-high p-3 text-primary">
                   <Building2 className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
@@ -216,16 +218,17 @@ export default function OnboardingPage() {
                     Start fresh with your own organization for your team or practice
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
+                <ChevronRight className="ll-icon-muted h-5 w-5" />
+              </div>
+            </button>
 
-            <Card
-              className="cursor-pointer hover:border-primary transition-colors"
+            <button
+              type="button"
+              className={surfaceClasses.optionCard}
               onClick={() => setStep("join")}
             >
-              <CardContent className="flex items-center gap-4 p-6">
-                <div className="flex-shrink-0 p-3 rounded-lg bg-primary/10">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 rounded-lg bg-surface-container-high p-3 text-primary">
                   <Users className="h-6 w-6 text-primary" />
                 </div>
                 <div className="flex-1">
@@ -234,9 +237,9 @@ export default function OnboardingPage() {
                     Accept an invitation to join an existing team
                   </p>
                 </div>
-                <ChevronRight className="h-5 w-5 text-muted-foreground" />
-              </CardContent>
-            </Card>
+                <ChevronRight className="ll-icon-muted h-5 w-5" />
+              </div>
+            </button>
 
             <div className="text-center pt-4">
               <Button variant="ghost" onClick={handleSkip}>
@@ -344,7 +347,7 @@ export default function OnboardingPage() {
                 </ol>
               </div>
 
-              <div className="border rounded-lg p-4">
+              <div className="border border-border/60 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <div className="p-2 rounded-full bg-primary/10">
                     <Mail className="h-4 w-4 text-primary" />
@@ -387,8 +390,8 @@ export default function OnboardingPage() {
             <CardContent className="pt-6">
               <div className="text-center space-y-4">
                 <div className="flex justify-center">
-                  <div className="p-4 rounded-full bg-green-100 dark:bg-green-900/30">
-                    <CheckCircle2 className="h-12 w-12 text-green-600 dark:text-green-400" />
+                    <div className="p-4 rounded-full bg-muted">
+                    <CheckCircle2 className="h-12 w-12 text-primary" />
                   </div>
                 </div>
                 <div>
@@ -401,15 +404,15 @@ export default function OnboardingPage() {
                   <h3 className="font-medium mb-2">What&apos;s next?</h3>
                   <ul className="text-sm text-muted-foreground space-y-2">
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                       Explore legal research with AI assistance
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                       Invite team members to collaborate
                     </li>
                     <li className="flex items-center gap-2">
-                      <CheckCircle2 className="h-4 w-4 text-green-500" />
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
                       Access thousands of Ugandan legal documents
                     </li>
                   </ul>

@@ -19,17 +19,17 @@ export function RateLimitError({ message }: RateLimitErrorProps) {
 
     return (
         <div className="flex gap-4" role="alert" aria-live="assertive">
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/10 border border-amber-500/20">
-                <AlertCircle className="h-5 w-5 text-amber-500" aria-hidden="true" />
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-primary/10 border border-border/60">
+                <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
             </div>
             <div className="flex-1 space-y-3">
-                <div className="rounded-2xl bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-400 border border-amber-500/20">
+                <div className="rounded-2xl bg-primary/10 px-4 py-3 text-sm text-primary dark:text-primary border border-border/60">
                     <div className="flex items-start gap-3">
                         <div className="flex-1">
                             <p className="font-medium mb-1">
                                 {isUsageLimitError ? "Usage Limit Reached" : "Rate Limited"}
                             </p>
-                            <p className="text-amber-600 dark:text-amber-500/90">
+                            <p className="text-primary dark:text-primary/90">
                                 {message}
                             </p>
                         </div>

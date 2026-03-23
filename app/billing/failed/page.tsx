@@ -26,11 +26,11 @@ function FailedContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mb-4">
-            <XCircle className="h-10 w-10 text-red-600" />
+          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+            <XCircle className="h-10 w-10 text-destructive" />
           </div>
           <CardTitle className="text-2xl">Payment Failed</CardTitle>
           <CardDescription>{reason}</CardDescription>

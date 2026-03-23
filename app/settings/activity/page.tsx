@@ -45,6 +45,8 @@ import {
 } from "@/components/common";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { formatRelativeTime } from "@/lib/utils/date-formatter";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const usageTypeIcons: Record<string, React.ElementType> = {
   ai_query: MessageSquare,
@@ -207,10 +209,10 @@ function ActivityContent() {
             <div className="space-y-3">
               {[1, 2, 3, 4, 5].map((i) => (
                 <div key={i} className="flex items-center gap-4 p-4 rounded-lg border animate-pulse">
-                  <div className="h-10 w-10 bg-slate-200 rounded-full" />
+                  <div className="h-10 w-10 rounded-full bg-muted/70" />
                   <div className="flex-1 space-y-2">
-                    <div className="h-4 bg-slate-200 rounded w-1/3" />
-                    <div className="h-3 bg-slate-200 rounded w-1/4" />
+                    <div className="h-4 w-1/3 rounded bg-muted/70" />
+                    <div className="h-3 w-1/4 rounded bg-muted/70" />
                   </div>
                 </div>
               ))}
@@ -234,7 +236,10 @@ function ActivityContent() {
                 return (
                   <div
                     key={activity.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    className={cn(
+                      "flex items-center justify-between p-4",
+                      surfaceClasses.rowInteractive
+                    )}
                   >
                     <div className="flex items-center gap-4">
                       {/* Icon */}

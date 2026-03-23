@@ -48,6 +48,8 @@ import {
 } from "@/lib/api/auth";
 import { APIError, getUserFriendlyError } from "@/lib/api/client";
 import { formatDateTime } from "@/lib/utils/date-formatter";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const passwordSchema = z
   .object({
@@ -88,7 +90,7 @@ function PasswordStrength({ password }: { password: string }) {
           key={check.label}
           className={`flex items-center gap-2 text-xs ${
             check.valid
-              ? "text-green-600 dark:text-green-400"
+              ? "text-secondary-foreground"
               : "text-muted-foreground"
           }`}
         >
@@ -282,17 +284,19 @@ export default function SecuritySettingsPage() {
                     className="pl-10 pr-10"
                     {...register("current_password")}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
                   >
                     {showCurrentPassword ? (
                       <EyeOff className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {errors.current_password && (
                   <p className="text-sm text-destructive">
@@ -311,17 +315,19 @@ export default function SecuritySettingsPage() {
                     className="pl-10 pr-10"
                     {...register("new_password")}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
                   >
                     {showNewPassword ? (
                       <EyeOff className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {errors.new_password && (
                   <p className="text-sm text-destructive">
@@ -341,17 +347,19 @@ export default function SecuritySettingsPage() {
                     className="pl-10 pr-10"
                     {...register("confirm_password")}
                   />
-                  <button
+                  <Button
                     type="button"
+                    variant="ghost"
+                    size="icon-sm"
                     onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
                   >
                     {showConfirmPassword ? (
                       <EyeOff className="h-4 w-4" />
                     ) : (
                       <Eye className="h-4 w-4" />
                     )}
-                  </button>
+                  </Button>
                 </div>
                 {errors.confirm_password && (
                   <p className="text-sm text-destructive">
@@ -471,7 +479,7 @@ export default function SecuritySettingsPage() {
                     <Button
                       variant="ghost"
                       size="sm"
-                      className="text-destructive hover:text-destructive"
+                      className="ll-icon-button ll-icon-button-danger"
                       onClick={() => handleRevokeSession(session.id)}
                       disabled={revokingSession === session.id}
                     >

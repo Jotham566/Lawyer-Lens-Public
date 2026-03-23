@@ -40,6 +40,7 @@ import {
   TooltipProvider,
 } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import { APIError } from "@/lib/api/client";
 import {
   createContractSession,
@@ -215,7 +216,7 @@ function buildContractRequirementsDocumentHtml(
     ? activeParties
         .map(
           (party, index) => `
-            <div class="rounded-2xl border border-border/50 bg-[#f8f8fb] px-4 py-3 dark:bg-[#171b22] dark:border-white/10">
+            <div class="workspace-note-surface px-4 py-3">
               <h3>${party.role || `Party ${index + 1}`}</h3>
               <p>${party.name || "Legal name pending"}</p>
               ${party.address ? `<p>${party.address}</p>` : ""}
@@ -778,12 +779,13 @@ function ContractsContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Contract Workspace"
-          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+          titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerActions={
             <Button
               onClick={handleStartContract}
               disabled={!description.trim() || isLoading}
-              className="rounded-full bg-green-600 px-5 hover:bg-green-700"
+              variant="brand"
+              className="rounded-full px-5"
             >
               {isLoading ? (
                 <>
@@ -798,7 +800,7 @@ function ContractsContent() {
               )}
             </Button>
           }
-          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-8 p-5">
                 <div>
@@ -808,8 +810,8 @@ function ContractsContent() {
                       type="button"
                       onClick={() => handleSourceSelect("fresh")}
                       className={cn(
-                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
-                        selectedSource === "fresh" ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                        surfaceClasses.optionCard,
+                        selectedSource === "fresh" && surfaceClasses.optionCardActive
                       )}
                     >
                       <div className="font-medium">Start fresh</div>
@@ -819,8 +821,9 @@ function ContractsContent() {
                       type="button"
                       onClick={() => setShowTemplateBrowser(true)}
                       className={cn(
-                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
-                        selectedSource === "template" || selectedTemplateData ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                        surfaceClasses.optionCard,
+                        (selectedSource === "template" || selectedTemplateData) &&
+                          surfaceClasses.optionCardActive
                       )}
                     >
                       <div className="font-medium">Use template</div>
@@ -830,8 +833,9 @@ function ContractsContent() {
                       type="button"
                       onClick={() => setShowContractBrowser(true)}
                       className={cn(
-                        "w-full rounded-2xl border px-4 py-3 text-left text-sm transition-colors",
-                        selectedSource === "clone" || selectedContractData ? "border-green-500 bg-green-50 text-foreground dark:bg-green-950/30 dark:border-green-900" : "border-border bg-background hover:bg-muted/40"
+                        surfaceClasses.optionCard,
+                        (selectedSource === "clone" || selectedContractData) &&
+                          surfaceClasses.optionCardActive
                       )}
                     >
                       <div className="font-medium">Clone past contract</div>
@@ -849,12 +853,12 @@ function ContractsContent() {
                   </ol>
                 </div>
 
-                <div className="rounded-2xl border border-green-100 bg-green-50/80 p-4 text-sm text-green-900 dark:border-green-950 dark:bg-green-950/30 dark:text-green-200">
+                <div className="workspace-note-surface">
                   Write the commercial instruction like a briefing note. The draft will open in the full contract canvas after generation.
                 </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             {error && (
@@ -865,7 +869,7 @@ function ContractsContent() {
             )}
             <DocumentPanel
               title="Contract Drafting"
-              titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+              titleIcon={<Scale className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Editable brief</Badge>}
               toolbar={<RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />}
             >
@@ -914,13 +918,13 @@ function ContractsContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Contract Requirements"
-          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+          titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerActions={
             <Button
               onClick={handleSubmitRequirements}
               disabled={isLoading || !parties.some((p) => p.name.trim())}
               size="sm"
-              className="bg-green-600 hover:bg-green-700"
+              variant="brand"
             >
               {isLoading ? (
                 <>
@@ -935,7 +939,7 @@ function ContractsContent() {
               )}
             </Button>
           }
-          sidebarClassName="w-80 bg-muted/10"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-8 p-4">
                 {/* Parties Section */}
@@ -959,7 +963,7 @@ function ContractsContent() {
                               variant="ghost"
                               size="icon"
                               onClick={() => removeParty(index)}
-                              className="absolute top-2 right-2 h-6 w-6 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity hover:text-destructive"
+                              className="ll-icon-button ll-icon-button-danger absolute top-2 right-2 h-6 w-6 opacity-0 transition-opacity group-hover:opacity-100"
                             >
                               <Trash2 className="h-3 w-3" />
                             </Button>
@@ -1095,25 +1099,25 @@ function ContractsContent() {
                 )}
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             {!isOnline && isHydrated && (
-              <div className="mb-6 bg-amber-500/10 text-amber-700 dark:text-amber-400 p-4 rounded-xl text-sm flex items-start gap-3">
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-border/60 bg-primary/10 p-4 text-sm text-foreground">
                 <WifiOff className="h-5 w-5 shrink-0 mt-0.5" />
                 <div>You are offline. Contract drafting continues in the background and this session will reconnect automatically.</div>
               </div>
             )}
             
             {wasOffline && (
-              <div className="mb-6 bg-green-500/10 text-green-700 dark:text-green-400 p-4 rounded-xl text-sm flex items-start gap-3">
+              <div className="mb-6 flex items-start gap-3 rounded-xl border border-border/60 bg-primary/10 p-4 text-sm text-foreground">
                 <RefreshCcw className="h-5 w-5 shrink-0 mt-0.5" />
                 <div>Connection restored. Re-syncing contract generation progress.</div>
               </div>
             )}
             <DocumentPanel
               title="Contract Requirements"
-              titleIcon={<FileText className="h-4 w-4 text-green-500" />}
+              titleIcon={<FileText className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Live memo</Badge>}
               toolbar={<RichTextToolbar editor={requirementsEditor} disabled={!requirementsEditor} />}
             >
@@ -1187,13 +1191,13 @@ function ContractsContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Drafting Contract..."
-          titleIcon={<FileText className="h-4 w-4 text-green-500" />}
-          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          titleIcon={<FileText className="h-4 w-4 text-primary" />}
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-6 p-6">
                 <div>
                   <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-green-500" />
+                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
                     Generating Draft
                   </h3>
                   <p className="text-sm text-muted-foreground mt-2">
@@ -1208,7 +1212,7 @@ function ContractsContent() {
                   </div>
                   <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
                     <div
-                      className="h-full bg-green-500 transition-all duration-500 ease-out"
+                      className="h-full bg-primary transition-all duration-500 ease-out"
                       style={{ width: `${progress}%` }}
                     />
                   </div>
@@ -1222,9 +1226,9 @@ function ContractsContent() {
                         key={stage.id}
                         className={cn(
                           "rounded-2xl border px-4 py-3 text-sm transition-colors",
-                          stage.status === "completed" && "border-green-500/20 bg-green-500/5",
-                          stage.status === "in_progress" && "border-green-500/30 bg-green-500/10",
-                          stage.status === "pending" && "border-border/60 bg-background/70 dark:bg-[#111318]"
+                          stage.status === "completed" && "border-primary/20 bg-primary/10",
+                          stage.status === "in_progress" && "border-primary/30 bg-primary/10",
+                          stage.status === "pending" && "surface-inset"
                         )}
                       >
                         <div className="flex items-start justify-between gap-3">
@@ -1232,8 +1236,8 @@ function ContractsContent() {
                             <div className="text-xs text-muted-foreground">{index + 1}</div>
                             <div className="font-medium text-foreground">{stage.title}</div>
                           </div>
-                          {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-green-500 shrink-0" />}
-                          {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-green-500 shrink-0" />}
+                          {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
+                          {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />}
                         </div>
                       </div>
                     ))}
@@ -1241,12 +1245,12 @@ function ContractsContent() {
                 </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             <DocumentPanel
               title="Contract Draft Workspace"
-              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-green-500" />}
+              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Live drafting</Badge>}
               bodyClassName="px-10 py-8 md:px-14"
             >
@@ -1260,7 +1264,7 @@ function ContractsContent() {
                       </p>
                     </div>
 
-                    <section className="mb-10 rounded-2xl border border-border/60 bg-muted/20 p-5 dark:bg-[#0f1318]">
+                    <section className="workspace-section-surface mb-10">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current Activity</div>
@@ -1272,7 +1276,7 @@ function ContractsContent() {
                             <span>{progress}%</span>
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full bg-green-500 transition-all duration-500 ease-out" style={{ width: `${Math.max(progress, 5)}%` }} />
+                            <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progress, 5)}%` }} />
                           </div>
                         </div>
                       </div>
@@ -1287,21 +1291,21 @@ function ContractsContent() {
                             </div>
                             <div className="flex items-center gap-2">
                               <h2 className="text-xl font-semibold tracking-tight text-foreground">{stage.title}</h2>
-                              {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-green-500" />}
-                              {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                              {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                              {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                             </div>
                           </div>
                           <p className="max-w-4xl text-sm leading-7 text-muted-foreground">{stage.description}</p>
                           <div className="mt-5 grid gap-3 md:grid-cols-3">
-                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                            <div className="surface-inset px-4 py-4 text-sm">
                               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</div>
                               <div className="mt-2 font-medium text-foreground">{stage.status.replace("_", " ")}</div>
                             </div>
-                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                            <div className="surface-inset px-4 py-4 text-sm">
                               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Input basis</div>
                               <div className="mt-2 font-medium text-foreground">Brief + requirements memo</div>
                             </div>
-                            <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                            <div className="surface-inset px-4 py-4 text-sm">
                               <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Output state</div>
                               <div className="mt-2 font-medium text-foreground">
                                 {stage.status === "completed" ? "Ready for review" : stage.status === "in_progress" ? "Drafting in progress" : "Waiting for prior stage"}
@@ -1334,10 +1338,10 @@ function ContractsContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title={draftTitle || session.draft.title}
-          titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+          titleIcon={<Scale className="h-4 w-4 text-primary" />}
           titleBadge={
             isComplete ? (
-              <Badge variant="secondary" className="ml-2 border-green-200 bg-green-500/10 text-green-700 hover:bg-green-500/20">
+              <Badge variant="secondary" className="ml-2 border-border/60 bg-primary/10 text-primary hover:bg-primary/20">
                 Finalized
               </Badge>
             ) : undefined
@@ -1347,7 +1351,7 @@ function ContractsContent() {
               <>
                 {draftSaveState === "saving" && <span className="hidden animate-pulse text-xs text-muted-foreground sm:inline-block">Saving...</span>}
                 {draftSaveState === "saved" && <span className="hidden text-xs text-muted-foreground sm:inline-block">Saved to cloud</span>}
-                {draftSaveState === "rate_limited" && <span className="hidden text-xs text-amber-600 dark:text-amber-400 sm:inline-block">Autosave paused briefly</span>}
+                {draftSaveState === "rate_limited" && <span className="hidden text-xs text-muted-foreground sm:inline-block">Autosave paused briefly</span>}
                 {draftSaveState === "error" && <span className="hidden text-xs text-destructive sm:inline-block">Save failed</span>}
               </>
             ) : null
@@ -1358,7 +1362,7 @@ function ContractsContent() {
                 onClick={handleApproveContract}
                 disabled={isLoading}
                 size="sm"
-                className="bg-green-600 hover:bg-green-700"
+                variant="brand"
               >
                 {isLoading ? (
                   <Loader2 className="h-4 w-4 animate-spin" />
@@ -1387,18 +1391,18 @@ function ContractsContent() {
               </div>
             )
           }
-          sidebarClassName="w-80 bg-muted/10"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-6 p-4">
                 {(session.draft.warnings?.length > 0 || session.draft.compliance_notes?.length > 0) && (
                   <div className="space-y-3">
                     {session.draft.warnings && session.draft.warnings.length > 0 && (
-                      <div className="bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-900 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-amber-700 dark:text-amber-400 mb-2">
+                      <div className="workspace-section-surface rounded-lg p-3">
+                        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                           <AlertCircle className="h-4 w-4" />
                           <span className="text-xs font-semibold uppercase tracking-wider">Review Notes</span>
                         </div>
-                        <ul className="text-xs text-amber-700 dark:text-amber-400 space-y-1.5 pl-6 list-disc">
+                        <ul className="space-y-1.5 pl-6 text-xs text-muted-foreground list-disc">
                           {session.draft.warnings.map((warning, i) => (
                             <li key={i}>{warning}</li>
                           ))}
@@ -1406,12 +1410,12 @@ function ContractsContent() {
                       </div>
                     )}
                     {session.draft.compliance_notes && session.draft.compliance_notes.length > 0 && (
-                      <div className="bg-green-50 dark:bg-green-950/30 border border-green-200 dark:border-green-900 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-green-700 dark:text-green-400 mb-2">
+                      <div className="workspace-section-surface rounded-lg p-3">
+                        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                           <Shield className="h-4 w-4" />
                           <span className="text-xs font-semibold uppercase tracking-wider">Compliance</span>
                         </div>
-                        <ul className="text-xs text-green-700 dark:text-green-400 space-y-1.5 pl-6 list-disc">
+                        <ul className="space-y-1.5 pl-6 text-xs text-muted-foreground list-disc">
                           {session.draft.compliance_notes.map((note, i) => (
                             <li key={i}>{note}</li>
                           ))}
@@ -1424,14 +1428,14 @@ function ContractsContent() {
                 {((session.mandatory_clause_guidance?.length ?? 0) > 0 || (session.applicable_laws?.length ?? 0) > 0) && (
                   <div className="space-y-3">
                     {(session.mandatory_clause_guidance?.length ?? 0) > 0 && (
-                      <div className="bg-blue-50 dark:bg-blue-950/30 border border-blue-200 dark:border-blue-900 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-blue-700 dark:text-blue-400 mb-2">
+                      <div className="rounded-lg border border-border/60 bg-muted/20 p-3">
+                        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                           <Scale className="h-4 w-4" />
                           <span className="text-xs font-semibold uppercase tracking-wider">Mandatory Clause Guidance</span>
                         </div>
-                        <ul className="space-y-2 text-xs text-blue-700 dark:text-blue-300">
+                        <ul className="space-y-2 text-xs text-muted-foreground">
                           {session.mandatory_clause_guidance?.map((item, i) => (
-                            <li key={`${item.clause_title}-${i}`} className="rounded-md bg-white/60 dark:bg-black/10 px-2 py-2">
+                            <li key={`${item.clause_title}-${i}`} className="surface-inset rounded-md px-2 py-2">
                               <p className="font-semibold">{item.clause_title}</p>
                               <p className="mt-1 text-[11px] leading-relaxed">{item.rationale}</p>
                             </li>
@@ -1440,14 +1444,14 @@ function ContractsContent() {
                       </div>
                     )}
                     {(session.legal_evidence_registry?.length ?? 0) > 0 && (
-                      <div className="bg-violet-50 dark:bg-violet-950/30 border border-violet-200 dark:border-violet-900 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-violet-700 dark:text-violet-300 mb-2">
+                      <div className="workspace-section-surface rounded-lg p-3">
+                        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                           <FileText className="h-4 w-4" />
                           <span className="text-xs font-semibold uppercase tracking-wider">Supporting Evidence</span>
                         </div>
-                        <ul className="space-y-2 text-xs text-violet-700 dark:text-violet-300">
+                        <ul className="space-y-2 text-xs text-muted-foreground">
                           {session.legal_evidence_registry?.slice(0, 4).map((item) => (
-                            <li key={item.id} className="rounded-md bg-white/70 dark:bg-black/10 px-2 py-2">
+                            <li key={item.id} className="surface-inset rounded-md px-2 py-2">
                               <p className="font-medium capitalize">{item.evidence_type.replace(/_/g, " ")}</p>
                               <p className="mt-1 text-[11px] leading-relaxed">{item.text}</p>
                               {item.legal_references?.length > 0 && (
@@ -1461,14 +1465,14 @@ function ContractsContent() {
                       </div>
                     )}
                     {(session.applicable_laws?.length ?? 0) > 0 && (
-                      <div className="bg-slate-50 dark:bg-slate-950/30 border border-slate-200 dark:border-slate-800 rounded-lg p-3">
-                        <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300 mb-2">
+                      <div className="workspace-section-surface rounded-lg p-3">
+                        <div className="mb-2 flex items-center gap-2 text-muted-foreground">
                           <BookOpen className="h-4 w-4" />
                           <span className="text-xs font-semibold uppercase tracking-wider">Applicable Authorities</span>
                         </div>
-                        <ul className="text-xs text-slate-700 dark:text-slate-300 space-y-2">
+                        <ul className="space-y-2 text-xs text-muted-foreground">
                           {session.applicable_laws?.map((authority) => (
-                            <li key={authority.id} className="rounded-md bg-white/70 dark:bg-black/10 px-2 py-2">
+                            <li key={authority.id} className="surface-inset rounded-md px-2 py-2">
                               <p className="font-medium">{authority.title}</p>
                               {authority.legal_reference && (
                                 <p className="mt-0.5 text-[11px] text-muted-foreground">{authority.legal_reference}</p>
@@ -1502,14 +1506,16 @@ function ContractsContent() {
                           key={sectionId}
                           onClick={() => scrollToSection(sectionId)}
                           className={cn(
-                            "w-full flex items-center justify-between gap-2 rounded-md px-3 py-2 text-sm transition-colors text-left",
-                            isActive ? "bg-primary/10 text-primary font-medium" : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            "font-medium",
+                            isActive
+                              ? surfaceClasses.sidebarNavButtonActive
+                              : surfaceClasses.sidebarNavButton
                           )}
                         >
                           <span className="truncate flex-1">
                             {index + 1}. {sectionTitle}
                           </span>
-                          {isEdited && !isComplete && <div className="h-1.5 w-1.5 rounded-full bg-amber-500 shrink-0" />}
+                          {isEdited && !isComplete && <div className="h-1.5 w-1.5 rounded-full bg-primary shrink-0" />}
                         </button>
                       );
                     })}
@@ -1517,18 +1523,18 @@ function ContractsContent() {
                 </div>
             </div>
           }
-          mainClassName="flex justify-center bg-background p-8 md:p-14 lg:p-24"
+          mainClassName="workspace-main-surface flex justify-center p-8 md:p-14 lg:p-24"
         >
           <div className="w-full max-w-4xl">
             {!isOnline && isHydrated && (
-              <div className="mb-8 flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+              <div className="mb-8 flex items-start gap-3 rounded-xl border border-border/60 bg-primary/10 p-4 text-sm text-foreground">
                 <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
                 <div>You are offline. Canvas edits will resync when you reconnect.</div>
               </div>
             )}
 
             {wasOffline && (
-              <div className="mb-8 flex items-start gap-3 rounded-xl bg-green-500/10 p-4 text-sm text-green-700 dark:text-green-400">
+              <div className="mb-8 flex items-start gap-3 rounded-xl border border-border/60 bg-primary/10 p-4 text-sm text-foreground">
                 <RefreshCcw className="mt-0.5 h-5 w-5 shrink-0" />
                 <div>Connection restored. Re-syncing the contract canvas.</div>
               </div>
@@ -1537,7 +1543,7 @@ function ContractsContent() {
             <div className="space-y-12">
               <DocumentPanel
                 title={draftTitle || session.draft.title}
-                titleIcon={<Scale className="h-4 w-4 text-green-600" />}
+                titleIcon={<Scale className="h-4 w-4 text-primary" />}
                 badge={<Badge variant="secondary" className="rounded-full">{isComplete ? "Finalized" : "Drafting"}</Badge>}
                 actions={
                   isComplete ? (
@@ -1624,7 +1630,7 @@ function ContractsContent() {
           </Link>
           <Card>
             <CardContent className="pt-6 text-center py-12">
-              <Loader2 className="h-8 w-8 animate-spin text-green-500 mx-auto" />
+              <Loader2 className="h-8 w-8 animate-spin text-primary mx-auto" />
               <p className="mt-4 text-muted-foreground">Loading finalized contract...</p>
             </CardContent>
           </Card>

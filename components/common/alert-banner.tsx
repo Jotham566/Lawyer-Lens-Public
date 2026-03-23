@@ -31,35 +31,31 @@ const variantConfig: Record<
 > = {
   success: {
     icon: CheckCircle2,
-    containerClass:
-      "border-green-500/50 bg-green-50 dark:bg-green-900/20",
-    iconClass: "text-green-600 dark:text-green-400",
-    titleClass: "text-green-800 dark:text-green-200",
-    messageClass: "text-green-600 dark:text-green-400",
+    containerClass: "border-border/40 bg-card/80",
+    iconClass: "text-primary",
+    titleClass: "text-foreground",
+    messageClass: "text-muted-foreground",
   },
   error: {
     icon: AlertCircle,
-    containerClass:
-      "border-destructive/50 bg-destructive/10",
+    containerClass: "border-destructive/30 bg-destructive/10",
     iconClass: "text-destructive",
     titleClass: "text-destructive",
     messageClass: "text-destructive",
   },
   warning: {
     icon: AlertTriangle,
-    containerClass:
-      "border-amber-500/50 bg-amber-50 dark:bg-amber-900/20",
-    iconClass: "text-amber-600 dark:text-amber-400",
-    titleClass: "text-amber-800 dark:text-amber-200",
-    messageClass: "text-amber-600 dark:text-amber-400",
+    containerClass: "border-border/40 bg-muted/50",
+    iconClass: "text-primary",
+    titleClass: "text-foreground",
+    messageClass: "text-muted-foreground",
   },
   info: {
     icon: Info,
-    containerClass:
-      "border-blue-500/50 bg-blue-50 dark:bg-blue-900/20",
-    iconClass: "text-blue-600 dark:text-blue-400",
-    titleClass: "text-blue-800 dark:text-blue-200",
-    messageClass: "text-blue-600 dark:text-blue-400",
+    containerClass: "border-border/40 bg-card/80",
+    iconClass: "text-muted-foreground",
+    titleClass: "text-foreground",
+    messageClass: "text-muted-foreground",
   },
 };
 
@@ -82,7 +78,7 @@ export function AlertBanner({
   return (
     <div
       className={cn(
-        "flex items-start gap-3 rounded-lg border p-4",
+        "flex items-start gap-3 rounded-xl border p-4 shadow-sm",
         config.containerClass,
         className
       )}

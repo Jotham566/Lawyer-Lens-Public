@@ -21,6 +21,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
+import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import { HighlightedExcerpt } from "./highlighted-excerpt";
@@ -43,43 +44,43 @@ function getTypeColor(type: DocumentType) {
   switch (type) {
     case "act":
       return {
-        bg: "bg-blue-50 dark:bg-blue-950/50",
-        border: "border-blue-200 dark:border-blue-800",
-        borderLeft: "border-l-blue-500 dark:border-l-blue-400",
-        text: "text-blue-700 dark:text-blue-300",
-        icon: "text-blue-600 dark:text-blue-400",
+        bg: "bg-primary/10",
+        border: "border-border/30",
+        borderLeft: "border-l-primary",
+        text: "text-primary",
+        icon: "text-primary",
       };
     case "judgment":
       return {
-        bg: "bg-purple-50 dark:bg-purple-950/50",
-        border: "border-purple-200 dark:border-purple-800",
-        borderLeft: "border-l-purple-500 dark:border-l-purple-400",
-        text: "text-purple-700 dark:text-purple-300",
-        icon: "text-purple-600 dark:text-purple-400",
+        bg: "bg-secondary",
+        border: "border-border/30",
+        borderLeft: "border-l-foreground",
+        text: "text-foreground",
+        icon: "text-foreground",
       };
     case "regulation":
       return {
-        bg: "bg-green-50 dark:bg-green-950/50",
-        border: "border-green-200 dark:border-green-800",
-        borderLeft: "border-l-green-500 dark:border-l-green-400",
-        text: "text-green-700 dark:text-green-300",
-        icon: "text-green-600 dark:text-green-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        borderLeft: "border-l-muted-foreground",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
     case "constitution":
       return {
-        bg: "bg-amber-50 dark:bg-amber-950/50",
-        border: "border-amber-200 dark:border-amber-800",
-        borderLeft: "border-l-amber-500 dark:border-l-amber-400",
-        text: "text-amber-700 dark:text-amber-300",
-        icon: "text-amber-600 dark:text-amber-400",
+        bg: "bg-accent/20",
+        border: "border-border/30",
+        borderLeft: "border-l-primary",
+        text: "text-primary",
+        icon: "text-primary",
       };
     default:
       return {
-        bg: "bg-gray-50 dark:bg-gray-950/50",
-        border: "border-gray-200 dark:border-gray-800",
-        borderLeft: "border-l-gray-500 dark:border-l-gray-400",
-        text: "text-gray-700 dark:text-gray-300",
-        icon: "text-gray-600 dark:text-gray-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        borderLeft: "border-l-muted-foreground",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
   }
 }
@@ -141,7 +142,7 @@ function ExpandedTableDisplay({ table }: { table: ExpandedTable }) {
   const headerRowIndices = new Set(table.header_rows || [0]);
 
   return (
-    <div className="overflow-x-auto rounded-lg border border-border">
+    <div className="overflow-x-auto rounded-lg border border-border/30 bg-card/70">
       <table className="w-full text-sm">
         <tbody className="divide-y divide-border">
           {table.rows.map((row, rowIdx) => {
@@ -166,16 +167,12 @@ function ExpandedTableDisplay({ table }: { table: ExpandedTable }) {
 // Relevance indicator
 function RelevanceIndicator({ score }: { score: number }) {
   const percentage = Math.round(score * 100);
-  const getColor = () => {
-    if (percentage >= 80) return "bg-green-500";
-    if (percentage >= 60) return "bg-yellow-500";
-    return "bg-orange-500";
-  };
+  const barColor = getRelevanceTheme(score).bar;
 
   return (
     <div className="flex items-center gap-2">
       <div className="flex-1 h-1.5 bg-muted rounded-full overflow-hidden max-w-20">
-        <div className={`h-full ${getColor()} transition-all`} style={{ width: `${percentage}%` }} />
+        <div className={cn("h-full transition-all", barColor)} style={{ width: `${percentage}%` }} />
       </div>
       <span className="text-xs text-muted-foreground font-medium">{percentage}%</span>
     </div>
@@ -482,14 +479,14 @@ export function SourcePanel() {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-200"
+        className="ll-overlay-scrim fixed inset-0 z-40 transition-opacity duration-200"
         onClick={closePanel}
         aria-hidden="true"
       />
 
       {/* Panel */}
       <div
-        className="fixed inset-y-0 right-0 z-50 bg-background border-l shadow-lg flex flex-col"
+        className="ll-slide-panel fixed inset-y-0 right-0 z-50 flex flex-col"
         style={{ width: `min(100vw, ${panelWidth}px)` }}
         role="dialog"
         aria-modal="true"
@@ -521,17 +518,21 @@ export function SourcePanel() {
 
         {/* Custom close button */}
         <button
+          type="button"
           onClick={closePanel}
-          className="absolute top-4 right-4 z-10 rounded-sm opacity-70 ring-offset-background transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          className={cn(
+            "absolute top-4 right-4 z-10 h-9 w-9",
+            surfaceClasses.floatingIconButton
+          )}
         >
           <X className="h-4 w-4" />
           <span className="sr-only">Close</span>
         </button>
 
         {/* Header */}
-        <div className="p-4 pb-3 border-b space-y-3">
+        <div className="space-y-3 p-4 pb-3">
           <div className="flex items-start gap-3 pr-8">
-            <div className={cn("rounded-lg p-2.5", colors.bg, colors.border, "border")}>
+            <div className={cn("rounded-lg border p-2.5", colors.bg, colors.border)}>
               <Icon className={cn("h-5 w-5", colors.icon)} />
             </div>
             <div className="flex-1 min-w-0">
@@ -607,7 +608,7 @@ export function SourcePanel() {
                     className="h-6 px-2 text-xs"
                     title="Copy excerpt"
                   >
-                    {copied ? <Check className="h-3 w-3 text-green-500" /> : <Copy className="h-3 w-3" />}
+                    {copied ? <Check className="h-3 w-3 text-primary" /> : <Copy className="h-3 w-3" />}
                   </Button>
                   <CitationExport
                     source={activeSource}
@@ -710,7 +711,7 @@ export function SourcePanel() {
                 allSources={allSources}
                 onSelectSource={goToIndex}
                 currentIndex={currentIndex}
-                className="pt-2 border-t"
+                className="pt-2"
               />
             )}
 
@@ -722,7 +723,7 @@ export function SourcePanel() {
         </ScrollArea>
 
         {/* Footer */}
-        <div className="p-4 border-t bg-muted/30 flex items-center justify-between">
+        <div className="flex items-center justify-between bg-muted/30 p-4">
           <Button variant="outline" size="sm" onClick={closePanel}>
             Close
           </Button>

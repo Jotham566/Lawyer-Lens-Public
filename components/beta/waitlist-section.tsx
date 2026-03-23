@@ -90,10 +90,10 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
   if (submitted && position !== null) {
     return (
       <section id={id} className={className}>
-        <Card className="max-w-2xl mx-auto border-purple-200 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
+        <Card className="max-w-2xl mx-auto border border-border/60 bg-card">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+            <div className="mx-auto w-16 h-16 bg-secondary/70 rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-secondary-foreground" />
             </div>
             <CardTitle className="text-3xl">You&apos;re on the list! 🎉</CardTitle>
             <CardDescription className="text-lg">
@@ -101,8 +101,8 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <div className="text-center p-8 bg-white dark:bg-background rounded-lg border-2 border-purple-300 dark:border-purple-700">
-              <div className="text-6xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+            <div className="rounded-lg border border-border/60 bg-secondary/50 p-8 text-center">
+              <div className="mb-2 text-6xl font-bold text-primary">
                 #{position}
               </div>
               <p className="text-muted-foreground">Your position in line</p>
@@ -143,7 +143,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
     <section id={id} className={className}>
       <div className="max-w-6xl mx-auto">
         <div className="text-center mb-12">
-          <Badge className="mb-4 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+          <Badge className="mb-4 bg-secondary text-secondary-foreground">
             Beta Program
           </Badge>
           <h2 className="text-4xl font-bold mb-4">
@@ -159,34 +159,34 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Sparkles className="w-5 h-5 text-purple-600" />
+                <Sparkles className="w-5 h-5 text-primary" />
                 Beta Perks
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Early Adopter Badge</p>
                   <p className="text-sm text-muted-foreground">Exclusive recognition in your profile</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Extended Trial</p>
                   <p className="text-sm text-muted-foreground">90 days of full platform access</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Priority Support</p>
                   <p className="text-sm text-muted-foreground">Direct line to our team</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
-                <CheckCircle2 className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+                <CheckCircle2 className="w-5 h-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
                   <p className="font-medium">Founding Member Pricing</p>
                   <p className="text-sm text-muted-foreground">Lock in special rates</p>
@@ -278,7 +278,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
         <div className="grid md:grid-cols-3 gap-6">
           <Card>
             <CardContent className="pt-6 text-center">
-              <Zap className="w-12 h-12 mx-auto mb-4 text-yellow-600" />
+              <Zap className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h3 className="font-semibold mb-2">AI-Powered Search</h3>
               <p className="text-sm text-muted-foreground">
                 Find relevant case law and legislation in seconds with natural language queries
@@ -288,7 +288,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
 
           <Card>
             <CardContent className="pt-6 text-center">
-              <Shield className="w-12 h-12 mx-auto mb-4 text-blue-600" />
+              <Shield className="w-12 h-12 mx-auto mb-4 text-primary" />
               <h3 className="font-semibold mb-2">Comprehensive Coverage</h3>
               <p className="text-sm text-muted-foreground">
                 Access Uganda&apos;s complete legal database with up-to-date legislation and judgments
@@ -298,7 +298,7 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
 
           <Card>
             <CardContent className="pt-6 text-center">
-              <Users className="w-12 h-12 mx-auto mb-4 text-purple-600" />
+              <Users className="w-12 h-12 mx-auto mb-4 text-secondary-foreground" />
               <h3 className="font-semibold mb-2">Shape the Platform</h3>
               <p className="text-sm text-muted-foreground">
                 Your feedback directly influences features and improvements

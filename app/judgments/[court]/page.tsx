@@ -31,6 +31,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAllDocumentsByType } from "@/lib/hooks";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import type { LucideIcon } from "lucide-react";
@@ -56,9 +57,9 @@ const courtConfig: Record<
     shortName: "SC",
     description: "Uganda's final court of appeal and the most authoritative source of precedent.",
     icon: Scale,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
-    borderColor: "border-amber-200 dark:border-amber-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
   },
   court_of_appeal: {
     id: "court_of_appeal",
@@ -66,9 +67,9 @@ const courtConfig: Record<
     shortName: "CoA",
     description: "Appeals from the High Court and constitutional decisions in one reading stream.",
     icon: Landmark,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
-    borderColor: "border-purple-200 dark:border-purple-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
   },
   high_court: {
     id: "high_court",
@@ -76,9 +77,9 @@ const courtConfig: Record<
     shortName: "HC",
     description: "Original-jurisdiction and appellate decisions with the widest topical range.",
     icon: Building2,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
-    borderColor: "border-blue-200 dark:border-blue-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
   },
   magistrate: {
     id: "magistrate",
@@ -86,9 +87,9 @@ const courtConfig: Record<
     shortName: "MC",
     description: "Local criminal and civil decisions for practical lower-court research.",
     icon: Gavel,
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
-    borderColor: "border-green-200 dark:border-green-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
   },
 };
 
@@ -250,7 +251,7 @@ function CourtJudgmentsContent() {
           <p className="mt-2 text-sm text-muted-foreground">{court.description}</p>
         </div>
 
-        <div className="rounded-2xl border bg-muted/20 px-4 py-3 text-sm lg:min-w-[190px]">
+        <div className="rounded-2xl border border-border/60 bg-muted/20 px-4 py-3 text-sm lg:min-w-[190px]">
           <p className="font-medium">{judgments.length} judgment{judgments.length === 1 ? "" : "s"} in view</p>
           <p className="text-muted-foreground">
             Page {safePage} of {totalPages}
@@ -260,7 +261,7 @@ function CourtJudgmentsContent() {
 
       <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
         <aside className="lg:sticky lg:top-24 lg:self-start">
-          <Card className="border-border/70">
+          <Card className="border-border/60">
             <CardContent className="space-y-5 pt-5">
               <div className="space-y-2">
                 <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
@@ -347,6 +348,7 @@ function CourtJudgmentsContent() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button
+                  variant="brand"
                   size="sm"
                   onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
                 >
@@ -395,7 +397,7 @@ function CourtJudgmentsContent() {
           )}
 
           {error && (
-            <Card className="border-destructive">
+          <Card className="border-destructive/20 bg-destructive/5">
               <CardContent className="pt-6">
                 <p className="text-sm text-destructive">Failed to load judgments. Please try again.</p>
               </CardContent>
@@ -427,7 +429,7 @@ function CourtJudgmentsContent() {
 
                 return (
                   <Link key={judgment.id} href={detailHref} className="group block">
-                    <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                    <Card className={cn("h-full border-border/60", surfaceClasses.pagePanelInteractive)}>
                       <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-2">
@@ -439,7 +441,7 @@ function CourtJudgmentsContent() {
                                 <span className="truncate text-foreground/65">{judgment.case_number}</span>
                               )}
                             </div>
-                            <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
+                            <h3 className={cn("font-medium leading-tight", view === "grid" && "line-clamp-2 text-sm")}>
                               {judgment.title}
                             </h3>
                           </div>
@@ -451,11 +453,11 @@ function CourtJudgmentsContent() {
                       <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
                         <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
                           {judgment.publication_date && (
-                            <span className="rounded-full bg-muted px-2.5 py-1">
+                            <span className={surfaceClasses.chipButton}>
                               {formatDateOnly(judgment.publication_date)}
                             </span>
                           )}
-                          <span className="rounded-full bg-muted px-2.5 py-1">
+                          <span className={surfaceClasses.chipButton}>
                             PDF judgment
                           </span>
                         </div>
@@ -465,7 +467,7 @@ function CourtJudgmentsContent() {
                           </span>
                           <span className="inline-flex items-center font-medium text-primary">
                             Open case
-                            <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                            <ArrowRight className="ll-icon-muted ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                           </span>
                         </div>
                       </CardContent>

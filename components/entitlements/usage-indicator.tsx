@@ -54,7 +54,7 @@ export function UsageIndicator({
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="h-4 bg-slate-200 rounded w-24"></div>
+        <div className="h-4 w-24 rounded bg-muted/50"></div>
       </div>
     );
   }
@@ -63,14 +63,14 @@ export function UsageIndicator({
   if (!usage) return null;
 
   const getStatusColor = (percentage: number | null, isAtLimit: boolean) => {
-    if (isAtLimit) return "text-red-600";
-    if (percentage !== null && percentage >= 80) return "text-amber-600";
-    return "text-slate-600";
+    if (isAtLimit) return "text-destructive";
+    if (percentage !== null && percentage >= 80) return "text-primary";
+    return "text-muted-foreground";
   };
 
   const getProgressColor = (percentage: number | null, isAtLimit: boolean) => {
-    if (isAtLimit) return "bg-red-100";
-    if (percentage !== null && percentage >= 80) return "bg-amber-100";
+    if (isAtLimit) return "bg-destructive/10";
+    if (percentage !== null && percentage >= 80) return "bg-accent/20";
     return "";
   };
 
@@ -88,13 +88,13 @@ export function UsageIndicator({
                   `${usage.current}/${usage.limit}`
                 )}
               </span>
-              {usage.is_at_limit && <AlertCircle className="h-3 w-3 text-red-500" />}
+              {usage.is_at_limit && <AlertCircle className="h-3 w-3 text-destructive" />}
             </div>
           </TooltipTrigger>
           <TooltipContent>
             <p>{usage.display_name}</p>
             {!usage.is_unlimited && (
-              <p className="text-xs text-slate-400">{usage.remaining} remaining this period</p>
+              <p className="text-xs text-muted-foreground">{usage.remaining} remaining this period</p>
             )}
           </TooltipContent>
         </Tooltip>
@@ -130,7 +130,7 @@ export function UsageIndicator({
       )}
       {usage.is_at_limit && (
         <div className="flex items-center justify-between">
-          <p className="text-xs text-red-600 flex items-center gap-1">
+          <p className="text-xs text-destructive flex items-center gap-1">
             <AlertCircle className="h-3 w-3" />
             Limit reached
           </p>
@@ -160,7 +160,7 @@ export function UsageSummary({ showAll = false, maxItems = 4 }: UsageSummaryProp
     return (
       <div className="animate-pulse space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-8 bg-slate-200 rounded"></div>
+          <div key={i} className="h-8 rounded bg-muted/50"></div>
         ))}
       </div>
     );
@@ -181,8 +181,8 @@ export function UsageSummary({ showAll = false, maxItems = 4 }: UsageSummaryProp
 
   if (usageItems.length === 0) {
     return (
-      <div className="text-center py-4 text-slate-500 text-sm">
-        <CheckCircle className="h-5 w-5 mx-auto mb-2 text-green-500" />
+      <div className="py-4 text-center text-sm text-muted-foreground">
+        <CheckCircle className="mx-auto mb-2 h-5 w-5 text-primary" />
         All usage within limits
       </div>
     );
@@ -220,21 +220,21 @@ export function UsageLimitWarning({ usageKey, threshold = 80 }: UsageLimitWarnin
     <div
       className={`flex items-center justify-between p-3 rounded-lg ${
         isAtLimitNow
-          ? "bg-red-50 border border-red-200"
-          : "bg-amber-50 border border-amber-200"
+          ? "border border-destructive/20 bg-destructive/10"
+          : "border border-border/30 bg-accent/10"
       }`}
     >
       <div className="flex items-center gap-2">
         <AlertCircle
-          className={`h-5 w-5 ${isAtLimitNow ? "text-red-500" : "text-amber-500"}`}
+          className={`h-5 w-5 ${isAtLimitNow ? "text-destructive" : "text-primary"}`}
         />
         <div>
-          <p className={`text-sm font-medium ${isAtLimitNow ? "text-red-700" : "text-amber-700"}`}>
+          <p className={`text-sm font-medium ${isAtLimitNow ? "text-destructive" : "text-primary"}`}>
             {isAtLimitNow
               ? `${usage.display_name} limit reached`
               : `${usage.display_name} at ${percentage}%`}
           </p>
-          <p className={`text-xs ${isAtLimitNow ? "text-red-600" : "text-amber-600"}`}>
+          <p className={`text-xs ${isAtLimitNow ? "text-destructive/80" : "text-muted-foreground"}`}>
             {isAtLimitNow
               ? "Upgrade to continue using this feature"
               : `${usage.remaining} remaining this period`}
@@ -289,15 +289,15 @@ export function GlobalUsageAlert() {
     <div
       className={`flex items-center justify-between px-4 py-2 text-sm ${
         isAtLimit
-          ? "bg-red-50 dark:bg-red-950/30 border-b border-red-200 dark:border-red-800"
-          : "bg-amber-50 dark:bg-amber-950/30 border-b border-amber-200 dark:border-amber-800"
+          ? "border-b border-destructive/20 bg-destructive/10"
+          : "border-b border-border/30 bg-accent/10"
       }`}
     >
       <div className="flex items-center gap-2">
         <AlertCircle
-          className={`h-4 w-4 ${isAtLimit ? "text-red-500" : "text-amber-500"}`}
+          className={`h-4 w-4 ${isAtLimit ? "text-destructive" : "text-primary"}`}
         />
-        <span className={isAtLimit ? "text-red-700 dark:text-red-300" : "text-amber-700 dark:text-amber-300"}>
+        <span className={isAtLimit ? "text-destructive" : "text-primary"}>
           {isAtLimit
             ? `${topUsage.display_name} limit reached`
             : `${topUsage.display_name} at ${topUsage.percentage}% — ${topUsage.remaining} remaining`}
@@ -339,7 +339,7 @@ export function UsageBadge({ usageKey }: UsageBadgeProps) {
 
   if (usage.is_unlimited) {
     return (
-      <Badge variant="secondary" className="bg-slate-100 text-slate-600">
+      <Badge variant="secondary" className="bg-muted text-muted-foreground">
         <Infinity className="h-3 w-3 mr-1" />
         Unlimited
       </Badge>
@@ -357,14 +357,14 @@ export function UsageBadge({ usageKey }: UsageBadgeProps) {
 
   if ((usage.percentage ?? 0) >= 80) {
     return (
-      <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+      <Badge variant="secondary" className="bg-accent/20 text-primary">
         {usage.remaining} left
       </Badge>
     );
   }
 
   return (
-    <Badge variant="secondary" className="bg-green-100 text-green-700">
+    <Badge variant="secondary" className="bg-primary/10 text-primary">
       {usage.remaining} left
     </Badge>
   );

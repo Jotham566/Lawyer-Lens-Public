@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback, useMemo } from "react";
 import { Clock, TrendingUp, Search, X } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 
 interface SearchSuggestionsProps {
   query: string;
@@ -195,7 +196,7 @@ export function SearchSuggestions({
       ref={containerRef}
       className={cn(
         "absolute top-full left-0 right-0 z-50 mt-1",
-        "rounded-lg border bg-popover shadow-lg",
+        "rounded-xl border border-border/40 bg-popover/95 shadow-xl backdrop-blur",
         "animate-in fade-in-0 zoom-in-95",
         className
       )}
@@ -212,10 +213,9 @@ export function SearchSuggestions({
             <div
               key={`recent-${search}`}
               className={cn(
-                "flex w-full items-center justify-between rounded-md px-2 py-1.5 text-sm cursor-pointer",
-                "hover:bg-accent hover:text-accent-foreground",
-                "focus-within:bg-accent focus-within:text-accent-foreground",
-                selectedIndex === index && "bg-accent text-accent-foreground"
+                "flex w-full cursor-pointer items-center justify-between px-2 py-1.5 text-sm",
+                surfaceClasses.rowInteractive,
+                selectedIndex === index && surfaceClasses.rowInteractiveActive
               )}
               onClick={() => {
                 onSelect(search);
@@ -234,11 +234,12 @@ export function SearchSuggestions({
               }}
             >
               <div className="flex items-center gap-2">
-                <Search className="h-3.5 w-3.5 text-muted-foreground" />
+                <Search className="ll-icon-muted h-3.5 w-3.5" />
                 <span>{search}</span>
               </div>
               <button
-                className="rounded p-0.5 hover:bg-muted z-10"
+                type="button"
+                className={cn("z-10 rounded p-0.5", surfaceClasses.iconButton)}
                 onClick={(e) => handleClearRecent(e, search)}
                 aria-label={`Remove ${search} from recent searches`}
               >
@@ -252,7 +253,7 @@ export function SearchSuggestions({
       {filteredPopular.filter((s) => !filteredRecent.includes(s)).length > 0 && (
         <>
           {filteredRecent.length > 0 && (
-            <div className="border-t" />
+            <div className="my-2 h-px bg-border/40" />
           )}
           <div className="p-2">
             <div className="flex items-center gap-2 px-2 py-1 text-xs font-medium text-muted-foreground">
@@ -267,12 +268,11 @@ export function SearchSuggestions({
                 return (
                   <button
                     key={`popular-${search}`}
+                    type="button"
                     className={cn(
-                      "flex w-full items-center gap-2 rounded-md px-2 py-1.5 text-sm",
-                      "hover:bg-accent hover:text-accent-foreground",
-                      "focus:bg-accent focus:text-accent-foreground focus:outline-none",
-                      selectedIndex === actualIndex &&
-                        "bg-accent text-accent-foreground"
+                      "flex w-full items-center gap-2 px-2 py-1.5 text-sm",
+                      surfaceClasses.rowInteractive,
+                      selectedIndex === actualIndex && surfaceClasses.rowInteractiveActive
                     )}
                     onClick={() => {
                       onSelect(search);

@@ -239,14 +239,14 @@ export default function PaymentMethodsPage() {
                 <div className="flex items-center space-x-3 p-3 border rounded-lg">
                   <RadioGroupItem value="mtn" id="add-mtn" />
                   <Label htmlFor="add-mtn" className="flex items-center gap-2 cursor-pointer">
-                    <Smartphone className="h-5 w-5 text-yellow-500" />
+                    <Smartphone className="h-5 w-5 text-primary" />
                     MTN Mobile Money
                   </Label>
                 </div>
                 <div className="flex items-center space-x-3 p-3 border rounded-lg">
                   <RadioGroupItem value="airtel" id="add-airtel" />
                   <Label htmlFor="add-airtel" className="flex items-center gap-2 cursor-pointer">
-                    <Smartphone className="h-5 w-5 text-red-500" />
+                    <Smartphone className="h-5 w-5 text-secondary-foreground" />
                     Airtel Money
                   </Label>
                 </div>
@@ -361,7 +361,7 @@ export default function PaymentMethodsPage() {
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(pm.id)}
-                            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                            variant="destructive"
                           >
                             Remove
                           </AlertDialogAction>

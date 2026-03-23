@@ -28,6 +28,7 @@ import {
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { useAllDocumentsByType } from "@/lib/hooks";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 
@@ -179,7 +180,7 @@ function JudgmentsContent() {
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-purple-50 text-purple-600">
+          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary/15 text-secondary-foreground dark:bg-surface-container-high/70">
             <Gavel className="h-5 w-5" />
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Judgments</h1>
@@ -304,6 +305,7 @@ function JudgmentsContent() {
 
               <div className="flex flex-wrap items-center gap-2">
                 <Button
+                  variant="brand"
                   size="sm"
                   onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
                 >
@@ -390,7 +392,7 @@ function JudgmentsContent() {
 
                 return (
                   <Link key={judgment.id} href={detailHref} className="group block">
-                    <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                    <Card className={cn("h-full border-border/70", surfaceClasses.pagePanelInteractive)}>
                       <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
                         <div className="flex items-start justify-between gap-3">
                           <div className="min-w-0 space-y-2">
@@ -414,7 +416,7 @@ function JudgmentsContent() {
                       <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
                         <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
                           {judgment.publication_date && (
-                            <span className="rounded-full bg-muted px-2.5 py-1">
+                            <span className={surfaceClasses.chipButton}>
                               {formatDateOnly(judgment.publication_date)}
                             </span>
                           )}

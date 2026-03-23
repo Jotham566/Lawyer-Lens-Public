@@ -8,6 +8,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import type { ChatSource } from "@/lib/api/types";
 
@@ -86,7 +87,7 @@ export function RelatedSources({
         <Button
           variant="ghost"
           size="sm"
-          className="w-full justify-between h-8 px-2 text-xs font-medium text-muted-foreground hover:text-foreground"
+          className={cn("h-8 w-full justify-between px-2 text-xs font-medium", surfaceClasses.textLink)}
         >
           <span>
             Related Sources ({sameDocumentSources.length + otherDocumentSources.length})
@@ -111,12 +112,12 @@ export function RelatedSources({
                 <button
                   key={`${source.document_id}-${source.section_id}-${index}`}
                   onClick={() => onSelectSource(index)}
-                  className="w-full flex items-center gap-2 px-2 py-1.5 rounded-md text-left text-sm hover:bg-muted transition-colors group"
+                className={cn("group flex w-full items-center gap-2 px-2 py-1.5 text-left text-sm", surfaceClasses.rowInteractive)}
                 >
                   <span className="flex-shrink-0 w-5 h-5 rounded bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">
                     {index + 1}
                   </span>
-                  <span className="flex-1 truncate text-muted-foreground group-hover:text-foreground transition-colors">
+                  <span className="flex-1 truncate text-muted-foreground">
                     {formatShortRef(source)}
                   </span>
                 </button>
@@ -141,13 +142,13 @@ export function RelatedSources({
                 <button
                   key={`${source.document_id}-${source.section_id}-${index}`}
                   onClick={() => onSelectSource(index)}
-                  className="w-full flex items-start gap-2 px-2 py-1.5 rounded-md text-left text-sm hover:bg-muted transition-colors group"
+                  className={cn("group flex w-full items-start gap-2 px-2 py-1.5 text-left text-sm", surfaceClasses.rowInteractive)}
                 >
                   <span className="flex-shrink-0 w-5 h-5 rounded bg-muted text-muted-foreground text-xs font-medium flex items-center justify-center mt-0.5">
                     {index + 1}
                   </span>
                   <div className="flex-1 min-w-0">
-                    <span className="block truncate text-muted-foreground group-hover:text-foreground transition-colors">
+                    <span className="block truncate text-muted-foreground">
                       {formatShortRef(source)}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground/70">

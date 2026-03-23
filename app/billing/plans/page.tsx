@@ -144,7 +144,7 @@ export default function PlansPage() {
         <Switch id="billing-toggle" checked={annual} onCheckedChange={setAnnual} />
         <Label htmlFor="billing-toggle" className={annual ? "font-semibold" : "text-muted-foreground"}>
           Annual
-          <Badge variant="secondary" className="ml-2 bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400">
+          <Badge variant="secondary" className="ml-2 bg-muted text-muted-foreground">
             Save 20%
           </Badge>
         </Label>
@@ -157,13 +157,13 @@ export default function PlansPage() {
             key={plan.id}
             className={`relative ${
               plan.highlight
-                ? "border-primary border-2 shadow-lg scale-105"
-                : "border-border"
+                ? "border-primary border-2 shadow-sm scale-105"
+                : "border-border/60"
             }`}
           >
             {plan.highlight && (
               <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                <Badge className="bg-blue-500 text-white">
+                <Badge className="bg-primary text-primary-foreground">
                   <Sparkles className="h-3 w-3 mr-1" />
                   Most Popular
                 </Badge>
@@ -191,7 +191,7 @@ export default function PlansPage() {
                   return (
                     <li key={feature.name} className="flex items-center gap-2 text-sm">
                       {value ? (
-                        <Check className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0" />
+                        <Check className="h-4 w-4 text-primary flex-shrink-0" />
                       ) : (
                         <X className="h-4 w-4 text-muted-foreground/50 flex-shrink-0" />
                       )}
@@ -244,7 +244,7 @@ export default function PlansPage() {
                     return (
                       <td key={plan.id} className="text-center py-4 px-4">
                         {value === true ? (
-                          <Check className="h-5 w-5 text-green-500 dark:text-green-400 mx-auto" />
+                          <Check className="h-5 w-5 text-primary mx-auto" />
                         ) : value === false ? (
                           <X className="h-5 w-5 text-muted-foreground/50 mx-auto" />
                         ) : (
@@ -265,7 +265,7 @@ export default function PlansPage() {
         <h2 className="text-2xl font-bold text-center mb-8">Trusted by Legal Professionals</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           <div className="text-center">
-            <div className="w-12 h-12 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-muted text-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <Shield className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Secure & Compliant</h3>
@@ -274,7 +274,7 @@ export default function PlansPage() {
             </p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-green-100 dark:bg-green-900/30 text-green-600 dark:text-green-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-muted text-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <HeadphonesIcon className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Expert Support</h3>
@@ -283,7 +283,7 @@ export default function PlansPage() {
             </p>
           </div>
           <div className="text-center">
-            <div className="w-12 h-12 bg-purple-100 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-12 h-12 bg-muted text-primary rounded-full flex items-center justify-center mx-auto mb-4">
               <Zap className="h-6 w-6" />
             </div>
             <h3 className="font-semibold mb-2">Cancel Anytime</h3>

@@ -55,6 +55,8 @@ import {
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 interface Subscription {
   id: string;
@@ -342,7 +344,7 @@ export default function SubscriptionPage() {
               </div>
 
               {subscription.trialEnd && new Date(subscription.trialEnd) > new Date() && (
-                <div className="p-3 bg-blue-50 text-blue-800 rounded-md">
+                <div className="rounded-md bg-primary/10 p-3 text-primary dark:bg-primary/15">
                   <p className="text-sm font-medium">
                     Trial ends on {formatDateOnly(subscription.trialEnd)}
                   </p>
@@ -350,7 +352,7 @@ export default function SubscriptionPage() {
               )}
 
               {subscription.cancelAtPeriodEnd && (
-                <div className="p-3 bg-yellow-50 text-yellow-800 rounded-md flex items-center justify-between">
+                <div className="flex items-center justify-between rounded-md bg-secondary/15 p-3 text-secondary-foreground dark:bg-surface-container-high/70">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4" />
                     <span className="text-sm">
@@ -386,7 +388,7 @@ export default function SubscriptionPage() {
                     .filter(([, enabled]) => enabled)
                     .map(([feature]) => (
                       <li key={feature} className="flex items-center gap-2 text-sm">
-                        <Check className="h-4 w-4 text-green-600" />
+                        <Check className="h-4 w-4 text-secondary-foreground" />
                         <span className="capitalize">
                           {feature.replace(/([A-Z])/g, " $1").trim()}
                         </span>
@@ -457,7 +459,7 @@ export default function SubscriptionPage() {
                         <AlertDialogAction
                           onClick={handleCancel}
                           disabled={cancelling}
-                          className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                          variant="destructive"
                         >
                           {cancelling ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
@@ -487,9 +489,13 @@ export default function SubscriptionPage() {
                 {availableTiers.map((tier) => {
                   const isDowngradeTier = isDowngrade(tier.tier);
                   return (
-                    <div
+                    <button
                       key={tier.tier}
-                      className="flex items-center justify-between p-4 border rounded-lg hover:border-primary cursor-pointer transition-colors"
+                      type="button"
+                      className={cn(
+                        "flex items-center justify-between",
+                        surfaceClasses.optionCard
+                      )}
                       onClick={() => handleTierSelect(tier)}
                       onKeyDown={(e) => {
                         if (e.key === "Enter" || e.key === " ") {
@@ -504,9 +510,9 @@ export default function SubscriptionPage() {
                     >
                       <div className="flex items-center gap-3">
                         {isDowngradeTier ? (
-                          <ArrowDown className="h-5 w-5 text-orange-500" aria-hidden="true" />
+                          <ArrowDown className="h-5 w-5 text-primary" aria-hidden="true" />
                         ) : (
-                          <ArrowUp className="h-5 w-5 text-green-500" aria-hidden="true" />
+                          <ArrowUp className="h-5 w-5 text-secondary-foreground" aria-hidden="true" />
                         )}
                         <div>
                           <p className="font-medium">{tier.name}</p>
@@ -518,7 +524,7 @@ export default function SubscriptionPage() {
                       <Badge variant={isDowngradeTier ? "secondary" : "default"}>
                         {isDowngradeTier ? "Downgrade" : "Upgrade"}
                       </Badge>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -536,7 +542,7 @@ export default function SubscriptionPage() {
             <DialogContent className="sm:max-w-lg" aria-describedby="downgrade-dialog-description">
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-2">
-                  <AlertCircle className="h-5 w-5 text-orange-500" aria-hidden="true" />
+                  <AlertCircle className="h-5 w-5 text-primary" aria-hidden="true" />
                   Confirm Downgrade
                 </DialogTitle>
                 <DialogDescription id="downgrade-dialog-description">
@@ -547,13 +553,13 @@ export default function SubscriptionPage() {
               <div className="space-y-4 py-4">
                 {/* Features you'll lose */}
                 {selectedTier && getLostFeatures(selectedTier).length > 0 && (
-                  <div className="p-4 bg-orange-50 dark:bg-orange-950/30 rounded-lg border border-orange-200 dark:border-orange-900" role="alert" aria-labelledby="lost-features-heading">
-                    <h4 id="lost-features-heading" className="font-medium text-orange-800 dark:text-orange-200 mb-2">
+                  <div className="rounded-lg border border-secondary/30 bg-secondary/15 p-4 dark:bg-surface-container-high/70" role="alert" aria-labelledby="lost-features-heading">
+                    <h4 id="lost-features-heading" className="mb-2 font-medium text-secondary-foreground">
                       Features you&apos;ll lose:
                     </h4>
                     <ul className="space-y-1" role="list">
                       {getLostFeatures(selectedTier).map((feature) => (
-                        <li key={feature} className="flex items-center gap-2 text-sm text-orange-700 dark:text-orange-300">
+                        <li key={feature} className="flex items-center gap-2 text-sm text-muted-foreground">
                           <X className="h-4 w-4" aria-hidden="true" />
                           <span className="capitalize">
                             {feature.replace(/([A-Z])/g, " $1").trim()}
@@ -570,7 +576,7 @@ export default function SubscriptionPage() {
                     <span className="text-sm">New monthly price:</span>
                     <span className="font-semibold">
                       ${selectedTier.monthlyPrice}/month
-                      <span className="text-sm text-green-600 ml-2">
+                      <span className="text-sm text-secondary-foreground ml-2">
                         (Save ${currentTier.monthlyPrice - selectedTier.monthlyPrice}/month)
                       </span>
                     </span>
@@ -613,7 +619,7 @@ export default function SubscriptionPage() {
                 </div>
 
                 {changeError && (
-                  <div className="p-3 bg-red-50 text-red-700 rounded-lg flex items-center gap-2" role="alert" aria-live="polite">
+                  <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3 text-destructive" role="alert" aria-live="polite">
                     <AlertCircle className="h-4 w-4" aria-hidden="true" />
                     {changeError}
                   </div>

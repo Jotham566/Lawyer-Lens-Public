@@ -81,7 +81,7 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                   onSelectTool={handleSelectTool}
                   disabled={isLoading}
                   showLabel
-                  className="h-9 rounded-full border-0 bg-transparent px-2 text-sm shadow-none hover:bg-muted"
+                  className="h-9 rounded-full border-0 bg-transparent px-2 text-sm shadow-none"
                 />
               </div>
               <textarea
@@ -104,8 +104,9 @@ export const ChatInput = forwardRef<HTMLTextAreaElement, ChatInputProps>(
                 {showStop ? (
                   <Button
                     type="button"
+                    variant="destructive"
                     size="icon"
-                    className="h-10 w-10 rounded-full bg-destructive hover:bg-destructive/90"
+                    className="h-10 w-10 rounded-full"
                     onClick={onStop}
                     aria-label="Stop generation"
                   >

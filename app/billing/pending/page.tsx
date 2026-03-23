@@ -99,11 +99,11 @@ function PendingContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mb-4">
-            <Clock className="h-10 w-10 text-yellow-600" />
+          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Clock className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Payment Pending</CardTitle>
           <CardDescription>
@@ -163,7 +163,7 @@ function PendingContent() {
             </Button>
           </div>
 
-          <div className="border-t pt-4">
+          <div className="border-t border-border/60 pt-4">
             <h4 className="text-sm font-medium mb-2">Having trouble?</h4>
             <ul className="text-xs text-muted-foreground space-y-1">
               <li>• Make sure you have sufficient balance</li>
@@ -182,7 +182,7 @@ export default function BillingPendingPage() {
   return (
     <Suspense fallback={
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     }>
       <PendingContent />

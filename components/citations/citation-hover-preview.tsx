@@ -20,8 +20,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
+import { getDocumentAccentClass, getDocumentBadgeVariant, getDocumentRailClass, surfaceClasses } from "@/lib/design-system";
 import { HighlightedExcerptCompact } from "./highlighted-excerpt";
 import { useCitationOptional } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
@@ -33,36 +35,6 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   regulation: ScrollText,
   constitution: Scale,
 };
-
-function getTypeBadgeColor(type: DocumentType) {
-  switch (type) {
-    case "act":
-      return {
-        badge: "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300",
-        borderLeft: "border-l-blue-500 dark:border-l-blue-400",
-      };
-    case "judgment":
-      return {
-        badge: "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300",
-        borderLeft: "border-l-purple-500 dark:border-l-purple-400",
-      };
-    case "regulation":
-      return {
-        badge: "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300",
-        borderLeft: "border-l-green-500 dark:border-l-green-400",
-      };
-    case "constitution":
-      return {
-        badge: "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300",
-        borderLeft: "border-l-amber-500 dark:border-l-amber-400",
-      };
-    default:
-      return {
-        badge: "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300",
-        borderLeft: "border-l-gray-500 dark:border-l-gray-400",
-      };
-  }
-}
 
 // Detect if text contains table data
 function detectTableInfo(text: string): { isTable: boolean; rowCount: number } {
@@ -150,7 +122,6 @@ export function CitationHoverPreview({
   const Icon = documentIconMap[source.document_type] || FileText;
   const sectionRef = formatSectionRef(source);
   const tableInfo = detectTableInfo(source.excerpt);
-  const typeColors = getTypeBadgeColor(source.document_type);
 
   // Copy citation to clipboard
   const handleCopy = async (e: React.MouseEvent) => {
@@ -182,7 +153,7 @@ export function CitationHoverPreview({
         <button
           onClick={handleOpenPanel}
           className={cn(
-            "inline-flex items-center text-primary font-medium hover:underline cursor-pointer",
+            "ll-inline-citation-button inline-flex items-center gap-0.5 underline-offset-4",
             className
           )}
           aria-label={`Citation ${citationNumber}, ${source.title}`}
@@ -193,7 +164,7 @@ export function CitationHoverPreview({
       <TooltipContent
         side="top"
         align="start"
-        className="w-[380px] p-0 bg-popover text-popover-foreground border border-border shadow-lg"
+        className="w-[380px] border border-border/80 bg-background p-0 text-foreground shadow-[var(--shadow-floating)]"
         sideOffset={8}
       >
         {/* Header */}
@@ -207,7 +178,7 @@ export function CitationHoverPreview({
 
           {/* Document info */}
           <div className="flex items-start gap-2">
-            <Icon className="h-4 w-4 shrink-0 text-muted-foreground mt-0.5" />
+            <Icon className={cn("mt-0.5 h-4 w-4 shrink-0", getDocumentAccentClass(source.document_type))} />
             <div className="flex-1 min-w-0">
               <span className="block font-medium text-sm text-foreground leading-tight line-clamp-2">
                 {source.title}
@@ -216,23 +187,23 @@ export function CitationHoverPreview({
                 {source.human_readable_id}
               </span>
             </div>
-            <span className={cn(
-              "text-[10px] px-1.5 py-0.5 rounded capitalize shrink-0",
-              typeColors.badge
-            )}>
+            <Badge
+              variant={getDocumentBadgeVariant(source.document_type)}
+              className="shrink-0 px-1.5 py-0 text-[10px] capitalize tracking-[0.04em]"
+            >
               {source.document_type}
-            </span>
+            </Badge>
           </div>
         </div>
 
         <Separator />
 
         {/* Excerpt preview */}
-        <div className="p-3">
+        <div className="bg-background p-3">
           {tableInfo.isTable ? (
             <div className={cn(
-              "flex items-center gap-2 p-2 rounded-md border-l-4 bg-muted/50 border border-border",
-              typeColors.borderLeft
+              "flex items-center gap-2 rounded-md border border-border/50 bg-surface-container-low p-2 border-l-4",
+              getDocumentRailClass(source.document_type)
             )}>
               <Table2 className="h-4 w-4 text-muted-foreground shrink-0" />
               <span className="text-xs text-foreground">
@@ -244,14 +215,14 @@ export function CitationHoverPreview({
             </div>
           ) : (
             <div className={cn(
-              "rounded-md border-l-4 bg-muted/30 border border-border p-2",
-              typeColors.borderLeft
+              "rounded-md border border-border/50 border-l-4 bg-surface-container-low p-2",
+              getDocumentRailClass(source.document_type)
             )}>
               <HighlightedExcerptCompact
                 excerpt={source.excerpt}
                 highlightText={highlightText}
                 maxLength={250}
-                className="text-foreground/80"
+                className="text-foreground"
               />
             </div>
           )}
@@ -260,18 +231,18 @@ export function CitationHoverPreview({
         <Separator />
 
         {/* Actions */}
-        <div className="p-2 flex items-center justify-between gap-2 bg-muted/30">
+        <div className="flex items-center justify-between gap-2 bg-surface-container-low p-2">
           <div className="flex items-center gap-1">
             {/* Copy */}
             <Button
               variant="ghost"
               size="sm"
               onClick={handleCopy}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className={cn("h-7 px-2 text-xs", surfaceClasses.iconButton)}
             >
               {copied ? (
                 <>
-                  <Check className="h-3.5 w-3.5 mr-1 text-green-500" />
+                  <Check className="mr-1 h-3.5 w-3.5 text-primary" />
                   Copied
                 </>
               ) : (
@@ -287,7 +258,7 @@ export function CitationHoverPreview({
               variant="ghost"
               size="sm"
               onClick={handleOpenPanel}
-              className="h-7 px-2 text-xs text-muted-foreground hover:text-foreground"
+              className={cn("h-7 px-2 text-xs", surfaceClasses.iconButton)}
             >
               <PanelRight className="h-3.5 w-3.5 mr-1" />
               Panel
@@ -299,7 +270,7 @@ export function CitationHoverPreview({
             variant="ghost"
             size="sm"
             asChild
-            className="h-7 px-2 text-xs text-primary hover:text-primary"
+            className={cn("h-7 px-2 text-xs text-primary", surfaceClasses.iconButton)}
           >
             <Link href={`/document/${source.document_id}`}>
               <ExternalLink className="h-3.5 w-3.5 mr-1" />

@@ -10,7 +10,7 @@ export default function TermsPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 ring-1 ring-border/60">
             <FileText className="h-6 w-6 text-primary" />
           </div>
           <div>
@@ -27,7 +27,7 @@ export default function TermsPage() {
       {/* Introduction */}
       <section className="mb-10">
         <p className="text-muted-foreground leading-relaxed">
-          Welcome to Law Lens. By accessing or using our legal research platform,
+          Welcome to Law Lens Uganda. By accessing or using our legal research platform,
           you agree to be bound by these Terms of Service. Please read them carefully
           before using our services.
         </p>
@@ -37,7 +37,7 @@ export default function TermsPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">1. Acceptance of Terms</h2>
         <p className="text-muted-foreground leading-relaxed">
-          By creating an account or using Law Lens, you acknowledge that you have read,
+          By creating an account or using Law Lens Uganda, you acknowledge that you have read,
           understood, and agree to be bound by these Terms of Service and our Privacy Policy.
           If you do not agree to these terms, please do not use our services.
         </p>
@@ -49,7 +49,7 @@ export default function TermsPage() {
         <div className="grid gap-4 sm:grid-cols-2">
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-green-600">
+              <CardTitle className="flex items-center gap-2 text-base text-primary">
                 <CheckCircle className="h-5 w-5" />
                 Permitted Uses
               </CardTitle>
@@ -66,7 +66,7 @@ export default function TermsPage() {
 
           <Card>
             <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base text-red-600">
+              <CardTitle className="flex items-center gap-2 text-base text-destructive">
                 <XCircle className="h-5 w-5" />
                 Prohibited Uses
               </CardTitle>
@@ -110,7 +110,7 @@ export default function TermsPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">4. Intellectual Property</h2>
         <p className="text-muted-foreground leading-relaxed mb-4">
-          The Law Lens platform, including its design, features, and original content, is protected
+          The Law Lens Uganda platform, including its design, features, and original content, is protected
           by intellectual property laws. Legal documents sourced from official government publications
           are in the public domain.
         </p>
@@ -128,16 +128,16 @@ export default function TermsPage() {
 
       {/* Disclaimer */}
       <section className="mb-10">
-        <Card className="border-amber-200 bg-amber-50 dark:border-amber-900 dark:bg-amber-950">
+        <Card className="border-border/60 bg-muted">
           <CardHeader className="pb-2">
             <CardTitle className="flex items-center gap-2 text-base">
-              <AlertTriangle className="h-5 w-5 text-amber-600" />
+              <AlertTriangle className="h-5 w-5 text-primary" />
               Important Disclaimer
             </CardTitle>
           </CardHeader>
           <CardContent>
             <p className="text-sm text-muted-foreground">
-              <strong>Law Lens is not a substitute for professional legal advice.</strong> The information
+              <strong>Law Lens Uganda is not a substitute for professional legal advice.</strong> The information
               provided on our platform is for general informational purposes only. We make no warranties
               about the accuracy, completeness, or reliability of the information. For specific legal
               matters, please consult a qualified legal professional licensed to practice in Uganda.
@@ -150,7 +150,7 @@ export default function TermsPage() {
       <section className="mb-10">
         <h2 className="text-xl font-semibold mb-4">5. Limitation of Liability</h2>
         <p className="text-muted-foreground leading-relaxed">
-          To the maximum extent permitted by law, Law Lens shall not be liable for any indirect,
+          To the maximum extent permitted by law, Law Lens Uganda shall not be liable for any indirect,
           incidental, special, consequential, or punitive damages resulting from your use of or
           inability to use our services, even if we have been advised of the possibility of such damages.
         </p>
@@ -181,7 +181,7 @@ export default function TermsPage() {
       </section>
 
       {/* Contact */}
-      <section className="border-t pt-8">
+      <section className="border-t border-border/60 pt-8">
         <h2 className="text-xl font-semibold mb-4">Contact Us</h2>
         <div className="flex items-center gap-2 text-muted-foreground">
           <Mail className="h-5 w-5 text-primary" />

@@ -20,7 +20,7 @@ export function exportToMarkdown(conversation: Conversation): string {
   md += `---\n\n`;
 
   for (const msg of conversation.messages) {
-    const role = msg.role === "user" ? "## You" : "## Law Lens Assistant";
+    const role = msg.role === "user" ? "## You" : "## Law Lens Uganda Assistant";
     const timestamp = msg.timestamp
       ? new Date(msg.timestamp).toLocaleString()
       : "";
@@ -47,7 +47,7 @@ export function exportToMarkdown(conversation: Conversation): string {
     md += `---\n\n`;
   }
 
-  md += `\n*Exported from Law Lens - https://lawlens.io*\n`;
+  md += `\n*Exported from Law Lens Uganda - https://lawlens.io*\n`;
 
   return md;
 }
@@ -65,7 +65,7 @@ export function exportToText(conversation: Conversation): string {
   text += `${"-".repeat(50)}\n\n`;
 
   for (const msg of conversation.messages) {
-    const role = msg.role === "user" ? "You:" : "Law Lens:";
+    const role = msg.role === "user" ? "You:" : "Law Lens Uganda:";
     text += `${role}\n\n`;
     text += `${msg.content}\n\n`;
 
@@ -92,7 +92,7 @@ export function generatePrintHtml(conversation: Conversation): string {
 <html>
 <head>
   <meta charset="utf-8">
-  <title>${title} - Law Lens Export</title>
+  <title>${title} - Law Lens Uganda Export</title>
   <style>
     * {
       box-sizing: border-box;
@@ -182,7 +182,7 @@ export function generatePrintHtml(conversation: Conversation): string {
 
   for (const msg of conversation.messages) {
     const roleClass = msg.role === "user" ? "user" : "assistant";
-    const roleLabel = msg.role === "user" ? "You" : "Law Lens Assistant";
+    const roleLabel = msg.role === "user" ? "You" : "Law Lens Uganda Assistant";
 
     html += `
   <div class="message">
@@ -210,7 +210,7 @@ export function generatePrintHtml(conversation: Conversation): string {
 
   html += `
   <div class="footer">
-    Exported from Law Lens - lawlens.io
+    Exported from Law Lens Uganda - lawlens.io
   </div>
 </body>
 </html>`;

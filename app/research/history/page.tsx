@@ -40,6 +40,8 @@ import {
 } from "@/lib/stores";
 import type { ResearchStatus } from "@/lib/api/research";
 import { formatDistanceToNow } from "date-fns";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const statusConfig: Record<
   ResearchStatus,
@@ -92,13 +94,13 @@ function SessionCard({
 
   return (
     <Card
-      className="cursor-pointer hover:bg-muted/50 transition-colors"
+      className={cn("group cursor-pointer", surfaceClasses.pagePanelInteractive)}
       onClick={() => router.push(`/research?session=${session.id}`)}
     >
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
-          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-500/10">
-            <FileText className="h-5 w-5 text-blue-500" />
+          <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
+            <FileText className="h-5 w-5 text-primary" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
@@ -175,7 +177,7 @@ function SessionCard({
             <Button
               variant="ghost"
               size="icon"
-              className="h-8 w-8 text-muted-foreground hover:text-destructive"
+              className="ll-icon-button ll-icon-button-danger h-8 w-8"
               onClick={(e) => {
                 e.stopPropagation();
                 onDelete(session.id);
@@ -329,7 +331,7 @@ export default function ResearchHistoryPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={confirmDelete}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               Delete
             </AlertDialogAction>
@@ -351,7 +353,7 @@ export default function ResearchHistoryPage() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleClearAll}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               Clear All
             </AlertDialogAction>

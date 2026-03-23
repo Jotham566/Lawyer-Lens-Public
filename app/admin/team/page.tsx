@@ -380,9 +380,9 @@ function TeamManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Active</p>
-                <p className="text-2xl font-bold text-green-600">{activeCount}</p>
+                <p className="text-2xl font-bold text-secondary-foreground">{activeCount}</p>
               </div>
-              <UserCheck className="h-8 w-8 text-green-600/50" />
+              <UserCheck className="h-8 w-8 text-secondary-foreground/50" />
             </div>
           </CardContent>
         </Card>
@@ -391,9 +391,9 @@ function TeamManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Suspended</p>
-                <p className="text-2xl font-bold text-orange-600">{suspendedCount}</p>
+                <p className="text-2xl font-bold text-primary">{suspendedCount}</p>
               </div>
-              <UserX className="h-8 w-8 text-orange-600/50" />
+              <UserX className="h-8 w-8 text-primary/50" />
             </div>
           </CardContent>
         </Card>
@@ -402,9 +402,9 @@ function TeamManagementContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-muted-foreground">Pending Invites</p>
-                <p className="text-2xl font-bold text-blue-600">{pendingCount}</p>
+                <p className="text-2xl font-bold text-primary">{pendingCount}</p>
               </div>
-              <Mail className="h-8 w-8 text-blue-600/50" />
+              <Mail className="h-8 w-8 text-primary/50" />
             </div>
           </CardContent>
         </Card>
@@ -696,7 +696,7 @@ function TeamManagementContent() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemove}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               Remove Member
             </AlertDialogAction>

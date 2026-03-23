@@ -26,7 +26,7 @@ export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerPr
     <div
       className={cn(
         "relative z-40",
-        "border-b border-blue-500/50 bg-blue-50 dark:bg-blue-900/20",
+        "border-b border-border/60 bg-secondary/50",
         "transition-all duration-200"
       )}
       role="alert"
@@ -36,15 +36,15 @@ export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerPr
         <div className="flex items-center justify-between py-3 gap-4">
           <div className="flex items-center gap-3 flex-1 min-w-0">
             <Sparkles
-              className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0"
+              className="h-5 w-5 text-primary flex-shrink-0"
               aria-hidden="true"
             />
             <div className="flex-1 min-w-0">
-              <p className="text-sm font-medium text-blue-800 dark:text-blue-200">
-                <span className="hidden sm:inline">Law Lens is in Private Beta</span>
+              <p className="text-sm font-medium text-foreground">
+                <span className="hidden sm:inline">Law Lens Uganda is in Private Beta</span>
                 <span className="sm:hidden">Private Beta</span>
               </p>
-              <p className="text-xs text-blue-600 dark:text-blue-400 hidden md:block">
+              <p className="hidden md:block text-xs text-muted-foreground">
                 Join the waitlist for early access & exclusive perks
               </p>
             </div>

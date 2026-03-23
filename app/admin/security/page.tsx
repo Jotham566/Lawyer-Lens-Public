@@ -41,6 +41,8 @@ import { useAuth, useRequireAuth } from "@/components/providers";
 import { getCurrentOrganization, type Organization } from "@/lib/api/organizations";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { AlertBanner } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 interface SSOProvider {
   id: string;
@@ -296,7 +298,7 @@ function SecuritySettingsContent() {
                         onClick={() => handleCopy(spEntityId, "entityId")}
                       >
                         {copied === "entityId" ? (
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Check className="h-4 w-4 text-secondary-foreground" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -313,7 +315,7 @@ function SecuritySettingsContent() {
                         onClick={() => handleCopy(spAcsUrl, "acsUrl")}
                       >
                         {copied === "acsUrl" ? (
-                          <Check className="h-4 w-4 text-green-500" />
+                          <Check className="h-4 w-4 text-secondary-foreground" />
                         ) : (
                           <Copy className="h-4 w-4" />
                         )}
@@ -383,27 +385,32 @@ function SecuritySettingsContent() {
                   {SSO_PROVIDERS.slice(0, 4).map((provider) => (
                     <button
                       key={provider.id}
+                      type="button"
                       onClick={() => {
                         setSelectedProvider(provider.id);
                         setConfigureSSOOpen(true);
                       }}
-                      className="flex items-center gap-3 p-4 border rounded-lg hover:bg-muted/50 transition-colors text-left"
+                      className={cn("flex items-center gap-3", surfaceClasses.optionCard)}
                     >
-                      <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                        <Globe className="h-4 w-4" />
+                      <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-high">
+                        <Globe className="ll-icon-muted h-4 w-4" />
                       </div>
                       <span className="font-medium text-sm">{provider.name}</span>
                     </button>
                   ))}
                   <button
+                    type="button"
                     onClick={() => {
                       setSelectedProvider("custom");
                       setConfigureSSOOpen(true);
                     }}
-                    className="flex items-center gap-3 p-4 border rounded-lg border-dashed hover:bg-muted/50 transition-colors text-left"
+                    className={cn(
+                      "flex items-center gap-3 border-dashed",
+                      surfaceClasses.optionCard
+                    )}
                   >
-                    <div className="h-8 w-8 rounded bg-muted flex items-center justify-center">
-                      <Settings className="h-4 w-4" />
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-surface-container-high">
+                      <Settings className="ll-icon-muted h-4 w-4" />
                     </div>
                     <span className="font-medium text-sm">Custom SAML</span>
                   </button>

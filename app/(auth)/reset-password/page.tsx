@@ -22,6 +22,8 @@ import {
 import { useRedirectIfAuthenticated } from "@/components/providers";
 import { resetPassword } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const resetPasswordSchema = z.object({
   password: z
@@ -58,7 +60,7 @@ function PasswordStrength({ password }: { password: string }) {
         <div
           key={check.label}
           className={`flex items-center gap-2 text-xs ${
-            check.valid ? "text-green-600 dark:text-green-400" : "text-muted-foreground"
+            check.valid ? "text-secondary-foreground" : "text-muted-foreground"
           }`}
         >
           {check.valid ? (
@@ -161,8 +163,8 @@ function ResetPasswordContent() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
+            <CheckCircle2 className="h-6 w-6 text-secondary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Password reset!</CardTitle>
           <CardDescription className="text-center">
@@ -208,17 +210,19 @@ function ResetPasswordContent() {
                 className="pl-10 pr-10"
                 {...register("password")}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowPassword(!showPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
             </div>
             {errors.password && (
               <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -237,17 +241,19 @@ function ResetPasswordContent() {
                 className="pl-10 pr-10"
                 {...register("confirmPassword")}
               />
-              <button
+              <Button
                 type="button"
+                variant="ghost"
+                size="icon-sm"
                 onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
               >
                 {showConfirmPassword ? (
                   <EyeOff className="h-4 w-4" />
                 ) : (
                   <Eye className="h-4 w-4" />
                 )}
-              </button>
+              </Button>
             </div>
             {errors.confirmPassword && (
               <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>

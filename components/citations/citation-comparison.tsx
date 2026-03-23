@@ -4,6 +4,7 @@ import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight, type LucideIcon 
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { HighlightedExcerpt } from "./highlighted-excerpt";
 import { useCitation } from "./citation-context";
@@ -21,38 +22,38 @@ function getTypeColor(type: DocumentType) {
   switch (type) {
     case "act":
       return {
-        bg: "bg-blue-50 dark:bg-blue-950/50",
-        border: "border-blue-200 dark:border-blue-800",
-        text: "text-blue-700 dark:text-blue-300",
-        icon: "text-blue-600 dark:text-blue-400",
+        bg: "bg-primary/10",
+        border: "border-border/30",
+        text: "text-primary",
+        icon: "text-primary",
       };
     case "judgment":
       return {
-        bg: "bg-purple-50 dark:bg-purple-950/50",
-        border: "border-purple-200 dark:border-purple-800",
-        text: "text-purple-700 dark:text-purple-300",
-        icon: "text-purple-600 dark:text-purple-400",
+        bg: "bg-secondary",
+        border: "border-border/30",
+        text: "text-foreground",
+        icon: "text-foreground",
       };
     case "regulation":
       return {
-        bg: "bg-green-50 dark:bg-green-950/50",
-        border: "border-green-200 dark:border-green-800",
-        text: "text-green-700 dark:text-green-300",
-        icon: "text-green-600 dark:text-green-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
     case "constitution":
       return {
-        bg: "bg-amber-50 dark:bg-amber-950/50",
-        border: "border-amber-200 dark:border-amber-800",
-        text: "text-amber-700 dark:text-amber-300",
-        icon: "text-amber-600 dark:text-amber-400",
+        bg: "bg-accent/20",
+        border: "border-border/30",
+        text: "text-primary",
+        icon: "text-primary",
       };
     default:
       return {
-        bg: "bg-gray-50 dark:bg-gray-950/50",
-        border: "border-gray-200 dark:border-gray-800",
-        text: "text-gray-700 dark:text-gray-300",
-        icon: "text-gray-600 dark:text-gray-400",
+        bg: "bg-muted",
+        border: "border-border/30",
+        text: "text-muted-foreground",
+        icon: "text-muted-foreground",
       };
   }
 }
@@ -70,12 +71,12 @@ function ComparisonCard({ source, citationNumber, onRemove }: ComparisonCardProp
   const sectionRef = source.legal_reference || source.section || null;
 
   return (
-    <div className="flex flex-col h-full border rounded-lg overflow-hidden bg-background">
+    <div className="flex h-full flex-col overflow-hidden rounded-lg border border-border/30 bg-card">
       {/* Header */}
-      <div className="p-3 border-b bg-muted/30">
+      <div className="border-b border-border/30 bg-muted/30 p-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-start gap-2 min-w-0">
-            <div className={cn("rounded p-1.5 flex-shrink-0", colors.bg, colors.border, "border")}>
+            <div className={cn("flex-shrink-0 rounded p-1.5 border", colors.bg, colors.border)}>
               <Icon className={cn("h-4 w-4", colors.icon)} />
             </div>
             <div className="min-w-0 flex-1">
@@ -107,7 +108,7 @@ function ComparisonCard({ source, citationNumber, onRemove }: ComparisonCardProp
 
       {/* Content */}
       <ScrollArea className="flex-1 p-3">
-        <div className="rounded-lg border bg-muted/30 p-3">
+        <div className="rounded-lg border border-border/30 bg-muted/30 p-3">
           <HighlightedExcerpt
             excerpt={source.excerpt}
             showQuotes={true}
@@ -125,8 +126,8 @@ interface EmptySlotProps {
 
 function EmptySlot({ slotNumber }: EmptySlotProps) {
   return (
-    <div className="flex flex-col items-center justify-center h-full border-2 border-dashed rounded-lg p-6 text-center bg-muted/10">
-      <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center mb-3">
+    <div className="flex h-full flex-col items-center justify-center rounded-lg border border-dashed border-border/40 bg-muted/10 p-6 text-center">
+      <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-full bg-muted">
         <span className="text-lg font-medium text-muted-foreground">{slotNumber}</span>
       </div>
       <p className="text-sm text-muted-foreground">
@@ -162,20 +163,20 @@ export function CitationComparison() {
     <>
       {/* Backdrop */}
       <div
-        className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-200"
+        className="ll-overlay-scrim fixed inset-0 z-40 transition-opacity duration-200"
         onClick={toggleCompareMode}
         aria-hidden="true"
       />
 
       {/* Comparison Panel */}
       <div
-        className="fixed inset-y-0 right-0 z-50 w-full sm:w-[90vw] md:w-[800px] lg:w-[900px] bg-background border-l shadow-lg flex flex-col"
+        className="ll-slide-panel fixed inset-y-0 right-0 z-50 flex w-full flex-col sm:w-[90vw] md:w-[800px] lg:w-[900px]"
         role="dialog"
         aria-modal="true"
         aria-labelledby="comparison-panel-title"
       >
         {/* Header */}
-        <div className="p-4 border-b flex items-center justify-between">
+        <div className="flex items-center justify-between border-b border-border/30 p-4">
           <div className="flex items-center gap-3">
             <ArrowLeftRight className="h-5 w-5 text-primary" />
             <div>
@@ -237,7 +238,7 @@ export function CitationComparison() {
         </div>
 
         {/* Source Selection */}
-        <div className="p-4 border-t bg-muted/30">
+        <div className="border-t border-border/30 bg-muted/30 p-4">
           <p className="text-xs font-medium text-muted-foreground mb-2">
             Select citations to compare:
           </p>
@@ -250,12 +251,13 @@ export function CitationComparison() {
               return (
                 <button
                   key={`${source.document_id}-${source.section_id}-${index}`}
+                  type="button"
                   onClick={() => toggleCompareSelection(index)}
                   className={cn(
-                    "flex items-center gap-2 px-3 py-1.5 rounded-md text-sm transition-colors",
+                    "flex items-center gap-2 px-3 py-1.5 text-sm",
                     isSelected
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background border hover:bg-muted"
+                      ? surfaceClasses.optionCardActive
+                      : surfaceClasses.optionCard
                   )}
                 >
                   <span className={cn(

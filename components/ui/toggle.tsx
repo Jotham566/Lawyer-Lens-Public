@@ -7,13 +7,13 @@ import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
 const toggleVariants = cva(
-  "inline-flex items-center justify-center gap-2 rounded-md text-sm font-medium hover:bg-muted hover:text-muted-foreground disabled:pointer-events-none disabled:opacity-50 data-[state=on]:bg-accent data-[state=on]:text-accent-foreground [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none transition-[color,box-shadow] aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap",
+  "group inline-flex items-center justify-center gap-2 rounded-xl border border-transparent text-sm font-medium text-muted-foreground transition-[transform,background-color,color,box-shadow,border-color,opacity] duration-200 disabled:pointer-events-none disabled:opacity-50 data-[state=on]:border-[color:var(--interactive-hover-border)] data-[state=on]:bg-[var(--interactive-hover-surface-strong)] data-[state=on]:text-[var(--interactive-hover-foreground)] data-[state=on]:shadow-[var(--shadow-soft)] hover:-translate-y-px hover:bg-[var(--interactive-hover-surface)] hover:text-[var(--interactive-hover-foreground)] hover:border-[color:var(--interactive-hover-border)] hover:shadow-[var(--shadow-soft)] [&_svg]:pointer-events-none [&_svg:not([class*='size-'])]:size-4 [&_svg]:shrink-0 [&_svg]:transition-[color,transform,opacity] focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 aria-invalid:border-destructive whitespace-nowrap",
   {
     variants: {
       variant: {
         default: "bg-transparent",
         outline:
-          "border border-input bg-transparent shadow-xs hover:bg-accent hover:text-accent-foreground",
+          "border-[color:var(--glass-outline)] bg-surface-container-lowest/90 text-foreground shadow-[var(--shadow-soft)] data-[state=on]:bg-[var(--interactive-hover-surface-strong)] hover:bg-[var(--interactive-hover-surface)]",
       },
       size: {
         default: "h-9 px-2 min-w-9",

@@ -47,6 +47,8 @@ import {
   type OrganizationRole,
 } from "@/lib/api/organizations";
 import { getUserFriendlyError } from "@/lib/api/client";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 // Import reusable components
 import {
@@ -216,7 +218,7 @@ function TeamMembersContent() {
                 return (
                   <div
                     key={member.id}
-                    className="flex items-center justify-between p-4 rounded-lg border bg-card hover:bg-muted/50 transition-colors"
+                    className={cn("flex items-center justify-between p-4", surfaceClasses.rowInteractive)}
                   >
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
@@ -318,7 +320,7 @@ function TeamMembersContent() {
             <AlertDialogCancel>Cancel</AlertDialogCancel>
             <AlertDialogAction
               onClick={handleRemoveMember}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               Remove Member
             </AlertDialogAction>

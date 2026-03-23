@@ -8,34 +8,32 @@ import { AppShell } from "@/components/layout";
 import { Toaster } from "sonner";
 import { ThemeFavicon } from "@/components/theme-favicon";
 
-// Use local font with system font fallbacks (avoids Google Fonts network issues during build)
-const inter = localFont({
+const manrope = localFont({
   src: [
     {
-      path: "../public/fonts/Inter-Regular.woff2",
-      weight: "400",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Inter-Medium.woff2",
-      weight: "500",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Inter-SemiBold.woff2",
-      weight: "600",
-      style: "normal",
-    },
-    {
-      path: "../public/fonts/Inter-Bold.woff2",
-      weight: "700",
+      path: "../public/fonts/manrope/Manrope-Variable.ttf",
+      weight: "200 800",
       style: "normal",
     },
   ],
-  variable: "--font-inter",
+  variable: "--font-manrope",
   display: "swap",
   preload: false,
   fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
+});
+
+const newsreader = localFont({
+  src: [
+    {
+      path: "../public/fonts/newsreader/Newsreader-Variable.ttf",
+      weight: "300 800",
+      style: "normal",
+    },
+  ],
+  variable: "--font-newsreader",
+  display: "swap",
+  preload: false,
+  fallback: ["Georgia", "Times New Roman", "serif"],
 });
 
 const jetbrainsMono = localFont({
@@ -60,8 +58,8 @@ const jetbrainsMono = localFont({
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"),
   title: {
-    default: "Law Lens - Uganda Legal Intelligence Platform",
-    template: "%s | Law Lens",
+    default: "Law Lens Uganda - Uganda Legal Intelligence Platform",
+    template: "%s | Law Lens Uganda",
   },
   description:
     "Access Uganda's laws, judgments, and regulations. Search, browse, and get instant answers with citations to authoritative sources.",
@@ -75,19 +73,19 @@ export const metadata: Metadata = {
     "legal research",
     "legal assistant",
   ],
-  authors: [{ name: "Law Lens Team" }],
-  creator: "Law Lens",
+  authors: [{ name: "Law Lens Uganda Team" }],
+  creator: "Law Lens Uganda",
   openGraph: {
     type: "website",
     locale: "en_UG",
-    siteName: "Law Lens",
-    title: "Law Lens - Uganda Legal Intelligence Platform",
+    siteName: "Law Lens Uganda",
+    title: "Law Lens Uganda - Uganda Legal Intelligence Platform",
     description:
       "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Law Lens - Uganda Legal Intelligence Platform",
+    title: "Law Lens Uganda - Uganda Legal Intelligence Platform",
     description:
       "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
   },
@@ -110,8 +108,8 @@ export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#0a0a0a" },
+    { media: "(prefers-color-scheme: light)", color: "#fcf9f8" },
+    { media: "(prefers-color-scheme: dark)", color: "#051426" },
   ],
 };
 
@@ -134,7 +132,7 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
       <body
-        className={`${inter.variable} ${jetbrainsMono.variable} font-sans antialiased`}
+        className={`${manrope.variable} ${newsreader.variable} ${jetbrainsMono.variable} font-sans antialiased`}
       >
         <Providers>
           <ThemeFavicon />

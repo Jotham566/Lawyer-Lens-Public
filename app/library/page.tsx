@@ -27,8 +27,10 @@ import { Textarea } from "@/components/ui/textarea";
 import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { cn } from "@/lib/utils";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
 
 export default function LibraryPage() {
   const { isLoading: authLoading } = useRequireAuth();
@@ -175,11 +177,11 @@ export default function LibraryPage() {
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
           {collections.map((collection) => (
             <Link key={collection.id} href={`/library/${collection.id}`} className="group block h-full">
-              <Card className="h-full transition-all group-hover:border-primary/50 group-hover:shadow-md">
+              <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
                 <CardHeader>
                   <CardTitle className="flex items-start justify-between gap-2">
                     <span className="truncate">{collection.name}</span>
-                    <FolderOpen className="h-5 w-5 text-muted-foreground group-hover:text-primary transition-colors shrink-0" />
+                    <FolderOpen className="ll-icon-muted h-5 w-5 shrink-0" />
                   </CardTitle>
                   <CardDescription className="line-clamp-2">
                     {collection.description || "No description"}

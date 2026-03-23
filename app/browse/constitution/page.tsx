@@ -2,6 +2,8 @@ import Link from "next/link";
 import { Scale, BookOpen, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 export const metadata = {
   title: "Constitution of Uganda",
@@ -22,8 +24,8 @@ export default function ConstitutionPage() {
             <span className="text-foreground">Constitution</span>
           </div>
           <div className="mt-2 flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-amber-100 dark:bg-amber-900/30">
-              <Scale className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-primary/10">
+              <Scale className="h-5 w-5 text-primary" />
             </div>
             <div>
               <h1 className="text-2xl font-semibold tracking-tight">
@@ -38,9 +40,9 @@ export default function ConstitutionPage() {
 
         {/* Main Card */}
         <Card className="overflow-hidden">
-          <CardHeader className="border-b bg-amber-50 dark:bg-amber-900/10">
+          <CardHeader className="border-b bg-surface-container-low">
             <div className="flex items-center gap-3">
-              <Scale className="h-8 w-8 text-amber-600 dark:text-amber-400" />
+              <Scale className="h-8 w-8 text-primary" />
               <div>
                 <CardTitle className="text-xl">
                   The Constitution of the Republic of Uganda, 1995
@@ -143,7 +145,7 @@ export default function ConstitutionPage() {
               <Link
                 key={chapter.num}
                 href={`/document/constitution-1995#chapter-${chapter.num}`}
-                className="rounded-lg border p-3 text-sm transition-colors hover:bg-muted"
+                className={cn("rounded-lg p-3 text-sm", surfaceClasses.rowInteractive)}
               >
                 <span className="font-medium">Chapter {chapter.num}:</span>{" "}
                 <span className="text-muted-foreground">{chapter.title}</span>

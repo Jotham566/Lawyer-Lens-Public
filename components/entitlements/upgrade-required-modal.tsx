@@ -17,6 +17,8 @@ import {
   getTierDisplayName,
   type FeatureGatingDetails,
 } from "@/lib/api/client";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 interface UpgradeRequiredModalProps {
   open: boolean;
@@ -103,8 +105,8 @@ export function UpgradeRequiredModal({
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
       <DialogContent className="sm:max-w-[480px]">
         <DialogHeader className="text-center sm:text-center">
-          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/30">
-            <Lock className="h-7 w-7 text-amber-600 dark:text-amber-400" />
+          <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-full bg-primary/10">
+            <Lock className="h-7 w-7 text-primary" />
           </div>
           <DialogTitle className="text-xl">
             Upgrade to Unlock {featureName}
@@ -122,9 +124,9 @@ export function UpgradeRequiredModal({
               <span className="font-medium">{currentTier}</span>
             </div>
             <ArrowRight className="h-4 w-4 text-muted-foreground" />
-            <div className="flex items-center gap-1.5 rounded-full bg-amber-100 dark:bg-amber-900/30 px-3 py-1">
-              <Crown className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
-              <span className="font-medium text-amber-700 dark:text-amber-300">
+            <div className="flex items-center gap-1.5 rounded-full bg-accent/20 px-3 py-1">
+              <Crown className="h-3.5 w-3.5 text-primary" />
+              <span className="font-medium text-primary">
                 {requiredTier}
               </span>
             </div>
@@ -132,9 +134,9 @@ export function UpgradeRequiredModal({
 
           {/* Benefits */}
           {benefits.length > 0 && (
-            <div className="rounded-lg border bg-muted/30 p-4">
+            <div className="rounded-lg border border-border/30 bg-muted/30 p-4">
               <h4 className="mb-3 flex items-center gap-2 text-sm font-medium">
-                <Sparkles className="h-4 w-4 text-amber-500" />
+                <Sparkles className="h-4 w-4 text-primary" />
                 What you&apos;ll get with {requiredTier}:
               </h4>
               <ul className="space-y-2">
@@ -143,7 +145,7 @@ export function UpgradeRequiredModal({
                     key={index}
                     className="flex items-start gap-2 text-sm text-muted-foreground"
                   >
-                    <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-amber-500" />
+                    <span className="mt-1 h-1.5 w-1.5 flex-shrink-0 rounded-full bg-primary" />
                     {benefit}
                   </li>
                 ))}
@@ -157,10 +159,7 @@ export function UpgradeRequiredModal({
           <Button variant="outline" onClick={onClose}>
             Maybe Later
           </Button>
-          <Button
-            onClick={handleUpgrade}
-            className="bg-amber-600 hover:bg-amber-700 text-white"
-          >
+          <Button onClick={handleUpgrade} variant="brand">
             <Crown className="mr-2 h-4 w-4" />
             Upgrade to {requiredTier}
           </Button>
@@ -169,8 +168,9 @@ export function UpgradeRequiredModal({
         {/* View all plans link */}
         <div className="mt-2 text-center">
           <button
+            type="button"
             onClick={handleViewPlans}
-            className="text-xs text-muted-foreground hover:text-foreground underline-offset-4 hover:underline"
+            className={cn("text-xs underline-offset-4", surfaceClasses.textLink)}
           >
             Compare all plans
           </button>

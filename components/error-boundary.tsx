@@ -155,8 +155,8 @@ export function BillingErrorFallback({ error, resetErrorBoundary }: FallbackProp
       <Card className="max-w-md w-full">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
-              <CreditCard className="h-8 w-8 text-amber-600 dark:text-amber-400" aria-hidden="true" />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+              <CreditCard className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
             <h2 className="mt-4 text-lg font-semibold">Billing Error</h2>
             <p className="mt-2 text-sm text-muted-foreground">

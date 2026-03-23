@@ -138,8 +138,8 @@ export default function InvitationPage({
       <div className="min-h-screen flex items-center justify-center bg-muted/30 p-4">
         <Card className="w-full max-w-md">
           <CardHeader className="text-center">
-            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-              <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+            <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
+              <CheckCircle2 className="h-6 w-6 text-secondary-foreground" />
             </div>
             <CardTitle>Welcome to the team!</CardTitle>
             <CardDescription>
@@ -166,7 +166,7 @@ export default function InvitationPage({
           </div>
           <CardTitle>You&apos;re Invited!</CardTitle>
           <CardDescription>
-            You&apos;ve been invited to join an organization on Law Lens
+            You&apos;ve been invited to join an organization on Law Lens Uganda
           </CardDescription>
         </CardHeader>
 
@@ -178,7 +178,7 @@ export default function InvitationPage({
             </div>
           )}
 
-          <div className="rounded-lg border p-4 space-y-3">
+          <div className="rounded-lg border border-border/60 bg-surface-container-low p-4 space-y-3">
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Invited to</span>
               <span className="font-medium">
@@ -223,19 +223,19 @@ export default function InvitationPage({
               </div>
             </div>
           ) : invitation?.email.toLowerCase() !== user?.email?.toLowerCase() ? (
-            <div className="rounded-lg bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 p-4">
+            <div className="rounded-lg border border-secondary/30 bg-secondary/15 p-4 dark:bg-surface-container-high/70">
               <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
+                <AlertCircle className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-medium text-amber-800 dark:text-amber-200">
+                  <p className="text-sm font-medium text-foreground">
                     Email mismatch
                   </p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-1">
+                  <p className="text-sm text-primary mt-1">
                     This invitation was sent to{" "}
                     <span className="font-medium">{invitation?.email}</span> but you&apos;re
                     signed in as <span className="font-medium">{user?.email}</span>.
                   </p>
-                  <p className="text-sm text-amber-600 dark:text-amber-400 mt-2">
+                  <p className="text-sm text-primary mt-2">
                     Please sign in with the correct account.
                   </p>
                 </div>

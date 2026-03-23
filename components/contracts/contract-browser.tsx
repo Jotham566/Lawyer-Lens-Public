@@ -27,6 +27,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { getMyContracts, type ContractListItem } from "@/lib/api/contracts";
 
@@ -38,9 +39,9 @@ interface ContractBrowserProps {
 }
 
 const phaseColors: Record<string, string> = {
-  review: "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-  approval: "bg-yellow-100 text-yellow-700 dark:bg-yellow-900/30 dark:text-yellow-400",
-  complete: "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+  review: "bg-primary/10 text-primary",
+  approval: "bg-accent/20 text-primary",
+  complete: "bg-muted text-muted-foreground",
 };
 
 export function ContractBrowser({
@@ -171,10 +172,11 @@ export function ContractBrowser({
                 <div
                   key={contract.session_id}
                   className={cn(
-                    "flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all",
+                    "flex cursor-pointer items-start gap-4 rounded-lg border border-border/30 p-4",
+                    surfaceClasses.pagePanelInteractive,
                     selectedId === contract.session_id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "hover:border-primary/50 hover:bg-muted/50"
+                      ? "bg-primary/10 ring-1 ring-primary/30"
+                      : ""
                   )}
                   onClick={() => handleSelect(contract)}
                 >
@@ -184,7 +186,7 @@ export function ContractBrowser({
                         {contract.title || `${getContractTypeLabel(contract.contract_type)} Contract`}
                       </span>
                       {selectedId === contract.session_id && (
-                        <CheckCircle2 className="h-4 w-4 text-primary flex-shrink-0" />
+                        <CheckCircle2 className="h-4 w-4 flex-shrink-0 text-primary" />
                       )}
                     </div>
 

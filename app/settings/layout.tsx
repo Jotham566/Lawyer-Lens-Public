@@ -11,6 +11,7 @@ import {
   Settings,
   Activity,
 } from "lucide-react";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { useEntitlements } from "@/hooks/use-entitlements";
 
@@ -75,11 +76,11 @@ export default function SettingsLayout({
   );
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-6xl mx-auto px-4 py-8">
         <div className="flex items-center gap-2 mb-8">
-          <Settings className="h-6 w-6" />
-          <h1 className="text-2xl font-bold">Settings</h1>
+          <Settings className="h-6 w-6 text-primary" />
+          <h1 className="text-2xl font-bold text-foreground">Settings</h1>
         </div>
 
         <div className="flex flex-col md:flex-row gap-8">
@@ -94,13 +95,13 @@ export default function SettingsLayout({
                     <Link
                       href={item.href}
                       className={cn(
-                        "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
+                        "group",
                         isActive
-                          ? "bg-primary text-primary-foreground"
-                          : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                          ? surfaceClasses.sidebarNavButtonActive
+                          : surfaceClasses.sidebarNavButton
                       )}
                     >
-                      <item.icon className="h-4 w-4" />
+                      <item.icon className={cn("h-4 w-4", !isActive && "ll-icon-muted")} />
                       {item.title}
                     </Link>
                   </li>

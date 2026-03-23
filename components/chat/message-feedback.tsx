@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Textarea } from "@/components/ui/textarea";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
 interface MessageFeedbackProps {
@@ -138,7 +139,7 @@ export function MessageFeedback({
     return (
       <div
         className={cn(
-          "flex items-center gap-1.5 text-xs text-emerald-600 dark:text-emerald-400",
+          "flex items-center gap-1.5 text-xs text-secondary-foreground",
           className
         )}
         role="status"
@@ -158,13 +159,13 @@ export function MessageFeedback({
         aria-label="Feedback submitted"
       >
         {feedback === "positive" && (
-          <ThumbsUp className="h-3.5 w-3.5 text-emerald-500" aria-hidden="true" />
+          <ThumbsUp className="h-3.5 w-3.5 text-secondary-foreground" aria-hidden="true" />
         )}
         {feedback === "negative" && (
-          <ThumbsDown className="h-3.5 w-3.5 text-slate-400" aria-hidden="true" />
+          <ThumbsDown className="h-3.5 w-3.5 text-muted-foreground" aria-hidden="true" />
         )}
         {feedback === "flag" && (
-          <Flag className="h-3.5 w-3.5 text-amber-500" aria-hidden="true" />
+          <Flag className="h-3.5 w-3.5 text-primary" aria-hidden="true" />
         )}
       </div>
     );
@@ -182,7 +183,7 @@ export function MessageFeedback({
           <Button
             variant="ghost"
             size="icon"
-            className="h-7 w-7 text-muted-foreground hover:text-emerald-600 dark:hover:text-emerald-400"
+            className={cn("h-7 w-7", surfaceClasses.iconButton)}
             disabled={disabled || isSubmitting}
             onClick={handlePositiveFeedback}
             aria-label="This response was helpful"
@@ -201,7 +202,7 @@ export function MessageFeedback({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-slate-600 dark:hover:text-slate-400"
+                className={cn("h-7 w-7", surfaceClasses.iconButton)}
                 disabled={disabled || isSubmitting}
                 aria-label="This response needs improvement"
                 aria-expanded={negativePopoverOpen}
@@ -226,12 +227,13 @@ export function MessageFeedback({
               {NEGATIVE_REASONS.map((reason) => (
                 <button
                   key={reason}
+                  type="button"
                   onClick={() => setSelectedReason(reason)}
                   className={cn(
-                    "w-full text-left px-2.5 py-1.5 text-xs rounded-md transition-colors",
+                    "w-full rounded-md px-2.5 py-1.5 text-left text-xs",
                     selectedReason === reason
-                      ? "bg-primary/10 text-primary border border-primary/20"
-                      : "hover:bg-muted border border-transparent"
+                      ? surfaceClasses.optionCardActive
+                      : surfaceClasses.optionCard
                   )}
                   role="radio"
                   aria-checked={selectedReason === reason}
@@ -267,7 +269,7 @@ export function MessageFeedback({
               <Button
                 variant="ghost"
                 size="icon"
-                className="h-7 w-7 text-muted-foreground hover:text-amber-600 dark:hover:text-amber-400"
+                className={cn("h-7 w-7", surfaceClasses.iconButton)}
                 disabled={disabled || isSubmitting}
                 aria-label="Flag this response for review"
                 aria-expanded={flagPopoverOpen}
@@ -292,12 +294,13 @@ export function MessageFeedback({
               {FLAG_REASONS.map((reason) => (
                 <button
                   key={reason}
+                  type="button"
                   onClick={() => setSelectedReason(reason)}
                   className={cn(
-                    "w-full text-left px-2.5 py-1.5 text-xs rounded-md transition-colors",
+                    "w-full rounded-md px-2.5 py-1.5 text-left text-xs",
                     selectedReason === reason
-                      ? "bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300 border border-amber-200 dark:border-amber-800"
-                      : "hover:bg-muted border border-transparent"
+                      ? surfaceClasses.optionCardActive
+                      : surfaceClasses.optionCard
                   )}
                   role="radio"
                   aria-checked={selectedReason === reason}
@@ -315,8 +318,8 @@ export function MessageFeedback({
             />
             <Button
               size="sm"
-              variant="outline"
-              className="w-full border-amber-200 text-amber-700 hover:bg-amber-50 dark:border-amber-800 dark:text-amber-300 dark:hover:bg-amber-950/50"
+              variant="secondary"
+              className="w-full"
               disabled={!selectedReason || isSubmitting}
               onClick={handleFlagSubmit}
             >

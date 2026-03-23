@@ -39,13 +39,14 @@ import { PageLoading } from "@/components/common";
 import { useRecentResearchSessions, useSavedDocuments } from "@/lib/stores";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 
 // Tier display configuration
 const tierConfig: Record<string, { label: string; color: string; icon: typeof Zap }> = {
-  free: { label: "Free", color: "text-slate-600 border-slate-300", icon: Zap },
-  professional: { label: "Pro", color: "text-blue-600 border-blue-300", icon: Crown },
-  team: { label: "Team", color: "text-purple-600 border-purple-300", icon: Users },
-  enterprise: { label: "Enterprise", color: "text-amber-600 border-amber-300", icon: Crown },
+  free: { label: "Free", color: "text-muted-foreground border-border/60", icon: Zap },
+  professional: { label: "Pro", color: "text-primary border-border/60", icon: Crown },
+  team: { label: "Team", color: "text-primary border-border/60", icon: Users },
+  enterprise: { label: "Enterprise", color: "text-primary border-border/60", icon: Crown },
 };
 
 function getGreeting(): string {
@@ -142,7 +143,7 @@ export default function DashboardPage() {
       </div>
 
       {/* Primary CTA - Legal Assistant */}
-      <Card className="overflow-hidden border-primary/20 shadow-lg bg-gradient-to-br from-primary/5 via-background to-purple-500/5 dark:from-primary/10 dark:via-background dark:to-purple-500/10">
+      <Card className="overflow-hidden bg-gradient-to-br from-card via-background to-muted/40 shadow-sm ring-1 ring-border/60">
         <CardContent className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center gap-4">
             <div className="flex-1">
@@ -164,7 +165,7 @@ export default function DashboardPage() {
                 </p>
               )}
             </div>
-            <Button size="lg" asChild className="shrink-0 shadow-sm">
+            <Button size="lg" variant="brand" asChild className="shrink-0 shadow-sm">
               <Link href="/chat">
                 Start Asking
                 <ArrowRight className="ml-2 h-4 w-4" />
@@ -179,13 +180,13 @@ export default function DashboardPage() {
         <h2 className="text-sm font-medium text-muted-foreground mb-4">BROWSE</h2>
         <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link href="/legislation/acts" className="group">
-            <Card className="h-full transition-all hover:shadow-md hover:border-blue-200 dark:hover:border-blue-800">
+            <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg bg-blue-50 dark:bg-blue-950/50">
-                    <FileText className="h-5 w-5 text-blue-600 dark:text-blue-400" />
+                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                    <FileText className="ll-icon-muted h-5 w-5" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
                 <div className="mt-4">
                   <p className="font-medium">Acts of Parliament</p>
@@ -199,13 +200,13 @@ export default function DashboardPage() {
           </Link>
 
           <Link href="/judgments" className="group">
-            <Card className="h-full transition-all hover:shadow-md hover:border-purple-200 dark:hover:border-purple-800">
+            <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg bg-purple-50 dark:bg-purple-950/50">
-                    <Gavel className="h-5 w-5 text-purple-600 dark:text-purple-400" />
+                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                    <Gavel className="ll-icon-muted h-5 w-5" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
                 <div className="mt-4">
                   <p className="font-medium">Case Law</p>
@@ -219,13 +220,13 @@ export default function DashboardPage() {
           </Link>
 
           <Link href="/legislation/regulations" className="group">
-            <Card className="h-full transition-all hover:shadow-md hover:border-green-200 dark:hover:border-green-800">
+            <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg bg-green-50 dark:bg-green-950/50">
-                    <ScrollText className="h-5 w-5 text-green-600 dark:text-green-400" />
+                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                    <ScrollText className="ll-icon-muted h-5 w-5" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
                 <div className="mt-4">
                   <p className="font-medium">Regulations</p>
@@ -239,13 +240,13 @@ export default function DashboardPage() {
           </Link>
 
           <Link href="/search" className="group">
-            <Card className="h-full transition-all hover:shadow-md hover:border-amber-200 dark:hover:border-amber-800">
+            <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
               <CardContent className="p-5">
                 <div className="flex items-start justify-between">
-                  <div className="p-2 rounded-lg bg-amber-50 dark:bg-amber-950/50">
-                    <Search className="h-5 w-5 text-amber-600 dark:text-amber-400" />
+                  <div className="p-2 rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high text-primary">
+                    <Search className="ll-icon-muted h-5 w-5" />
                   </div>
-                  <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                  <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                 </div>
                 <div className="mt-4">
                   <p className="font-medium">Search All</p>
@@ -264,7 +265,7 @@ export default function DashboardPage() {
       <div className="grid lg:grid-cols-3 gap-6">
         {/* Recent Activity - Takes more space */}
         <div className="lg:col-span-2">
-          <Card>
+          <Card className="bg-card shadow-sm">
             <CardHeader className="pb-3">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-base font-medium flex items-center gap-2">
@@ -286,13 +287,13 @@ export default function DashboardPage() {
                     <Link
                       key={session.id}
                       href={`/research?session=${session.id}`}
-                      className="flex items-center gap-3 p-3 rounded-lg hover:bg-muted/50 transition-colors group"
+                      className={cn("group flex items-center gap-3 p-3", surfaceClasses.rowInteractive)}
                     >
-                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-medium">
+                  <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-muted text-muted-foreground text-sm font-medium">
                         {i + 1}
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-sm font-medium truncate group-hover:text-primary transition-colors">
+                        <p className="text-sm font-medium truncate">
                           {session.title}
                         </p>
                         <p className="text-xs text-muted-foreground flex items-center gap-1">
@@ -302,7 +303,7 @@ export default function DashboardPage() {
                           })}
                         </p>
                       </div>
-                      <ChevronRight className="h-4 w-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity" />
+                      <ChevronRight className="ll-icon-muted h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" />
                     </Link>
                   ))}
                 </div>
@@ -330,7 +331,7 @@ export default function DashboardPage() {
         {/* Sidebar - Account & Quick Links */}
         <div className="space-y-4">
           {/* Usage Summary - Clear metrics display */}
-          <Card>
+          <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium">
@@ -363,7 +364,7 @@ export default function DashboardPage() {
                         </div>
                         <span className={cn(
                           "text-sm font-medium",
-                          aiQueriesUsage.is_at_limit ? "text-red-500" : "text-green-600 dark:text-green-400"
+                          aiQueriesUsage.is_at_limit ? "text-destructive" : "text-primary"
                         )}>
                           {aiQueriesUsage.remaining} left
                         </span>
@@ -372,8 +373,8 @@ export default function DashboardPage() {
                         value={aiQueriesUsage.percentage || 0}
                         className={cn(
                           "h-2",
-                          (aiQueriesUsage.percentage || 0) > 80 && "[&>div]:bg-amber-500",
-                          aiQueriesUsage.is_at_limit && "[&>div]:bg-red-500"
+                          (aiQueriesUsage.percentage || 0) > 80 && "[&>div]:bg-primary/70",
+                          aiQueriesUsage.is_at_limit && "[&>div]:bg-destructive"
                         )}
                       />
                     </>
@@ -424,16 +425,16 @@ export default function DashboardPage() {
 
               {/* Upgrade CTA for free tier */}
               {currentTier === "free" && (
-                <div className="pt-3 border-t">
+                <div className="pt-3 border-t border-border/60">
                   <Link
                     href="/pricing"
-                    className="flex items-center justify-between text-sm text-amber-600 dark:text-amber-400 hover:underline group"
+                    className="group flex items-center justify-between text-sm text-primary"
                   >
                     <span className="flex items-center gap-2">
                       <Sparkles className="h-4 w-4" />
                       Upgrade for more
                     </span>
-                    <ArrowRight className="h-4 w-4 group-hover:translate-x-0.5 transition-transform" />
+                    <ArrowRight className="ll-icon-muted h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
                 </div>
               )}
@@ -441,7 +442,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Saved Documents */}
-          <Card>
+          <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <div className="flex items-center justify-between">
                 <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -462,10 +463,10 @@ export default function DashboardPage() {
                     <Link
                       key={doc.id}
                       href={`/document/${doc.id}`}
-                      className="flex items-center gap-2 p-2 rounded-md hover:bg-muted transition-colors text-sm group"
+                      className={cn("group flex items-center gap-2 p-2 text-sm", surfaceClasses.rowInteractive)}
                     >
-                      <FileText className="h-3.5 w-3.5 text-muted-foreground shrink-0" />
-                      <span className="truncate flex-1 group-hover:text-primary transition-colors">
+                      <FileText className="ll-icon-muted h-3.5 w-3.5 shrink-0" />
+                      <span className="truncate flex-1">
                         {doc.title}
                       </span>
                     </Link>
@@ -473,7 +474,7 @@ export default function DashboardPage() {
                   {savedDocuments.length > 4 && (
                     <Link
                       href="/library"
-                      className="flex items-center justify-center gap-1 p-2 text-xs text-muted-foreground hover:text-primary transition-colors"
+                      className={cn("flex items-center justify-center gap-1 p-2 text-xs", surfaceClasses.textLink)}
                     >
                       View all {savedDocuments.length} documents
                       <ChevronRight className="h-3 w-3" />
@@ -493,7 +494,7 @@ export default function DashboardPage() {
           </Card>
 
           {/* Quick Links */}
-          <Card>
+          <Card className="bg-card shadow-sm">
             <CardHeader className="pb-2">
               <CardTitle className="text-sm font-medium">
                 Quick Links
@@ -502,23 +503,23 @@ export default function DashboardPage() {
             <CardContent className="grid gap-1">
               <Link
                 href="/library"
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-sm"
+                className={cn("group flex items-center gap-3 p-2 text-sm", surfaceClasses.rowInteractive)}
               >
-                <BookMarked className="h-4 w-4 text-muted-foreground" />
+                <BookMarked className="ll-icon-muted h-4 w-4" />
                 <span>My Library</span>
               </Link>
               <Link
                 href="/legislation/constitution"
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-sm"
+                className={cn("group flex items-center gap-3 p-2 text-sm", surfaceClasses.rowInteractive)}
               >
-                <FileText className="h-4 w-4 text-muted-foreground" />
+                <FileText className="ll-icon-muted h-4 w-4" />
                 <span>Constitution</span>
               </Link>
               <Link
                 href="/settings"
-                className="flex items-center gap-3 p-2 rounded-md hover:bg-muted transition-colors text-sm"
+                className={cn("group flex items-center gap-3 p-2 text-sm", surfaceClasses.rowInteractive)}
               >
-                <Activity className="h-4 w-4 text-muted-foreground" />
+                <Activity className="ll-icon-muted h-4 w-4" />
                 <span>Settings</span>
               </Link>
             </CardContent>
@@ -532,11 +533,11 @@ export default function DashboardPage() {
           <Button
             variant="ghost"
             size="icon"
-            className="absolute top-2 right-2 h-6 w-6"
+            className={cn("absolute top-2 right-2 h-6 w-6", surfaceClasses.iconButton)}
             onClick={dismissOnboarding}
             aria-label="Dismiss"
           >
-            <X className="h-4 w-4" />
+            <X className="ll-icon-muted h-4 w-4" />
           </Button>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
@@ -544,7 +545,7 @@ export default function DashboardPage() {
               Getting Started
             </CardTitle>
             <CardDescription>
-              Make the most of Law Lens
+              Make the most of Law Lens Uganda
             </CardDescription>
           </CardHeader>
           <CardContent>

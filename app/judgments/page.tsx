@@ -16,6 +16,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { getRepositoryStats } from "@/lib/api";
 import type { RepositoryStats } from "@/lib/api/types";
@@ -29,9 +30,9 @@ const courtHierarchy = [
     shortName: "SC",
     description: "The highest court in Uganda. Final court of appeal.",
     icon: Scale,
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
-    borderColor: "border-amber-200 dark:border-amber-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     level: 1,
   },
   {
@@ -40,9 +41,9 @@ const courtHierarchy = [
     shortName: "CoA",
     description: "Hears appeals from the High Court. Also serves as Constitutional Court.",
     icon: Landmark,
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
-    borderColor: "border-purple-200 dark:border-purple-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     level: 2,
   },
   {
@@ -51,9 +52,9 @@ const courtHierarchy = [
     shortName: "HC",
     description: "Court of unlimited original jurisdiction. Hears appeals from lower courts.",
     icon: Building2,
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
-    borderColor: "border-blue-200 dark:border-blue-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     level: 3,
   },
   {
@@ -62,9 +63,9 @@ const courtHierarchy = [
     shortName: "MC",
     description: "Handle criminal and civil matters at the local level.",
     icon: Gavel,
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
-    borderColor: "border-green-200 dark:border-green-800",
+    color: "text-primary",
+    bgColor: "bg-muted",
+    borderColor: "border-border/60",
     level: 4,
   },
 ];
@@ -107,13 +108,16 @@ export default function JudgmentsPage() {
       <Breadcrumbs className="mb-6" />
 
       {/* Header */}
-      <div className="mb-8">
+      <div className={`mb-8 ${surfaceClasses.pageHero}`}>
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-purple-50 dark:bg-purple-950/50">
-            <Gavel className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+          <div className={surfaceClasses.pageIconTile}>
+            <Gavel className="h-6 w-6 text-[color:var(--brand-gold)] dark:text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <p className={surfaceClasses.pageEyebrow}>
+              Case Law
+            </p>
+            <h1 className="mt-3 text-2xl font-bold tracking-tight sm:text-3xl">
               Court Judgments
             </h1>
             <p className="text-muted-foreground">
@@ -131,11 +135,12 @@ export default function JudgmentsPage() {
               placeholder="Search case law..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-10 pr-24"
+              className={`pl-10 pr-24 ${surfaceClasses.searchField}`}
             />
             <Button
               type="submit"
               size="sm"
+              variant="brand"
               className="absolute right-1 top-1/2 -translate-y-1/2"
             >
               Search
@@ -147,11 +152,9 @@ export default function JudgmentsPage() {
                 key={item.query}
                 type="button"
                 onClick={() => setSearchQuery(item.query)}
-                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
+                className={cn("text-xs", surfaceClasses.chipButton)}
               >
-                <Badge variant="outline" className="cursor-pointer hover:bg-muted">
-                  {item.category}: {item.query}
-                </Badge>
+                {item.category}: {item.query}
               </button>
             ))}
           </div>
@@ -160,14 +163,14 @@ export default function JudgmentsPage() {
 
       {/* Court Hierarchy Visual */}
       <div className="mb-8">
-        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2">
+        <h2 className="mb-4 flex items-center gap-2 text-lg font-semibold">
           Court Hierarchy
           <ChevronDown className="h-4 w-4 text-muted-foreground" />
         </h2>
 
         <div className="relative">
           {/* Vertical line connecting courts */}
-          <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-amber-300 via-purple-300 via-blue-300 to-green-300 dark:from-amber-700 dark:via-purple-700 dark:via-blue-700 dark:to-green-700 hidden md:block" />
+          <div className="absolute left-6 top-8 bottom-8 w-0.5 bg-gradient-to-b from-primary/20 via-primary/40 to-primary/20 hidden md:block" />
 
           <div className="space-y-4">
             {courtHierarchy.map((court) => (
@@ -178,7 +181,8 @@ export default function JudgmentsPage() {
               >
                 <Card
                   className={cn(
-                    "transition-all hover:shadow-lg hover:border-primary/40 border-2 ml-0 md:ml-12",
+                    "ml-0 border-2 md:ml-12",
+                    surfaceClasses.pagePanelInteractive,
                     court.borderColor
                   )}
                 >
@@ -189,7 +193,7 @@ export default function JudgmentsPage() {
                         <div className="hidden md:flex absolute left-0 h-12 w-12 items-center justify-center">
                           <div
                             className={cn(
-                              "h-10 w-10 rounded-full flex items-center justify-center border-2 bg-background",
+                              "flex h-10 w-10 items-center justify-center rounded-full border-2 bg-background transition-[border-color,background-color,color]",
                               court.borderColor
                             )}
                           >
@@ -201,16 +205,16 @@ export default function JudgmentsPage() {
 
                         <div
                           className={cn(
-                            "flex h-12 w-12 items-center justify-center rounded-xl transition-transform group-hover:scale-105",
+                            "flex h-12 w-12 items-center justify-center rounded-xl border border-[color:var(--glass-outline)] bg-surface-container-high transition-[background-color,border-color,box-shadow,transform]",
                             court.bgColor
                           )}
                         >
-                          <court.icon className={cn("h-6 w-6", court.color)} />
+                          <court.icon className={cn("ll-icon-muted h-6 w-6", court.color)} />
                         </div>
                         <div>
                           <CardTitle className="text-lg flex items-center gap-2">
                             {court.name}
-                            <Badge variant="secondary" className="text-xs">
+                        <Badge variant="secondary" className="border border-[color:var(--glass-outline)] text-xs">
                               {court.shortName}
                             </Badge>
                           </CardTitle>
@@ -224,11 +228,11 @@ export default function JudgmentsPage() {
                         {isLoading ? (
                           <Skeleton className="h-6 w-12" />
                         ) : (
-                          <Badge variant="outline" className="font-semibold">
-                            Browse
-                          </Badge>
+                        <Badge variant="outline" className="border-[color:var(--glass-outline)] font-semibold">
+                          Browse
+                        </Badge>
                         )}
-                        <ArrowRight className="h-4 w-4 text-muted-foreground transition-transform group-hover:translate-x-1" />
+                        <ArrowRight className="ll-icon-muted h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </div>
                     </div>
                   </CardHeader>
@@ -240,7 +244,7 @@ export default function JudgmentsPage() {
       </div>
 
       {/* Browse All */}
-      <div className="border-t pt-8">
+      <div className="border-t border-border/60 pt-8">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold">All Judgments</h2>
           <Button variant="outline" asChild>
@@ -251,7 +255,7 @@ export default function JudgmentsPage() {
           </Button>
         </div>
 
-        <Card className="bg-muted/30">
+        <Card className="border-[color:var(--glass-outline)] bg-muted/30">
           <CardContent className="py-6">
             <p className="text-sm text-muted-foreground mb-4">
               Browse the complete collection of court decisions without filtering by court level.
@@ -274,7 +278,7 @@ export default function JudgmentsPage() {
       </div>
 
       {/* Information Section */}
-      <div className="mt-8 border-t pt-8">
+      <div className="mt-8 border-t border-border/60 pt-8">
         <h2 className="text-lg font-semibold mb-4">About Uganda&apos;s Court System</h2>
         <div className="grid gap-6 md:grid-cols-2">
           <div className="space-y-4">

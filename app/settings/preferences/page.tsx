@@ -96,11 +96,11 @@ export default function PreferencesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Sun className="h-5 w-5 text-muted-foreground" />
+            <Sun className="h-5 w-5 text-primary" />
             <CardTitle>Appearance</CardTitle>
           </div>
           <CardDescription>
-            Customize how Law Lens looks on your device
+            Customize how Law Lens Uganda looks on your device
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
@@ -144,7 +144,7 @@ export default function PreferencesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Bell className="h-5 w-5 text-muted-foreground" />
+            <Bell className="h-5 w-5 text-primary" />
             <CardTitle>Notifications</CardTitle>
           </div>
           <CardDescription>
@@ -222,7 +222,7 @@ export default function PreferencesPage() {
       <Card>
         <CardHeader>
           <div className="flex items-center gap-2">
-            <Globe className="h-5 w-5 text-muted-foreground" />
+            <Globe className="h-5 w-5 text-primary" />
             <CardTitle>Language & Region</CardTitle>
           </div>
           <CardDescription>

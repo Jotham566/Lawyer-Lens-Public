@@ -26,6 +26,7 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "@/components/ui/collapsible";
+import { surfaceClasses } from "@/lib/design-system";
 import { useAuth } from "@/components/providers";
 import { Logo } from "./logo";
 
@@ -126,63 +127,63 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="w-80 p-0">
-        <SheetHeader className="border-b p-4">
+      <SheetContent side="left" className="ll-slide-panel w-80 bg-background p-0">
+        <SheetHeader className="p-5">
           <SheetTitle>
             <Logo height={140} />
           </SheetTitle>
           <SheetDescription className="sr-only">
-            Main navigation menu for Law Lens
+            Main navigation menu for Law Lens Uganda
           </SheetDescription>
         </SheetHeader>
 
-        <div className="flex flex-col overflow-y-auto py-4">
+        <div className="flex flex-col overflow-y-auto px-3 pb-5">
           {/* Dashboard Link - Authenticated Users */}
           {isAuthenticated && (
             <>
-              <nav className="flex flex-col gap-1 px-2 mb-4">
+              <nav className="mb-4 flex flex-col gap-2">
                 <Link
                   href="/dashboard"
                   onClick={() => onOpenChange(false)}
-                  className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
-                    isActive("/dashboard")
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50"
-                  )}
-                >
-                  <Activity className="h-5 w-5 text-muted-foreground" />
+                className={cn(
+                  "group flex items-center gap-3 rounded-[1.25rem] border border-transparent px-3 py-3",
+                  isActive("/dashboard")
+                    ? surfaceClasses.rowInteractiveActive
+                    : surfaceClasses.rowInteractive
+                )}
+              >
+                  <Activity className={cn("ll-icon-muted h-5 w-5", isActive("/dashboard") && "text-secondary-foreground")} />
                   <div className="flex-1">
                     <div className="font-medium">Dashboard</div>
-                    <div className="text-xs text-muted-foreground">
+                    <div className={cn("ll-subtext-muted text-xs", isActive("/dashboard") && "text-secondary-foreground/80")}>
                       Your personalized overview
                     </div>
                   </div>
                 </Link>
               </nav>
-              <div className="mb-4 border-t" />
+              <div className="mb-4 h-px bg-border/60" />
             </>
           )}
 
           {/* Main Navigation */}
-          <nav className="flex flex-col gap-1 px-2">
+          <nav className="flex flex-col gap-2">
             {mainNavItems.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}
                 onClick={() => onOpenChange(false)}
                 className={cn(
-                  "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                  "group flex items-center gap-3 rounded-[1.25rem] border border-transparent px-3 py-3",
                   isActive(item.href)
-                    ? "bg-accent text-accent-foreground"
-                    : "hover:bg-accent/50"
+                    ? surfaceClasses.rowInteractiveActive
+                    : surfaceClasses.rowInteractive
                 )}
               >
-                <item.icon className="h-5 w-5 text-muted-foreground" />
+                <item.icon className={cn("ll-icon-muted h-5 w-5", isActive(item.href) && "text-secondary-foreground")} />
                 <div className="flex-1">
                   <div className="font-medium">{item.title}</div>
                   {item.description && (
-                    <div className="text-xs text-muted-foreground">
+                    <div className={cn("ll-subtext-muted text-xs", isActive(item.href) && "text-secondary-foreground/80")}>
                       {item.description}
                     </div>
                   )}
@@ -191,47 +192,48 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
             ))}
           </nav>
 
-          <div className="my-4 border-t" />
+          <div className="my-4 h-px bg-border/60" />
 
           {/* Legislation Section */}
-          <div className="px-2">
+          <div>
             <Collapsible open={legislationOpen} onOpenChange={setLegislationOpen}>
               <CollapsibleTrigger asChild>
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-between px-3 py-2.5 h-auto",
-                    isActive("/legislation") && "bg-accent"
+                    "h-auto w-full justify-between rounded-[1.25rem] border border-transparent px-3 py-3",
+                    isActive("/legislation") && surfaceClasses.navPillActive
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <FileText className="h-5 w-5 text-muted-foreground" />
+                    <FileText className={cn("ll-icon-muted h-5 w-5", isActive("/legislation") && "text-secondary-foreground")} />
                     <span className="font-medium">Legislation</span>
                   </div>
                   <ChevronRight
                     className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform",
+                      "ll-icon-muted h-4 w-4 transition-transform",
+                      isActive("/legislation") && "text-secondary-foreground",
                       legislationOpen && "rotate-90"
                     )}
                   />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-1">
-                <nav className="flex flex-col gap-1 pl-4">
+                <nav className="mt-2 flex flex-col gap-1 pl-4">
                   {legislationItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => onOpenChange(false)}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                        "group flex items-center gap-2 rounded-[1rem] border border-transparent px-3 py-2.5 text-sm",
                         isActive(item.href)
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent/50"
+                          ? surfaceClasses.rowInteractiveActive
+                          : surfaceClasses.rowInteractive
                       )}
                     >
                       {item.icon && (
-                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        <item.icon className={cn("ll-icon-muted h-4 w-4", isActive(item.href) && "text-secondary-foreground")} />
                       )}
                       {item.title}
                     </Link>
@@ -242,44 +244,45 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
           </div>
 
           {/* Judgments Section */}
-          <div className="px-2 mt-1">
+          <div className="mt-2">
             <Collapsible open={judgmentsOpen} onOpenChange={setJudgmentsOpen}>
               <CollapsibleTrigger asChild>
                 <Button
                   variant="ghost"
                   className={cn(
-                    "w-full justify-between px-3 py-2.5 h-auto",
-                    isActive("/judgments") && "bg-accent"
+                    "h-auto w-full justify-between rounded-[1.25rem] border border-transparent px-3 py-3",
+                    isActive("/judgments") && surfaceClasses.navPillActive
                   )}
                 >
                   <div className="flex items-center gap-3">
-                    <Gavel className="h-5 w-5 text-muted-foreground" />
+                    <Gavel className={cn("ll-icon-muted h-5 w-5", isActive("/judgments") && "text-secondary-foreground")} />
                     <span className="font-medium">Case Law</span>
                   </div>
                   <ChevronRight
                     className={cn(
-                      "h-4 w-4 text-muted-foreground transition-transform",
+                      "ll-icon-muted h-4 w-4 transition-transform",
+                      isActive("/judgments") && "text-secondary-foreground",
                       judgmentsOpen && "rotate-90"
                     )}
                   />
                 </Button>
               </CollapsibleTrigger>
               <CollapsibleContent className="mt-1">
-                <nav className="flex flex-col gap-1 pl-4">
+                <nav className="mt-2 flex flex-col gap-1 pl-4">
                   {judgmentsItems.map((item) => (
                     <Link
                       key={item.href}
                       href={item.href}
                       onClick={() => onOpenChange(false)}
                       className={cn(
-                        "flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors",
+                        "group flex items-center gap-2 rounded-[1rem] px-3 py-2.5 text-sm",
                         isActive(item.href)
-                          ? "bg-accent text-accent-foreground"
-                          : "hover:bg-accent/50"
+                          ? surfaceClasses.rowInteractiveActive
+                          : surfaceClasses.rowInteractive
                       )}
                     >
                       {item.icon && (
-                        <item.icon className="h-4 w-4 text-muted-foreground" />
+                        <item.icon className={cn("ll-icon-muted h-4 w-4", isActive(item.href) && "text-secondary-foreground")} />
                       )}
                       {item.title}
                     </Link>
@@ -292,32 +295,32 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
           {/* Account Section - Authenticated Users */}
           {isAuthenticated && (
             <>
-              <div className="my-4 border-t" />
-              <nav className="flex flex-col gap-1 px-2">
+              <div className="my-4 h-px bg-border/60" />
+              <nav className="flex flex-col gap-2">
                 <Link
                   href="/settings"
                   onClick={() => onOpenChange(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    "group flex items-center gap-3 rounded-[1.25rem] px-3 py-3",
                     isActive("/settings") && !pathname.includes("/organization")
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50"
+                      ? surfaceClasses.rowInteractiveActive
+                      : surfaceClasses.rowInteractive
                   )}
                 >
-                  <Settings className="h-5 w-5 text-muted-foreground" />
+                  <Settings className={cn("ll-icon-muted h-5 w-5", isActive("/settings") && !pathname.includes("/organization") && "text-secondary-foreground")} />
                   <span className="font-medium">Settings</span>
                 </Link>
                 <Link
                   href="/settings/organization"
                   onClick={() => onOpenChange(false)}
                   className={cn(
-                    "flex items-center gap-3 rounded-lg px-3 py-2.5 transition-colors",
+                    "group flex items-center gap-3 rounded-[1.25rem] px-3 py-3",
                     isActive("/settings/organization")
-                      ? "bg-accent text-accent-foreground"
-                      : "hover:bg-accent/50"
+                      ? surfaceClasses.rowInteractiveActive
+                      : surfaceClasses.rowInteractive
                   )}
                 >
-                  <Building2 className="h-5 w-5 text-muted-foreground" />
+                  <Building2 className={cn("ll-icon-muted h-5 w-5", isActive("/settings/organization") && "text-secondary-foreground")} />
                   <span className="font-medium">Organization</span>
                 </Link>
               </nav>
@@ -353,20 +356,20 @@ export function MobileBottomNav() {
   };
 
   return (
-    <nav className="fixed bottom-0 left-0 right-0 z-50 border-t bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 lg:hidden">
-      <div className="flex h-16 items-center justify-around">
+    <nav className="fixed bottom-2 left-3 right-3 z-50 rounded-full bg-popover/90 p-1.5 shadow-[var(--shadow-floating)] backdrop-blur-xl lg:hidden">
+      <div className="flex h-14 items-center justify-around">
         {tabs.map((tab) => (
           <Link
             key={tab.href}
             href={tab.href}
             className={cn(
-              "flex flex-1 flex-col items-center justify-center gap-1 py-2 transition-colors",
+              "group flex flex-1 flex-col items-center justify-center gap-1 rounded-full py-2",
               isActive(tab.href)
-                ? "text-primary"
-                : "text-muted-foreground hover:text-foreground"
+                ? "bg-secondary text-secondary-foreground"
+                : "ll-row-interactive text-muted-foreground"
             )}
           >
-            <tab.icon className="h-5 w-5" />
+            <tab.icon className="ll-icon-muted h-5 w-5" />
             <span className="text-xs font-medium">{tab.label}</span>
           </Link>
         ))}

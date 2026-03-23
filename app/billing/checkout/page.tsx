@@ -23,6 +23,7 @@ import Link from "next/link";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
 import { getUserFriendlyError } from "@/lib/api/client";
+import { surfaceClasses } from "@/lib/design-system";
 import {
   validateUgandaPhone,
   detectProvider,
@@ -30,6 +31,7 @@ import {
   formatPhoneDisplay,
   type MobileProvider,
 } from "@/lib/utils/phone-validation";
+import { cn } from "@/lib/utils";
 
 interface PlanDetails {
   id: string;
@@ -229,7 +231,7 @@ function CheckoutContent() {
         <div
           role="alert"
           aria-live="polite"
-          className="bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 px-4 py-3 rounded-lg mb-6 flex items-center gap-2"
+          className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6 flex items-center gap-2"
         >
           <AlertCircle className="h-5 w-5 flex-shrink-0" aria-hidden="true" />
           {error}
@@ -252,28 +254,44 @@ function CheckoutContent() {
                   className="space-y-4"
                   aria-label="Select payment method"
                 >
-                  <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "mobile_money" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
+                  <Label
+                    htmlFor="mobile_money"
+                    className={cn(
+                      "flex items-center gap-4",
+                      paymentMethod === "mobile_money"
+                        ? surfaceClasses.optionCardActive
+                        : surfaceClasses.optionCard
+                    )}
+                  >
                     <RadioGroupItem value="mobile_money" id="mobile_money" />
-                    <Label htmlFor="mobile_money" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="flex flex-1 items-center gap-3">
                       <Smartphone className="h-5 w-5 text-primary" />
                       <div>
                         <p className="font-medium">Mobile Money</p>
                         <p className="text-sm text-muted-foreground">MTN, Airtel, or other providers</p>
                       </div>
-                    </Label>
-                    <Badge variant="secondary" className="bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400">Recommended</Badge>
-                  </div>
+                    </div>
+                    <Badge variant="secondary" className="bg-muted text-muted-foreground">Recommended</Badge>
+                  </Label>
 
-                  <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${paymentMethod === "card" ? "border-primary bg-primary/5" : "border-border hover:border-muted-foreground/50"}`}>
+                  <Label
+                    htmlFor="card"
+                    className={cn(
+                      "flex items-center gap-4",
+                      paymentMethod === "card"
+                        ? surfaceClasses.optionCardActive
+                        : surfaceClasses.optionCard
+                    )}
+                  >
                     <RadioGroupItem value="card" id="card" />
-                    <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                    <div className="flex flex-1 items-center gap-3">
                       <CreditCard className="h-5 w-5 text-muted-foreground" />
                       <div>
                         <p className="font-medium">Credit/Debit Card</p>
                         <p className="text-sm text-muted-foreground">Visa, Mastercard, or other cards</p>
                       </div>
-                    </Label>
-                  </div>
+                    </div>
+                  </Label>
                 </RadioGroup>
 
                 <Separator />
@@ -318,9 +336,9 @@ function CheckoutContent() {
                           onChange={(e) => handlePhoneChange(e.target.value)}
                           className={`pr-10 ${
                             phoneError
-                              ? "border-red-500 focus-visible:ring-red-500"
+                              ? "border-destructive focus-visible:ring-destructive"
                               : phoneValid
-                              ? "border-green-500 focus-visible:ring-green-500"
+                              ? "border-primary focus-visible:ring-primary"
                               : ""
                           }`}
                           required
@@ -328,16 +346,16 @@ function CheckoutContent() {
                           aria-describedby="phone-description phone-error"
                         />
                         {phoneValid && (
-                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-green-500 dark:text-green-400" aria-hidden="true" />
+                          <CheckCircle2 className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-primary" aria-hidden="true" />
                         )}
                         {phoneError && (
-                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-red-500 dark:text-red-400" aria-hidden="true" />
+                          <AlertCircle className="absolute right-3 top-1/2 -translate-y-1/2 h-5 w-5 text-destructive" aria-hidden="true" />
                         )}
                       </div>
                       {phoneError ? (
-                        <p id="phone-error" className="text-xs text-red-500 dark:text-red-400 mt-1" role="alert" aria-live="polite">{phoneError}</p>
+                        <p id="phone-error" className="text-xs text-destructive mt-1" role="alert" aria-live="polite">{phoneError}</p>
                       ) : phoneValid ? (
-                        <p id="phone-description" className="text-xs text-green-600 dark:text-green-400 mt-1">
+                        <p id="phone-description" className="text-xs text-primary mt-1">
                           {formatPhoneDisplay(phoneNumber)} - {mobileProvider === "mtn" ? "MTN" : "Airtel"} detected
                         </p>
                       ) : (
@@ -431,7 +449,7 @@ function CheckoutContent() {
               </div>
 
               {annual && (
-                <div className="flex justify-between text-sm text-green-600 dark:text-green-400">
+                <div className="flex justify-between text-sm text-primary">
                   <span>Annual Discount (20%)</span>
                   <span>-${Math.round(plan.price * (plan.id === "team" ? teamSeats : 1) * 12 * 0.2)}</span>
                 </div>
@@ -456,7 +474,7 @@ function CheckoutContent() {
                 <ul className="space-y-1" aria-labelledby="features-heading" role="list">
                   {plan.features.map((feature) => (
                     <li key={feature} className="text-sm text-muted-foreground flex items-center gap-2">
-                      <Check className="h-4 w-4 text-green-500 dark:text-green-400 flex-shrink-0" aria-hidden="true" />
+                      <Check className="h-4 w-4 text-primary flex-shrink-0" aria-hidden="true" />
                       {feature}
                     </li>
                   ))}

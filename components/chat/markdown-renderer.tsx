@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Copy, Check } from "lucide-react";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import {
   SourceCitation,
@@ -150,11 +151,11 @@ function HighlightedCodeBlock({
 
       {/* Copy button */}
       <button
+        type="button"
         onClick={handleCopy}
         className={cn(
-          "absolute top-2 right-2 p-2 rounded-md transition-all",
-          "bg-background/80 border border-border/50 shadow-sm",
-          "hover:bg-muted focus:outline-none focus:ring-2 focus:ring-ring",
+          "absolute top-2 right-2 bg-background/80 p-2 shadow-sm",
+          surfaceClasses.iconButton,
           // Mobile: always visible (opacity-70 for subtle appearance)
           // Desktop: hidden until hover
           "opacity-70 md:opacity-0 md:group-hover:opacity-100 focus:opacity-100"
@@ -163,7 +164,7 @@ function HighlightedCodeBlock({
         title={copied ? "Copied!" : "Copy code"}
       >
         {copied ? (
-          <Check className="h-4 w-4 text-green-500" />
+          <Check className="h-4 w-4 text-secondary-foreground" />
         ) : (
           <Copy className="h-4 w-4 text-muted-foreground" />
         )}

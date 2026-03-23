@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { getDocumentSection } from "@/lib/api";
+import { cn } from "@/lib/utils";
 import { eIdToCitation } from "@/lib/utils/citation-parser";
 import type { SectionResponse } from "@/lib/api/types";
 
@@ -87,7 +88,7 @@ export function CitationLink({
     <HoverCard openDelay={300} closeDelay={100} onOpenChange={handleOpenChange}>
       <HoverCardTrigger asChild>
         <button
-          className={`cursor-pointer text-primary underline decoration-dotted underline-offset-2 hover:decoration-solid ${className || ""}`}
+          className={cn("ll-inline-citation-button", className)}
         >
           {children}
         </button>
@@ -100,7 +101,7 @@ export function CitationLink({
       >
         <div className="flex flex-col">
           {/* Header */}
-          <div className="border-b bg-muted/50 px-4 py-3">
+          <div className="border-b border-border/30 bg-muted/50 px-4 py-3">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <FileText className="h-4 w-4 text-muted-foreground" />
@@ -158,7 +159,7 @@ export function CitationLink({
 
           {/* Footer with link to document */}
           {showDocumentLink && section && !loading && (
-            <div className="border-t bg-muted/30 px-4 py-2">
+            <div className="border-t border-border/30 bg-muted/30 px-4 py-2">
               <Button
                 variant="ghost"
                 size="sm"

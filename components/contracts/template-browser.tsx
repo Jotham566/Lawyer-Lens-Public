@@ -29,6 +29,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { getEnhancedTemplates, type EnhancedTemplate } from "@/lib/api/contracts";
 
@@ -186,14 +187,15 @@ export function TemplateBrowser({
                 <div
                   key={template.id}
                   className={cn(
-                    "flex items-start gap-4 p-4 rounded-lg border cursor-pointer transition-all",
+                    "flex cursor-pointer items-start gap-4 rounded-lg border p-4",
+                    surfaceClasses.pagePanelInteractive,
                     selectedId === template.id
-                      ? "border-primary bg-primary/5 ring-1 ring-primary"
-                      : "hover:border-primary/50 hover:bg-muted/50"
+                      ? "border-primary bg-primary/10 ring-1 ring-primary/30"
+                      : ""
                   )}
                   onClick={() => handleSelect(template)}
                 >
-                  <div className="p-2 rounded-lg bg-muted">
+                  <div className="rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high p-2">
                     {contractTypeIcons[template.contract_type] || (
                       <FileText className="h-4 w-4" />
                     )}

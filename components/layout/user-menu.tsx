@@ -50,11 +50,12 @@ export function UserMenu() {
           variant="ghost"
           size="sm"
           onClick={() => openLogin()}
+          className="rounded-full"
         >
           <LogIn className="h-4 w-4 sm:hidden" />
           <span className="hidden sm:inline">Sign in</span>
         </Button>
-        <Button size="sm" onClick={() => openRegister()}>
+        <Button size="sm" onClick={() => openRegister()} className="rounded-full">
           Get Started
         </Button>
       </div>
@@ -72,8 +73,8 @@ export function UserMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="gap-2">
-          <div className="flex h-7 w-7 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium overflow-hidden">
+        <Button variant="ghost" size="sm" className="gap-2 rounded-full px-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground text-xs font-medium overflow-hidden shadow-[var(--shadow-soft)]">
             {user.avatar_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -88,7 +89,7 @@ export function UserMenu() {
           <span className="hidden sm:inline max-w-[100px] truncate">
             {user.full_name.split(" ")[0]}
           </span>
-          <ChevronDown className="h-4 w-4 text-muted-foreground" />
+          <ChevronDown className="ll-icon-muted h-4 w-4" />
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent className="w-56" align="end" forceMount>
@@ -103,28 +104,28 @@ export function UserMenu() {
         <DropdownMenuSeparator />
         <DropdownMenuGroup>
           <DropdownMenuItem asChild>
-            <Link href="/settings" className="cursor-pointer">
-              <User className="mr-2 h-4 w-4" />
+              <Link href="/settings" className="cursor-pointer">
+              <User className="ll-icon-muted mr-2 h-4 w-4" />
               Profile
             </Link>
           </DropdownMenuItem>
           {isTeamOrEnterprise && (
             <DropdownMenuItem asChild>
               <Link href="/settings/organization" className="cursor-pointer">
-                <Building2 className="mr-2 h-4 w-4" />
+                <Building2 className="ll-icon-muted mr-2 h-4 w-4" />
                 Organization
               </Link>
             </DropdownMenuItem>
           )}
           <DropdownMenuItem asChild>
             <Link href="/settings/billing" className="cursor-pointer">
-              <CreditCard className="mr-2 h-4 w-4" />
+              <CreditCard className="ll-icon-muted mr-2 h-4 w-4" />
               Billing
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild>
             <Link href="/settings/security" className="cursor-pointer">
-              <Shield className="mr-2 h-4 w-4" />
+              <Shield className="ll-icon-muted mr-2 h-4 w-4" />
               Security
             </Link>
           </DropdownMenuItem>
@@ -132,7 +133,7 @@ export function UserMenu() {
             <>
               <DropdownMenuSeparator />
               <DropdownMenuItem asChild>
-                <Link href="/pricing" className="cursor-pointer text-amber-600 dark:text-amber-400">
+                <Link href="/pricing" className="ll-menu-item-accent cursor-pointer">
                   <Sparkles className="mr-2 h-4 w-4" />
                   Upgrade Plan
                 </Link>
@@ -142,7 +143,7 @@ export function UserMenu() {
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
         <DropdownMenuItem
-          className="cursor-pointer text-destructive focus:text-destructive"
+          className="ll-menu-item-danger cursor-pointer"
           onClick={() => logout()}
         >
           <LogOut className="mr-2 h-4 w-4" />

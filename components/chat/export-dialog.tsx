@@ -19,6 +19,7 @@ import {
   generateFilename,
   printConversation,
 } from "@/lib/utils/export-conversation";
+import { surfaceClasses } from "@/lib/design-system";
 
 type ExportFormat = "markdown" | "text" | "pdf";
 
@@ -116,12 +117,13 @@ export function ExportDialog({
           {exportOptions.map((option) => (
             <button
               key={option.id}
+              type="button"
               onClick={() => setSelectedFormat(option.id)}
               className={cn(
-                "w-full flex items-start gap-3 p-3 rounded-lg border text-left transition-colors",
+                "w-full flex items-start gap-3 p-3 text-left",
                 selectedFormat === option.id
-                  ? "border-primary bg-primary/5"
-                  : "border-border hover:border-primary/50 hover:bg-muted/50"
+                  ? surfaceClasses.optionCardActive
+                  : surfaceClasses.optionCard
               )}
             >
               <div

@@ -1,6 +1,6 @@
 /**
  * Common reusable components following enterprise design patterns.
- * These components ensure consistency across the Law Lens platform.
+ * These components ensure consistency across the Law Lens Uganda platform.
  */
 
 // Page structure

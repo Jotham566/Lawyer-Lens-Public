@@ -1,8 +1,10 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PricingTierCard, PricingTier, PricingFAQ } from "@/components/pricing";
+import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchSubscription } from "@/lib/api/billing";
@@ -95,7 +97,7 @@ export default function PricingPage() {
                 className="rounded-md px-4 py-2 data-[state=on]:bg-background data-[state=on]:shadow-sm"
               >
                 Annual
-                <span className="ml-2 text-xs bg-green-100 text-green-700 px-2 py-0.5 rounded-full">
+                <span className="ml-2 rounded-full border border-primary/15 bg-primary/10 px-2 py-0.5 text-xs text-secondary-foreground">
                   Save 20%
                 </span>
               </ToggleGroupItem>
@@ -227,7 +229,7 @@ export default function PricingPage() {
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
-                        <span className="text-green-600">&#10003;</span>
+                        <span className="text-secondary-foreground">&#10003;</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -254,7 +256,7 @@ export default function PricingPage() {
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
-                        <span className="text-green-600">&#10003;</span>
+                        <span className="text-secondary-foreground">&#10003;</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -279,7 +281,7 @@ export default function PricingPage() {
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
-                        <span className="text-green-600">&#10003;</span>
+                        <span className="text-secondary-foreground">&#10003;</span>
                       ) : (
                         <span className="text-muted-foreground">-</span>
                       )}
@@ -308,13 +310,11 @@ export default function PricingPage() {
             Start with a free account and upgrade when you&apos;re ready.
             No credit card required.
           </p>
-          <a
-            href="/register"
-            className="inline-flex items-center justify-center rounded-md bg-primary px-8 py-3 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-            aria-label="Get started with a free account"
-          >
-            Get Started Free
-          </a>
+          <Button asChild variant="brand" size="lg">
+            <Link href="/register" aria-label="Get started with a free account">
+              Get Started Free
+            </Link>
+          </Button>
         </div>
       </section>
     </main>

@@ -103,8 +103,8 @@ function VerifyEmailContent() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
+            <CheckCircle2 className="h-6 w-6 text-secondary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Email verified!</CardTitle>
           <CardDescription className="text-center">
@@ -114,7 +114,7 @@ function VerifyEmailContent() {
 
         <CardFooter>
           <Button asChild className="w-full">
-            <Link href="/">Continue to Law Lens</Link>
+            <Link href="/">Continue to Law Lens Uganda</Link>
           </Button>
         </CardFooter>
       </Card>
@@ -126,8 +126,8 @@ function VerifyEmailContent() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 dark:bg-blue-900/30">
-            <Mail className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <Mail className="h-6 w-6 text-primary" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">Verify your email</CardTitle>
           <CardDescription className="text-center">
@@ -150,7 +150,7 @@ function VerifyEmailContent() {
           )}
 
           {resendSuccess && (
-            <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600 dark:text-green-400">
+            <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 p-3 text-sm text-secondary-foreground">
               <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
               <p>Verification email sent! Check your inbox.</p>
             </div>
@@ -186,7 +186,7 @@ function VerifyEmailContent() {
           </Button>
 
           <Link href="/" className="text-center text-sm text-muted-foreground hover:text-foreground">
-            Continue to Law Lens (limited access)
+            Continue to Law Lens Uganda (limited access)
           </Link>
         </CardFooter>
       </Card>
@@ -214,7 +214,7 @@ function VerifyEmailContent() {
           </div>
         )}
         {resendSuccess && (
-          <div className="flex items-center gap-2 rounded-lg border border-green-500/50 bg-green-50 dark:bg-green-900/20 p-3 text-sm text-green-600 dark:text-green-400">
+          <div className="flex items-center gap-2 rounded-lg border border-primary/20 bg-primary/10 p-3 text-sm text-secondary-foreground">
             <CheckCircle2 className="h-4 w-4 flex-shrink-0" />
             <p>Verification email sent! Check your inbox.</p>
           </div>

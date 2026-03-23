@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
   TooltipProvider
 } from "@/components/ui/tooltip";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import type { Conversation } from "@/lib/stores";
 
@@ -250,19 +251,25 @@ export function ConversationList({
             role="button"
             tabIndex={0}
             onClick={() => onSelect(conv.id)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" || e.key === " ") {
+                e.preventDefault();
+                onSelect(conv.id);
+              }
+            }}
             className={cn(
-              "group relative flex cursor-pointer items-center rounded-lg py-2 transition-colors",
+              "group relative flex cursor-pointer items-center rounded-lg py-2",
               collapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-2",
               currentConversationId === conv.id
-                ? "bg-accent text-accent-foreground"
-                : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                ? surfaceClasses.rowInteractiveActive
+                : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
             )}
           >
             {/* Icon: Star for pinned, MessageSquare for regular */}
             {isPinned && !collapsed ? (
-              <Star className="h-4 w-4 shrink-0 mr-3 fill-amber-400 text-amber-400" />
+              <Star className="h-4 w-4 shrink-0 mr-3 fill-primary text-primary" />
             ) : (
-              <MessageSquare className={cn("h-4 w-4 shrink-0", collapsed ? "h-5 w-5" : "mr-3")} />
+              <MessageSquare className={cn("ll-icon-muted h-4 w-4 shrink-0", collapsed ? "h-5 w-5" : "mr-3")} />
             )}
 
             {!collapsed && (
@@ -284,7 +291,7 @@ export function ConversationList({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-green-600 hover:text-green-700 hover:bg-green-100 dark:hover:bg-green-900/30"
+                      className="ll-icon-button h-6 w-6 text-secondary-foreground"
                       onClick={(e) => { e.stopPropagation(); handleSaveEdit(); }}
                     >
                       <Check className="h-3 w-3" />
@@ -293,7 +300,7 @@ export function ConversationList({
                     <Button
                       variant="ghost"
                       size="icon"
-                      className="h-6 w-6 text-muted-foreground hover:text-foreground"
+                      className="ll-icon-button h-6 w-6"
                       onClick={(e) => { e.stopPropagation(); handleCancelEdit(); }}
                     >
                       <X className="h-3 w-3" />
@@ -317,10 +324,10 @@ export function ConversationList({
                       size="icon"
                       type="button"
                       className={cn(
-                        "h-6 w-6",
+                        "ll-icon-button h-6 w-6",
                         conv.isStarred
-                            ? "text-amber-400 hover:text-amber-500 hover:bg-amber-100/50 dark:hover:bg-amber-900/30"
-                            : "hover:bg-muted hover:text-amber-400"
+                            ? "text-primary"
+                            : ""
                         )}
                         onClick={(e) => handleToggleStar(conv, e)}
                       >
@@ -331,7 +338,7 @@ export function ConversationList({
                       variant="ghost"
                       size="icon"
                       type="button"
-                      className="h-6 w-6 hover:bg-muted hover:text-green-500"
+                      className="ll-icon-button h-6 w-6"
                       onClick={(e) => handleStartEdit(conv, e)}
                       >
                         <Pencil className="h-3 w-3" />
@@ -341,7 +348,7 @@ export function ConversationList({
                       variant="ghost"
                       size="icon"
                       type="button"
-                      className="h-6 w-6 hover:bg-muted hover:text-blue-500"
+                      className="ll-icon-button h-6 w-6"
                       onClick={(e) => handleArchive(conv, e)}
                         title="Archive"
                       >
@@ -352,7 +359,7 @@ export function ConversationList({
                       variant="ghost"
                       size="icon"
                       type="button"
-                      className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+                      className="ll-icon-button ll-icon-button-danger h-6 w-6"
                       onClick={(e) => onDelete(conv.id, e)}
                       >
                         <Trash2 className="h-3 w-3" />
@@ -367,7 +374,7 @@ export function ConversationList({
         </TooltipTrigger>
         {collapsed && (
           <TooltipContent side="right" className="flex items-center gap-4">
-            {isPinned && <Star className="h-3 w-3 fill-amber-400 text-amber-400" />}
+            {isPinned && <Star className="h-3 w-3 fill-primary text-primary" />}
             {stripMarkdownFromTitle(conv.title)}
           </TooltipContent>
         )}
@@ -381,7 +388,7 @@ export function ConversationList({
       {starredConversations.length > 0 && (
         <div>
           {!collapsed && (
-            <h3 className="mb-2 px-2 text-xs font-medium text-amber-600 dark:text-amber-400 uppercase tracking-wider flex items-center gap-1">
+            <h3 className="mb-2 px-2 text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
               <Star className="h-3 w-3 fill-current" />
               Pinned
             </h3>
@@ -412,7 +419,7 @@ export function ConversationList({
           <button
             type="button"
             onClick={() => setArchivedExpanded(!archivedExpanded)}
-            className="flex items-center gap-1 w-full px-2 mb-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider hover:text-muted-foreground transition-colors"
+            className="ll-text-link flex w-full items-center gap-1 px-2 mb-2 text-xs font-medium uppercase tracking-wider"
           >
             {archivedExpanded ? (
               <ChevronDown className="h-3 w-3" />
@@ -432,14 +439,20 @@ export function ConversationList({
                         role="button"
                         tabIndex={0}
                         onClick={() => onSelect(conv.id)}
+                        onKeyDown={(e) => {
+                          if (e.key === "Enter" || e.key === " ") {
+                            e.preventDefault();
+                            onSelect(conv.id);
+                          }
+                        }}
                         className={cn(
-                          "group relative flex cursor-pointer items-center rounded-lg py-2 px-2 transition-colors",
+                          "group relative flex cursor-pointer items-center rounded-lg py-2 px-2",
                           currentConversationId === conv.id
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                            ? surfaceClasses.rowInteractiveActive
+                            : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
                         )}
                       >
-                        <Archive className="h-4 w-4 shrink-0 mr-3 text-muted-foreground/50" />
+                        <Archive className="ll-icon-muted h-4 w-4 shrink-0 mr-3 text-muted-foreground/50" />
                         <div className="min-w-0 flex-1 overflow-hidden">
                           <p className="truncate text-sm font-medium leading-none opacity-70">
                             {stripMarkdownFromTitle(conv.title)}
@@ -453,7 +466,7 @@ export function ConversationList({
                             variant="ghost"
                             size="icon"
                             type="button"
-                            className="h-6 w-6 hover:bg-muted hover:text-primary"
+                            className="ll-icon-button h-6 w-6"
                             onClick={(e) => handleUnarchive(conv, e)}
                             title="Restore from archive"
                           >
@@ -464,7 +477,7 @@ export function ConversationList({
                             variant="ghost"
                             size="icon"
                             type="button"
-                            className="h-6 w-6 hover:bg-destructive/10 hover:text-destructive"
+                            className="ll-icon-button ll-icon-button-danger h-6 w-6"
                             onClick={(e) => onDelete(conv.id, e)}
                           >
                             <Trash2 className="h-3 w-3" />
@@ -548,11 +561,11 @@ export function ConversationSidebar({
           variant="ghost"
           size="icon"
           type="button"
-          className="h-8 w-8 text-muted-foreground"
+          className="ll-icon-button h-8 w-8"
           onClick={() => setIsCollapsed(!isCollapsed)}
           aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
-          {isCollapsed ? <PanelLeftOpen className="h-4 w-4" /> : <PanelLeftClose className="h-4 w-4" />}
+          {isCollapsed ? <PanelLeftOpen className="ll-icon-muted h-4 w-4" /> : <PanelLeftClose className="ll-icon-muted h-4 w-4" />}
         </Button>
       </div>
 
@@ -586,10 +599,10 @@ export function ConversationSidebar({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="ll-icon-button absolute right-2 top-1/2 -translate-y-1/2"
                 aria-label="Clear search"
               >
-                <X className="h-4 w-4" />
+                <X className="ll-icon-muted h-4 w-4" />
               </button>
             )}
           </div>
@@ -677,10 +690,10 @@ export function MobileHistorySheet({
           variant="ghost"
           size="icon"
           type="button"
-          className="h-8 w-8"
+          className="ll-icon-button h-8 w-8"
           aria-label="Chat history"
         >
-          <History className="h-4 w-4" />
+          <History className="ll-icon-muted h-4 w-4" />
         </Button>
       </SheetTrigger>
       <SheetContent side="right" className="w-[300px] p-0 sm:w-[350px] flex flex-col">
@@ -711,10 +724,10 @@ export function MobileHistorySheet({
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                className="ll-icon-button absolute right-2 top-1/2 -translate-y-1/2"
                 aria-label="Clear search"
               >
-                <X className="h-4 w-4" />
+                <X className="ll-icon-muted h-4 w-4" />
               </button>
             )}
           </div>

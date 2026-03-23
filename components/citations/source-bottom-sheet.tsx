@@ -21,6 +21,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { HighlightedExcerptCompact } from "./highlighted-excerpt";
 import { CitationNavigation } from "./citation-navigation";
@@ -39,15 +40,15 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
 function getTypeBadgeColor(type: DocumentType) {
   switch (type) {
     case "act":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
+      return "bg-primary/10 text-primary";
     case "judgment":
-      return "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300";
+      return "bg-secondary text-foreground";
     case "regulation":
-      return "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300";
+      return "bg-muted text-muted-foreground";
     case "constitution":
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300";
+      return "bg-accent/20 text-primary";
     default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300";
+      return "bg-muted text-muted-foreground";
   }
 }
 
@@ -132,7 +133,7 @@ export function SourceBottomSheet() {
       <SheetContent
         side="bottom"
         className={cn(
-          "p-0 rounded-t-2xl [&>button]:hidden",
+          "rounded-t-2xl border border-border/40 bg-card p-0 [&>button]:hidden",
           isExpanded ? "h-[80vh]" : "h-auto max-h-[60vh]"
         )}
       >
@@ -147,16 +148,17 @@ export function SourceBottomSheet() {
         {/* Drag handle */}
         <div className="flex justify-center py-2">
           <button
+            type="button"
             onClick={() => setIsExpanded(!isExpanded)}
-            className="w-12 h-1 rounded-full bg-muted-foreground/30 hover:bg-muted-foreground/50 transition-colors"
+            className={cn("h-1 w-12", surfaceClasses.dragHandleButton)}
             aria-label={isExpanded ? "Collapse" : "Expand"}
           />
         </div>
 
         {/* Header */}
-        <div className="px-4 pb-3 border-b">
+        <div className="px-4 pb-3">
           <div className="flex items-start gap-3">
-            <div className="rounded-lg p-2 bg-muted">
+            <div className="rounded-lg bg-muted p-2">
               <Icon className="h-4 w-4 text-muted-foreground" />
             </div>
             <div className="flex-1 min-w-0">
@@ -186,10 +188,11 @@ export function SourceBottomSheet() {
               </div>
             </div>
             <button
+              type="button"
               onClick={closePanel}
-              className="p-1 rounded-full hover:bg-muted transition-colors"
+              className={cn("h-8 w-8", surfaceClasses.floatingIconButton)}
             >
-              <X className="h-4 w-4 text-muted-foreground" />
+              <X className="ll-icon-muted h-4 w-4" />
             </button>
           </div>
 
@@ -224,7 +227,7 @@ export function SourceBottomSheet() {
           {isExpanded && parsedExcerpt.tables.length > 0 && (
             <div className="mt-3 space-y-3">
               {parsedExcerpt.tables.map((table, tableIdx) => (
-                <div key={tableIdx} className="overflow-x-auto rounded-lg border border-border">
+                <div key={tableIdx} className="overflow-x-auto rounded-lg border border-border/30 bg-card/70">
                   <table className="w-full text-xs">
                     <thead className="bg-muted/50">
                       <tr>
@@ -254,8 +257,9 @@ export function SourceBottomSheet() {
 
           {!isExpanded && (parsedExcerpt.bodyText || activeSource.excerpt).length > 300 && (
             <button
+              type="button"
               onClick={() => setIsExpanded(true)}
-              className="flex items-center gap-1 mt-2 text-xs text-primary font-medium"
+              className={cn("mt-2 flex items-center gap-1 text-xs", surfaceClasses.textLink)}
             >
               <ChevronDown className="h-3 w-3" />
               Show more
@@ -264,7 +268,7 @@ export function SourceBottomSheet() {
         </div>
 
         {/* Actions */}
-        <div className="px-4 py-3 border-t bg-muted/30 flex items-center gap-2">
+        <div className="px-4 py-3 bg-muted/30 flex items-center gap-2">
           <Button
             variant="outline"
             size="sm"
@@ -273,7 +277,7 @@ export function SourceBottomSheet() {
           >
             {copied ? (
               <>
-                <Check className="h-4 w-4 mr-2 text-green-500" />
+                <Check className="h-4 w-4 mr-2 text-primary" />
                 Copied
               </>
             ) : (

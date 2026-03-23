@@ -28,6 +28,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { sanitizeSearchHighlight } from "@/lib/utils/sanitize";
 import { useSearch, type SearchMode } from "@/lib/hooks";
@@ -46,32 +47,32 @@ const documentTypeConfig: Record<
     pluralLabel: "Acts of Parliament",
     icon: FileText,
     className: "badge-act",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-50 dark:bg-blue-950/50",
+    color: "text-primary",
+    bgColor: "bg-card",
   },
   judgment: {
     label: "Judgment",
     pluralLabel: "Court Judgments",
     icon: Gavel,
     className: "badge-judgment",
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-50 dark:bg-purple-950/50",
+    color: "text-primary",
+    bgColor: "bg-card",
   },
   regulation: {
     label: "Regulation",
     pluralLabel: "Regulations",
     icon: ScrollText,
     className: "badge-regulation",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-50 dark:bg-green-950/50",
+    color: "text-primary",
+    bgColor: "bg-card",
   },
   constitution: {
     label: "Constitution",
     pluralLabel: "Constitutional Documents",
     icon: BookOpen,
     className: "badge-constitution",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-50 dark:bg-amber-950/50",
+    color: "text-primary",
+    bgColor: "bg-card",
   },
 };
 
@@ -166,23 +167,31 @@ function SearchContent() {
       <Breadcrumbs className="mb-6" />
 
       {/* Search Header */}
-      <div className="space-y-4 mb-6">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800">
-            <Search className="h-6 w-6 text-slate-600 dark:text-slate-400" />
+      <div className={`mb-6 ${surfaceClasses.pageHero}`}>
+        <div className="mb-5 flex items-start gap-4">
+          <div className={surfaceClasses.pageIconTile}>
+            <Search className="h-6 w-6 text-primary" />
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
+            <p className={surfaceClasses.pageEyebrow}>
+              Search
+            </p>
+            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.03em] sm:text-5xl">
               Search Legal Documents
             </h1>
-            <p className="text-muted-foreground">
+            <p className="mt-3 text-base leading-8 text-muted-foreground">
               Find acts, judgments, regulations, and constitutional provisions
             </p>
           </div>
         </div>
 
         {/* Search Form */}
-        <form onSubmit={handleSearch} className="relative max-w-2xl" role="search" aria-label="Search legal documents">
+        <form
+          onSubmit={handleSearch}
+          className="relative max-w-2xl"
+          role="search"
+          aria-label="Search legal documents"
+        >
           <label htmlFor="search-input" className="sr-only">
             Search legal documents
           </label>
@@ -199,12 +208,12 @@ function SearchContent() {
             aria-haspopup="listbox"
             aria-autocomplete="list"
             autoComplete="off"
-            className="h-12 w-full rounded-lg border bg-background pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className={`h-14 w-full rounded-2xl pl-10 pr-24 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 ${surfaceClasses.searchField}`}
           />
           <Button
             type="submit"
             size="sm"
-            className="absolute right-1.5 top-1/2 -translate-y-1/2"
+            className="absolute right-2 top-1/2 -translate-y-1/2 disabled:border disabled:border-border/40"
             aria-label="Submit search"
           >
             Search
@@ -217,13 +226,12 @@ function SearchContent() {
         </form>
 
         {/* Search Type Indicator with Smart Search Option */}
-        <div className="flex flex-wrap items-center gap-3 text-sm">
-          <div className="flex items-center gap-2 text-muted-foreground">
+        <div className="mt-4 flex flex-wrap items-center gap-3 text-sm">
+          <div className={`flex items-center gap-2 px-3 py-1.5 text-muted-foreground ${surfaceClasses.chipMuted}`}>
             <Search className="h-4 w-4" />
             <span>Keyword Search</span>
             <span className="text-xs">(finds exact terms)</span>
           </div>
-          <span className="text-muted-foreground">|</span>
           <Button variant="outline" size="sm" className="gap-1.5" asChild>
             <Link href={query ? `/chat?q=${encodeURIComponent(query)}` : "/chat"}>
               <Sparkles className="h-3.5 w-3.5" />
@@ -236,7 +244,11 @@ function SearchContent() {
       {/* Filters & Results */}
       <div className="grid gap-6 lg:grid-cols-[240px_1fr]">
         {/* Filters Sidebar */}
-        <aside className="space-y-4" role="region" aria-label="Search filters">
+        <aside
+          className="space-y-4 rounded-[28px] border border-border/60 bg-surface-container p-4 shadow-[var(--shadow-soft)]"
+          role="region"
+          aria-label="Search filters"
+        >
           <div className="flex items-center justify-between">
             <h2 className="flex items-center gap-2 text-sm font-medium">
               <Filter className="h-4 w-4" aria-hidden="true" />
@@ -247,7 +259,7 @@ function SearchContent() {
                 variant="ghost"
                 size="sm"
                 onClick={clearFilters}
-                className="h-auto p-0 text-xs text-muted-foreground hover:text-foreground"
+                className="h-auto px-0 py-0 text-xs"
               >
                 Clear all
               </Button>
@@ -343,7 +355,10 @@ function SearchContent() {
         <div className="space-y-4" role="region" aria-label="Search results">
           {/* Results Header */}
           {query && (
-            <div className="flex items-center justify-between text-sm text-muted-foreground" aria-live="polite">
+            <div
+              className="flex items-center justify-between rounded-2xl border border-border/60 bg-surface-container px-4 py-3 text-sm text-muted-foreground shadow-[var(--shadow-soft)]"
+              aria-live="polite"
+            >
               <span>
                 {isLoading
                   ? "Searching..."
@@ -354,10 +369,14 @@ function SearchContent() {
                   {filters.documentTypes?.map((type) => (
                     <Badge key={type} variant="secondary" className="gap-1">
                       {documentTypeConfig[type]?.label || type}
-                      <X
-                        className="h-3 w-3 cursor-pointer"
+                      <button
+                        type="button"
                         onClick={() => handleTypeFilter("all")}
-                      />
+                        className={cn("rounded-full", surfaceClasses.iconButton)}
+                        aria-label={`Remove ${documentTypeConfig[type]?.label || type} filter`}
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
                     </Badge>
                   ))}
                 </div>
@@ -369,7 +388,7 @@ function SearchContent() {
           {isLoading && (
             <div className="space-y-4">
               {Array.from({ length: 5 }).map((_, i) => (
-                <Card key={i}>
+                <Card key={i} className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
                   <CardHeader className="pb-2">
                     <Skeleton className="h-5 w-3/4" />
                   </CardHeader>
@@ -384,7 +403,7 @@ function SearchContent() {
 
           {/* Error State */}
           {error && (
-            <Card className="border-destructive" role="alert" aria-live="assertive">
+            <Card className="border-destructive/30 bg-destructive/5 shadow-[var(--shadow-soft)]" role="alert" aria-live="assertive">
               <CardContent className="pt-6">
                 <p className="text-sm text-destructive">
                   An error occurred while searching. Please try again.
@@ -395,7 +414,7 @@ function SearchContent() {
 
           {/* No Query State */}
           {!query && !isLoading && (
-            <Card>
+            <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
               <CardContent className="py-12 text-center">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium">
@@ -410,7 +429,7 @@ function SearchContent() {
 
           {/* No Results State */}
           {query && !isLoading && results.length === 0 && !error && (
-            <Card>
+            <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
               <CardContent className="py-12 text-center">
                 <Search className="mx-auto h-12 w-12 text-muted-foreground/50" />
                 <h3 className="mt-4 text-lg font-medium">No results found</h3>
@@ -501,7 +520,7 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
 
   return (
     <Link href={`/document/${result.document_id}?from=search&returnTo=${encodeURIComponent(returnTo)}`}>
-      <Card className="transition-all hover:border-primary/50 hover:shadow-sm">
+      <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-all hover:-translate-y-0.5 hover:border-primary/35">
         <CardHeader className="pb-2">
           <div className="flex items-start justify-between gap-2">
             <h3 className="font-medium leading-tight">{result.title}</h3>
@@ -513,7 +532,7 @@ function SearchResultCard({ result, mode }: SearchResultCardProps) {
         <CardContent>
           {content && (
             <p
-              className="line-clamp-2 text-sm text-muted-foreground [&_mark]:bg-yellow-200 [&_mark]:dark:bg-yellow-800/50"
+              className="line-clamp-2 text-sm text-muted-foreground [&_mark]:rounded-[0.35rem] [&_mark]:bg-primary/16 [&_mark]:px-1 [&_mark]:text-foreground dark:[&_mark]:bg-primary/28 dark:[&_mark]:text-primary-foreground"
               dangerouslySetInnerHTML={{
                 __html: sanitizeSearchHighlight(content),
               }}

@@ -18,6 +18,8 @@ import { Separator } from "@/components/ui/separator";
 import { PricingTier } from "@/components/pricing";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const TIER_NAMES: Record<string, string> = {
   professional: "Professional",
@@ -139,7 +141,7 @@ function CheckoutContent() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+        <Loader2 className="h-8 w-8 animate-spin text-primary" />
       </div>
     );
   }
@@ -168,7 +170,7 @@ function CheckoutContent() {
   const monthlyPrice = billingCycle === "monthly" ? tier.monthlyPrice : tier.annualPrice;
 
   return (
-    <div className="min-h-screen bg-muted/30">
+    <div className="min-h-screen bg-background">
       <div className="container max-w-4xl mx-auto px-4 py-8">
         {/* Back button */}
         <Button
@@ -183,7 +185,7 @@ function CheckoutContent() {
         <div className="grid lg:grid-cols-5 gap-8">
           {/* Checkout Form */}
           <div className="lg:col-span-3">
-            <Card>
+            <Card className="bg-card shadow-sm">
               <CardHeader>
                 <CardTitle>Complete your purchase</CardTitle>
                 <CardDescription>
@@ -223,9 +225,17 @@ function CheckoutContent() {
                       onValueChange={(value) => setPaymentMethod(value as typeof paymentMethod)}
                       className="grid gap-4"
                     >
-                      <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                      <Label
+                        htmlFor="card"
+                        className={cn(
+                          "flex items-center gap-4",
+                          paymentMethod === "card"
+                            ? surfaceClasses.optionCardActive
+                            : surfaceClasses.optionCard
+                        )}
+                      >
                         <RadioGroupItem value="card" id="card" />
-                        <Label htmlFor="card" className="flex items-center gap-3 cursor-pointer flex-1">
+                        <div className="flex flex-1 items-center gap-3">
                           <CreditCard className="h-5 w-5" />
                           <div>
                             <div className="font-medium">Credit/Debit Card</div>
@@ -233,34 +243,50 @@ function CheckoutContent() {
                               Visa, Mastercard
                             </div>
                           </div>
-                        </Label>
-                      </div>
+                        </div>
+                      </Label>
 
-                      <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                      <Label
+                        htmlFor="mtn"
+                        className={cn(
+                          "flex items-center gap-4",
+                          paymentMethod === "mtn"
+                            ? surfaceClasses.optionCardActive
+                            : surfaceClasses.optionCard
+                        )}
+                      >
                         <RadioGroupItem value="mtn" id="mtn" />
-                        <Label htmlFor="mtn" className="flex items-center gap-3 cursor-pointer flex-1">
-                          <Smartphone className="h-5 w-5 text-yellow-500" />
+                        <div className="flex flex-1 items-center gap-3">
+                          <Smartphone className="h-5 w-5 text-primary" />
                           <div>
                             <div className="font-medium">MTN Mobile Money</div>
                             <div className="text-sm text-muted-foreground">
                               Pay with MTN MoMo
                             </div>
                           </div>
-                        </Label>
-                      </div>
+                        </div>
+                      </Label>
 
-                      <div className="flex items-center space-x-4 rounded-lg border p-4 cursor-pointer hover:bg-muted/50">
+                      <Label
+                        htmlFor="airtel"
+                        className={cn(
+                          "flex items-center gap-4",
+                          paymentMethod === "airtel"
+                            ? surfaceClasses.optionCardActive
+                            : surfaceClasses.optionCard
+                        )}
+                      >
                         <RadioGroupItem value="airtel" id="airtel" />
-                        <Label htmlFor="airtel" className="flex items-center gap-3 cursor-pointer flex-1">
-                          <Smartphone className="h-5 w-5 text-red-500" />
+                        <div className="flex flex-1 items-center gap-3">
+                          <Smartphone className="h-5 w-5 text-primary" />
                           <div>
                             <div className="font-medium">Airtel Money</div>
                             <div className="text-sm text-muted-foreground">
                               Pay with Airtel Money
                             </div>
                           </div>
-                        </Label>
-                      </div>
+                        </div>
+                      </Label>
                     </RadioGroup>
                   </div>
 
@@ -345,7 +371,7 @@ function CheckoutContent() {
                   <span>${total.toFixed(2)}</span>
                 </div>
                 {billingCycle === "annual" && (
-                  <p className="text-sm text-green-600">
+                  <p className="text-sm text-primary">
                     You save ${((tier.monthlyPrice - tier.annualPrice) * (tier.isPerSeat ? seats : 1) * 12).toFixed(2)} per year
                   </p>
                 )}

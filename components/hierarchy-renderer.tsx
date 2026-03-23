@@ -2,6 +2,7 @@
 
 import * as React from "react";
 import { Check, Link2 } from "lucide-react";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import type { HierarchicalNode, TextFragment } from "@/lib/api/types";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
@@ -345,7 +346,7 @@ function NodeSaveButton({ node, className }: { node: HierarchicalNode; className
       <button
         type="button"
         onClick={handleCopySectionLink}
-        className="inline-flex h-5 w-5 items-center justify-center rounded-md hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+        className={cn("inline-flex h-5 w-5 items-center justify-center", surfaceClasses.iconButton)}
         aria-label="Copy section link"
         title="Copy section link"
       >

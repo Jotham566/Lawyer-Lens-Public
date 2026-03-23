@@ -26,7 +26,7 @@ export function OfflineBanner() {
         "flex items-center gap-2 rounded-full px-4 py-2 shadow-lg",
         "text-sm font-medium transition-all duration-300",
         isOnline
-          ? "bg-green-500 text-white animate-in fade-in slide-in-from-bottom-4"
+          ? "bg-secondary-foreground text-primary-foreground animate-in fade-in slide-in-from-bottom-4"
           : "bg-destructive text-destructive-foreground animate-in fade-in slide-in-from-bottom-4"
       )}
     >

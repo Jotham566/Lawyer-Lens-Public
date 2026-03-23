@@ -4,6 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { FileText, Scale, BookOpen, ScrollText, ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import type { ChatSource } from "@/lib/api/types";
 
 // Deduplicated source with reference count
@@ -23,13 +24,13 @@ const documentIconMap: Record<string, typeof FileText> = {
 function getAccentClass(documentType: string): string {
   switch (documentType) {
     case "act":
-      return "text-blue-600 dark:text-blue-400";
+      return "text-primary";
     case "judgment":
-      return "text-purple-600 dark:text-purple-400";
+      return "text-secondary-foreground";
     case "regulation":
-      return "text-green-600 dark:text-green-400";
+      return "text-secondary-foreground";
     case "constitution":
-      return "text-amber-600 dark:text-amber-400";
+      return "text-primary";
     default:
       return "text-muted-foreground";
   }
@@ -47,7 +48,7 @@ function SourceItem({ source, count }: SourceItemProps) {
   return (
     <Link
       href={`/document/${source.document_id}`}
-      className="group flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors"
+      className={cn("group flex items-center gap-2 text-sm", surfaceClasses.textLink)}
     >
       <Icon className={cn("h-3.5 w-3.5 shrink-0", accentClass)} />
       <span className="truncate max-w-[200px]">{source.title}</span>
@@ -106,8 +107,9 @@ export function SourceBadgeList({ sources, maxVisible = 4 }: SourceBadgeListProp
         ))}
         {hiddenCount > 0 && !isExpanded && (
           <button
+            type="button"
             onClick={() => setIsExpanded(true)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className={cn("flex items-center gap-1 text-xs", surfaceClasses.textLink)}
           >
             <ChevronDown className="h-3 w-3" />
             <span>Show {hiddenCount} more</span>
@@ -115,8 +117,9 @@ export function SourceBadgeList({ sources, maxVisible = 4 }: SourceBadgeListProp
         )}
         {isExpanded && hiddenCount > 0 && (
           <button
+            type="button"
             onClick={() => setIsExpanded(false)}
-            className="flex items-center gap-1 text-xs text-muted-foreground hover:text-foreground transition-colors"
+            className={cn("flex items-center gap-1 text-xs", surfaceClasses.textLink)}
           >
             <ChevronDown className="h-3 w-3 rotate-180" />
             <span>Show less</span>

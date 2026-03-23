@@ -137,8 +137,8 @@ export default function OAuthCallbackPage() {
 
           {state === "success" && (
             <>
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-                <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
+                <CheckCircle2 className="h-6 w-6 text-secondary-foreground" />
               </div>
               <CardTitle>Successfully signed in!</CardTitle>
               <CardDescription>
@@ -149,8 +149,8 @@ export default function OAuthCallbackPage() {
 
           {state === "error" && (
             <>
-              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
-                <AlertCircle className="h-6 w-6 text-red-600 dark:text-red-400" />
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
+                <AlertCircle className="h-6 w-6 text-destructive" />
               </div>
               <CardTitle>Authentication failed</CardTitle>
               <CardDescription>{errorMessage}</CardDescription>

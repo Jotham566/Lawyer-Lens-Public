@@ -37,7 +37,7 @@ export function FeatureGate({
   if (loading) {
     return (
       <div className="animate-pulse">
-        <div className="h-32 bg-slate-200 rounded-lg"></div>
+        <div className="h-32 rounded-xl bg-muted/40"></div>
       </div>
     );
   }
@@ -79,13 +79,13 @@ export function UpgradePrompt({
   className = "",
 }: UpgradePromptProps) {
   return (
-    <Card className={`border-dashed border-2 border-slate-300 ${className}`}>
+    <Card className={`border-dashed border border-border/40 ${className}`}>
       <CardContent className="flex flex-col items-center justify-center py-12">
-        <div className="w-16 h-16 bg-gradient-to-br from-blue-100 to-purple-100 rounded-full flex items-center justify-center mb-4">
-          <Lock className="h-8 w-8 text-blue-600" />
+        <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
+          <Lock className="h-8 w-8 text-primary" />
         </div>
         <h3 className="text-lg font-semibold mb-2">Upgrade to Access {featureName}</h3>
-        <p className="text-slate-500 text-center mb-6 max-w-md">
+        <p className="mb-6 max-w-md text-center text-muted-foreground">
           This feature requires the {getTierDisplayName(requiredTier)} plan or higher.
           You&apos;re currently on the {getTierDisplayName(currentTier)} plan.
         </p>
@@ -123,7 +123,7 @@ export function PremiumBadge({ tier = "professional", size = "sm" }: PremiumBadg
 
   return (
     <span
-      className={`inline-flex items-center gap-1 bg-gradient-to-r from-amber-100 to-yellow-100 text-amber-700 rounded-full font-medium ${sizeClasses[size]}`}
+      className={`inline-flex items-center gap-1 rounded-full bg-accent/20 font-medium text-primary ${sizeClasses[size]}`}
     >
       <Sparkles className={iconSizes[size]} />
       {getTierDisplayName(tier)}
@@ -157,9 +157,9 @@ export function FeatureLockedOverlay({
   return (
     <div className="relative">
       <div className="filter blur-sm pointer-events-none select-none">{children}</div>
-      <div className="absolute inset-0 bg-white/80 dark:bg-slate-900/80 flex flex-col items-center justify-center rounded-lg">
-        <Lock className="h-8 w-8 text-slate-400 mb-3" />
-        <p className="text-sm font-medium text-slate-600 mb-2">
+      <div className="absolute inset-0 flex flex-col items-center justify-center rounded-lg bg-background/80 backdrop-blur-sm">
+        <Lock className="mb-3 h-8 w-8 text-muted-foreground" />
+        <p className="mb-2 text-sm font-medium text-foreground">
           {featureName || feature} requires {getTierDisplayName(requiredTier)}
         </p>
         <Link href="/pricing">

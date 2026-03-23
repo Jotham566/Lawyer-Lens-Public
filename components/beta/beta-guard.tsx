@@ -70,12 +70,12 @@ export function BetaGuard({ children, email }: BetaGuardProps) {
 function BetaAccessRequired() {
   return (
     <div className="flex items-center justify-center min-h-[600px] p-4">
-      <Card className="max-w-lg w-full border-purple-200 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
+      <Card className="max-w-lg w-full border border-border/60 bg-card">
         <CardHeader className="text-center pb-4">
-          <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
-            <Lock className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+          <div className="mx-auto w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center mb-4">
+            <Lock className="w-8 h-8 text-primary" />
           </div>
-          <Badge className="mx-auto mb-2 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+          <Badge className="mx-auto mb-2 bg-secondary text-secondary-foreground">
             Beta Access Required
           </Badge>
           <CardTitle className="text-2xl">Registration is Invite-Only</CardTitle>
@@ -113,7 +113,7 @@ function BetaAccessRequired() {
             </p>
           </div>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-border/60">
             <h4 className="font-medium text-sm mb-3">What happens next?</h4>
             <div className="space-y-2 text-sm text-muted-foreground">
               <p className="flex items-start gap-2">

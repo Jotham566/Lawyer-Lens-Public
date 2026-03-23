@@ -34,6 +34,7 @@ import { Badge } from "@/components/ui/badge";
 import { Logo } from "./logo";
 import { useUIStore } from "@/lib/stores";
 import { useEntitlements } from "@/hooks/use-entitlements";
+import { surfaceClasses } from "@/lib/design-system";
 
 interface NavItem {
   title: string;
@@ -109,14 +110,14 @@ export function Sidebar({ className }: SidebarProps) {
           <Button
             variant="ghost"
             size="icon"
-            className="h-8 w-8"
+            className={cn("h-8 w-8", surfaceClasses.iconButton)}
             onClick={() => setSidebarCollapsed(!isCollapsed)}
             aria-label={isCollapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {isCollapsed ? (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="ll-icon-muted h-4 w-4" />
             ) : (
-              <ChevronLeft className="h-4 w-4" />
+              <ChevronLeft className="ll-icon-muted h-4 w-4" />
             )}
           </Button>
         </div>
@@ -226,20 +227,20 @@ function NavLink({ item, isActive, isCollapsed, isLocked = false }: NavLinkProps
     <Link
       href={item.href}
       className={cn(
-        "flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors",
+        "group flex items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium",
         isActive
           ? "bg-sidebar-accent text-sidebar-accent-foreground"
-          : "text-sidebar-foreground hover:bg-sidebar-accent/50 hover:text-sidebar-accent-foreground",
+          : "ll-row-interactive text-sidebar-foreground",
         isCollapsed && "justify-center px-2",
         isLocked && "opacity-75"
       )}
     >
-      <Icon className="h-4 w-4 shrink-0" />
+      <Icon className="ll-icon-muted h-4 w-4 shrink-0" />
       {!isCollapsed && (
         <>
           <span className="flex-1">{item.title}</span>
           {isLocked && (
-            <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px] px-1.5 py-0">
+            <Badge variant="secondary" className="gap-1 text-[10px] px-1.5 py-0">
               <Sparkles className="h-3 w-3" />
               Pro
             </Badge>
@@ -261,7 +262,7 @@ function NavLink({ item, isActive, isCollapsed, isLocked = false }: NavLinkProps
         <TooltipContent side="right" className="flex items-center gap-2">
           {item.title}
           {isLocked && (
-            <Badge variant="secondary" className="gap-1 bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400 text-[10px]">
+            <Badge variant="secondary" className="gap-1 text-[10px]">
               <Sparkles className="h-3 w-3" />
               Pro
             </Badge>

@@ -93,16 +93,18 @@ const toolConfig = {
   "deep-research": {
     icon: Search,
     label: "Deep Research",
-    color: "text-blue-500",
-    bgColor: "bg-blue-500/10",
-    borderColor: "border-blue-500/20",
+    color: "text-primary",
+    bgColor: "bg-primary/10",
+    borderColor: "border-border/60",
+    progressColor: "bg-gradient-to-r from-primary-container to-primary",
   },
   "draft-contract": {
     icon: FileText,
     label: "Contract Draft",
-    color: "text-green-500",
-    bgColor: "bg-green-500/10",
-    borderColor: "border-green-500/20",
+    color: "text-secondary-foreground",
+    bgColor: "bg-secondary/60",
+    borderColor: "border-secondary/20",
+    progressColor: "bg-secondary/70",
   },
   chat: {
     icon: Search,
@@ -110,6 +112,7 @@ const toolConfig = {
     color: "text-primary",
     bgColor: "bg-primary/10",
     borderColor: "border-primary/20",
+    progressColor: "bg-gradient-to-r from-primary-container to-primary",
   },
 };
 
@@ -164,7 +167,7 @@ export function ToolMessage({
                 {progress?.progress !== undefined && (
                   <div className="h-1.5 bg-muted rounded-full overflow-hidden">
                     <div
-                      className={cn("h-full transition-all duration-500", config.bgColor.replace("/10", ""))}
+                      className={cn("h-full transition-all duration-500", config.progressColor)}
                       style={{ width: `${progress.progress}%` }}
                     />
                   </div>
@@ -249,7 +252,7 @@ export function ToolMessage({
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <span className="font-medium">{config.label}</span>
-                    <CheckCircle2 className="h-4 w-4 text-green-500" />
+                    <CheckCircle2 className="h-4 w-4 text-secondary-foreground" />
                   </div>
                   <CollapsibleTrigger asChild>
                     <Button variant="ghost" size="sm" className="h-8 w-8 p-0">

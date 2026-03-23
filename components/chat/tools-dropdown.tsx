@@ -17,10 +17,11 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
 const experimentalBadgeClass =
-  "h-5 rounded-full border border-red-200 bg-red-50 px-2 text-[10px] font-medium text-red-700 dark:border-red-900/60 dark:bg-red-950/30 dark:text-red-200";
+  "h-5 rounded-full border border-primary/15 bg-primary/10 px-2 text-[10px] font-medium text-secondary-foreground";
 
 export type ToolMode = "chat" | "deep-research" | "draft-contract";
 
@@ -40,7 +41,7 @@ const tools: Tool[] = [
     description: "Comprehensive multi-step legal research with citations",
     icon: Search,
     badge: "Experimental",
-    color: "text-blue-500",
+    color: "text-primary",
   },
   {
     id: "draft-contract",
@@ -48,7 +49,7 @@ const tools: Tool[] = [
     description: "Generate contracts with templates and compliance review",
     icon: FileText,
     badge: "Experimental",
-    color: "text-green-500",
+    color: "text-secondary-foreground",
   },
 ];
 
@@ -94,8 +95,8 @@ export function ToolsDropdown({
                 className={cn(
                   "h-9 gap-2 rounded-full border px-3",
                   selectedTool !== "chat"
-                    ? "border-primary/30 bg-primary/10 font-medium text-foreground hover:bg-primary/15"
-                    : "hover:bg-muted text-muted-foreground",
+                    ? cn(surfaceClasses.buttonSelected, "font-medium")
+                    : "ll-button-ghost text-muted-foreground",
                   className
                 )}
                 disabled={disabled}
@@ -134,7 +135,10 @@ export function ToolsDropdown({
           <button
             type="button"
             aria-label={`Clear ${activeTool?.name ?? "tool"}`}
-            className="absolute left-2 top-1/2 inline-flex h-5 w-5 -translate-y-1/2 items-center justify-center rounded-full bg-background text-muted-foreground shadow-sm ring-1 ring-border transition-colors hover:bg-muted hover:text-foreground"
+            className={cn(
+              "absolute left-2 top-1/2 h-5 w-5 -translate-y-1/2",
+              surfaceClasses.floatingIconButton
+            )}
             onClick={handleClearTool}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
@@ -161,14 +165,16 @@ export function ToolsDropdown({
               key={tool.id}
               onClick={() => onSelectTool(tool.id)}
               className={cn(
-                "flex items-start gap-3 p-3 cursor-pointer",
-                isSelected && "bg-accent"
+                "group flex items-start gap-3 p-3 cursor-pointer",
+                isSelected ? surfaceClasses.rowInteractiveActive : surfaceClasses.rowInteractive
               )}
             >
               <div
                 className={cn(
-                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg",
-                  isSelected ? "bg-primary/20" : "bg-muted"
+                  "flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[color:var(--glass-outline)]",
+                  isSelected
+                    ? "bg-[color:var(--interactive-hover-surface-strong)]"
+                    : "bg-surface-container-high"
                 )}
               >
                 <Icon className={cn("h-5 w-5", tool.color)} />
@@ -217,8 +223,9 @@ export function ActiveToolIndicator({ tool, onClear }: ActiveToolIndicatorProps)
         </Badge>
       ) : null}
       <button
+        type="button"
         onClick={onClear}
-        className="ml-1 p-0.5 rounded-full hover:bg-primary/20 transition-colors"
+        className={cn("ml-1 p-0.5 rounded-full", surfaceClasses.iconButton)}
         aria-label="Clear tool selection"
       >
         <X className="h-3 w-3" />

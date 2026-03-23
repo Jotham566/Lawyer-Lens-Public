@@ -3,6 +3,7 @@
 import { useState, useEffect } from "react";
 import { ChevronRight, ChevronDown, List } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import type { HierarchicalNode } from "@/lib/api/types";
@@ -165,11 +166,21 @@ function TocItemComponent({
     <div className={cn("toc-item", getIndentClass())}>
       <div
         className={cn(
-          "flex w-full items-start gap-1 py-1.5 px-2 rounded-md transition-colors",
-          "hover:bg-accent/50",
-          isActive && "bg-primary/10 text-primary font-medium",
-          isParentOfActive && !isActive && "text-primary/80"
+          "flex w-full items-start gap-1 px-2 py-1.5",
+          isActive ? surfaceClasses.rowInteractiveActive : surfaceClasses.rowInteractive,
+          isActive && "font-medium",
+          isParentOfActive && !isActive && "text-foreground"
         )}
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(item.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(item.id);
+          }
+        }}
+        aria-current={isActive ? "location" : undefined}
       >
         {hasChildren && (
           <button
@@ -178,7 +189,7 @@ function TocItemComponent({
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
-            className="p-0.5 hover:bg-accent rounded shrink-0 mt-0.5"
+            className={cn("mt-0.5 shrink-0 rounded p-0.5", surfaceClasses.iconButton)}
           >
             {isExpanded ? (
               <ChevronDown className="h-3.5 w-3.5" />
@@ -188,15 +199,12 @@ function TocItemComponent({
           </button>
         )}
         {!hasChildren && <span className="w-4 shrink-0" />}
-        <button
-          type="button"
+        <span
           className="min-w-0 flex-1 text-left"
-          onClick={() => onSelect(item.id)}
           title={formatTocLabel(item)}
-          aria-current={isActive ? "location" : undefined}
         >
           <span className="text-sm leading-snug break-words">{formatTocLabel(item)}</span>
-        </button>
+        </span>
       </div>
 
       {hasChildren && isExpanded && (
@@ -282,20 +290,20 @@ export function TableOfContents({
   return (
     <div
       className={cn(
-        "toc-container border rounded-lg bg-card h-[calc(100vh-140px)]",
+        "toc-container rounded-xl border border-border/40 bg-card h-[calc(100vh-140px)]",
         isCollapsed ? "w-12" : "w-72",
         className
       )}
     >
       {/* Header */}
-      <div className="flex items-center justify-between p-3 border-b">
+      <div className="flex items-center justify-between p-3">
         {!isCollapsed && (
           <h3 className="font-medium text-sm">Table of Contents</h3>
         )}
         <Button
           variant="ghost"
           size="icon"
-          className="h-7 w-7 shrink-0"
+          className={cn("h-7 w-7 shrink-0", surfaceClasses.iconButton)}
           onClick={() => setIsCollapsed(!isCollapsed)}
         >
           <List className="h-4 w-4" />

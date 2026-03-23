@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
 interface PageHeaderProps {
@@ -30,32 +31,45 @@ export function PageHeader({
   children,
 }: PageHeaderProps) {
   return (
-    <div className={cn("space-y-4", className)}>
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex items-center gap-4">
+    <div
+      className={cn(
+        "space-y-5 rounded-[28px] border border-border/60 bg-surface-container p-6 shadow-[var(--shadow-soft)] sm:p-8",
+        className
+      )}
+    >
+      <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex items-start gap-4">
           {backHref && (
-            <Button variant="ghost" size="icon" asChild className="shrink-0">
+            <Button
+              variant="ghost"
+              size="icon"
+              asChild
+              className={cn("mt-1 shrink-0", surfaceClasses.floatingIconButton)}
+            >
               <Link href={backHref} aria-label={backLabel}>
                 <ArrowLeft className="h-5 w-5" />
               </Link>
             </Button>
           )}
           <div className="min-w-0">
-            <h1 className="text-xl font-semibold tracking-tight sm:text-2xl truncate">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
+              Workspace
+            </p>
+            <h1 className="mt-3 truncate font-serif text-3xl font-semibold tracking-[-0.02em] text-foreground sm:text-[2.5rem]">
               {title}
             </h1>
             {description && (
-              <p className="text-sm text-muted-foreground mt-1">
+              <p className="mt-3 max-w-2xl text-sm leading-6 text-muted-foreground sm:text-[0.95rem]">
                 {description}
               </p>
             )}
           </div>
         </div>
         {actions && (
-          <div className="flex items-center gap-2 shrink-0">{actions}</div>
+          <div className="flex shrink-0 items-center gap-2">{actions}</div>
         )}
       </div>
-      {children}
+      {children ? <div className="border-t border-border/50 pt-5">{children}</div> : null}
     </div>
   );
 }

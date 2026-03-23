@@ -26,68 +26,59 @@ const statusConfig: Record<
   StatusType,
   {
     label: string;
-    className: string;
+    variant: "default" | "secondary" | "destructive" | "outline" | "success" | "info" | "warning" | "neutral" | "danger";
     dotColor: string;
   }
 > = {
   active: {
     label: "Active",
-    className:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    dotColor: "bg-green-500",
+    variant: "success",
+    dotColor: "bg-primary",
   },
   inactive: {
     label: "Inactive",
-    className:
-      "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-    dotColor: "bg-gray-500",
+    variant: "neutral",
+    dotColor: "bg-muted-foreground",
   },
   pending: {
     label: "Pending",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    dotColor: "bg-amber-500",
+    variant: "warning",
+    dotColor: "bg-primary",
   },
   success: {
     label: "Success",
-    className:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    dotColor: "bg-green-500",
+    variant: "success",
+    dotColor: "bg-primary",
   },
   error: {
     label: "Error",
-    className: "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400",
-    dotColor: "bg-red-500",
+    variant: "danger",
+    dotColor: "bg-destructive",
   },
   warning: {
     label: "Warning",
-    className:
-      "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
-    dotColor: "bg-amber-500",
+    variant: "warning",
+    dotColor: "bg-primary",
   },
   info: {
     label: "Info",
-    className:
-      "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
-    dotColor: "bg-blue-500",
+    variant: "info",
+    dotColor: "bg-muted-foreground",
   },
   draft: {
     label: "Draft",
-    className:
-      "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
-    dotColor: "bg-gray-500",
+    variant: "neutral",
+    dotColor: "bg-muted-foreground",
   },
   published: {
     label: "Published",
-    className:
-      "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
-    dotColor: "bg-green-500",
+    variant: "success",
+    dotColor: "bg-primary",
   },
   archived: {
     label: "Archived",
-    className:
-      "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400",
-    dotColor: "bg-slate-500",
+    variant: "neutral",
+    dotColor: "bg-muted-foreground",
   },
 };
 
@@ -104,7 +95,7 @@ export function StatusBadge({
   const config = statusConfig[status];
 
   return (
-    <Badge className={cn("font-normal", config.className, className)}>
+    <Badge variant={config.variant} className={cn("font-normal", className)}>
       {showDot && (
         <span
           className={cn(
@@ -132,32 +123,22 @@ export function RoleBadge({
   const roleConfig = {
     owner: {
       label: "Owner",
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      variant: "warning" as const,
     },
     admin: {
       label: "Admin",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      variant: "success" as const,
     },
     member: {
       label: "Member",
-      className: "",
+      variant: "secondary" as const,
     },
   };
 
   const config = roleConfig[role];
 
-  if (role === "member") {
-    return (
-      <Badge variant="secondary" className={className}>
-        {config.label}
-      </Badge>
-    );
-  }
-
   return (
-    <Badge className={cn("font-normal", config.className, className)}>
+    <Badge variant={config.variant} className={cn("font-normal", className)}>
       {config.label}
     </Badge>
   );
@@ -176,30 +157,26 @@ export function TierBadge({
   const tierConfig = {
     free: {
       label: "Free",
-      className:
-        "bg-gray-100 text-gray-700 dark:bg-gray-900/30 dark:text-gray-400",
+      variant: "neutral" as const,
     },
     professional: {
       label: "Professional",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      variant: "success" as const,
     },
     team: {
       label: "Team",
-      className:
-        "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      variant: "info" as const,
     },
     enterprise: {
       label: "Enterprise",
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      variant: "warning" as const,
     },
   };
 
   const config = tierConfig[tier];
 
   return (
-    <Badge className={cn("font-normal", config.className, className)}>
+    <Badge variant={config.variant} className={cn("font-normal", className)}>
       {config.label}
     </Badge>
   );
@@ -218,35 +195,30 @@ export function DocumentTypeBadge({
   const typeConfig = {
     act: {
       label: "Act",
-      className:
-        "bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400",
+      variant: "act" as const,
     },
     judgment: {
       label: "Judgment",
-      className:
-        "bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400",
+      variant: "judgment" as const,
     },
     regulation: {
       label: "Regulation",
-      className:
-        "bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400",
+      variant: "regulation" as const,
     },
     constitution: {
       label: "Constitution",
-      className:
-        "bg-amber-100 text-amber-700 dark:bg-amber-900/30 dark:text-amber-400",
+      variant: "constitution" as const,
     },
     contract: {
       label: "Contract",
-      className:
-        "bg-slate-100 text-slate-700 dark:bg-slate-900/30 dark:text-slate-400",
+      variant: "neutral" as const,
     },
   };
 
   const config = typeConfig[type];
 
   return (
-    <Badge className={cn("font-normal", config.className, className)}>
+    <Badge variant={config.variant} className={cn("font-normal", className)}>
       {config.label}
     </Badge>
   );

@@ -26,27 +26,27 @@ import Link from "next/link";
 const usageConfig: Record<string, { icon: React.ReactNode; color: string }> = {
   [USAGE_TYPES.AI_QUERY]: {
     icon: <MessageSquare className="h-5 w-5" />,
-    color: "text-blue-600"
+    color: "text-primary"
   },
   [USAGE_TYPES.DEEP_RESEARCH]: {
     icon: <Search className="h-5 w-5" />,
-    color: "text-purple-600"
+    color: "text-secondary-foreground"
   },
   [USAGE_TYPES.CONTRACT_DRAFT]: {
     icon: <FileText className="h-5 w-5" />,
-    color: "text-green-600"
+    color: "text-foreground"
   },
   [USAGE_TYPES.CONTRACT_ANALYSIS]: {
     icon: <FileText className="h-5 w-5" />,
-    color: "text-amber-600"
+    color: "text-primary"
   },
   [USAGE_TYPES.STORAGE_GB]: {
     icon: <HardDrive className="h-5 w-5" />,
-    color: "text-slate-600"
+    color: "text-muted-foreground"
   },
   [USAGE_TYPES.API_CALL]: {
     icon: <Zap className="h-5 w-5" />,
-    color: "text-yellow-600"
+    color: "text-secondary-foreground"
   },
 };
 
@@ -118,13 +118,13 @@ export function UsageDashboard({ showHeader = true, compact = false }: UsageDash
           {atLimitItems.map(([key, data]) => (
             <div
               key={key}
-              className="flex items-center justify-between p-4 bg-red-50 border border-red-200 rounded-lg"
+              className="flex items-center justify-between rounded-xl border border-border/60 bg-destructive/10 p-4"
             >
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-red-500" />
+                <AlertCircle className="h-5 w-5 text-destructive" />
                 <div>
-                  <p className="font-medium text-red-700">{data.display_name} limit reached</p>
-                  <p className="text-sm text-red-600">
+                  <p className="font-medium text-foreground">{data.display_name} limit reached</p>
+                  <p className="text-sm text-muted-foreground">
                     Upgrade your plan to continue using this feature
                   </p>
                 </div>
@@ -137,15 +137,15 @@ export function UsageDashboard({ showHeader = true, compact = false }: UsageDash
           {nearLimitItems.map(([key, data]) => (
             <div
               key={key}
-              className="flex items-center justify-between p-4 bg-amber-50 border border-amber-200 rounded-lg"
+              className="flex items-center justify-between rounded-xl border border-border/60 bg-secondary/50 p-4"
             >
               <div className="flex items-center gap-3">
-                <AlertCircle className="h-5 w-5 text-amber-500" />
+                <AlertCircle className="h-5 w-5 text-primary" />
                 <div>
-                  <p className="font-medium text-amber-700">
+                  <p className="font-medium text-foreground">
                     {data.display_name} at {data.percentage}%
                   </p>
-                  <p className="text-sm text-amber-600">
+                  <p className="text-sm text-muted-foreground">
                     {data.remaining} remaining this period
                   </p>
                 </div>
@@ -175,7 +175,7 @@ export function UsageDashboard({ showHeader = true, compact = false }: UsageDash
       {/* All Clear Message */}
       {atLimitItems.length === 0 && nearLimitItems.length === 0 && (
         <div className="text-center py-4 text-muted-foreground">
-          <CheckCircle className="h-6 w-6 mx-auto mb-2 text-green-500" />
+          <CheckCircle className="h-6 w-6 mx-auto mb-2 text-primary" />
           <p className="text-sm">All usage within limits</p>
         </div>
       )}
@@ -191,7 +191,7 @@ function CompactUsageGrid({
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {usageEntries.map(([key, data]) => {
-        const config = usageConfig[key] || { icon: <Zap className="h-5 w-5" />, color: "text-slate-600" };
+        const config = usageConfig[key] || { icon: <Zap className="h-5 w-5" />, color: "text-muted-foreground" };
         const isWarning = !data.is_unlimited && (data.percentage ?? 0) >= 80;
 
         return (
@@ -199,10 +199,10 @@ function CompactUsageGrid({
             key={key}
             className={`p-4 rounded-lg border ${
               data.is_at_limit
-                ? "border-red-200 bg-red-50"
+                ? "border-border/60 bg-destructive/10"
                 : isWarning
-                ? "border-amber-200 bg-amber-50"
-                : "border-slate-200"
+                ? "border-border/60 bg-secondary/50"
+                : "border-border/60 bg-card"
             }`}
           >
             <div className="flex items-center gap-2 mb-2">
@@ -215,14 +215,14 @@ function CompactUsageGrid({
                 {!data.is_unlimited && ` / ${data.limit?.toLocaleString()}`}
               </span>
               {data.is_unlimited ? (
-                <Badge variant="secondary" className="bg-slate-100">
+                <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                   <Infinity className="h-3 w-3 mr-1" />
                   Unlimited
                 </Badge>
               ) : data.is_at_limit ? (
                 <Badge variant="destructive">At Limit</Badge>
               ) : (
-                <span className={isWarning ? "text-amber-600 font-medium" : "text-muted-foreground"}>
+                <span className={isWarning ? "text-primary font-medium" : "text-muted-foreground"}>
                   {data.percentage}%
                 </span>
               )}
@@ -232,9 +232,9 @@ function CompactUsageGrid({
                 value={data.percentage || 0}
                 className={`mt-2 h-1.5 ${
                   data.is_at_limit
-                    ? "bg-red-100"
+                    ? "bg-destructive/10"
                     : isWarning
-                    ? "bg-amber-100"
+                    ? "bg-secondary/50"
                     : ""
                 }`}
               />
@@ -254,21 +254,21 @@ function DetailedUsageList({
   return (
     <div className="space-y-6">
       {usageEntries.map(([key, data], index) => {
-        const config = usageConfig[key] || { icon: <Zap className="h-5 w-5" />, color: "text-slate-600" };
+        const config = usageConfig[key] || { icon: <Zap className="h-5 w-5" />, color: "text-muted-foreground" };
         const isWarning = !data.is_unlimited && (data.percentage ?? 0) >= 80;
 
         return (
           <div key={key}>
             {index > 0 && <Separator className="mb-6" />}
             <div className="flex items-start gap-4">
-              <div className={`p-3 rounded-lg bg-slate-100 ${config.color}`}>
+              <div className={`rounded-lg bg-surface-container-low p-3 ${config.color}`}>
                 {config.icon}
               </div>
               <div className="flex-1 min-w-0">
                 <div className="flex items-center justify-between mb-1">
                   <h4 className="font-medium">{data.display_name}</h4>
                   {data.is_unlimited ? (
-                    <Badge variant="secondary" className="bg-slate-100">
+                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                       <Infinity className="h-3 w-3 mr-1" />
                       Unlimited
                     </Badge>
@@ -278,11 +278,11 @@ function DetailedUsageList({
                       Limit Reached
                     </Badge>
                   ) : isWarning ? (
-                    <Badge variant="secondary" className="bg-amber-100 text-amber-700">
+                    <Badge variant="secondary" className="bg-secondary text-secondary-foreground">
                       {data.remaining} remaining
                     </Badge>
                   ) : (
-                    <Badge variant="secondary" className="bg-green-100 text-green-700">
+                    <Badge variant="secondary" className="bg-primary/10 text-primary">
                       {data.remaining} remaining
                     </Badge>
                   )}
@@ -293,7 +293,7 @@ function DetailedUsageList({
                     {!data.is_unlimited && ` of ${data.limit?.toLocaleString()}`}
                   </span>
                   {!data.is_unlimited && (
-                    <span className={data.is_at_limit ? "text-red-600" : isWarning ? "text-amber-600" : ""}>
+                    <span className={data.is_at_limit ? "text-destructive" : isWarning ? "text-primary" : ""}>
                       {data.percentage}%
                     </span>
                   )}
@@ -303,9 +303,9 @@ function DetailedUsageList({
                     value={data.percentage || 0}
                     className={`h-2 ${
                       data.is_at_limit
-                        ? "bg-red-100"
+                        ? "bg-destructive/10"
                         : isWarning
-                        ? "bg-amber-100"
+                        ? "bg-secondary/50"
                         : ""
                     }`}
                   />
@@ -406,7 +406,7 @@ export function UsageQuickStats() {
         <div key={key} className="space-y-1">
           <div className="flex items-center justify-between text-sm">
             <span className="text-muted-foreground">{data.display_name}</span>
-            <span className={data.is_at_limit ? "text-red-600 font-medium" : ""}>
+            <span className={data.is_at_limit ? "text-destructive font-medium" : ""}>
               {data.current}/{data.limit}
             </span>
           </div>
@@ -461,7 +461,7 @@ export function TeamUsageOverview() {
       <CardContent>
         <div className="space-y-4">
           {Object.entries(entitlements.usage).slice(0, 4).map(([key, data]) => {
-            const config = usageConfig[key] || { icon: <Zap className="h-4 w-4" />, color: "text-slate-600" };
+            const config = usageConfig[key] || { icon: <Zap className="h-4 w-4" />, color: "text-muted-foreground" };
             return (
               <div key={key} className="flex items-center gap-3">
                 <span className={config.color}>{config.icon}</span>

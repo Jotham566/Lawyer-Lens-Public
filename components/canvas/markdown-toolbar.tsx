@@ -46,7 +46,7 @@ const actions: Array<{
 
 export function MarkdownToolbar({ disabled = false, onAction }: MarkdownToolbarProps) {
   return (
-    <div className="flex flex-wrap items-center gap-1 rounded-xl border bg-background/95 p-2 shadow-sm backdrop-blur">
+    <div className="flex flex-wrap items-center gap-1 rounded-xl border border-border/40 bg-card/90 p-2 shadow-sm backdrop-blur">
       {actions.map((action) => {
         const Icon = action.icon;
         return (

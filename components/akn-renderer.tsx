@@ -50,7 +50,7 @@ export function AknRenderer({
 
   if (parsed.error) {
     return (
-      <div className="p-4 text-destructive bg-destructive/10 rounded-lg">
+      <div className="rounded-lg border border-destructive/20 bg-destructive/10 p-4 text-destructive">
         {parsed.error}
       </div>
     );
@@ -149,7 +149,7 @@ function formatDate(dateStr: string): string {
 
 function ActHeader({ meta }: { meta: ActMeta }) {
   return (
-    <header className="text-center mb-8 pb-6 border-b border-border">
+    <header className="mb-8 border-b border-border/30 pb-6 text-center">
       {meta.country && (
         <div className="text-lg font-semibold mb-2">{meta.country}</div>
       )}
@@ -199,7 +199,7 @@ function Body({ element }: { element: Element }) {
 
 function Attachments({ element }: { element: Element }) {
   return (
-    <div className="akn-attachments mt-10 pt-8 border-t-2 border-border">
+    <div className="akn-attachments mt-10 border-t-2 border-border/30 pt-8">
       <h2 className="text-center font-bold text-xl mb-6">Schedules</h2>
       {Array.from(element.children).map((child, index) => (
         <RenderElement key={index} element={child} />
@@ -548,7 +548,7 @@ function WrapUp({ element }: { element: Element }) {
 function Table({ element }: { element: Element }) {
   return (
     <div className="my-6 overflow-x-auto">
-      <table className="w-full border-collapse border border-border text-sm">
+      <table className="w-full border-collapse border border-border/30 text-sm">
         <tbody>
           {Array.from(element.children).map((child, i) => (
             <RenderElement key={i} element={child} />
@@ -561,7 +561,7 @@ function Table({ element }: { element: Element }) {
 
 function TableRow({ element }: { element: Element }) {
   return (
-    <tr className="border-b border-border">
+    <tr className="border-b border-border/30">
       {Array.from(element.children).map((child, i) => (
         <RenderElement key={i} element={child} />
       ))}
@@ -571,7 +571,7 @@ function TableRow({ element }: { element: Element }) {
 
 function TableHeader({ element }: { element: Element }) {
   return (
-    <th className="p-3 text-left font-semibold bg-muted border border-border">
+    <th className="border border-border/30 bg-muted p-3 text-left font-semibold">
       {renderInlineContent(element)}
     </th>
   );
@@ -579,7 +579,7 @@ function TableHeader({ element }: { element: Element }) {
 
 function TableCell({ element }: { element: Element }) {
   return (
-    <td className="p-3 border border-border align-top">
+    <td className="border border-border/30 p-3 align-top">
       {renderInlineContent(element)}
     </td>
   );

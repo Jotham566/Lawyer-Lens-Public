@@ -133,7 +133,7 @@ function WaitlistStatusContent() {
   if (error || (!email && !token)) {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-lg w-full border-destructive/50">
+        <Card className="max-w-lg w-full border-destructive/20">
           <CardHeader className="text-center">
             <div className="mx-auto w-16 h-16 bg-destructive/10 rounded-full flex items-center justify-center mb-4">
               <AlertCircle className="w-8 h-8 text-destructive" />
@@ -156,12 +156,12 @@ function WaitlistStatusContent() {
   if (status?.status === "invited") {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-lg w-full border-green-200 dark:border-green-800 bg-gradient-to-br from-green-50 to-white dark:from-green-950/20 dark:to-background">
+        <Card className="max-w-lg w-full border-border/60 bg-gradient-to-br from-muted to-background">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
-            <Badge className="mx-auto mb-2 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300">
+            <Badge className="mx-auto mb-2 bg-muted text-muted-foreground">
               Invitation Ready
             </Badge>
             <CardTitle className="text-2xl">You&apos;re Invited! 🎉</CardTitle>
@@ -170,9 +170,9 @@ function WaitlistStatusContent() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-6">
-            <Alert className="bg-green-50 border-green-200 dark:bg-green-900/20 dark:border-green-800">
-              <Mail className="h-4 w-4 text-green-600 dark:text-green-400" />
-              <AlertDescription className="text-green-900 dark:text-green-100">
+            <Alert className="bg-muted border-border/60">
+              <Mail className="h-4 w-4 text-primary" />
+              <AlertDescription className="text-foreground">
                 An invitation email has been sent to <strong>{status.email || email || "your inbox"}</strong>
               </AlertDescription>
             </Alert>
@@ -192,7 +192,7 @@ function WaitlistStatusContent() {
               </p>
             </div>
 
-            <div className="pt-4 border-t">
+            <div className="pt-4 border-t border-border/60">
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Can&apos;t find the email? Check your spam folder or contact support.
               </p>
@@ -209,12 +209,12 @@ function WaitlistStatusContent() {
   if (status?.status === "registered" || status?.status === "joined") {
     return (
       <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-        <Card className="max-w-lg w-full border-blue-200 dark:border-blue-800">
+        <Card className="max-w-lg w-full border-border/60">
           <CardHeader className="text-center">
-            <div className="mx-auto w-16 h-16 bg-blue-100 dark:bg-blue-900/50 rounded-full flex items-center justify-center mb-4">
-              <CheckCircle2 className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+            <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+              <CheckCircle2 className="w-8 h-8 text-primary" />
             </div>
-            <Badge className="mx-auto mb-2 bg-blue-100 text-blue-700 dark:bg-blue-900 dark:text-blue-300">
+            <Badge className="mx-auto mb-2 bg-muted text-muted-foreground">
               Already Registered
             </Badge>
             <CardTitle className="text-2xl">Welcome Back!</CardTitle>
@@ -238,12 +238,12 @@ function WaitlistStatusContent() {
   // Pending status
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      <Card className="max-w-lg w-full border-purple-200 dark:border-purple-800 bg-gradient-to-br from-purple-50 to-white dark:from-purple-950/20 dark:to-background">
+      <Card className="max-w-lg w-full border-border/60 bg-gradient-to-br from-muted to-background">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
-            <Clock className="w-8 h-8 text-purple-600 dark:text-purple-400" />
+          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+            <Clock className="w-8 h-8 text-primary" />
           </div>
-          <Badge className="mx-auto mb-2 bg-purple-100 text-purple-700 dark:bg-purple-900 dark:text-purple-300">
+          <Badge className="mx-auto mb-2 bg-muted text-muted-foreground">
             On the Waitlist
           </Badge>
           <CardTitle className="text-2xl">You&apos;re on the list! 🎉</CardTitle>
@@ -252,8 +252,8 @@ function WaitlistStatusContent() {
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="text-center p-8 bg-white dark:bg-background rounded-lg border-2 border-purple-300 dark:border-purple-700">
-            <div className="text-6xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+          <div className="text-center p-8 bg-card rounded-lg border-2 border-border/60">
+            <div className="text-6xl font-bold text-primary mb-2">
               #{status?.position ?? "—"}
             </div>
             <p className="text-muted-foreground">Your position in line</p>
@@ -264,11 +264,11 @@ function WaitlistStatusContent() {
             )}
           </div>
 
-          <Alert className="bg-purple-50 dark:bg-purple-900/20 border-purple-200 dark:border-purple-800">
-            <Sparkles className="h-4 w-4 text-purple-600 dark:text-purple-400" />
+          <Alert className="bg-muted border-border/60">
+            <Sparkles className="h-4 w-4 text-primary" />
             <AlertDescription>
-              <strong className="text-purple-900 dark:text-purple-100">Beta users receive:</strong>
-              <ul className="mt-2 space-y-1 text-sm text-purple-800 dark:text-purple-200">
+              <strong className="text-foreground">Beta users receive:</strong>
+              <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                 <li>• Early Adopter Badge</li>
                 <li>• 90-day extended trial</li>
                 <li>• Priority support</li>
@@ -300,7 +300,7 @@ function WaitlistStatusContent() {
             </p>
           </div>
 
-          <div className="pt-4 border-t">
+          <div className="pt-4 border-t border-border/60">
             <Button asChild variant="outline" className="w-full">
               <Link href="/">Return to Home</Link>
             </Button>

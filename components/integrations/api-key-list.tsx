@@ -172,7 +172,7 @@ export function APIKeyList({ keys, loading, onRefresh }: APIKeyListProps) {
                       onClick={() => handleCopyPrefix(key.key_prefix)}
                     >
                       {copiedPrefix === key.key_prefix ? (
-                        <Check className="h-3 w-3 text-green-500" />
+                        <Check className="h-3 w-3 text-secondary-foreground" />
                       ) : (
                         <Copy className="h-3 w-3" />
                       )}
@@ -270,7 +270,7 @@ export function APIKeyList({ keys, loading, onRefresh }: APIKeyListProps) {
             <AlertDialogAction
               onClick={handleRevoke}
               disabled={!!revoking}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              variant="destructive"
             >
               {revoking ? (
                 <>

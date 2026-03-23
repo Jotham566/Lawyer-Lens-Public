@@ -87,8 +87,8 @@ export function UpgradePrompt({
 
   if (variant === "compact") {
     return (
-      <div className="flex items-center gap-3 p-3 bg-muted/50 rounded-lg border">
-        <div className="p-2 bg-primary/10 rounded-full">
+      <div className="flex items-center gap-3 rounded-xl border border-border/40 bg-card/80 p-3">
+        <div className="rounded-full bg-primary/10 p-2">
           <Lock className="h-4 w-4 text-primary" />
         </div>
         <div className="flex-1 min-w-0">
@@ -105,9 +105,9 @@ export function UpgradePrompt({
   }
 
   return (
-    <Card className="border-primary/20">
+    <Card className="border-border/40">
       <CardHeader className="text-center">
-        <div className="mx-auto w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center mb-2">
+        <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
           {usageType ? (
             <TrendingUp className="h-6 w-6 text-primary" />
           ) : (
@@ -160,7 +160,7 @@ export function UpgradeBanner({
   const router = useRouter();
 
   return (
-    <div className="bg-gradient-to-r from-primary/10 via-primary/5 to-primary/10 border-y border-primary/20 py-3 px-4">
+    <div className="border-y border-border/40 bg-muted/40 py-3 px-4">
       <div className="container max-w-7xl mx-auto flex items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <Sparkles className="h-5 w-5 text-primary shrink-0" />

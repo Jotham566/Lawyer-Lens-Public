@@ -30,6 +30,7 @@ import {
 } from "@/components/ui/select";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { useAllDocumentsByType } from "@/lib/hooks";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { resolveDocumentYear } from "@/lib/utils/document-year";
 
@@ -185,7 +186,7 @@ function RegulationsContent() {
 
       <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
         <div className="max-w-2xl">
-          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-green-50 text-green-600">
+          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-secondary/15 text-secondary-foreground dark:bg-surface-container-high/70">
             <ScrollText className="h-5 w-5" />
           </div>
           <h1 className="text-3xl font-semibold tracking-tight">Regulations</h1>
@@ -314,10 +315,11 @@ function RegulationsContent() {
           </div>
 
           <div className="mt-3 flex flex-wrap items-center gap-2">
-            <Button
-              size="sm"
-              onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
-            >
+                <Button
+                  variant="brand"
+                  size="sm"
+                  onClick={() => updateParams({ q: searchInput.trim() || undefined, page: "1" })}
+                >
               Apply search
             </Button>
             {activeFilters.length > 0 && (
@@ -341,7 +343,7 @@ function RegulationsContent() {
                   {filter.label}
                   <button
                     type="button"
-                    className="rounded-full hover:bg-black/10"
+                    className={cn("rounded-full", surfaceClasses.iconButton)}
                     onClick={() => {
                       if (filter.key === "q") {
                         setSearchInput("");
@@ -422,7 +424,7 @@ function RegulationsContent() {
 
             return (
               <Link key={regulation.id} href={documentHref} className="group block">
-                <Card className="h-full border-border/70 transition-all hover:border-primary/50 hover:bg-muted/20 hover:shadow-sm">
+                <Card className={cn("h-full border-border/70", surfaceClasses.pagePanelInteractive)}>
                   <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0 space-y-2">
@@ -434,7 +436,7 @@ function RegulationsContent() {
                             <span className="truncate text-foreground/65">{regulation.gazette_number}</span>
                           )}
                         </div>
-                        <h3 className={cn("font-medium leading-tight transition-colors group-hover:text-primary", view === "grid" && "line-clamp-2 text-sm")}>
+                        <h3 className={cn("font-medium leading-tight", view === "grid" && "line-clamp-2 text-sm")}>
                           {regulation.title}
                         </h3>
                         {regulation.short_title && regulation.short_title !== regulation.title && (
@@ -449,10 +451,10 @@ function RegulationsContent() {
                   <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
                     <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
                       {regulation.chapter && (
-                        <span className="rounded-full bg-muted px-2.5 py-1">Chapter {regulation.chapter}</span>
+                        <span className={surfaceClasses.chipButton}>Chapter {regulation.chapter}</span>
                       )}
                       {regulation.gazette_number && (
-                        <span className="rounded-full bg-muted px-2.5 py-1">Gazette {regulation.gazette_number}</span>
+                        <span className={surfaceClasses.chipButton}>Gazette {regulation.gazette_number}</span>
                       )}
                     </div>
                     <div className="flex items-center justify-between gap-3 text-sm">
@@ -461,7 +463,7 @@ function RegulationsContent() {
                       </span>
                       <span className="inline-flex items-center font-medium text-primary">
                         Open regulation
-                        <ArrowRight className="ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
+                        <ArrowRight className="ll-icon-muted ml-1 h-4 w-4 transition-transform group-hover:translate-x-1" />
                       </span>
                     </div>
                   </CardContent>

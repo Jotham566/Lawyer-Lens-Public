@@ -42,6 +42,8 @@ import {
   TierBadge,
 } from "@/components/common";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const orgSchema = z.object({
   name: z.string().min(2, "Name must be at least 2 characters").max(255),
@@ -213,33 +215,37 @@ function OrganizationSettingsContent() {
         <CardContent className="p-0">
           <Link
             href="/settings/organization/members"
-            className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors border-b"
+            className={cn("border-b", surfaceClasses.rowInteractive)}
           >
-            <div className="flex items-center gap-3">
-              <Users className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Team Members</p>
-                <p className="text-sm text-muted-foreground">
-                  View and manage team members
-                </p>
+            <div className="group flex items-center justify-between gap-4 px-6 py-6">
+              <div className="flex items-center gap-3">
+                <Users className="ll-icon-muted h-5 w-5" />
+                <div>
+                  <p className="font-medium">Team Members</p>
+                  <p className="text-sm text-muted-foreground">
+                    View and manage team members
+                  </p>
+                </div>
               </div>
+              <ChevronRight className="ll-icon-muted h-5 w-5" />
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
           <Link
             href="/settings/organization/invitations"
-            className="flex items-center justify-between p-4 hover:bg-muted/50 transition-colors"
+            className={surfaceClasses.rowInteractive}
           >
-            <div className="flex items-center gap-3">
-              <Mail className="h-5 w-5 text-muted-foreground" />
-              <div>
-                <p className="font-medium">Pending Invitations</p>
-                <p className="text-sm text-muted-foreground">
-                  Manage team invitations
-                </p>
+            <div className="group flex items-center justify-between gap-4 px-6 py-6">
+              <div className="flex items-center gap-3">
+                <Mail className="ll-icon-muted h-5 w-5" />
+                <div>
+                  <p className="font-medium">Pending Invitations</p>
+                  <p className="text-sm text-muted-foreground">
+                    Manage team invitations
+                  </p>
+                </div>
               </div>
+              <ChevronRight className="ll-icon-muted h-5 w-5" />
             </div>
-            <ChevronRight className="h-5 w-5 text-muted-foreground" />
           </Link>
         </CardContent>
       </Card>

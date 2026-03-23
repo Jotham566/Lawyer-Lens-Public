@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
-import { cn } from "@/lib/utils";
+import { surfaceClasses } from "@/lib/design-system";
 import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 import { useAllDocumentsByType } from "@/lib/hooks";
 
@@ -58,8 +58,8 @@ export default function ConstitutionPage() {
       {/* Header */}
       <div className="mb-8">
         <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-amber-50 dark:bg-amber-950/50">
-            <BookOpen className="h-6 w-6 text-amber-600 dark:text-amber-400" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+            <BookOpen className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
@@ -90,13 +90,13 @@ export default function ConstitutionPage() {
           </CardContent>
         </Card>
       ) : constitution ? (
-        <Card className="mb-8 border-amber-200 dark:border-amber-800 border-2">
+        <Card className="mb-8 border-border/60 border-2">
           <CardHeader>
             <div className="flex items-start justify-between gap-4">
               <div>
                 <Badge
                   variant="secondary"
-                  className="mb-2 bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300"
+                  className="mb-2 border border-primary/15 bg-primary/10 text-foreground"
                 >
                   Constitution
                 </Badge>
@@ -144,13 +144,7 @@ export default function ConstitutionPage() {
         <h2 className="text-lg font-semibold mb-4">Key Chapters</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {constitutionHighlights.map((item) => (
-            <Card
-              key={item.chapter}
-              className={cn(
-                "transition-colors hover:border-amber-300 dark:hover:border-amber-700",
-                constitution && "cursor-pointer"
-              )}
-            >
+            <Card key={item.chapter} className={surfaceClasses.pagePanel}>
               <CardHeader className="pb-2">
                 <Badge variant="outline" className="w-fit text-xs">
                   {item.chapter}

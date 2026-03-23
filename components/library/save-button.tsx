@@ -8,6 +8,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { surfaceClasses } from "@/lib/design-system";
 import { useLibraryStore } from "@/lib/stores";
 import type { DocumentType } from "@/lib/api/types";
 import { cn } from "@/lib/utils";
@@ -63,11 +64,11 @@ export function SaveButton({
 
   const button = (
     <Button
-      variant={isSaved ? "default" : variant}
+      variant={isSaved ? "outline" : variant}
       size={size}
       onClick={handleToggle}
       className={cn(
-        isSaved && "bg-indigo-600 hover:bg-indigo-700 text-white",
+        isSaved && surfaceClasses.buttonSelected,
         className
       )}
     >

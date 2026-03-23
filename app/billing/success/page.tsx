@@ -33,14 +33,14 @@ function SuccessContent() {
         angle: 60,
         spread: 55,
         origin: { x: 0 },
-        colors: ["#22c55e", "#3b82f6", "#8b5cf6"],
+        colors: ["#e9c176", "#ffdea5", "#122033"],
       });
       confetti({
         particleCount: 3,
         angle: 120,
         spread: 55,
         origin: { x: 1 },
-        colors: ["#22c55e", "#3b82f6", "#8b5cf6"],
+        colors: ["#e9c176", "#ffdea5", "#122033"],
       });
 
       if (Date.now() < end) {
@@ -61,11 +61,11 @@ function SuccessContent() {
   }
 
   return (
-    <div className="min-h-screen bg-muted/30 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-background flex items-center justify-center p-4">
       <Card className="max-w-md w-full">
         <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mb-4">
-            <CheckCircle2 className="h-10 w-10 text-green-600" />
+          <div className="mx-auto w-16 h-16 bg-muted rounded-full flex items-center justify-center mb-4">
+            <CheckCircle2 className="h-10 w-10 text-primary" />
           </div>
           <CardTitle className="text-2xl">Welcome aboard!</CardTitle>
           <CardDescription>

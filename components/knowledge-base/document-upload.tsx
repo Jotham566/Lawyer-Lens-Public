@@ -161,7 +161,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
             isDragging
               ? "border-primary bg-primary/5"
               : file
-                ? "border-green-500 bg-green-50"
+                ? "border-primary/30 bg-primary/10"
                 : "border-muted-foreground/25 hover:border-primary/50"
           }`}
           onDragOver={handleDragOver}

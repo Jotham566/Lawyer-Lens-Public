@@ -48,8 +48,7 @@ export function SkipNavigation({
             // Visible on focus
             "focus:top-2 focus:left-2 focus:relative",
             // Styling
-            "bg-primary text-primary-foreground px-4 py-2 rounded-md",
-            "text-sm font-medium shadow-lg",
+            "rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground shadow-lg",
             "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2",
             "transition-all duration-200"
           )}

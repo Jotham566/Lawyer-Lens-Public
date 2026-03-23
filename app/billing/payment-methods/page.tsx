@@ -160,11 +160,11 @@ export default function PaymentMethodsPage() {
   const getMethodIcon = (type: string) => {
     switch (type) {
       case "mobile_money":
-        return <Smartphone className="h-5 w-5 text-blue-600" />;
+        return <Smartphone className="h-5 w-5 text-primary" />;
       case "card":
-        return <CreditCard className="h-5 w-5 text-slate-600" />;
+        return <CreditCard className="h-5 w-5 text-muted-foreground" />;
       default:
-        return <CreditCard className="h-5 w-5 text-slate-600" />;
+        return <CreditCard className="h-5 w-5 text-muted-foreground" />;
     }
   };
 
@@ -191,8 +191,8 @@ export default function PaymentMethodsPage() {
     return (
       <div className="container mx-auto py-8 px-4 max-w-4xl">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-          <div className="h-48 bg-slate-200 rounded-lg"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-48 bg-muted rounded-lg"></div>
         </div>
       </div>
     );
@@ -201,14 +201,14 @@ export default function PaymentMethodsPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-4xl">
       <div className="mb-8">
-        <Link href="/billing" className="text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
+        <Link href="/billing" className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Billing
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Payment Methods</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Payment Methods</h1>
+            <p className="text-muted-foreground mt-1">
               Manage your payment methods for subscriptions and billing
             </p>
           </div>
@@ -233,24 +233,24 @@ export default function PaymentMethodsPage() {
                     onValueChange={(value) => setNewMethodType(value as "mobile_money" | "card")}
                     className="space-y-3"
                   >
-                    <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${newMethodType === "mobile_money" ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>
+                    <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${newMethodType === "mobile_money" ? "border-primary bg-primary/5" : "border-border/60 bg-card"}`}>
                       <RadioGroupItem value="mobile_money" id="add-mobile" />
                       <Label htmlFor="add-mobile" className="flex items-center gap-3 cursor-pointer">
-                        <Smartphone className="h-5 w-5 text-blue-600" />
+                        <Smartphone className="h-5 w-5 text-primary" />
                         <div>
                           <p className="font-medium">Mobile Money</p>
-                          <p className="text-sm text-slate-500">MTN or Airtel Money</p>
+                          <p className="text-sm text-muted-foreground">MTN or Airtel Money</p>
                         </div>
                       </Label>
                     </div>
 
-                    <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${newMethodType === "card" ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}>
+                    <div className={`flex items-center space-x-4 p-4 border rounded-lg cursor-pointer transition-colors ${newMethodType === "card" ? "border-primary bg-primary/5" : "border-border/60 bg-card"}`}>
                       <RadioGroupItem value="card" id="add-card" />
                       <Label htmlFor="add-card" className="flex items-center gap-3 cursor-pointer">
-                        <CreditCard className="h-5 w-5 text-slate-600" />
+                        <CreditCard className="h-5 w-5 text-muted-foreground" />
                         <div>
                           <p className="font-medium">Credit/Debit Card</p>
-                          <p className="text-sm text-slate-500">Visa or Mastercard</p>
+                          <p className="text-sm text-muted-foreground">Visa or Mastercard</p>
                         </div>
                       </Label>
                     </div>
@@ -291,7 +291,7 @@ export default function PaymentMethodsPage() {
                   )}
 
                   {newMethodType === "card" && (
-                    <p className="text-sm text-slate-500 text-center py-4">
+                    <p className="text-sm text-muted-foreground text-center py-4">
                       You&apos;ll be redirected to securely enter your card details.
                     </p>
                   )}
@@ -321,7 +321,7 @@ export default function PaymentMethodsPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
           {error}
         </div>
@@ -337,8 +337,8 @@ export default function PaymentMethodsPage() {
         <CardContent>
           {paymentMethods.length === 0 ? (
             <div className="text-center py-12">
-              <CreditCard className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500 mb-4">No payment methods added yet</p>
+              <CreditCard className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground mb-4">No payment methods added yet</p>
               <Button onClick={() => setShowAddDialog(true)}>
                 <Plus className="h-4 w-4 mr-2" />
                 Add Your First Payment Method
@@ -349,7 +349,7 @@ export default function PaymentMethodsPage() {
               {paymentMethods.map((method) => (
                 <div
                   key={method.id}
-                  className={`flex items-center justify-between p-4 border rounded-lg ${method.is_default ? "border-blue-500 bg-blue-50" : "border-slate-200"}`}
+                  className={`flex items-center justify-between p-4 border rounded-lg ${method.is_default ? "border-primary bg-primary/5" : "border-border/60 bg-card"}`}
                 >
                   <div className="flex items-center gap-4">
                     {getMethodIcon(method.type)}
@@ -357,13 +357,13 @@ export default function PaymentMethodsPage() {
                       <div className="flex items-center gap-2">
                         <span className="font-medium">{getProviderName(method.provider)}</span>
                         {method.is_default && (
-                          <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                          <Badge variant="secondary" className="bg-muted text-foreground">
                             <Star className="h-3 w-3 mr-1" />
                             Default
                           </Badge>
                         )}
                       </div>
-                      <p className="text-sm text-slate-500">
+                      <p className="text-sm text-muted-foreground">
                         {method.type === "mobile_money"
                           ? `${method.phone_number?.slice(0, 6)}****${method.phone_number?.slice(-2)}`
                           : `•••• ${method.last_four}`}
@@ -382,8 +382,8 @@ export default function PaymentMethodsPage() {
                       </Button>
                     )}
                     <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button variant="ghost" size="icon" className="text-red-600 hover:text-red-700 hover:bg-red-50">
+                    <AlertDialogTrigger asChild>
+                        <Button variant="ghost" size="icon" className="ll-icon-button ll-icon-button-danger">
                           <Trash2 className="h-4 w-4" />
                         </Button>
                       </AlertDialogTrigger>
@@ -393,7 +393,7 @@ export default function PaymentMethodsPage() {
                           <AlertDialogDescription>
                             Are you sure you want to remove this payment method? This action cannot be undone.
                             {method.is_default && (
-                              <span className="block mt-2 text-amber-600">
+                              <span className="block mt-2 text-primary">
                                 This is your default payment method. You&apos;ll need to set another method as default.
                               </span>
                             )}
@@ -403,7 +403,7 @@ export default function PaymentMethodsPage() {
                           <AlertDialogCancel>Cancel</AlertDialogCancel>
                           <AlertDialogAction
                             onClick={() => handleDelete(method.id)}
-                            className="bg-red-600 hover:bg-red-700"
+                            variant="destructive"
                           >
                             Remove
                           </AlertDialogAction>
@@ -418,9 +418,9 @@ export default function PaymentMethodsPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 p-4 bg-slate-50 rounded-lg">
+      <div className="mt-6 p-4 bg-muted rounded-lg">
         <h3 className="font-medium mb-2">About Payment Security</h3>
-        <p className="text-sm text-slate-500">
+        <p className="text-sm text-muted-foreground">
           Your payment information is securely processed by Flutterwave. We never store your full card
           numbers or mobile money PINs. All transactions are encrypted and comply with PCI-DSS standards.
         </p>

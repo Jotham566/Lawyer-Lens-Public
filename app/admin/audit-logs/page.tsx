@@ -48,6 +48,8 @@ import { useAuth, useRequireAuth } from "@/components/providers";
 import { getCurrentOrganization, type Organization } from "@/lib/api/organizations";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { formatRelativeTime, formatDateTime } from "@/lib/utils/date-formatter";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 // Audit log event types
 type AuditEventType =
@@ -86,11 +88,11 @@ interface AuditLogEntry {
 }
 
 const EVENT_CATEGORIES = {
-  auth: { label: "Authentication", icon: Shield, color: "text-blue-600" },
-  member: { label: "Team", icon: User, color: "text-green-600" },
-  org: { label: "Organization", icon: Settings, color: "text-purple-600" },
-  document: { label: "Documents", icon: FileText, color: "text-orange-600" },
-  research: { label: "Research", icon: Eye, color: "text-cyan-600" },
+  auth: { label: "Authentication", icon: Shield, color: "text-primary" },
+  member: { label: "Team", icon: User, color: "text-secondary-foreground" },
+  org: { label: "Organization", icon: Settings, color: "text-secondary-foreground" },
+  document: { label: "Documents", icon: FileText, color: "text-primary" },
+  research: { label: "Research", icon: Eye, color: "text-muted-foreground" },
 };
 
 const EVENT_LABELS: Record<AuditEventType, { label: string; icon: React.ElementType }> = {
@@ -420,9 +422,9 @@ function AuditLogsContent() {
                       {log.ip_address}
                     </TableCell>
                     <TableCell>
-                      <Popover>
-                        <PopoverTrigger asChild>
-                          <button className="text-sm text-muted-foreground hover:text-foreground">
+                        <Popover>
+                          <PopoverTrigger asChild>
+                          <button type="button" className={cn("text-sm", surfaceClasses.textLink)}>
                             {formatRelativeTime(log.created_at)}
                           </button>
                         </PopoverTrigger>

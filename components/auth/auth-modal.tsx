@@ -36,6 +36,8 @@ import { forgotPassword, getOAuthProviders, initiateOAuth, OAuthProvider } from 
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 import { BetaAccessModal } from "@/components/beta";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 // ============================================================================
 // Social Login Icons
@@ -253,7 +255,7 @@ function PasswordStrength({ password }: { password: string | undefined }) {
           key={check.label}
           className={`flex items-center gap-1 text-xs ${
             check.valid
-              ? "text-green-600 dark:text-green-400"
+              ? "text-primary"
               : "text-muted-foreground"
           }`}
         >
@@ -377,7 +379,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
           )}
 
           <Button className="w-full" onClick={onSuccess}>
-            Continue to Law Lens
+            Continue to Law Lens Uganda
           </Button>
         </div>
       </>
@@ -389,7 +391,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
       <DialogHeader className="space-y-2 pb-4">
         <DialogTitle className="text-xl">Welcome back</DialogTitle>
         <DialogDescription>
-          Sign in to your Law Lens account to continue
+          Sign in to your Law Lens Uganda account to continue
         </DialogDescription>
       </DialogHeader>
 
@@ -433,7 +435,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
             <button
               type="button"
               onClick={() => onSwitchView("forgot-password")}
-              className="text-sm text-primary hover:underline"
+              className={cn("text-sm underline-offset-4", surfaceClasses.textLink)}
             >
               Forgot password?
             </button>
@@ -448,14 +450,16 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
               autoComplete="current-password"
               {...register("password")}
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            </Button>
           </div>
           {errors.password && (
             <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -498,7 +502,7 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
           <button
             type="button"
             onClick={() => onSwitchView("register")}
-            className="text-primary hover:underline"
+            className={cn("underline-offset-4", surfaceClasses.textLink)}
           >
             Create an account
           </button>
@@ -588,18 +592,18 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
       <DialogHeader className="space-y-2 pb-4">
         <DialogTitle className="text-xl">Create an account</DialogTitle>
         <DialogDescription>
-          Get started with Law Lens for free
+          Get started with Law Lens Uganda for free
         </DialogDescription>
       </DialogHeader>
 
       {hasInvitation && (
-        <div className="flex items-center gap-2 p-3 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-          <CheckCircle2 className="h-5 w-5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+        <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-secondary/50 p-3">
+          <CheckCircle2 className="h-5 w-5 text-primary flex-shrink-0" />
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+            <p className="text-sm font-medium text-foreground">
               Beta Invitation Detected
             </p>
-            <p className="text-xs text-blue-700 dark:text-blue-300">
+            <p className="text-xs text-muted-foreground">
               You&apos;ll receive early adopter perks after registration
             </p>
           </div>
@@ -670,14 +674,16 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
               autoComplete="new-password"
               {...register("password")}
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowPassword(!showPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
               aria-label={showPassword ? "Hide password" : "Show password"}
             >
               {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            </Button>
           </div>
           {errors.password && (
             <p className="text-sm text-destructive">{errors.password.message}</p>
@@ -697,14 +703,16 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
               autoComplete="new-password"
               {...register("confirmPassword")}
             />
-            <button
+            <Button
               type="button"
+              variant="ghost"
+              size="icon-sm"
               onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-              className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+              className={cn("absolute right-2 top-1/2 -translate-y-1/2", surfaceClasses.iconButton)}
               aria-label={showConfirmPassword ? "Hide password" : "Show password"}
             >
               {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-            </button>
+            </Button>
           </div>
           {errors.confirmPassword && (
             <p className="text-sm text-destructive">{errors.confirmPassword.message}</p>
@@ -739,7 +747,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           <button
             type="button"
             onClick={() => onSwitchView("login")}
-            className="text-primary hover:underline"
+            className={cn("underline-offset-4", surfaceClasses.textLink)}
           >
             Sign in
           </button>
@@ -796,8 +804,8 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
     return (
       <>
         <DialogHeader className="space-y-2 pb-4 text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+            <CheckCircle2 className="h-6 w-6 text-primary" />
           </div>
           <DialogTitle className="text-xl">Check your email</DialogTitle>
           <DialogDescription>
@@ -830,7 +838,7 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
           <button
             type="button"
             onClick={() => onSwitchView("login")}
-            className="flex items-center justify-center w-full text-sm text-primary hover:underline"
+            className={cn("flex items-center justify-center w-full text-sm", surfaceClasses.textLink)}
           >
             <ArrowLeft className="h-4 w-4 mr-1" />
             Back to sign in
@@ -886,7 +894,7 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
         <button
           type="button"
           onClick={() => onSwitchView("login")}
-          className="flex items-center justify-center w-full text-sm text-primary hover:underline"
+          className={cn("flex items-center justify-center w-full text-sm", surfaceClasses.textLink)}
         >
           <ArrowLeft className="h-4 w-4 mr-1" />
           Back to sign in

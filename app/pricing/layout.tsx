@@ -3,7 +3,7 @@ import Script from "next/script";
 import { headers } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Pricing - Law Lens Legal Intelligence | AI Legal Research Plans",
+  title: "Pricing - Law Lens Uganda Legal Intelligence | AI Legal Research Plans",
   description:
     "Choose the perfect plan for your legal research needs. From free basic access to enterprise solutions. AI-powered legal research for Uganda with transparent pricing.",
   keywords: [
@@ -17,24 +17,24 @@ export const metadata: Metadata = {
     "legal document management",
   ],
   openGraph: {
-    title: "Pricing Plans | Law Lens Legal Intelligence",
+    title: "Pricing Plans | Law Lens Uganda Legal Intelligence",
     description:
       "Simple, transparent pricing for AI-powered legal research. Start free, upgrade when ready. Plans for solo practitioners, teams, and enterprises.",
     type: "website",
     url: "/pricing",
-    siteName: "Law Lens Legal Intelligence",
+    siteName: "Law Lens Uganda Legal Intelligence",
     images: [
       {
         url: "/og-pricing.png",
         width: 1200,
         height: 630,
-        alt: "Law Lens Legal Intelligence Pricing Plans",
+        alt: "Law Lens Uganda Legal Intelligence Pricing Plans",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "Pricing Plans | Law Lens Legal Intelligence",
+    title: "Pricing Plans | Law Lens Uganda Legal Intelligence",
     description:
       "AI-powered legal research pricing. Free tier available. Professional, Team, and Enterprise plans.",
     images: ["/og-pricing.png"],
@@ -52,7 +52,7 @@ export const metadata: Metadata = {
 const pricingJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "Pricing - Law Lens Legal Intelligence",
+  name: "Pricing - Law Lens Uganda Legal Intelligence",
   description:
     "Choose the perfect plan for AI-powered legal research in Uganda",
   url: "https://lawlens.io/pricing",
@@ -121,7 +121,7 @@ const pricingJsonLd = {
   },
   provider: {
     "@type": "Organization",
-    name: "Law Lens Legal Intelligence",
+    name: "Law Lens Uganda Legal Intelligence",
     url: "https://lawlens.ug",
   },
 };

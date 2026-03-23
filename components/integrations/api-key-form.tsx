@@ -155,7 +155,7 @@ export function APIKeyForm({ open, onOpenChange, onSuccess }: APIKeyFormProps) {
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
-              <Key className="h-5 w-5 text-green-500" />
+              <Key className="h-5 w-5 text-secondary-foreground" />
               API Key Created
             </DialogTitle>
             <DialogDescription>
@@ -164,10 +164,10 @@ export function APIKeyForm({ open, onOpenChange, onSuccess }: APIKeyFormProps) {
           </DialogHeader>
 
           <div className="space-y-4 py-4">
-            <Alert variant="destructive" className="border-amber-500 bg-amber-50">
-              <AlertTriangle className="h-4 w-4 text-amber-600" />
-              <AlertTitle className="text-amber-800">Important</AlertTitle>
-              <AlertDescription className="text-amber-700">
+            <Alert className="border border-border/60 bg-secondary/50">
+              <AlertTriangle className="h-4 w-4 text-primary" />
+              <AlertTitle className="text-foreground">Important</AlertTitle>
+              <AlertDescription className="text-muted-foreground">
                 Copy your API key now. For security, it will not be shown again.
               </AlertDescription>
             </Alert>
@@ -187,7 +187,7 @@ export function APIKeyForm({ open, onOpenChange, onSuccess }: APIKeyFormProps) {
                   className="shrink-0"
                 >
                   {copied ? (
-                    <Check className="h-4 w-4 text-green-500" />
+                    <Check className="h-4 w-4 text-secondary-foreground" />
                   ) : (
                     <Copy className="h-4 w-4" />
                   )}

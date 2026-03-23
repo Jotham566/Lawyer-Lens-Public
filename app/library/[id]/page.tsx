@@ -40,8 +40,10 @@ import { collectionsApi, type Collection } from "@/lib/api/collections";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
+import { cn } from "@/lib/utils";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
 
 // Helper to determine icon based on doc type
 const getIconForType = (type?: string) => {
@@ -134,7 +136,7 @@ export default function CollectionDetailPage(props: PageProps) {
             <div className="mb-8">
                 <Link
                     href="/library"
-                    className="inline-flex items-center text-sm text-muted-foreground hover:text-foreground mb-4 transition-colors"
+                    className={cn("mb-4 inline-flex items-center text-sm", surfaceClasses.textLink)}
                 >
                     <ArrowLeft className="mr-2 h-4 w-4" />
                     Back to Library
@@ -160,7 +162,7 @@ export default function CollectionDetailPage(props: PageProps) {
                     <DropdownMenu>
                         <DropdownMenuTrigger asChild>
                             <Button variant="outline" size="icon">
-                                <MoreVertical className="h-4 w-4" />
+                                <MoreVertical className="ll-icon-muted h-4 w-4" />
                             </Button>
                         </DropdownMenuTrigger>
                         <DropdownMenuContent align="end">
@@ -189,9 +191,9 @@ export default function CollectionDetailPage(props: PageProps) {
                                     </AlertDialogHeader>
                                     <AlertDialogFooter>
                                         <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction
+                            <AlertDialogAction
                                             onClick={handleDeleteCollection}
-                                            className="bg-destructive hover:bg-destructive/90"
+                                            className="bg-destructive"
                                             disabled={deleting}
                                         >
                                             {deleting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -220,17 +222,17 @@ export default function CollectionDetailPage(props: PageProps) {
                         const href = `/document/${item.document_id}${item.section_id ? `?section=${item.section_id}` : ''}`;
 
                         return (
-                            <Card key={item.id} className="group transition-colors hover:border-primary/50">
+                            <Card key={item.id} className={cn("group", surfaceClasses.pagePanelInteractive)}>
                                 <div className="flex items-start p-6">
                                     <div className="flex-shrink-0 mr-4 mt-1">
-                                        <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center">
-                                            <Icon className="h-5 w-5 text-muted-foreground" />
+                                        <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-[color:var(--glass-outline)] bg-surface-container-high">
+                                            <Icon className="ll-icon-muted h-5 w-5" />
                                         </div>
                                     </div>
                                     <div className="flex-1 min-w-0">
                                         <div className="flex items-start justify-between">
                                             <div className="space-y-1">
-                                                <Link href={href} className="block group-hover:text-primary transition-colors">
+                                                <Link href={href} className="block">
                                                     <h3 className="font-semibold leading-tight">
                                                         {/* Use snippet_label if available (includes doc + section path), otherwise fall back to title */}
                                                         {item.meta?.snippet_label || item.meta?.title || "Untitled Document"}
@@ -252,7 +254,7 @@ export default function CollectionDetailPage(props: PageProps) {
                                             <Button
                                                 variant="ghost"
                                                 size="icon"
-                                                className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                                                className={cn("opacity-0 transition-opacity group-hover:opacity-100", surfaceClasses.iconButtonDanger)}
                                                 onClick={() => handleRemoveItem(item.id)}
                                             >
                                                 <Trash2 className="h-4 w-4" />

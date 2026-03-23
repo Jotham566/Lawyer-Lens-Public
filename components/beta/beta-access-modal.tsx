@@ -97,8 +97,8 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
         {!submitted ? (
           <>
             <DialogHeader>
-              <div className="mx-auto w-12 h-12 bg-purple-100 dark:bg-purple-900/50 rounded-full flex items-center justify-center mb-4">
-                <Sparkles className="w-6 h-6 text-purple-600 dark:text-purple-400" />
+              <div className="mx-auto w-12 h-12 bg-secondary/70 rounded-full flex items-center justify-center mb-4">
+                <Sparkles className="w-6 h-6 text-secondary-foreground" />
               </div>
               <DialogTitle className="text-center">Join the Beta Waitlist</DialogTitle>
               <DialogDescription className="text-center">
@@ -106,11 +106,11 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
               </DialogDescription>
             </DialogHeader>
 
-            <Alert className="bg-purple-50 border-purple-200 dark:bg-purple-900/20">
-              <Sparkles className="h-4 w-4 text-purple-600" />
+            <Alert className="border border-border/60 bg-secondary/50">
+              <Sparkles className="h-4 w-4 text-primary" />
               <AlertDescription>
-                <strong className="text-purple-900 dark:text-purple-100">Beta users receive:</strong>
-                <ul className="mt-2 space-y-1 text-sm text-purple-800 dark:text-purple-200">
+                <strong className="text-foreground">Beta users receive:</strong>
+                <ul className="mt-2 space-y-1 text-sm text-muted-foreground">
                   <li>• Early Adopter Badge</li>
                   <li>• Extended trial period</li>
                   <li>• Priority support</li>
@@ -194,8 +194,8 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
         ) : (
           <div className="py-6">
             <div className="text-center space-y-4">
-              <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900/50 rounded-full flex items-center justify-center">
-                <CheckCircle2 className="w-8 h-8 text-green-600 dark:text-green-400" />
+              <div className="mx-auto w-16 h-16 bg-secondary/60 rounded-full flex items-center justify-center">
+                <CheckCircle2 className="w-8 h-8 text-secondary-foreground" />
               </div>
 
               <div>
@@ -205,8 +205,8 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
                 </p>
               </div>
 
-              <div className="p-6 bg-gradient-to-br from-purple-50 to-white dark:from-purple-900/20 dark:to-background rounded-lg border-2 border-purple-200 dark:border-purple-700">
-                <div className="text-5xl font-bold text-purple-600 dark:text-purple-400 mb-2">
+              <div className="rounded-lg border border-border/60 bg-secondary/50 p-6">
+                <div className="mb-2 text-5xl font-bold text-primary">
                   #{position}
                 </div>
                 <p className="text-sm text-muted-foreground">Your position in line</p>

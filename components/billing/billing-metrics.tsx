@@ -67,10 +67,10 @@ function MetricCard({
         <div className="flex items-center gap-2">
           <div className="text-2xl font-bold">{value}</div>
           {trend === "up" && (
-            <ArrowUp className="h-4 w-4 text-green-500" />
+            <ArrowUp className="h-4 w-4 text-secondary-foreground" />
           )}
           {trend === "down" && (
-            <ArrowDown className="h-4 w-4 text-red-500" />
+            <ArrowDown className="h-4 w-4 text-destructive" />
           )}
         </div>
         {description && (
@@ -198,10 +198,10 @@ export function TierBreakdown({
   if (!metrics) return null;
 
   const tiers = [
-    { key: "free", label: "Free", color: "bg-gray-500" },
-    { key: "professional", label: "Professional", color: "bg-blue-500" },
-    { key: "team", label: "Team", color: "bg-purple-500" },
-    { key: "enterprise", label: "Enterprise", color: "bg-amber-500" },
+    { key: "free", label: "Free", color: "bg-muted-foreground" },
+    { key: "professional", label: "Professional", color: "bg-secondary-foreground" },
+    { key: "team", label: "Team", color: "bg-primary/80" },
+    { key: "enterprise", label: "Enterprise", color: "bg-primary" },
   ];
 
   const total = Object.values(metrics.tier_breakdown).reduce((a, b) => a + b, 0);

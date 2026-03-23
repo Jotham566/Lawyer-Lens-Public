@@ -30,11 +30,8 @@ export default function SettingsBillingError({
       <Card className="max-w-md w-full">
         <CardContent className="pt-6">
           <div className="flex flex-col items-center text-center">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 dark:bg-amber-900/20">
-              <CreditCard
-                className="h-8 w-8 text-amber-600 dark:text-amber-400"
-                aria-hidden="true"
-              />
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10 dark:bg-primary/15">
+              <CreditCard className="h-8 w-8 text-primary" aria-hidden="true" />
             </div>
             <h1 className="mt-4 text-xl font-semibold">Billing Settings Error</h1>
             <p className="mt-2 text-sm text-muted-foreground">

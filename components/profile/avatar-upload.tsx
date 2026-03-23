@@ -17,6 +17,8 @@ import { useAuth } from "@/components/providers";
 import { uploadAvatar, deleteAvatar } from "@/lib/api/auth";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 interface AvatarUploadProps {
   currentAvatarUrl?: string | null;
@@ -176,10 +178,10 @@ export function AvatarUpload({
           <button
             type="button"
             onClick={triggerFileSelect}
-            className="absolute inset-0 flex items-center justify-center bg-black/50 rounded-full opacity-0 group-hover:opacity-100 transition-opacity cursor-pointer"
+            className={cn(surfaceClasses.avatarOverlayButton, "cursor-pointer")}
             aria-label="Upload avatar"
           >
-            <Camera className="h-5 w-5 text-white" />
+            <Camera className="h-5 w-5" />
           </button>
         </div>
 
@@ -216,11 +218,10 @@ export function AvatarUpload({
           {avatarUrl && (
             <Button
               type="button"
-              variant="ghost"
+              variant="destructive"
               size="sm"
               onClick={handleDelete}
               disabled={isUploading || isDeleting}
-              className="text-destructive hover:text-destructive hover:bg-destructive/10"
             >
               {isDeleting ? (
                 <>

@@ -7,7 +7,13 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
+import {
+  getDocumentAccentClass,
+  getDocumentBadgeVariant,
+  getRelevanceTheme,
+} from "@/lib/design-system";
 import { SourceDetailDialog } from "./source-detail-dialog";
 import { useCitationOptional } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
@@ -29,24 +35,6 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
 };
 
 /**
- * Get color classes for document type badge
- */
-function getTypeBadgeColor(type: DocumentType) {
-  switch (type) {
-    case "act":
-      return "bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300";
-    case "judgment":
-      return "bg-purple-100 text-purple-700 dark:bg-purple-900/50 dark:text-purple-300";
-    case "regulation":
-      return "bg-green-100 text-green-700 dark:bg-green-900/50 dark:text-green-300";
-    case "constitution":
-      return "bg-amber-100 text-amber-700 dark:bg-amber-900/50 dark:text-amber-300";
-    default:
-      return "bg-gray-100 text-gray-700 dark:bg-gray-900/50 dark:text-gray-300";
-  }
-}
-
-/**
  * Get relevance level from score
  */
 function getRelevanceLevel(score: number): "high" | "medium" | "low" {
@@ -59,14 +47,7 @@ function getRelevanceLevel(score: number): "high" | "medium" | "low" {
  * Get relevance dot color classes
  */
 function getRelevanceDotColor(level: "high" | "medium" | "low") {
-  switch (level) {
-    case "high":
-      return "bg-green-500 dark:bg-green-400";
-    case "medium":
-      return "bg-yellow-500 dark:bg-yellow-400";
-    case "low":
-      return "bg-orange-500 dark:bg-orange-400";
-  }
+  return getRelevanceTheme(level === "high" ? 0.9 : level === "medium" ? 0.7 : 0.4).dot;
 }
 
 /**
@@ -96,7 +77,7 @@ function QualityDot({ score }: { score: number }) {
   return (
     <span
       className={cn(
-        "inline-block w-1.5 h-1.5 rounded-full ml-0.5 align-middle",
+        "ml-0.5 inline-block h-2.5 w-2.5 rounded-full align-middle ring-1 ring-background shadow-[inset_0_0_0_1px_color-mix(in_srgb,var(--background)_36%,transparent)]",
         colorClass
       )}
       title={`${Math.round(score * 100)}% relevance (${label})`}
@@ -269,7 +250,7 @@ export function SourceCitation({
                   handleClick(source, numbers[0], 0);
                 }
               }}
-              className="inline-flex items-center gap-0.5 text-primary font-medium hover:underline cursor-pointer"
+              className="ll-inline-citation-button inline-flex items-center gap-0.5"
               aria-label={ariaLabel}
               aria-haspopup="dialog"
             >
@@ -282,7 +263,7 @@ export function SourceCitation({
             sideOffset={5}
             className={cn(
               "max-w-sm p-3 text-left",
-              "bg-popover text-popover-foreground border border-border shadow-lg"
+              "border border-border/80 bg-background text-foreground shadow-[var(--shadow-floating)]"
             )}
           >
             {(source.legal_reference || formatSectionRef(source.section, source.section_id, source.excerpt)) && (
@@ -291,19 +272,22 @@ export function SourceCitation({
               </span>
             )}
             <span className="flex items-center gap-2 mb-1.5">
-              <Icon className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+              <Icon className={cn("h-3.5 w-3.5 shrink-0", getDocumentAccentClass(source.document_type))} />
               <span className="font-medium text-sm text-foreground truncate">{source.title}</span>
-              <span className={`text-[10px] px-1.5 py-0.5 rounded capitalize ${getTypeBadgeColor(source.document_type)}`}>
-                {source.document_type}
+                <Badge
+                  variant={getDocumentBadgeVariant(source.document_type)}
+                  className="px-1.5 py-0 text-[10px] capitalize tracking-[0.04em]"
+                >
+                  {source.document_type}
+                </Badge>
               </span>
-            </span>
             <span className="block text-xs text-muted-foreground mb-1.5">
               {source.human_readable_id}
             </span>
 
             {tableInfo.isTable ? (
               <span className="block">
-                <span className="flex items-center gap-2 p-2 rounded-md bg-muted/50 border border-border">
+                <span className="flex items-center gap-2 rounded-md border border-border/50 bg-surface-container-low p-2">
                   <Table2 className="h-4 w-4 text-muted-foreground shrink-0" />
                   <span className="text-xs text-foreground">
                     <span className="font-medium">Table Data</span>
@@ -357,7 +341,7 @@ export function SourceCitation({
                 handleClick(relevantSources[0], numbers[0], 0);
               }
             }}
-            className="inline-flex items-center gap-0.5 text-primary font-medium hover:underline cursor-pointer"
+            className="ll-inline-citation-button inline-flex items-center gap-0.5"
             aria-label={multiAriaLabel}
             aria-haspopup="dialog"
           >
@@ -370,7 +354,7 @@ export function SourceCitation({
           sideOffset={5}
           className={cn(
             "max-w-md p-3 text-left",
-            "bg-popover text-popover-foreground border border-border shadow-lg"
+            "border border-border/80 bg-background text-foreground shadow-[var(--shadow-floating)]"
           )}
         >
           <span className="block font-medium text-sm text-foreground mb-2">
@@ -380,9 +364,9 @@ export function SourceCitation({
             const Icon = documentIconMap[source.document_type] || FileText;
             const tableInfo = detectTableInfo(source.excerpt);
             return (
-              <span key={`${source.document_id}-${idx}`} className="block mb-2 last:mb-0">
+                <span key={`${source.document_id}-${idx}`} className="block mb-2 last:mb-0">
                 <span className="flex items-center gap-1.5">
-                  <Icon className="h-3 w-3 shrink-0 text-muted-foreground" />
+                  <Icon className={cn("h-3 w-3 shrink-0", getDocumentAccentClass(source.document_type))} />
                   <span
                     role="button"
                     tabIndex={0}
@@ -397,7 +381,7 @@ export function SourceCitation({
                         handleClick(source, numbers[idx], idx);
                       }
                     }}
-                    className="text-xs font-medium text-primary hover:underline truncate text-left cursor-pointer"
+                    className="ll-inline-citation-button truncate text-left text-xs"
                   >
                     [{numbers[idx]}] {source.title}
                   </span>

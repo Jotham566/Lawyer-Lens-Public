@@ -37,7 +37,7 @@ export function Header({ className }: HeaderProps) {
         onClick={() => setSidebarOpen(!sidebar.isOpen)}
         aria-label="Toggle menu"
       >
-        <Menu className="h-5 w-5" />
+        <Menu className="ll-icon-muted h-5 w-5" />
       </Button>
 
       {/* Search Bar - grows to fill space */}
@@ -51,7 +51,7 @@ export function Header({ className }: HeaderProps) {
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
             <Button variant="ghost" size="icon" className="relative h-9 w-9">
-              <Bell className="h-4 w-4" />
+              <Bell className="ll-icon-muted h-4 w-4" />
               <span className="sr-only">Notifications</span>
             </Button>
           </DropdownMenuTrigger>
@@ -88,7 +88,7 @@ export function Header({ className }: HeaderProps) {
           <DropdownMenuContent align="end" className="w-48">
             <DropdownMenuItem asChild>
               <Link href="/chat" className="flex items-center">
-                <Sparkles className="mr-2 h-4 w-4 text-primary" />
+                <Sparkles className="mr-2 h-4 w-4 text-primary transition-colors group-hover:text-current" />
                 Ask in Plain English
               </Link>
             </DropdownMenuItem>
@@ -104,7 +104,7 @@ export function Header({ className }: HeaderProps) {
             </DropdownMenuItem>
             <DropdownMenuItem asChild>
               <Link href="/pricing" className="flex items-center">
-                <Sparkles className="mr-2 h-4 w-4 text-amber-500" />
+                <Sparkles className="mr-2 h-4 w-4 text-primary transition-colors group-hover:text-current" />
                 View Plans
               </Link>
             </DropdownMenuItem>

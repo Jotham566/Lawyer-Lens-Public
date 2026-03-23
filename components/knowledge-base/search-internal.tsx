@@ -58,7 +58,7 @@ export function SearchInternal() {
       <>
         {parts.map((part, i) =>
           part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="bg-yellow-200 px-0.5 rounded">
+            <mark key={i} className="rounded bg-primary/18 px-0.5 text-foreground dark:bg-primary/24">
               {part}
             </mark>
           ) : (
@@ -70,9 +70,9 @@ export function SearchInternal() {
   };
 
   const getScoreColor = (score: number) => {
-    if (score >= 0.8) return "bg-green-100 text-green-700";
-    if (score >= 0.6) return "bg-yellow-100 text-yellow-700";
-    return "bg-gray-100 text-gray-700";
+    if (score >= 0.8) return "border border-primary/15 bg-primary/10 text-secondary-foreground";
+    if (score >= 0.6) return "border border-secondary/15 bg-secondary/15 text-foreground";
+    return "border border-border/60 bg-muted text-muted-foreground";
   };
 
   return (

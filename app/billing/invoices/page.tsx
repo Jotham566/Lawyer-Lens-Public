@@ -52,22 +52,22 @@ interface Invoice {
 const statusConfig: Record<string, { icon: React.ReactNode; color: string; label: string }> = {
   paid: {
     icon: <CheckCircle2 className="h-4 w-4" />,
-    color: "bg-green-100 text-green-700",
+    color: "bg-muted text-muted-foreground",
     label: "Paid",
   },
   pending: {
     icon: <Clock className="h-4 w-4" />,
-    color: "bg-yellow-100 text-yellow-700",
+    color: "bg-muted text-muted-foreground",
     label: "Pending",
   },
   failed: {
     icon: <XCircle className="h-4 w-4" />,
-    color: "bg-red-100 text-red-700",
+    color: "bg-muted text-muted-foreground",
     label: "Failed",
   },
   cancelled: {
     icon: <XCircle className="h-4 w-4" />,
-    color: "bg-slate-100 text-slate-700",
+    color: "bg-muted text-muted-foreground",
     label: "Cancelled",
   },
 };
@@ -163,8 +163,8 @@ export default function InvoicesPage() {
     return (
       <div className="container mx-auto py-8 px-4 max-w-6xl">
         <div className="animate-pulse space-y-6">
-          <div className="h-8 bg-slate-200 rounded w-1/4"></div>
-          <div className="h-64 bg-slate-200 rounded-lg"></div>
+          <div className="h-8 bg-muted rounded w-1/4"></div>
+          <div className="h-64 bg-muted rounded-lg"></div>
         </div>
       </div>
     );
@@ -173,14 +173,14 @@ export default function InvoicesPage() {
   return (
     <div className="container mx-auto py-8 px-4 max-w-6xl">
       <div className="mb-8">
-        <Link href="/billing" className="text-slate-500 hover:text-slate-700 flex items-center gap-1 mb-4">
+        <Link href="/billing" className="text-muted-foreground hover:text-foreground flex items-center gap-1 mb-4">
           <ArrowLeft className="h-4 w-4" />
           Back to Billing
         </Link>
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-slate-900 dark:text-slate-100">Invoice History</h1>
-            <p className="text-slate-600 dark:text-slate-400 mt-1">
+            <h1 className="text-3xl font-bold text-foreground">Invoice History</h1>
+            <p className="text-muted-foreground mt-1">
               View and download your past invoices
             </p>
           </div>
@@ -188,7 +188,7 @@ export default function InvoicesPage() {
       </div>
 
       {error && (
-        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
+        <div className="bg-destructive/10 border border-destructive/20 text-destructive px-4 py-3 rounded-lg mb-6 flex items-center gap-2">
           <AlertCircle className="h-5 w-5 flex-shrink-0" />
           {error}
         </div>
@@ -199,11 +199,11 @@ export default function InvoicesPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-100 text-blue-600 rounded-lg">
+              <div className="p-2 bg-muted text-primary rounded-lg">
                 <FileText className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total Invoices</p>
+                <p className="text-sm text-muted-foreground">Total Invoices</p>
                 <p className="text-2xl font-bold">{invoices.length}</p>
               </div>
             </div>
@@ -212,11 +212,11 @@ export default function InvoicesPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-green-100 text-green-600 rounded-lg">
+              <div className="p-2 bg-muted text-primary rounded-lg">
                 <CheckCircle2 className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Total Paid</p>
+                <p className="text-sm text-muted-foreground">Total Paid</p>
                 <p className="text-2xl font-bold">UGX {totalPaid.toLocaleString()}</p>
               </div>
             </div>
@@ -225,11 +225,11 @@ export default function InvoicesPage() {
         <Card>
           <CardContent className="pt-6">
             <div className="flex items-center gap-3">
-              <div className="p-2 bg-yellow-100 text-yellow-600 rounded-lg">
+              <div className="p-2 bg-muted text-primary rounded-lg">
                 <Clock className="h-5 w-5" />
               </div>
               <div>
-                <p className="text-sm text-slate-500">Pending</p>
+                <p className="text-sm text-muted-foreground">Pending</p>
                 <p className="text-2xl font-bold">
                   {invoices.filter((inv) => inv.status === "pending").length}
                 </p>
@@ -244,7 +244,7 @@ export default function InvoicesPage() {
         <CardContent className="pt-6">
           <div className="flex flex-col md:flex-row gap-4">
             <div className="relative flex-1">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400" />
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search invoices..."
                 value={searchQuery}
@@ -293,8 +293,8 @@ export default function InvoicesPage() {
         <CardContent>
           {filteredInvoices.length === 0 ? (
             <div className="text-center py-12">
-              <FileText className="h-12 w-12 text-slate-300 mx-auto mb-4" />
-              <p className="text-slate-500">
+              <FileText className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+              <p className="text-muted-foreground">
                 {invoices.length === 0
                   ? "No invoices yet"
                   : "No invoices match your filters"}
@@ -353,10 +353,10 @@ export default function InvoicesPage() {
         </CardContent>
       </Card>
 
-      <div className="mt-6 text-center text-sm text-slate-500">
+      <div className="mt-6 text-center text-sm text-muted-foreground">
         <p>
           Need help with an invoice?{" "}
-          <Link href="/contact" className="text-blue-600 hover:underline">
+          <Link href="/contact" className="text-primary hover:underline">
             Contact our support team
           </Link>
         </p>

@@ -20,7 +20,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
     <Link
       href="/"
       className={cn(
-        "flex items-center transition-opacity hover:opacity-80",
+        "flex items-center transition-opacity hover:opacity-90",
         className
       )}
     >
@@ -30,7 +30,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
           {/* Light mode icon */}
           <Image
             src="/logos/lm-black-icon.svg"
-            alt="Law Lens"
+            alt="Law Lens Uganda"
             width={height}
             height={height}
             className="dark:hidden"
@@ -40,7 +40,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
           {/* Dark mode icon */}
           <Image
             src="/logos/dm-white-icon.svg"
-            alt="Law Lens"
+            alt="Law Lens Uganda"
             width={height}
             height={height}
             className="hidden dark:block"
@@ -53,7 +53,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
           {/* Light mode logo */}
           <Image
             src="/logos/lm-lawlens-logo.svg"
-            alt="Law Lens"
+            alt="Law Lens Uganda"
             width={width}
             height={height}
             className="dark:hidden"
@@ -63,7 +63,7 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
           {/* Dark mode logo */}
           <Image
             src="/logos/dm-lawlens-logo.svg"
-            alt="Law Lens"
+            alt="Law Lens Uganda"
             width={width}
             height={height}
             className="hidden dark:block"

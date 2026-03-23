@@ -17,6 +17,7 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { MarkdownRenderer } from "./markdown-renderer";
 import { TrustBadge, ConfidenceFactors, UncertaintyDisclaimer } from "./trust-indicator";
@@ -134,7 +135,7 @@ function UserMessageActions({ onEdit, onCopy, copied, disabled }: UserMessageAct
             onClick={onCopy}
           >
             {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-500" />
+              <Check className="h-3.5 w-3.5 text-secondary-foreground" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
@@ -190,7 +191,7 @@ function AssistantMessageActions({
             onClick={() => onCopy(messageId, content)}
           >
             {copiedId === messageId ? (
-              <Check className="h-3.5 w-3.5 text-green-500" />
+              <Check className="h-3.5 w-3.5 text-secondary-foreground" />
             ) : (
               <Copy className="h-3.5 w-3.5" />
             )}
@@ -295,10 +296,10 @@ function ChatMessageComponent({
               onCancel={onCancelEdit}
             />
           ) : (
-            <div className="inline-block rounded-3xl bg-slate-200 dark:bg-slate-700 px-5 py-3.5 text-sm text-slate-900 dark:text-slate-100 shadow-sm selection:bg-slate-400/30 dark:selection:bg-slate-500/30 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
+            <div className="inline-block rounded-3xl bg-surface-container-high px-5 py-3.5 text-sm text-foreground shadow-sm selection:bg-primary/28 selection:text-[color:var(--selection-foreground)] dark:selection:bg-primary/24 [&_strong]:font-semibold [&_p]:whitespace-pre-wrap">
               <MarkdownRenderer
                 content={message.content}
-                className="text-slate-900 dark:text-slate-100 [&_p]:text-slate-900 dark:[&_p]:text-slate-100 [&_strong]:text-slate-900 dark:[&_strong]:text-slate-100 [&_a]:text-slate-700 dark:[&_a]:text-slate-300 [&_a]:underline"
+                className="text-foreground [&_p]:text-foreground [&_strong]:text-foreground [&_a]:font-medium [&_a]:text-primary [&_a]:underline [&_a]:underline-offset-4 hover:[&_a]:text-primary"
               />
             </div>
           )}
@@ -383,8 +384,9 @@ function ChatMessageComponent({
               {message.suggested_followups.map((followup, fIndex) => (
                 <button
                   key={fIndex}
+                  type="button"
                   onClick={() => onSelectFollowup(followup)}
-                  className="rounded-full border bg-background px-3 py-1.5 text-xs transition-colors hover:bg-muted"
+                  className={surfaceClasses.chipButton}
                 >
                   {followup}
                 </button>

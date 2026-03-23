@@ -73,7 +73,7 @@ export function HighlightedExcerpt({
           {before}
           <mark
             ref={highlightRef}
-            className="bg-amber-200 dark:bg-amber-800/50 px-0.5 rounded text-foreground"
+            className="rounded bg-primary/18 px-0.5 text-foreground dark:bg-primary/24"
           >
             {match}
           </mark>
@@ -94,7 +94,7 @@ export function HighlightedExcerpt({
         {before}
         <mark
           ref={highlightRef}
-          className="bg-amber-200 dark:bg-amber-800/50 px-0.5 rounded text-foreground"
+          className="rounded bg-primary/18 px-0.5 text-foreground dark:bg-primary/24"
         >
           {match}
         </mark>

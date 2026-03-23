@@ -1,5 +1,5 @@
 /**
- * API Client for Law Lens Public Portal
+ * API Client for Law Lens Uganda Public Portal
  *
  * Provides typed API calls to the backend services.
  * Compatible with backend APIError format (error_code, message, details, trace_id).

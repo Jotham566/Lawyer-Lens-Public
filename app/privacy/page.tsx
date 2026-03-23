@@ -27,7 +27,7 @@ export default function PrivacyPage() {
       {/* Introduction */}
       <section className="mb-10">
         <p className="text-muted-foreground leading-relaxed">
-          Law Lens (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your privacy.
+          Law Lens Uganda (&quot;we&quot;, &quot;our&quot;, or &quot;us&quot;) is committed to protecting your privacy.
           This Privacy Policy explains how we collect, use, disclose, and safeguard your
           information when you use our legal research platform.
         </p>

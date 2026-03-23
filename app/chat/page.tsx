@@ -244,7 +244,7 @@ function ChatContent() {
                 <AlertDialogCancel>Cancel</AlertDialogCancel>
                 <AlertDialogAction
                   onClick={handleConfirmDelete}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                  variant="destructive"
                 >
                   Delete
                 </AlertDialogAction>

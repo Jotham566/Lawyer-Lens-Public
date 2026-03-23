@@ -70,6 +70,7 @@ import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useOnlineStatus } from "@/lib/hooks";
+import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
 import { exportResearchReportToWord } from "@/lib/utils/word-export";
 import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
 
@@ -113,6 +114,15 @@ function getCitationMeta(citation: ResearchReport["citations"][number]): string 
   return [citation.legal_reference, citation.case_citation, citation.court].filter(Boolean).join(" · ");
 }
 
+function getInlineCitationTheme(score: number) {
+  const tone = getRelevanceTheme(score);
+  return {
+    pill: tone.pill,
+    dot: tone.dot,
+    badge: tone.badge,
+  };
+}
+
 function buildInlineCitationHtml(
   report: ResearchReport,
   citationIds: string[],
@@ -126,24 +136,27 @@ function buildInlineCitationHtml(
 
       const meta = getCitationMeta(citation);
       const preferredUrl = citation.document_url || citation.external_url;
+      const trustTheme = getInlineCitationTheme(citation.relevance_score || 0);
+      const relevancePercent = Math.round((citation.relevance_score || 0) * 100);
 
       return `
         <span data-inline-citations="true" contenteditable="false" class="group relative mx-1 inline-flex align-baseline">
           ${
             preferredUrl
-              ? `<a href="${preferredUrl}" target="_blank" rel="noopener noreferrer" class="inline-flex cursor-pointer items-center rounded-full border border-sky-200/80 bg-sky-50 px-2 py-0.5 text-[11px] font-sans font-semibold text-sky-900 no-underline shadow-sm transition-colors hover:bg-sky-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100 dark:hover:bg-sky-950/60">[${citationNumber}]</a>`
-              : `<span class="inline-flex cursor-default items-center rounded-full border border-sky-200/80 bg-sky-50 px-2 py-0.5 text-[11px] font-sans font-semibold text-sky-900 shadow-sm dark:border-sky-900/60 dark:bg-sky-950/40 dark:text-sky-100">[${citationNumber}]</span>`
+              ? `<a href="${preferredUrl}" target="_blank" rel="noopener noreferrer" class="ll-status-button inline-flex cursor-pointer items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-sans font-semibold no-underline shadow-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 ${trustTheme.pill}">[${citationNumber}]<span class="inline-block h-2 w-2 rounded-full ring-1 ring-white/70 dark:ring-slate-950 ${trustTheme.dot}"></span></a>`
+              : `<span class="inline-flex cursor-default items-center gap-1 rounded-full px-2 py-0.5 text-[11px] font-sans font-semibold shadow-sm ${trustTheme.pill}">[${citationNumber}]<span class="inline-block h-2 w-2 rounded-full ring-1 ring-white/70 dark:ring-slate-950 ${trustTheme.dot}"></span></span>`
           }
-          <span class="pointer-events-none invisible absolute left-0 top-full z-30 mt-2 w-[340px] max-w-[80vw] rounded-2xl border border-black/10 bg-white/98 p-3 opacity-0 shadow-[0_18px_48px_-22px_rgba(15,23,42,0.35)] transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100 dark:border-white/10 dark:bg-[#12161f]">
+          <span class="surface-panel-strong pointer-events-none invisible absolute left-0 top-full z-30 mt-2 w-[340px] max-w-[80vw] p-3 opacity-0 transition-all group-hover:visible group-hover:opacity-100 group-focus-within:visible group-focus-within:opacity-100">
             <span class="flex items-start gap-3">
-              <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-sky-50 text-xs font-semibold text-sky-800 dark:bg-sky-950/50 dark:text-sky-100">[${citationNumber}]</span>
+              <span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full text-xs font-semibold ${trustTheme.badge}">[${citationNumber}]</span>
               <span class="min-w-0">
                 ${
                   preferredUrl
-                    ? `<a href="${preferredUrl}" target="_blank" rel="noopener noreferrer" class="pointer-events-auto text-sm font-semibold text-primary hover:underline">${citation.title}</a>`
+                    ? `<a href="${preferredUrl}" target="_blank" rel="noopener noreferrer" class="ll-inline-citation-button pointer-events-auto text-sm font-semibold no-underline">${citation.title}</a>`
                     : `<span class="text-sm font-semibold text-foreground">${citation.title}</span>`
                 }
                 ${meta ? `<span class="mt-1 block text-xs text-muted-foreground">${meta}</span>` : ""}
+                <span class="mt-1 block text-[11px] text-muted-foreground">${relevancePercent}% relevance</span>
               </span>
             </span>
           </span>
@@ -344,7 +357,7 @@ function normalizeDisplaySectionTitle(title: string): string {
 function formatSourceClassLabel(sourceClass?: string | null): string {
   if (!sourceClass) return "Source";
   const labels: Record<string, string> = {
-    internal_legal_rag: "Law Lens Corpus",
+    internal_legal_rag: "Law Lens Uganda Corpus",
     government: "Government",
     parliament: "Parliament",
     judiciary: "Judiciary",
@@ -478,10 +491,10 @@ function renderSourceGroups(
       if (!groupCitations.length) return "";
 
       return `
-        <div class="mb-5 rounded-[22px] border border-black/5 bg-[#f5f6f9] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+        <div class="workspace-note-surface mb-5 rounded-[22px] p-4">
           <div class="mb-3 flex items-center justify-between gap-3">
             <p class="text-sm font-semibold text-foreground">${group.label}</p>
-            <span class="inline-flex rounded-full bg-white px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${group.count} sources</span>
+            <span class="workspace-meta-chip">${group.count} sources</span>
           </div>
           <div class="space-y-3">
             ${groupCitations.map((citation) => renderSourceCard(citation, citationIndexLookup)).join("")}
@@ -510,15 +523,15 @@ function renderSourceCard(
   const tier = citation.source_tier ? `Tier ${citation.source_tier}` : "Authority";
 
   return `
-    <details id="citation-${number || citation.id}" class="rounded-2xl border border-black/5 bg-white px-4 py-3 text-sm shadow-sm dark:border-white/10 dark:bg-[#10151d]">
+    <details id="citation-${number || citation.id}" class="workspace-note-surface px-4 py-3 text-sm">
       <summary class="flex cursor-pointer items-center gap-3 list-none">
-        ${number ? `<span class="inline-flex h-6 min-w-6 items-center justify-center rounded-full bg-[#f4f5f7] text-xs font-semibold text-muted-foreground dark:bg-[#0f1318]">[${number}]</span>` : ""}
+        ${number ? `<span class="workspace-meta-chip inline-flex h-6 min-w-6 items-center justify-center rounded-full">[${number}]</span>` : ""}
         ${
           href
-            ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="min-w-0 truncate font-medium text-primary hover:underline">${citation.title}</a>`
+            ? `<a href="${href}" target="_blank" rel="noopener noreferrer" class="ll-inline-citation-button min-w-0 truncate font-medium no-underline">${citation.title}</a>`
             : `<span class="min-w-0 truncate font-medium text-foreground">${citation.title}</span>`
         }
-        <span class="ml-auto inline-flex rounded-full bg-[#f4f5f7] px-2 py-1 text-[10px] font-semibold uppercase tracking-[0.14em] text-muted-foreground dark:bg-[#0f1318]">${tier} · ${sourceClass}</span>
+        <span class="workspace-meta-chip ml-auto">${tier} · ${sourceClass}</span>
       </summary>
       <div class="mt-3 pl-9 text-muted-foreground leading-relaxed">
         ${meta}
@@ -540,7 +553,7 @@ function renderStructuredBlocks(
           .map((row) => `<tr>${row.map((cell) => `<td>${cell}</td>`).join("")}</tr>`)
           .join("");
         return `
-          <div data-structured-block="comparison_table" class="my-6 rounded-[20px] border border-black/5 bg-[#f8fafc] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+          <div data-structured-block="comparison_table" class="workspace-note-surface my-6 rounded-[20px] p-4">
             <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Comparison"}</p>
             <table>
               <thead><tr>${headerHtml}</tr></thead>
@@ -552,7 +565,7 @@ function renderStructuredBlocks(
 
       if (block.block_type === "checklist" && block.items?.length) {
         return `
-          <div data-structured-block="checklist" class="my-6 rounded-[20px] border border-black/5 bg-[#f8fafc] p-4 shadow-sm dark:border-white/10 dark:bg-[#141922]">
+          <div data-structured-block="checklist" class="workspace-note-surface my-6 rounded-[20px] p-4">
             <p class="mb-3 text-[11px] font-semibold uppercase tracking-[0.16em] text-muted-foreground">${block.title || "Recommended actions"}</p>
             <ul>${block.items.map((item) => `<li>${item}</li>`).join("")}</ul>
           </div>
@@ -1540,7 +1553,7 @@ function ResearchContent() {
                   <div
                     className={cn(
                       "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                      isComplete && "border-green-500 bg-green-500 text-white",
+                      isComplete && "border-primary bg-primary text-primary-foreground",
                       isCurrent && "border-primary bg-primary/10 text-primary",
                       !isComplete && !isCurrent && "border-muted text-muted-foreground"
                     )}
@@ -1573,7 +1586,7 @@ function ResearchContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Research Workspace"
-          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
           headerMeta={
             <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
               <Clock className="h-4 w-4" />
@@ -1599,7 +1612,7 @@ function ResearchContent() {
               )}
             </Button>
           }
-          sidebarClassName="w-72 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebarClassName="workspace-sidebar-surface w-72"
           sidebar={
             <div className="space-y-8 p-5">
               <div>
@@ -1622,12 +1635,12 @@ function ResearchContent() {
                   <Badge variant="secondary" className="rounded-full">Word export</Badge>
                 </div>
               </div>
-              <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
+              <div className="workspace-note-surface">
                 The brief should read like an instruction memo, not a chat prompt fragment.
               </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             {error && (
@@ -1638,7 +1651,7 @@ function ResearchContent() {
             )}
             <DocumentPanel
               title="Deep Legal Research"
-              titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+              titleIcon={<Search className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Editable brief</Badge>}
               toolbar={<RichTextToolbar editor={kickoffEditor} disabled={!kickoffEditor} />}
             >
@@ -1678,9 +1691,9 @@ function ResearchContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Research Intake Canvas"
-          titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+          titleIcon={<Search className="h-4 w-4 text-primary" />}
           headerActions={<div className="flex items-center gap-3">{renderPhaseIndicator()}</div>}
-          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-8 p-5">
                 <div>
@@ -1691,7 +1704,7 @@ function ResearchContent() {
                       <span>{clarificationProgress}%</span>
                     </div>
                     <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                      <div className="h-full bg-blue-500 transition-all duration-300" style={{ width: `${Math.max(clarificationProgress, 4)}%` }} />
+                      <div className="h-full bg-primary transition-all duration-300" style={{ width: `${Math.max(clarificationProgress, 4)}%` }} />
                     </div>
                   </div>
                 </div>
@@ -1710,17 +1723,17 @@ function ResearchContent() {
                   </ul>
                 </div>
 
-                <div className="rounded-2xl border border-blue-100 bg-blue-50/80 p-4 text-sm text-blue-900 dark:border-blue-950 dark:bg-blue-950/30 dark:text-blue-200">
+                <div className="workspace-note-surface">
                   Treat this as annotating a memo. The next step opens the research plan using these answers.
                 </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-5xl pb-24">
             <DocumentPanel
               title="Help Us Understand Your Research"
-              titleIcon={<Search className="h-4 w-4 text-blue-500" />}
+              titleIcon={<Search className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Question canvas</Badge>}
               actions={<div className="text-xs text-muted-foreground">{totalQuestions} prompts</div>}
               bodyClassName="px-10 py-8 md:px-14"
@@ -1732,7 +1745,7 @@ function ResearchContent() {
                       </p>
                     </div>
 
-                    <div className="mb-8 rounded-2xl border border-border/60 bg-muted/20 p-5">
+                    <div className="workspace-section-surface mb-8">
                       <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Original Query</div>
                       <p className="mt-3 text-sm leading-7 text-foreground">{session.query}</p>
                     </div>
@@ -1761,7 +1774,7 @@ function ResearchContent() {
                                 <label
                                   key={option}
                                   htmlFor={`${q.id}-${option}`}
-                                  className="flex cursor-pointer items-start gap-3 rounded-2xl border border-border/60 bg-background px-4 py-3 transition-colors hover:border-primary/40 hover:bg-muted/20"
+                                  className={cn(surfaceClasses.optionCard, "flex cursor-pointer items-start gap-3")}
                                 >
                                   <RadioGroupItem value={option} id={`${q.id}-${option}`} className="mt-0.5" />
                                   <span className="text-sm leading-6 text-foreground">{option}</span>
@@ -1789,7 +1802,7 @@ function ResearchContent() {
                       </div>
                     )}
 
-                    <div className="mt-10 flex items-center justify-between gap-4 rounded-2xl border border-border/60 bg-white/90 px-5 py-4 text-sm shadow-sm dark:bg-[#111318]/90 dark:border-white/10">
+                    <div className="workspace-note-surface mt-10 flex items-center justify-between gap-4 px-5 py-4 text-sm">
                       <div className="text-muted-foreground">These answers are carried into the research plan automatically.</div>
                       <Button
                         onClick={handleSubmitClarifications}
@@ -1839,12 +1852,12 @@ function ResearchContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title="Research Plan Canvas"
-          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+          titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
           headerMeta={
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
-              {briefSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-              {briefSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
+              {briefSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+              {briefSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
               {briefSaveState === "error" && <span className="text-destructive">Save failed</span>}
             </div>
           }
@@ -1859,7 +1872,7 @@ function ResearchContent() {
               {isLoading ? "Starting..." : "Start Research"}
             </Button>
           }
-          sidebarClassName="w-80 bg-muted/10"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-6 p-4">
                 <div>
@@ -1872,7 +1885,7 @@ function ResearchContent() {
                       </div>
                     ))}
                     {isEditingBrief && (
-                      <Button variant="ghost" size="sm" onClick={addTopic} className="w-full justify-start mt-2 text-muted-foreground hover:text-foreground">
+                      <Button variant="ghost" size="sm" onClick={addTopic} className="mt-2 w-full justify-start">
                         <Plus className="mr-2 h-4 w-4" /> Add Topic
                       </Button>
                     )}
@@ -1892,7 +1905,7 @@ function ResearchContent() {
                         <Badge
                           key={j}
                           variant={editedJurisdictions.includes(j) ? "default" : "outline"}
-                          className="cursor-pointer text-xs"
+                          className={cn("cursor-pointer text-xs", surfaceClasses.chipButton)}
                           onClick={() => {
                             if (editedJurisdictions.includes(j)) {
                               setEditedJurisdictions(editedJurisdictions.filter(jur => jur !== j));
@@ -1915,7 +1928,7 @@ function ResearchContent() {
                         <Badge
                           key={dt}
                           variant={editedDocTypes.includes(dt) ? "default" : "outline"}
-                          className="cursor-pointer text-xs"
+                          className={cn("cursor-pointer text-xs", surfaceClasses.chipButton)}
                           onClick={() => toggleDocType(dt)}
                         >
                           {dt}
@@ -1960,18 +1973,18 @@ function ResearchContent() {
 
                 <div className="h-px bg-border" />
                 
-                <div className="text-xs text-blue-700 dark:text-blue-300 bg-blue-500/10 dark:bg-blue-950/30 p-3 rounded-lg flex items-start gap-2">
+                <div className="workspace-note-surface flex items-start gap-2 text-xs">
                   <Info className="h-4 w-4 shrink-0 mt-0.5" />
                   <p>Changes you make to this plan are saved automatically. When you are ready, click Start Research.</p>
                 </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             <DocumentPanel
               title="Research Plan"
-              titleIcon={<LayoutPanelLeft className="h-4 w-4 text-blue-500" />}
+              titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Editable canvas</Badge>}
               actions={
                 <div className="flex items-center gap-3">
@@ -1996,7 +2009,7 @@ function ResearchContent() {
               />
             </DocumentPanel>
 
-            <div className="mt-6 flex items-center justify-between rounded-2xl border border-border/60 bg-white/90 px-5 py-4 text-sm shadow-sm dark:bg-[#111318]/90 dark:border-white/10">
+            <div className="workspace-note-surface mt-6 flex items-center justify-between px-5 py-4 text-sm">
               <div className="text-muted-foreground">
                 Edit the plan as one working document. Use the left rail for scope and output settings.
               </div>
@@ -2030,16 +2043,16 @@ function ResearchContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title={session.status === "researching" ? "Researching..." : "Writing Report..."}
-          titleIcon={<Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+          titleIcon={<Loader2 className="h-4 w-4 animate-spin text-primary" />}
           headerActions={
             <div className="flex items-center gap-3">
-              <Badge variant="outline" className="animate-pulse bg-blue-500/10 text-blue-500 border-blue-500/20">
+              <Badge variant="outline" className="animate-pulse border-border/60 bg-primary/10 text-primary">
                 Execution in progress
               </Badge>
               {isResumedRun && <Badge variant="secondary">Resumed</Badge>}
             </div>
           }
-          sidebarClassName="w-80 bg-[#fbfbf8] dark:bg-[#101317]"
+          sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-6 p-5">
                 <div>
@@ -2054,18 +2067,18 @@ function ResearchContent() {
                       </div>
                       <div className="h-1.5 overflow-hidden rounded-full bg-muted">
                         <div
-                          className="h-full bg-blue-500 transition-all duration-500 ease-out"
+                          className="h-full bg-primary transition-all duration-500 ease-out"
                           style={{ width: `${Math.max(progressPercent, 5)}%` }}
                         />
                       </div>
                     </div>
 
                     <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-3 dark:bg-[#111318]">
+                      <div className="surface-inset px-3 py-3">
                         <div className="text-muted-foreground">Active topics</div>
                         <div className="mt-1 text-lg font-semibold text-foreground">{activeTopics}</div>
                       </div>
-                      <div className="rounded-2xl border border-border/60 bg-background/70 px-3 py-3 dark:bg-[#111318]">
+                      <div className="surface-inset px-3 py-3">
                         <div className="text-muted-foreground">Checkpoints</div>
                         <div className="mt-1 text-lg font-semibold text-foreground">{session.graph_checkpoints?.length || 0}</div>
                       </div>
@@ -2074,14 +2087,14 @@ function ResearchContent() {
                 </div>
 
                 {(!isOnline && isHydrated) && (
-                  <div className="bg-amber-500/10 text-amber-700 dark:text-amber-400 p-3 rounded-lg text-xs flex items-start gap-2">
+                  <div className="rounded-lg border border-border/60 bg-primary/10 p-3 text-xs text-foreground flex items-start gap-2">
                     <WifiOff className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>Offline. Run continues in background.</div>
                   </div>
                 )}
                 
                 {wasOffline && (
-                  <div className="bg-green-500/10 text-green-700 dark:text-green-400 p-3 rounded-lg text-xs flex items-start gap-2">
+                  <div className="rounded-lg border border-border/60 bg-primary/10 p-3 text-xs text-foreground flex items-start gap-2">
                     <RefreshCcw className="h-4 w-4 shrink-0 mt-0.5" />
                     <div>Connection restored. Re-syncing...</div>
                   </div>
@@ -2100,9 +2113,9 @@ function ResearchContent() {
                             key={topic.id}
                             className={cn(
                               "rounded-2xl border px-3 py-3 text-sm transition-colors",
-                              topicStatus === "completed" && "border-green-500/20 bg-green-500/5",
-                              topicStatus === "in_progress" && "border-blue-500/20 bg-blue-500/5",
-                              topicStatus === "pending" && "border-border/60 bg-background/70 dark:bg-[#111318]"
+                              topicStatus === "completed" && "border-primary/20 bg-primary/10",
+                              topicStatus === "in_progress" && "border-primary/20 bg-primary/10",
+                              topicStatus === "pending" && "surface-inset"
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -2114,8 +2127,8 @@ function ResearchContent() {
                                 variant="outline"
                                 className={cn(
                                   "rounded-full text-[10px]",
-                                  topicStatus === "completed" && "border-green-500/30 text-green-600 dark:text-green-400",
-                                  topicStatus === "in_progress" && "border-blue-500/30 text-blue-600 dark:text-blue-400"
+                                  topicStatus === "completed" && "border-primary/30 text-primary",
+                                  topicStatus === "in_progress" && "border-primary/30 text-primary"
                                 )}
                               >
                                 {topicStatus.replace("_", " ")}
@@ -2131,7 +2144,7 @@ function ResearchContent() {
                 <div>
                    <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Execution Trace</h3>
                    {latestCheckpoint && (
-                     <div className="mb-3 rounded-2xl border border-blue-500/20 bg-blue-500/5 px-3 py-3 text-xs">
+                     <div className="mb-3 rounded-2xl border border-border/60 bg-primary/10 px-3 py-3 text-xs">
                        <span className="text-muted-foreground">Current node: </span>
                        <span className="font-medium">{latestCheckpoint.node}</span>
                      </div>
@@ -2143,12 +2156,12 @@ function ResearchContent() {
                 </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             <DocumentPanel
               title={session.status === "researching" ? "Research Draft Workspace" : "Report Assembly Workspace"}
-              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+              titleIcon={<Loader2 className="h-4 w-4 animate-spin text-primary" />}
               badge={
                 <Badge variant="secondary" className="rounded-full">
                   {session.status === "researching" ? "Live gathering" : "Synthesizing report"}
@@ -2166,7 +2179,7 @@ function ResearchContent() {
                       </p>
                     </div>
 
-                    <section className="mb-10 rounded-2xl border border-border/60 bg-muted/20 p-5 dark:bg-[#0f1318]">
+                    <section className="workspace-section-surface mb-10">
                       <div className="flex items-center justify-between gap-4">
                         <div>
                           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current Activity</div>
@@ -2178,7 +2191,7 @@ function ResearchContent() {
                             <span>{progressPercent}%</span>
                           </div>
                           <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full bg-blue-500 transition-all duration-500 ease-out" style={{ width: `${Math.max(progressPercent, 5)}%` }} />
+                            <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progressPercent, 5)}%` }} />
                           </div>
                         </div>
                       </div>
@@ -2195,23 +2208,23 @@ function ResearchContent() {
                               </div>
                               <div className="flex items-center gap-2">
                                 <h2 className="text-xl font-semibold tracking-tight text-foreground">{topic.title}</h2>
-                                {topicStatus === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
-                                {topicStatus === "completed" && <CheckCircle2 className="h-4 w-4 text-green-500" />}
+                                {topicStatus === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-primary" />}
+                                {topicStatus === "completed" && <CheckCircle2 className="h-4 w-4 text-primary" />}
                               </div>
                             </div>
                             <p className="max-w-4xl text-sm leading-7 text-muted-foreground">
                               {topic.description || "Research is gathering authorities, statutes, and external sources for this topic."}
                             </p>
                             <div className="mt-5 grid gap-3 md:grid-cols-3">
-                              <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="surface-inset px-4 py-4 text-sm">
                                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Status</div>
                                 <div className="mt-2 font-medium text-foreground">{topicStatus.replace("_", " ")}</div>
                               </div>
-                              <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="surface-inset px-4 py-4 text-sm">
                                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Evidence mode</div>
                                 <div className="mt-2 font-medium text-foreground">Authorities + web research</div>
                               </div>
-                              <div className="rounded-2xl border border-border/60 bg-background/70 px-4 py-4 text-sm dark:bg-[#0f1318]">
+                              <div className="surface-inset px-4 py-4 text-sm">
                                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Draft state</div>
                                 <div className="mt-2 font-medium text-foreground">
                                   {topicStatus === "completed" ? "Ready for synthesis" : "Still compiling sources"}
@@ -2256,12 +2269,12 @@ function ResearchContent() {
       <TooltipProvider>
         <DocumentWorkspaceShell
           title={editedReportTitle || report.title}
-          titleIcon={<FileText className="h-4 w-4 text-blue-500" />}
+          titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerMeta={
             <div className="mr-2 flex items-center gap-2 text-xs text-muted-foreground">
               {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
-              {reportSaveState === "saved" && <span className="flex items-center gap-1 text-green-600 dark:text-green-400"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-              {reportSaveState === "rate_limited" && <span className="text-amber-600 dark:text-amber-400">Autosave paused briefly</span>}
+              {reportSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+              {reportSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
               {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
             </div>
           }
@@ -2271,7 +2284,7 @@ function ResearchContent() {
               Share & Export
             </Button>
           }
-          sidebarClassName="w-64"
+          sidebarClassName="workspace-sidebar-surface w-64"
           sidebar={
             <div className="space-y-4 p-4">
               <div>
@@ -2280,8 +2293,9 @@ function ResearchContent() {
                   <button
                     onClick={() => scrollToSection("executive-summary")}
                     className={cn(
-                      "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
-                      activeReportSection === "executive-summary" && "bg-muted font-medium text-foreground"
+                      activeReportSection === "executive-summary"
+                        ? surfaceClasses.sidebarNavButtonActive
+                        : surfaceClasses.sidebarNavButton
                     )}
                   >
                     Executive Summary
@@ -2291,8 +2305,10 @@ function ResearchContent() {
                       key={section.id}
                       onClick={() => scrollToSection(section.id)}
                       className={cn(
-                        "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50 truncate",
-                        activeReportSection === section.id && "bg-muted font-medium text-foreground"
+                        "truncate",
+                        activeReportSection === section.id
+                          ? surfaceClasses.sidebarNavButtonActive
+                          : surfaceClasses.sidebarNavButton
                       )}
                       title={editedReportSectionTitles[section.id] ?? section.title}
                     >
@@ -2302,8 +2318,9 @@ function ResearchContent() {
                   <button
                     onClick={() => scrollToSection("sources-endnotes")}
                     className={cn(
-                      "w-full rounded-md px-3 py-1.5 text-left text-sm transition-colors hover:bg-muted/50",
-                      activeReportSection === "sources-endnotes" && "bg-muted font-medium text-foreground"
+                      activeReportSection === "sources-endnotes"
+                        ? surfaceClasses.sidebarNavButtonActive
+                        : surfaceClasses.sidebarNavButton
                     )}
                   >
                     Sources used in the report
@@ -2315,7 +2332,7 @@ function ResearchContent() {
 
               <div className="space-y-2 text-sm text-muted-foreground">
                 <div className="flex items-center gap-2">
-                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-green-500" />
+                  <CheckCircle2 className="h-3.5 w-3.5 shrink-0 text-primary" />
                   <span className="text-xs font-medium text-foreground">Execution complete</span>
                 </div>
                 {visibleSourceCount > 0 && (
@@ -2331,18 +2348,18 @@ function ResearchContent() {
               </div>
             </div>
           }
-          mainClassName="bg-[#f7f6f2] p-5 md:p-8 lg:p-10 dark:bg-[#0b0d10]"
+          mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
           <div className="mx-auto max-w-6xl pb-24">
             {!isOnline && isHydrated && (
-              <div className="mb-8 flex items-start gap-3 rounded-xl bg-amber-500/10 p-4 text-sm text-amber-700 dark:text-amber-400">
+              <div className="mb-8 flex items-start gap-3 rounded-xl border border-border/60 bg-primary/10 p-4 text-sm text-foreground">
                 <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
                 <div>You are offline. Your report edits are cached locally and will sync when reconnected.</div>
               </div>
             )}
             <DocumentPanel
               title={editedReportTitle || report.title}
-              titleIcon={<FileText className="h-4 w-4 text-blue-500" />}
+              titleIcon={<FileText className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Contents</Badge>}
               actions={
                 <Button variant="outline" size="sm" onClick={handleExportWord} className="rounded-full">

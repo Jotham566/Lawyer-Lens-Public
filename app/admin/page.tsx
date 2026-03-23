@@ -66,12 +66,14 @@ function StatCard({
   href?: string;
 }) {
   const content = (
-    <Card className="hover:shadow-md transition-shadow">
+    <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5">
       <CardHeader className="flex flex-row items-center justify-between pb-2">
         <CardTitle className="text-sm font-medium text-muted-foreground">
           {title}
         </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
+        <div className="rounded-xl bg-surface-container-high p-2">
+          <Icon className="h-4 w-4 text-secondary-foreground" />
+        </div>
       </CardHeader>
       <CardContent>
         <div className="text-2xl font-bold">{value}</div>
@@ -82,12 +84,12 @@ function StatCard({
           <div className="flex items-center gap-1 mt-2">
             <TrendingUp
               className={`h-3 w-3 ${
-                trend.isPositive ? "text-green-500" : "text-red-500 rotate-180"
+                trend.isPositive ? "text-secondary-foreground" : "text-destructive rotate-180"
               }`}
             />
             <span
               className={`text-xs ${
-                trend.isPositive ? "text-green-500" : "text-red-500"
+                trend.isPositive ? "text-secondary-foreground" : "text-destructive"
               }`}
             >
               {trend.isPositive ? "+" : "-"}{Math.abs(trend.value)}% from last month
@@ -120,14 +122,14 @@ function QuickActionCard({
   return (
     <Link href={href}>
       <Card
-        className={`hover:shadow-md transition-all cursor-pointer ${
-          variant === "primary" ? "border-primary/50 bg-primary/5" : ""
+        className={`cursor-pointer border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5 ${
+          variant === "primary" ? "border-primary/25 bg-[linear-gradient(135deg,rgba(201,160,89,0.18),rgba(0,35,68,0.04))]" : ""
         }`}
       >
         <CardContent className="flex items-center gap-4 p-4">
           <div
-            className={`rounded-lg p-2 ${
-              variant === "primary" ? "bg-primary/10" : "bg-muted"
+            className={`rounded-xl p-2 ${
+              variant === "primary" ? "bg-primary/12" : "bg-surface-container-high"
             }`}
           >
             <Icon
@@ -270,23 +272,28 @@ function AdminDashboardContent() {
   return (
     <div className="container max-w-7xl py-8 space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-        <div>
-          <h1 className="text-3xl font-bold">Admin Console</h1>
-          <p className="text-muted-foreground mt-1">
-            Manage your organization: {organization?.name}
-          </p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Badge variant="outline" className="capitalize">
-            {organization?.subscription_tier} Plan
-          </Badge>
-          <Button asChild size="sm">
-            <Link href="/settings/organization">
-              <Settings className="h-4 w-4 mr-2" />
-              Settings
-            </Link>
-          </Button>
+      <div className="rounded-[32px] border border-border/60 bg-surface-container px-6 py-7 shadow-[var(--shadow-soft)] sm:px-8">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
+              Administration
+            </p>
+            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.03em] text-foreground">Admin Console</h1>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              Manage your organization: {organization?.name}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <Badge variant="outline" className="border-border/60 bg-surface-container-high capitalize">
+              {organization?.subscription_tier} Plan
+            </Badge>
+            <Button asChild size="sm">
+              <Link href="/settings/organization">
+                <Settings className="h-4 w-4 mr-2" />
+                Settings
+              </Link>
+            </Button>
+          </div>
         </div>
       </div>
 
@@ -379,7 +386,7 @@ function AdminDashboardContent() {
 
       {/* Recent Activity */}
       <div className="grid gap-6 lg:grid-cols-2">
-        <Card>
+        <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
           <CardHeader>
             <CardTitle className="text-lg">Recent Activity</CardTitle>
             <CardDescription>Latest actions by team members</CardDescription>
@@ -392,8 +399,8 @@ function AdminDashboardContent() {
             ) : (
               <div className="space-y-4">
                 {recentActivity.map((activity) => (
-                  <div key={activity.id} className="flex items-start gap-3">
-                    <div className="h-8 w-8 rounded-full bg-muted flex items-center justify-center">
+                  <div key={activity.id} className="flex items-start gap-3 rounded-2xl bg-surface-container-high px-3 py-3">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted">
                       <span className="text-xs font-medium">
                         {activity.user_name.charAt(0)}
                       </span>
@@ -422,7 +429,7 @@ function AdminDashboardContent() {
         </Card>
 
         {/* Team Overview */}
-        <Card>
+        <Card className="border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
           <CardHeader>
             <CardTitle className="text-lg">Team Overview</CardTitle>
             <CardDescription>Your organization members</CardDescription>
@@ -430,8 +437,8 @@ function AdminDashboardContent() {
           <CardContent>
             <div className="space-y-4">
               {members.slice(0, 5).map((member) => (
-                <div key={member.id} className="flex items-center gap-3">
-                  <div className="h-8 w-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <div key={member.id} className="flex items-center gap-3 rounded-2xl bg-surface-container-high px-3 py-3">
+                  <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary/10">
                     <span className="text-xs font-medium text-primary">
                       {member.full_name?.charAt(0) || member.email.charAt(0)}
                     </span>

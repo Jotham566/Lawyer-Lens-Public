@@ -105,7 +105,7 @@ export function PricingTierCard({
     <Card
       className={cn(
         "relative flex flex-col",
-        isPopular && "border-primary shadow-lg scale-105",
+        isPopular && "border-border/40 shadow-lg scale-105",
         isCurrent && "ring-2 ring-primary"
       )}
     >
@@ -138,7 +138,7 @@ export function PricingTierCard({
                 </span>
               </div>
               {billingCycle === "annual" && annualSavings > 0 && (
-                <p className="text-sm text-green-600 mt-1">
+                <p className="mt-1 text-sm text-primary">
                   Save {annualSavings}% with annual billing
                 </p>
               )}

@@ -35,10 +35,10 @@ const faqs = [
   {
     question: "What types of documents are available?",
     answer:
-      "Law Lens provides access to Acts of Parliament, Court Judgments from various levels (Supreme Court, Court of Appeal, High Court, etc.), Regulations and Statutory Instruments, and the Constitution of Uganda.",
+      "Law Lens Uganda provides access to Acts of Parliament, Court Judgments from various levels (Supreme Court, Court of Appeal, High Court, etc.), Regulations and Statutory Instruments, and the Constitution of Uganda.",
   },
   {
-    question: "Is the information on Law Lens legally authoritative?",
+    question: "Is the information on Law Lens Uganda legally authoritative?",
     answer:
       "While we source our documents from official publications, the information is provided for reference purposes only. For legal proceedings or advice, always verify with official gazettes or consult a qualified legal professional.",
   },
@@ -88,35 +88,47 @@ const quickLinks = [
 
 export default function HelpPage() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="container mx-auto max-w-5xl px-4 py-6">
       <Breadcrumbs className="mb-6" />
 
-      {/* Header */}
-      <div className="mb-8">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-            <HelpCircle className="h-6 w-6 text-primary" />
+      <section className="rounded-[32px] border border-border/60 bg-surface-container px-6 py-8 shadow-[var(--shadow-soft)] sm:px-8 sm:py-10">
+        <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
+          <div className="flex items-start gap-4">
+            <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/12 ring-1 ring-primary/15">
+              <HelpCircle className="h-7 w-7 text-primary" />
+            </div>
+            <div>
+              <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
+                Support
+              </p>
+              <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.03em] text-foreground sm:text-5xl">
+                Help & FAQ
+              </h1>
+              <p className="mt-4 max-w-2xl text-base leading-8 text-muted-foreground">
+                Learn how to use Law Lens Uganda effectively
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight sm:text-3xl">
-              Help & FAQ
-            </h1>
-            <p className="text-muted-foreground">
-              Learn how to use Law Lens effectively
+          <div className="rounded-[28px] bg-surface-container-high px-5 py-4 sm:max-w-xs">
+            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
+              Guidance
+            </p>
+            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+              The support surface keeps navigation, search, research, and citation guidance in one calm, scannable place.
             </p>
           </div>
         </div>
-      </div>
+      </section>
 
       {/* Quick Links */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">Quick Links</h2>
+      <section className="mt-10">
+        <h2 className="font-serif text-3xl font-semibold tracking-[-0.02em] text-foreground">Quick Links</h2>
         <div className="grid gap-3 sm:grid-cols-2">
           {quickLinks.map((link) => (
             <Link key={link.href} href={link.href}>
-              <Card className="h-full transition-colors hover:border-primary/50">
+              <Card className="h-full border-border/60 bg-surface-container shadow-[var(--shadow-soft)] transition-transform duration-200 hover:-translate-y-0.5 hover:border-border/80">
                 <CardContent className="flex items-center gap-3 p-4">
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface-container-high text-primary">
                     <link.icon className="h-5 w-5 text-primary" />
                   </div>
                   <div className="flex-1 min-w-0">
@@ -134,16 +146,16 @@ export default function HelpPage() {
       </section>
 
       {/* FAQ */}
-      <section className="mb-10">
-        <h2 className="text-xl font-semibold mb-4">Frequently Asked Questions</h2>
-        <Card>
+      <section className="mt-10">
+        <h2 className="font-serif text-3xl font-semibold tracking-[-0.02em] text-foreground">Frequently Asked Questions</h2>
+        <Card className="mt-4 border-border/60 bg-surface-container shadow-[var(--shadow-soft)]">
           <CardContent className="p-0">
             <Accordion type="single" collapsible className="w-full">
               {faqs.map((faq, index) => (
-                <AccordionItem
+                  <AccordionItem
                   key={index}
                   value={`item-${index}`}
-                  className="border-b last:border-b-0"
+                  className="border-b border-border/60 last:border-b-0"
                 >
                   <AccordionTrigger className="px-4 py-3 text-left text-sm font-medium hover:no-underline">
                     {faq.question}
@@ -159,12 +171,12 @@ export default function HelpPage() {
       </section>
 
       {/* Contact */}
-      <section className="border-t pt-8">
-        <h2 className="text-xl font-semibold mb-4">Need More Help?</h2>
-        <p className="text-sm text-muted-foreground leading-relaxed">
+      <section className="mt-10 rounded-[28px] border border-border/60 bg-surface-container px-6 py-6 shadow-[var(--shadow-soft)]">
+        <h2 className="font-serif text-2xl font-semibold tracking-[-0.02em] text-foreground">Need More Help?</h2>
+        <p className="mt-4 text-sm leading-7 text-muted-foreground">
           If you couldn&apos;t find the answer to your question, please reach out
           to our support team. We&apos;re here to help you make the most of
-          Law Lens.
+          Law Lens Uganda.
         </p>
       </section>
     </div>

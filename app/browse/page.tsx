@@ -1,7 +1,8 @@
 import Link from "next/link";
 import { FileText, Gavel, ScrollText, Scale, ArrowRight } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { surfaceClasses } from "@/lib/design-system";
+import { cn } from "@/lib/utils";
 
 const documentTypes = [
   {
@@ -10,8 +11,8 @@ const documentTypes = [
     icon: FileText,
     href: "/browse/acts",
     count: "1,200+",
-    color: "text-blue-600 dark:text-blue-400",
-    bgColor: "bg-blue-100 dark:bg-blue-900/30",
+    color: "text-primary",
+    bgColor: "bg-primary/10 dark:bg-primary/15",
   },
   {
     title: "Judgments",
@@ -19,8 +20,8 @@ const documentTypes = [
     icon: Gavel,
     href: "/browse/judgments",
     count: "3,500+",
-    color: "text-purple-600 dark:text-purple-400",
-    bgColor: "bg-purple-100 dark:bg-purple-900/30",
+    color: "text-secondary-foreground",
+    bgColor: "bg-secondary",
   },
   {
     title: "Regulations",
@@ -28,8 +29,8 @@ const documentTypes = [
     icon: ScrollText,
     href: "/browse/regulations",
     count: "800+",
-    color: "text-green-600 dark:text-green-400",
-    bgColor: "bg-green-100 dark:bg-green-900/30",
+    color: "text-foreground",
+    bgColor: "bg-surface-container-high",
   },
   {
     title: "Constitution",
@@ -37,8 +38,8 @@ const documentTypes = [
     icon: Scale,
     href: "/browse/constitution",
     count: "1",
-    color: "text-amber-600 dark:text-amber-400",
-    bgColor: "bg-amber-100 dark:bg-amber-900/30",
+    color: "text-primary",
+    bgColor: "bg-primary/10 dark:bg-primary/15",
   },
 ];
 
@@ -65,7 +66,7 @@ export default function BrowsePage() {
         <div className="grid gap-4 sm:grid-cols-2">
           {documentTypes.map((type) => (
             <Link key={type.href} href={type.href}>
-              <Card className="h-full transition-all hover:border-primary/50 hover:shadow-md">
+              <Card className={cn("h-full", surfaceClasses.pagePanelInteractive)}>
                 <CardHeader>
                   <div className="flex items-center justify-between">
                     <div
@@ -83,12 +84,10 @@ export default function BrowsePage() {
                   <p className="text-sm text-muted-foreground">
                     {type.description}
                   </p>
-                  <Button variant="ghost" className="mt-4 gap-1 p-0" asChild>
-                    <span>
-                      Browse {type.title.toLowerCase()}
-                      <ArrowRight className="h-4 w-4" />
-                    </span>
-                  </Button>
+                  <div className={cn("mt-4 inline-flex items-center gap-1 text-sm font-medium", surfaceClasses.textLink)}>
+                    Browse {type.title.toLowerCase()}
+                    <ArrowRight className="ll-icon-muted h-4 w-4" />
+                  </div>
                 </CardContent>
               </Card>
             </Link>

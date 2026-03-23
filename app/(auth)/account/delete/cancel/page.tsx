@@ -94,8 +94,8 @@ function CancelDeletionContent() {
     return (
       <Card className="w-full max-w-md">
         <CardHeader className="space-y-1">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 dark:bg-green-900/30">
-            <CheckCircle2 className="h-6 w-6 text-green-600 dark:text-green-400" />
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-secondary/60">
+            <CheckCircle2 className="h-6 w-6 text-secondary-foreground" />
           </div>
           <CardTitle className="text-2xl font-bold text-center">
             Account Reactivated
@@ -106,9 +106,9 @@ function CancelDeletionContent() {
         </CardHeader>
 
         <CardContent>
-          <div className="rounded-lg bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 p-4 text-sm text-green-800 dark:text-green-200">
+          <div className="rounded-lg border border-primary/20 bg-primary/10 p-4 text-sm text-foreground dark:bg-primary/15">
             <p>
-              Welcome back! You can now log in and continue using Law Lens as usual.
+              Welcome back! You can now log in and continue using Law Lens Uganda as usual.
               All your data has been preserved.
             </p>
           </div>
