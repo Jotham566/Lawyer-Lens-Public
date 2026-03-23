@@ -99,9 +99,9 @@ export function HeaderRedesign({
         className
       )}
     >
-      <div className="container flex h-18 items-center gap-4 px-4 py-3">
+      <div className="container flex h-18 items-center gap-4 overflow-x-clip px-4 py-3">
         {/* Logo */}
-        <div className="mr-3 flex shrink-0 items-center">
+        <div className="mr-3 flex shrink-0 items-center max-w-[140px] sm:max-w-none">
           <Logo height={148} />
         </div>
 

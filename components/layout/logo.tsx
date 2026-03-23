@@ -56,8 +56,8 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             alt="Law Lens Uganda"
             width={width}
             height={height}
-            className="dark:hidden"
-            style={{ width: 'auto', height: height }}
+            className="dark:hidden max-w-full h-auto"
+            style={{ width: 'auto', height: height, maxWidth: '100%' }}
             loading="eager"
           />
           {/* Dark mode logo */}
@@ -66,8 +66,8 @@ export function Logo({ collapsed = false, className, height = 155 }: LogoProps) 
             alt="Law Lens Uganda"
             width={width}
             height={height}
-            className="hidden dark:block"
-            style={{ width: 'auto', height: height }}
+            className="hidden dark:block max-w-full h-auto"
+            style={{ width: 'auto', height: height, maxWidth: '100%' }}
             loading="eager"
           />
         </>
