@@ -774,7 +774,7 @@ function DocumentContent({ id }: { id: string }) {
                     </Card>
                     <Button variant="ghost" size="sm" onClick={handleOpenDocumentChat}>
                       <MessageSquare className="mr-2 h-4 w-4" />
-                      Ask this document
+                      Ask Ben
                     </Button>
                   </div>
                 </div>
@@ -829,7 +829,7 @@ function DocumentContent({ id }: { id: string }) {
                         </Button>
                       <Button variant="ghost" size="sm" onClick={handleOpenDocumentChat}>
                         <MessageSquare className="mr-2 h-4 w-4" />
-                        Ask this document
+                        Ask Ben
                       </Button>
                       {prevDocument ? (
                         <Button variant="outline" size="sm" className="h-8 px-2.5" asChild>
@@ -870,9 +870,11 @@ function DocumentContent({ id }: { id: string }) {
                     {document.title}
                   </h1>
                   <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-[11px] text-muted-foreground md:text-xs">
-                    <span className="rounded-full border bg-muted/30 px-3 py-1">
-                      {document.human_readable_id}
-                    </span>
+                    {document.chapter && (
+                      <span className="rounded-full border bg-muted/30 px-3 py-1">
+                        Cap. {document.chapter}
+                      </span>
+                    )}
                     {document.publication_date && (
                       <span className="rounded-full border bg-muted/30 px-3 py-1">
                         Published {formatDateOnly(document.publication_date)}
@@ -939,9 +941,11 @@ function DocumentContent({ id }: { id: string }) {
                               {document.case_number}
                             </span>
                           )}
-                          <span className="rounded-full border bg-muted/30 px-2.5 py-0.5">
-                            {document.human_readable_id}
-                          </span>
+                          {document.court_level && (
+                            <span className="rounded-full border bg-muted/30 px-2.5 py-0.5">
+                              {document.court_level}
+                            </span>
+                          )}
                         </div>
                       </div>
                       <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -1081,30 +1085,37 @@ function DocumentContent({ id }: { id: string }) {
                     {showRelatedDocumentsRail && (
                       <aside className="hidden xl:block sticky top-[148px] self-start">
                         <Card>
-                          <CardContent className="max-h-[calc(100vh-164px)] overflow-y-auto p-4 space-y-2">
-                            <h3 className="text-sm font-semibold">
+                          <CardContent className="max-h-[calc(100vh-164px)] overflow-y-auto p-4 space-y-1">
+                            <h3 className="text-sm font-semibold mb-2">
                               Related {typeConfig?.label || "Documents"}
                             </h3>
-                            <div className="space-y-1.5">
-                              {relatedDocuments.map((item) => (
-                                <Link
-                                  key={item.id}
-                                  href={buildDocumentHref(item.id)}
-                                  className={cn("group block min-w-0 px-2 py-1.5 text-sm", surfaceClasses.rowInteractive)}
-                                >
-                                  <p className="line-clamp-2 break-words">
-                                    {item.short_title || item.title}
-                                  </p>
-                                  <p className="break-all text-xs text-muted-foreground">
-                                    {item.human_readable_id}
-                                  </p>
-                                  {item.title && item.title !== item.short_title && (
-                                    <p className="break-all text-xs text-muted-foreground/80">
-                                      {item.title}
-                                    </p>
-                                  )}
-                                </Link>
-                              ))}
+                            <div className="divide-y divide-border/40">
+                              {relatedDocuments.map((item) => {
+                                const year = item.act_year || (item.publication_date ? new Date(item.publication_date).getFullYear() : null);
+                                return (
+                                  <Link
+                                    key={item.id}
+                                    href={buildDocumentHref(item.id)}
+                                    className={cn(
+                                      "group flex items-start gap-2.5 py-3 first:pt-1 text-sm",
+                                      surfaceClasses.rowInteractive,
+                                      "rounded-lg px-2"
+                                    )}
+                                  >
+                                    <FileText className="mt-0.5 h-3.5 w-3.5 shrink-0 text-muted-foreground ll-transition group-hover:text-brand-gold" />
+                                    <div className="min-w-0 flex-1">
+                                      <p className="line-clamp-2 break-words font-medium leading-snug">
+                                        {item.short_title || item.title}
+                                      </p>
+                                      {year && (
+                                        <p className="mt-0.5 text-xs text-muted-foreground">
+                                          {item.chapter ? `Cap. ${item.chapter}` : ""}{item.chapter && year ? " · " : ""}{year}
+                                        </p>
+                                      )}
+                                    </div>
+                                  </Link>
+                                );
+                              })}
                             </div>
                           </CardContent>
                         </Card>
@@ -1251,7 +1262,7 @@ function DocumentContent({ id }: { id: string }) {
                     }
                     onSelectFollowup={(question) => void documentChat.sendMessage(question)}
                     onClose={() => setDocumentChatOpen(false)}
-                    className="h-[calc(100vh-5rem)] rounded-none border-y-0 border-r-0 shadow-xl"
+                    className="h-[calc(100vh-5rem)] rounded-none border-b-0 border-r-0 shadow-xl"
                   />
                 </div>
               )}

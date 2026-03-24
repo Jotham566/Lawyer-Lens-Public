@@ -137,7 +137,7 @@ export default function LegislationPage() {
 
           {/* Search Bar */}
           <form onSubmit={handleSearch} className="mt-10">
-            <div className="relative mx-auto overflow-hidden rounded-full border border-transparent bg-card shadow-soft ring-1 ring-border/40 transition-all focus-within:ring-2 focus-within:ring-primary dark:border-glass">
+            <div className="relative mx-auto overflow-hidden rounded-full bg-card shadow-soft ring-1 ring-border/60 transition-all focus-within:ring-[3px] focus-within:ring-primary/50 dark:ring-glass dark:focus-within:ring-brand-gold/40">
               <div className="flex items-center px-5 py-3 sm:px-6 sm:py-4">
                 <Search className="mr-3 h-5 w-5 shrink-0 text-muted-foreground sm:mr-4" />
                 <input
@@ -145,7 +145,7 @@ export default function LegislationPage() {
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search laws, case citations, or internal memos..."
-                  className="min-w-0 flex-1 bg-transparent text-base font-sans placeholder:text-muted-foreground/60 focus:outline-none sm:text-lg"
+                  className="min-w-0 flex-1 border-0 bg-transparent text-base font-sans shadow-none ring-0 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0 sm:text-lg"
                 />
                 <button
                   type="submit"

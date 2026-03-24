@@ -363,7 +363,12 @@ export function DocumentChatPanel({
         <div className="rounded-xl border bg-background px-3 py-2">
           <p className="line-clamp-2 text-sm font-medium leading-snug">{document.title}</p>
           <p className="mt-0.5 text-[11px] text-muted-foreground">
-            {document.human_readable_id}
+            {[
+              document.chapter ? `Cap. ${document.chapter}` : null,
+              document.case_number,
+              document.court_level,
+              document.act_year || (document.publication_date ? new Date(document.publication_date).getFullYear() : null),
+            ].filter(Boolean).join(" · ") || document.document_type}
           </p>
         </div>
       </CardHeader>
