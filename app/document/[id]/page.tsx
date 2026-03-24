@@ -5,6 +5,7 @@ import Link from "next/link";
 import dynamic from "next/dynamic";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { PageErrorBoundary } from "@/components/error-boundary";
+import { ErrorBoundary } from "react-error-boundary";
 import {
   FileText,
   ArrowLeft,
@@ -56,6 +57,31 @@ const PdfReader = dynamic(
     loading: () => <Skeleton className="h-[calc(100vh-196px)] min-h-[780px] w-full" />,
   }
 );
+
+/** Fallback UI shown when PdfReader crashes */
+function PdfFallback({ className }: { className?: string }) {
+  return (
+    <div className={cn("flex items-center justify-center rounded-xl bg-muted/30", className)}>
+      <div className="text-center">
+        <p className="text-sm font-medium text-muted-foreground">PDF viewer unavailable</p>
+        <p className="mt-1 text-xs text-muted-foreground/70">
+          Use the structured content view or download the PDF directly.
+        </p>
+      </div>
+    </div>
+  );
+}
+
+/** Wraps PdfReader in its own error boundary so a pdfjs crash doesn't take down the whole page */
+function PdfReaderSafe(props: { fileUrl: string; title: string; className?: string }) {
+  return (
+    <ErrorBoundary
+      fallbackRender={() => <PdfFallback className={props.className} />}
+    >
+      <PdfReader {...props} />
+    </ErrorBoundary>
+  );
+}
 
 const documentTypeConfig: Record<
   DocumentType,
@@ -973,7 +999,7 @@ function DocumentContent({ id }: { id: string }) {
                         )}
                       </div>
                     </div>
-                    <PdfReader
+                    <PdfReaderSafe
                       fileUrl={pdfUrl}
                       title={document.title}
                       className="h-[calc(100vh-196px)] min-h-[780px] border-0 shadow-none"

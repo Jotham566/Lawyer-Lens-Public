@@ -63,6 +63,17 @@ const nextConfig = {
         module: /@opentelemetry[\\/]instrumentation/,
       },
     ];
+
+    // Fix pdfjs-dist v5 compatibility with webpack — resolve canvas as empty module
+    // to prevent Object.defineProperty errors during SSR/bundling
+    config.resolve = {
+      ...config.resolve,
+      alias: {
+        ...config.resolve?.alias,
+        canvas: false,
+      },
+    };
+
     return config;
   },
 };

@@ -4,7 +4,7 @@
     {
       "name": "frontend-public",
       "runtimeExecutable": "npx",
-      "runtimeArgs": ["next", "dev", "--turbopack"],
+      "runtimeArgs": ["next", "dev"],
       "port": 3001
     }
   ]

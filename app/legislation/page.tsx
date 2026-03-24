@@ -189,7 +189,7 @@ export default function LegislationPage() {
               <h2 className="ll-heading-lg text-xl">Recently Viewed</h2>
               <Link
                 href="/settings/activity"
-                className="ll-transition text-xs font-bold uppercase tracking-widest text-brand-gold hover:text-brand-gold-soft dark:hover:text-brand-gold"
+                className="ll-transition text-xs font-bold uppercase tracking-widest text-brand-700 hover:text-brand-600 dark:text-brand-gold dark:hover:text-brand-gold-soft"
               >
                 View History
               </Link>
@@ -213,7 +213,7 @@ export default function LegislationPage() {
                         </div>
                         <div className="min-w-0 flex-1">
                           <div className="mb-1 flex items-center justify-between">
-                            <span className="ll-label-xs text-brand-gold group-hover:text-brand-gold-soft">
+                            <span className="ll-label-xs text-brand-700 dark:text-brand-gold group-hover:text-brand-gold-soft">
                               {config.label}
                             </span>
                             <span className="text-[10px] text-muted-foreground ll-transition group-hover:text-primary-foreground/60">
@@ -248,7 +248,7 @@ export default function LegislationPage() {
             <div className="flex h-full flex-col rounded-xl bg-surface-container-high p-6 lg:p-8">
               {/* Header */}
               <div className="mb-6 flex items-center gap-2">
-                <TrendingUp className="h-5 w-5 text-brand-gold" />
+                <TrendingUp className="h-5 w-5 text-brand-700 dark:text-brand-gold" />
                 <h2 className="ll-heading-md text-lg">Trending in Uganda</h2>
               </div>
 
@@ -353,7 +353,7 @@ export default function LegislationPage() {
             <span className="ll-label-sm mt-1">Court Judgements</span>
           </div>
           <div className="rounded-xl border border-transparent bg-surface-container-low p-8 shadow-soft dark:border-glass lg:p-10">
-            <span className="ll-display-sm block text-3xl text-brand-gold lg:text-4xl">
+            <span className="ll-display-sm block text-3xl text-brand-700 dark:text-brand-gold lg:text-4xl">
               Real-time
             </span>
             <span className="ll-label-sm mt-1">Gazette Monitoring</span>
