@@ -20,9 +20,12 @@ export {
   getDocumentTypes,
   getAvailableYears,
   getCourtLevels,
+  getJudgmentYears,
+  getAvailableJudges,
   getDocumentAknXml,
   getDocumentSection,
   type AknXmlResponse,
+  type JudgeInfo,
 } from "./documents";
 
 // Search API

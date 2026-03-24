@@ -1,8 +1,9 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
 // import { useRouter } from "next/navigation";
+
 import {
   Search,
   Scale,
@@ -18,6 +19,8 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAllDocumentsByType } from "@/lib/hooks";
+import { getJudgmentYears, getAvailableJudges } from "@/lib/api";
+import type { JudgeInfo } from "@/lib/api/documents";
 import type { Document } from "@/lib/api/types";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -26,9 +29,24 @@ import { Skeleton } from "@/components/ui/skeleton";
    Court level config
    ──────────────────────────────────────────────────────────── */
 const courtLevels = [
-  { id: "supreme_court", label: "Supreme Court", icon: Scale },
-  { id: "court_of_appeal", label: "Court of Appeal", icon: Landmark },
-  { id: "high_court", label: "High Court", icon: Building2 },
+  // Apex Courts
+  { id: "Supreme Court", label: "Supreme Court", icon: Scale, group: "Apex Courts" },
+  { id: "Court of Appeal", label: "Court of Appeal", icon: Landmark, group: "Apex Courts" },
+  { id: "Constitutional Court", label: "Constitutional Court", icon: Scale, group: "Apex Courts" },
+  // High Court Divisions
+  { id: "High Court", label: "High Court", icon: Building2, group: "High Court" },
+  { id: "Commercial Court", label: "Commercial Court", icon: Building2, group: "High Court" },
+  { id: "Anti Corruption Division", label: "Anti Corruption Division", icon: Building2, group: "High Court" },
+  { id: "Civil Division", label: "Civil Division", icon: Building2, group: "High Court" },
+  { id: "Criminal Division", label: "Criminal Division", icon: Building2, group: "High Court" },
+  { id: "Family Division", label: "Family Division", icon: Building2, group: "High Court" },
+  { id: "Land Division", label: "Land Division", icon: Building2, group: "High Court" },
+  { id: "Industrial Court", label: "Industrial Court", icon: Building2, group: "High Court" },
+  // Tribunals
+  { id: "Tax Appeals Tribunal", label: "Tax Appeals Tribunal", icon: Landmark, group: "Tribunals" },
+  { id: "PPDA Appeals Tribunal", label: "PPDA Appeals Tribunal", icon: Landmark, group: "Tribunals" },
+  { id: "Equal Opportunities Commission", label: "Equal Opportunities Commission", icon: Landmark, group: "Tribunals" },
+  { id: "Uganda Human Rights Commission", label: "Uganda Human Rights Commission", icon: Landmark, group: "Tribunals" },
 ] as const;
 
 /* ────────────────────────────────────────────────────────────
@@ -43,14 +61,7 @@ const legalAreas = [
   "Family",
 ] as const;
 
-/* ────────────────────────────────────────────────────────────
-   Year options
-   ──────────────────────────────────────────────────────────── */
-const yearOptions = Array.from({ length: 10 }, (_, i) => {
-  const y = new Date().getFullYear() - i;
-  return { label: String(y), value: String(y) };
-});
-yearOptions.push({ label: "Earlier", value: "earlier" });
+/* Year options are now loaded dynamically from the API */
 
 /* ────────────────────────────────────────────────────────────
    Sort options
@@ -69,11 +80,42 @@ export default function JudgmentsPage() {
   const [selectedCourts, setSelectedCourts] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedArea, setSelectedArea] = useState<string>("");
+  const [selectedJudge, setSelectedJudge] = useState<string>("");
   const [sortBy, setSortBy] = useState("newest");
   const [visibleCount, setVisibleCount] = useState(10);
 
+  // Dynamic filter data from API
+  const [yearOptions, setYearOptions] = useState<{ label: string; value: string }[]>([]);
+  const [availableJudges, setAvailableJudges] = useState<JudgeInfo[]>([]);
+
   // Fetch all judgments via hook
   const { data: allJudgments, isLoading } = useAllDocumentsByType("judgment");
+
+  // Load filter options from API
+  useEffect(() => {
+    getJudgmentYears()
+      .then((years) => {
+        const opts = Object.entries(years)
+          .sort(([a], [b]) => Number(b) - Number(a))
+          .map(([year, count]) => ({
+            label: `${year} (${count})`,
+            value: year,
+          }));
+        setYearOptions([{ label: "All Years", value: "" }, ...opts]);
+      })
+      .catch(() => {
+        // Fallback: generate last 10 years
+        const fallback = Array.from({ length: 10 }, (_, i) => {
+          const y = new Date().getFullYear() - i;
+          return { label: String(y), value: String(y) };
+        });
+        setYearOptions([{ label: "All Years", value: "" }, ...fallback]);
+      });
+
+    getAvailableJudges()
+      .then(setAvailableJudges)
+      .catch(() => setAvailableJudges([]));
+  }, []);
 
   // Filter and sort judgments
   const filteredJudgments = useMemo(() => {
@@ -83,31 +125,29 @@ export default function JudgmentsPage() {
     // Court level filter
     if (selectedCourts.length > 0) {
       results = results.filter((j) =>
-        selectedCourts.some((c) =>
-          j.court_level?.toLowerCase().includes(c.replace("_", " "))
+        selectedCourts.some(
+          (c) => j.court_level?.toLowerCase() === c.toLowerCase()
         )
       );
     }
 
-    // Year filter
+    // Year filter — use judgment_date first, fall back to publication_date
     if (selectedYear && selectedYear !== "") {
-      if (selectedYear === "earlier") {
-        const cutoff = new Date().getFullYear() - 9;
-        results = results.filter((j) => {
-          const year = j.publication_date
-            ? new Date(j.publication_date).getFullYear()
-            : null;
-          return year !== null && year < cutoff;
-        });
-      } else {
-        const yr = parseInt(selectedYear, 10);
-        results = results.filter((j) => {
-          const year = j.publication_date
-            ? new Date(j.publication_date).getFullYear()
-            : null;
-          return year === yr;
-        });
-      }
+      const yr = parseInt(selectedYear, 10);
+      results = results.filter((j) => {
+        const dateStr = j.judgment_date || j.publication_date;
+        if (!dateStr) return false;
+        const year = new Date(dateStr).getFullYear();
+        return year === yr;
+      });
+    }
+
+    // Judge filter
+    if (selectedJudge) {
+      const q = selectedJudge.toLowerCase();
+      results = results.filter((j) =>
+        j.judges?.some((judge) => judge.name.toLowerCase().includes(q))
+      );
     }
 
     // Search filter
@@ -117,7 +157,8 @@ export default function JudgmentsPage() {
         (j) =>
           j.title.toLowerCase().includes(q) ||
           j.case_number?.toLowerCase().includes(q) ||
-          j.court_level?.toLowerCase().includes(q)
+          j.court_level?.toLowerCase().includes(q) ||
+          j.judges?.some((judge) => judge.name.toLowerCase().includes(q))
       );
     }
 
@@ -275,7 +316,7 @@ export default function JudgmentsPage() {
                 </div>
               </div>
 
-              {/* Judge Search */}
+              {/* Judge / Coram Filter */}
               <div>
                 <label className="ll-label-xs mb-3 block">
                   Judge / Coram
@@ -284,10 +325,35 @@ export default function JudgmentsPage() {
                   <Gavel className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
                   <input
                     type="text"
+                    value={selectedJudge}
+                    onChange={(e) => {
+                      setSelectedJudge(e.target.value);
+                      setVisibleCount(10);
+                    }}
                     placeholder="Search by name..."
                     className="w-full rounded-xl border-0 bg-surface-container py-3 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary"
+                    list="judge-suggestions"
                   />
+                  <datalist id="judge-suggestions">
+                    {availableJudges.map((j) => (
+                      <option key={j.name} value={j.name}>
+                        {j.title} {j.name} ({j.count} case{j.count !== 1 ? "s" : ""})
+                      </option>
+                    ))}
+                  </datalist>
                 </div>
+                {selectedJudge && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setSelectedJudge("");
+                      setVisibleCount(10);
+                    }}
+                    className="mt-2 text-xs text-muted-foreground hover:text-foreground ll-transition"
+                  >
+                    Clear judge filter
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -437,6 +503,12 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
               <span className="flex items-center gap-1.5">
                 <Calendar className="h-3.5 w-3.5" />
                 {formattedDate}
+              </span>
+            )}
+            {judgment.judges && judgment.judges.length > 0 && (
+              <span className="flex items-center gap-1.5">
+                <Gavel className="h-3.5 w-3.5" />
+                {judgment.judges.map((j) => `${j.title} ${j.name}`).join(", ")}
               </span>
             )}
           </div>

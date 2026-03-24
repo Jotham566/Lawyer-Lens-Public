@@ -162,6 +162,29 @@ export async function getCourtLevels(): Promise<Record<string, number>> {
 }
 
 /**
+ * Get available judgment years with counts (from judgment_date, not act_year)
+ */
+export async function getJudgmentYears(): Promise<Record<number, number>> {
+  return apiGet<Record<number, number>>("/public/judgment-years");
+}
+
+/**
+ * Judge info returned by the judges endpoint
+ */
+export interface JudgeInfo {
+  name: string;
+  title: string;
+  count: number;
+}
+
+/**
+ * Get available judges across all published judgments (for Judge/Coram filter)
+ */
+export async function getAvailableJudges(): Promise<JudgeInfo[]> {
+  return apiGet<JudgeInfo[]>("/public/judges");
+}
+
+/**
  * AKN XML Response type
  */
 export interface AknXmlResponse {

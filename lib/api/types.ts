@@ -84,6 +84,9 @@ export interface Document {
   chapter?: string;
   case_number?: string;
   court_level?: string;
+  case_parties?: string;
+  judgment_date?: string;
+  judges?: Array<{ name: string; title: string }>;
   status: DocumentStatus;
   version_number: number;
   is_latest_version: boolean;
