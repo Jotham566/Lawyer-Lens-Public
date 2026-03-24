@@ -437,9 +437,9 @@ export function DocumentChatPanel({
               }
             }}
             placeholder={`Ask about this ${document.document_type}...`}
-            className="min-h-[88px] resize-none bg-background text-foreground placeholder:text-muted-foreground/70 selection:bg-primary/28 dark:selection:bg-primary/24 dark:selection:text-[#fff7e7] selection:text-foreground"
+            className="min-h-[80px] resize-none !border-0 !border-b-0 bg-transparent !shadow-none ring-1 ring-border/40 focus-visible:ring-2 focus-visible:ring-primary/50 dark:ring-glass dark:focus-visible:ring-brand-gold/40 text-foreground placeholder:text-muted-foreground/70 selection:bg-primary/28 dark:selection:bg-primary/24 dark:selection:text-[#fff7e7] selection:text-foreground"
           />
-          <div className="border-t border-dashed pt-3">
+          <div className="pt-3">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 text-xs text-muted-foreground">
               <FileText className="h-3.5 w-3.5" />
