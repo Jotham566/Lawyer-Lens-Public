@@ -180,7 +180,7 @@ export default function JudgmentsPage() {
     });
 
     return results;
-  }, [allJudgments, selectedCourts, selectedYear, selectedArea, searchQuery, sortBy]);
+  }, [allJudgments, selectedCourts, selectedYear, selectedArea, selectedJudge, searchQuery, sortBy]);
 
   const visibleJudgments = filteredJudgments.slice(0, visibleCount);
   const hasMore = visibleCount < filteredJudgments.length;
