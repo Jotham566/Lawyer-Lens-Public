@@ -55,6 +55,7 @@ export function useChatOrchestrator() {
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q");
     const initialConversationId = searchParams.get("conversation");
+    const initialDocumentId = searchParams.get("doc");
 
     // Global Chat Store
     const {
@@ -839,14 +840,35 @@ export function useChatOrchestrator() {
     );
 
     // Initial Query Handler
+    // When ?q= is present, always create a fresh conversation.
+    // When ?doc= is also present, scope that conversation to the document
+    // so the response is grounded in the actual source (like side-chat).
+    const initialQueryHandledRef = useRef(false);
     useEffect(() => {
-        if (initialQuery && !currentConversationId) {
-            const id = createConversation();
-            setInput(initialQuery);
-            // Small timeout to ensure state updates propagate
-            setTimeout(() => handleSend(initialQuery, id), 100);
+        if (!initialQuery || initialQueryHandledRef.current) return;
+        initialQueryHandledRef.current = true;
+
+        const id = createConversation();
+
+        // If a document ID was provided, scope the conversation
+        if (initialDocumentId) {
+            const { conversations } = useChatStore.getState();
+            const conv = conversations.find((c) => c.id === id);
+            if (conv) {
+                useChatStore.setState({
+                    conversations: conversations.map((c) =>
+                        c.id === id
+                            ? { ...c, scope: { document_id: initialDocumentId, mode: "strict" as const } }
+                            : c
+                    ),
+                });
+            }
         }
-    }, [initialQuery, currentConversationId, createConversation, handleSend]);
+
+        setInput(initialQuery);
+        // Small timeout to ensure state updates propagate
+        setTimeout(() => handleSend(initialQuery, id), 100);
+    }, [initialQuery, initialDocumentId, createConversation, handleSend]);
 
     useEffect(() => {
         if (!initialConversationId) {

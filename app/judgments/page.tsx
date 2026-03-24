@@ -483,8 +483,13 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
           View Full Judgment
         </Link>
         <Link
-          href={`/chat?q=${encodeURIComponent(`Summarize the judgment: ${judgment.title}`)}`}
-          className="text-xs font-bold uppercase tracking-widest text-brand-gold underline-offset-4 ll-transition hover:underline"
+          href={`/chat?doc=${judgment.id}&q=${encodeURIComponent(
+            `Provide a full case analysis of "${judgment.title}"${judgment.case_number ? ` (${judgment.case_number})` : ""}. ` +
+            `Cover: (1) Material Facts, (2) Issues for Determination, (3) Ratio Decidendi, ` +
+            `(4) Key Legal Principles Applied, (5) Obiter Dicta, (6) Orders/Outcome, ` +
+            `and (7) Practical Implications for legal practitioners.`
+          )}`}
+          className="text-xs font-bold uppercase tracking-widest text-brand-700 underline-offset-4 ll-transition hover:underline dark:text-brand-gold"
         >
           Full AI Case Analysis
         </Link>
