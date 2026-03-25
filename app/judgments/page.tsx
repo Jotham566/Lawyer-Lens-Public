@@ -79,7 +79,7 @@ export default function JudgmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourts, setSelectedCourts] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("");
-  const [selectedArea, setSelectedArea] = useState<string>("");
+  // const [selectedArea, setSelectedArea] = useState<string>(""); // TODO: re-enable when legal_area metadata is available
   const [selectedJudge, setSelectedJudge] = useState<string>("");
   const [sortBy, setSortBy] = useState("newest");
   const [visibleCount, setVisibleCount] = useState(10);
@@ -101,7 +101,7 @@ export default function JudgmentsPage() {
             label: `${year} (${count})`,
             value: year,
           }));
-        setYearOptions([{ label: "All Years", value: "" }, ...opts]);
+        setYearOptions(opts);
       })
       .catch(() => {
         // Fallback: generate last 10 years
@@ -162,25 +162,27 @@ export default function JudgmentsPage() {
       );
     }
 
-    // Sort
+    // Sort — prefer judgment_date, fall back to publication_date, then title
     results.sort((a, b) => {
+      const dateA = a.judgment_date || a.publication_date || "";
+      const dateB = b.judgment_date || b.publication_date || "";
       if (sortBy === "newest") {
-        return (
-          new Date(b.publication_date || 0).getTime() -
-          new Date(a.publication_date || 0).getTime()
-        );
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;  // no date → sort to end
+        if (!dateB) return -1;
+        return new Date(dateB).getTime() - new Date(dateA).getTime();
       }
       if (sortBy === "oldest") {
-        return (
-          new Date(a.publication_date || 0).getTime() -
-          new Date(b.publication_date || 0).getTime()
-        );
+        if (!dateA && !dateB) return 0;
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return new Date(dateA).getTime() - new Date(dateB).getTime();
       }
       return a.title.localeCompare(b.title);
     });
 
     return results;
-  }, [allJudgments, selectedCourts, selectedYear, selectedArea, selectedJudge, searchQuery, sortBy]);
+  }, [allJudgments, selectedCourts, selectedYear, selectedJudge, searchQuery, sortBy]);
 
   const visibleJudgments = filteredJudgments.slice(0, visibleCount);
   const hasMore = visibleCount < filteredJudgments.length;
@@ -289,32 +291,7 @@ export default function JudgmentsPage() {
                 </select>
               </div>
 
-              {/* Legal Area */}
-              <div>
-                <label className="ll-label-xs mb-3 block">Legal Area</label>
-                <div className="flex flex-wrap gap-2">
-                  {legalAreas.map((area) => (
-                    <button
-                      key={area}
-                      type="button"
-                      onClick={() => {
-                        setSelectedArea(
-                          selectedArea === area ? "" : area
-                        );
-                        setVisibleCount(10);
-                      }}
-                      className={cn(
-                        "ll-transition rounded-full px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider",
-                        selectedArea === area
-                          ? "bg-primary text-primary-foreground"
-                          : "bg-surface-container text-foreground hover:bg-surface-container-high"
-                      )}
-                    >
-                      {area}
-                    </button>
-                  ))}
-                </div>
-              </div>
+              {/* Legal Area — TODO: add back when legal_area metadata is available via LLM extraction */}
 
               {/* Judge / Coram Filter */}
               <div>
