@@ -49,17 +49,7 @@ const courtLevels = [
   { id: "Uganda Human Rights Commission", label: "Uganda Human Rights Commission", icon: Landmark, group: "Tribunals" },
 ] as const;
 
-/* ────────────────────────────────────────────────────────────
-   Legal area filter chips
-   ──────────────────────────────────────────────────────────── */
-const legalAreas = [
-  "Criminal",
-  "Civil",
-  "Land",
-  "Constitutional",
-  "Commercial",
-  "Family",
-] as const;
+/* Legal area filter chips — TODO: re-enable when legal_area metadata available */
 
 /* Year options are now loaded dynamically from the API */
 
@@ -204,7 +194,7 @@ export default function JudgmentsPage() {
   const resetFilters = () => {
     setSelectedCourts([]);
     setSelectedYear("");
-    setSelectedArea("");
+    // setSelectedArea(""); // TODO: re-enable when legal_area metadata available
     setSearchQuery("");
     setVisibleCount(10);
   };
