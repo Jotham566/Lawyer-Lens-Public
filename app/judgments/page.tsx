@@ -500,18 +500,20 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
         </div>
       </div>
 
-      {/* AI Summary placeholder — would come from a future AI summary API */}
-      <div className="mb-6 rounded-xl border-l-2 border-border/30 bg-surface-container-low p-5 dark:border-glass/30">
-        <div className="mb-2 flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-brand-700 dark:text-brand-gold" />
-          <span className="ll-label-xs text-brand-700 dark:text-brand-gold">
-            AI Case Summary
-          </span>
+      {/* AI Case Summary — grounded ratio decidendi from LLM extraction */}
+      {judgment.ai_summary ? (
+        <div className="mb-6 rounded-xl border-l-2 border-border/30 bg-surface-container-low p-5 dark:border-glass/30">
+          <div className="mb-2 flex items-center gap-2">
+            <Sparkles className="h-4 w-4 text-brand-700 dark:text-brand-gold" />
+            <span className="ll-label-xs text-brand-700 dark:text-brand-gold">
+              AI Case Summary
+            </span>
+          </div>
+          <p className="font-serif text-base italic leading-relaxed text-foreground/90">
+            {judgment.ai_summary}
+          </p>
         </div>
-        <p className="font-serif text-base italic leading-relaxed text-foreground/90">
-          {judgment.long_title || judgment.short_title || judgment.title}
-        </p>
-      </div>
+      ) : null}
 
       {/* Action buttons */}
       <div className="flex flex-wrap items-center gap-4">
