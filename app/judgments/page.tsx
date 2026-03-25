@@ -475,7 +475,7 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
             {judgment.judges && judgment.judges.length > 0 && (
               <span className="flex items-center gap-1.5">
                 <Gavel className="h-3.5 w-3.5" />
-                {judgment.judges.map((j) => `${j.title} ${j.name}`).join(", ")}
+                {judgment.judges.map((j) => j.name).join(", ")}
               </span>
             )}
           </div>
