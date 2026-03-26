@@ -407,13 +407,22 @@ export default function JudgmentsPage() {
             )}
           </div>
 
-          {/* Infinite scroll sentinel + loading indicator */}
-          <div ref={sentinelRef} className="pb-12 pt-4">
-            {isFetchingNextPage && judgments.length > 0 && (
+          {/* Load more — sentinel for auto-scroll + manual button */}
+          <div ref={sentinelRef} className="flex flex-col items-center gap-4 pb-12 pt-8">
+            {isFetchingNextPage && (
               <div className="flex flex-col items-center gap-2">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
                 <span className="ll-label-xs">Loading more judgments...</span>
               </div>
+            )}
+            {hasMore && !isFetchingNextPage && (
+              <button
+                type="button"
+                onClick={() => fetchNextPage()}
+                className="rounded-full border border-border/60 px-6 py-2.5 text-xs font-bold uppercase tracking-widest ll-transition hover:bg-primary hover:text-primary-foreground dark:border-glass"
+              >
+                Load More Judgments
+              </button>
             )}
             {!hasMore && judgments.length > 0 && (
               <p className="text-center text-xs text-muted-foreground">
