@@ -19,8 +19,8 @@ import {
 import { cn } from "@/lib/utils";
 import { getDocuments, getJudgmentYears, getAvailableJudges } from "@/lib/api";
 import type { JudgeInfo } from "@/lib/api/documents";
-import type { Document, PaginatedResponse } from "@/lib/api/types";
-import { useQuery } from "@tanstack/react-query";
+import type { Document } from "@/lib/api/types";
+import { useInfiniteQuery } from "@tanstack/react-query";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -70,7 +70,6 @@ export default function JudgmentsPage() {
   const [selectedYear, setSelectedYear] = useState<string>("");
   const [selectedJudge, setSelectedJudge] = useState<string>("");
   const [sortBy, setSortBy] = useState("newest");
-  const [page, setPage] = useState(1);
   const PAGE_SIZE = 20;
 
   // Dynamic filter data from API
@@ -82,7 +81,6 @@ export default function JudgmentsPage() {
   useEffect(() => {
     const timer = setTimeout(() => {
       setDebouncedSearch(searchQuery);
-      setPage(1); // Reset to page 1 on search change
     }, 300);
     return () => clearTimeout(timer);
   }, [searchQuery]);
@@ -97,80 +95,56 @@ export default function JudgmentsPage() {
     }
   }, [sortBy]);
 
-  // Accumulated results for infinite scroll
-  const [allItems, setAllItems] = useState<Document[]>([]);
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
-
-  // Unique key for the current filter combination — reset accumulator when filters change
-  const filterKey = useMemo(
-    () => `${selectedCourts[0] || ""}-${selectedYear}-${debouncedSearch}-${sortParams.sort_by}-${sortParams.sort_order}`,
-    [selectedCourts, selectedYear, debouncedSearch, sortParams]
-  );
-
-  // Server-side paginated query
-  const { data: pagedResult, isLoading, isFetching } = useQuery<PaginatedResponse<Document>>({
+  // Infinite query — React Query handles page accumulation natively
+  const {
+    data,
+    isLoading,
+    isFetchingNextPage,
+    hasNextPage,
+    fetchNextPage,
+  } = useInfiniteQuery({
     queryKey: [
-      "judgments",
-      page,
+      "judgments-infinite",
       PAGE_SIZE,
-      filterKey,
+      selectedCourts[0] || "",
+      selectedYear,
+      debouncedSearch,
+      sortParams.sort_by,
+      sortParams.sort_order,
     ],
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       getDocuments({
         document_type: "judgment",
-        page,
+        page: pageParam,
         size: PAGE_SIZE,
         court_level: selectedCourts[0] || undefined,
         year_from: selectedYear ? parseInt(selectedYear, 10) : undefined,
         search: debouncedSearch || undefined,
         ...sortParams,
       }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
     staleTime: 2 * 60 * 1000,
   });
 
-  // Reset accumulator when filters change
-  const prevFilterKeyRef = useRef(filterKey);
-  useEffect(() => {
-    if (prevFilterKeyRef.current !== filterKey) {
-      setAllItems([]);
-      prevFilterKeyRef.current = filterKey;
-    }
-  }, [filterKey]);
+  // Flatten all pages into a single array (derived, no setState needed)
+  const allItems = useMemo(
+    () => data?.pages.flatMap((p) => p.items) ?? [],
+    [data]
+  );
 
-  // Accumulate results as new pages arrive
-  useEffect(() => {
-    if (!pagedResult?.items) return;
-    if (page === 1) {
-      setAllItems(pagedResult.items);
-    } else {
-      setAllItems((prev) => {
-        // Deduplicate by ID in case of re-fetches
-        const existingIds = new Set(prev.map((d) => d.id));
-        const newItems = pagedResult.items.filter((d) => !existingIds.has(d.id));
-        return [...prev, ...newItems];
-      });
-    }
-    setIsLoadingMore(false);
-  }, [pagedResult, page]);
+  const hasMore = hasNextPage ?? false;
 
-  // Load more handler
-  const loadMore = () => {
-    if (hasMore && !isFetching && !isLoadingMore) {
-      setIsLoadingMore(true);
-      setPage((p) => p + 1);
-    }
-  };
-
-  // Infinite scroll via scroll event (React Compiler compatible)
+  // Infinite scroll via scroll event
   const sentinelRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const handleScroll = () => {
       const sentinel = sentinelRef.current;
       if (!sentinel) return;
       const rect = sentinel.getBoundingClientRect();
-      // Trigger when sentinel is within 300px of viewport bottom
-      if (rect.top < window.innerHeight + 300) {
-        loadMore();
+      if (rect.top < window.innerHeight + 300 && hasNextPage && !isFetchingNextPage) {
+        fetchNextPage();
       }
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
@@ -212,9 +186,7 @@ export default function JudgmentsPage() {
     );
   }, [allItems, selectedJudge]);
 
-  const totalResults = pagedResult?.total || 0;
-  const totalPages = pagedResult?.total_pages || 1;
-  const hasMore = page < totalPages;
+  const totalResults = data?.pages[0]?.total || 0;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -227,7 +199,7 @@ export default function JudgmentsPage() {
         ? prev.filter((c) => c !== courtId)
         : [...prev, courtId]
     );
-    setPage(1);
+    // Filters changed — infinite query auto-resets via queryKey
   };
 
   const resetFilters = () => {
@@ -235,7 +207,7 @@ export default function JudgmentsPage() {
     setSelectedYear("");
     setSelectedJudge("");
     setSearchQuery("");
-    setPage(1);
+    // Filters changed — infinite query auto-resets via queryKey
   };
 
   return (
@@ -307,7 +279,7 @@ export default function JudgmentsPage() {
                   value={selectedYear}
                   onChange={(e) => {
                     setSelectedYear(e.target.value);
-                    setPage(1);
+                    // Filters changed — infinite query auto-resets via queryKey
                   }}
                   className="w-full rounded-xl border-0 bg-surface-container px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary"
                 >
@@ -334,7 +306,7 @@ export default function JudgmentsPage() {
                     value={selectedJudge}
                     onChange={(e) => {
                       setSelectedJudge(e.target.value);
-                      setPage(1);
+                      // Filters changed — infinite query auto-resets via queryKey
                     }}
                     placeholder="Search by name..."
                     className="w-full rounded-xl border-0 bg-surface-container py-3 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary"
@@ -353,7 +325,7 @@ export default function JudgmentsPage() {
                     type="button"
                     onClick={() => {
                       setSelectedJudge("");
-                      setPage(1);
+                      // Filters changed — infinite query auto-resets via queryKey
                     }}
                     className="mt-2 text-xs text-muted-foreground hover:text-foreground ll-transition"
                   >
@@ -437,7 +409,7 @@ export default function JudgmentsPage() {
 
           {/* Infinite scroll sentinel + loading indicator */}
           <div ref={sentinelRef} className="pb-12 pt-4">
-            {(isFetching || isLoadingMore) && judgments.length > 0 && (
+            {isFetchingNextPage && judgments.length > 0 && (
               <div className="flex flex-col items-center gap-2">
                 <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
                 <span className="ll-label-xs">Loading more judgments...</span>
