@@ -39,6 +39,7 @@ export async function getDocuments(
     }
     if (filters.year_from) params.year = filters.year_from; // API uses 'year' param
     if (filters.court_level) params.court_level = filters.court_level;
+    if (filters.search) params.search = filters.search;
     if (filters.page) params.page = filters.page;
     if (filters.size) params.page_size = filters.size;
     if (filters.sort_by) params.sort_by = filters.sort_by;

@@ -18,10 +18,10 @@ import {
   ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useAllDocumentsByType } from "@/lib/hooks";
-import { getJudgmentYears, getAvailableJudges } from "@/lib/api";
+import { getDocuments, getJudgmentYears, getAvailableJudges } from "@/lib/api";
 import type { JudgeInfo } from "@/lib/api/documents";
-import type { Document } from "@/lib/api/types";
+import type { Document, PaginatedResponse } from "@/lib/api/types";
+import { useQuery } from "@tanstack/react-query";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { Skeleton } from "@/components/ui/skeleton";
 
@@ -69,17 +69,61 @@ export default function JudgmentsPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCourts, setSelectedCourts] = useState<string[]>([]);
   const [selectedYear, setSelectedYear] = useState<string>("");
-  // const [selectedArea, setSelectedArea] = useState<string>(""); // TODO: re-enable when legal_area metadata is available
   const [selectedJudge, setSelectedJudge] = useState<string>("");
   const [sortBy, setSortBy] = useState("newest");
-  const [visibleCount, setVisibleCount] = useState(10);
+  const [page, setPage] = useState(1);
+  const PAGE_SIZE = 20;
 
   // Dynamic filter data from API
   const [yearOptions, setYearOptions] = useState<{ label: string; value: string }[]>([]);
   const [availableJudges, setAvailableJudges] = useState<JudgeInfo[]>([]);
 
-  // Fetch all judgments via hook
-  const { data: allJudgments, isLoading } = useAllDocumentsByType("judgment");
+  // Debounced search for API calls
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedSearch(searchQuery);
+      setPage(1); // Reset to page 1 on search change
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  // Map sort UI values to API params
+  const sortParams = useMemo(() => {
+    switch (sortBy) {
+      case "newest": return { sort_by: "judgment_date", sort_order: "desc" as const };
+      case "oldest": return { sort_by: "judgment_date", sort_order: "asc" as const };
+      case "title": return { sort_by: "title", sort_order: "asc" as const };
+      default: return { sort_by: "judgment_date", sort_order: "desc" as const };
+    }
+  }, [sortBy]);
+
+  // Server-side paginated query — only fetches 20 at a time
+  const { data: pagedResult, isLoading } = useQuery<PaginatedResponse<Document>>({
+    queryKey: [
+      "judgments",
+      page,
+      PAGE_SIZE,
+      selectedCourts[0] || "",
+      selectedYear,
+      debouncedSearch,
+      sortParams.sort_by,
+      sortParams.sort_order,
+      selectedJudge,
+    ],
+    queryFn: () =>
+      getDocuments({
+        document_type: "judgment",
+        page,
+        size: PAGE_SIZE,
+        court_level: selectedCourts[0] || undefined,
+        year_from: selectedYear ? parseInt(selectedYear, 10) : undefined,
+        search: debouncedSearch || undefined,
+        ...sortParams,
+      }),
+    staleTime: 2 * 60 * 1000, // 2 minutes
+    placeholderData: (prev) => prev, // Keep previous data while loading new page
+  });
 
   // Load filter options from API
   useEffect(() => {
@@ -107,79 +151,23 @@ export default function JudgmentsPage() {
       .catch(() => setAvailableJudges([]));
   }, []);
 
-  // Filter and sort judgments
-  const filteredJudgments = useMemo(() => {
-    if (!allJudgments) return [];
-    let results = [...allJudgments];
+  // Server-side results — apply client-side judge filter only (not in API yet)
+  const judgments = useMemo(() => {
+    if (!pagedResult?.items) return [];
+    if (!selectedJudge) return pagedResult.items;
+    const q = selectedJudge.toLowerCase();
+    return pagedResult.items.filter((j) =>
+      j.judges?.some((judge: { name: string }) => judge.name.toLowerCase().includes(q))
+    );
+  }, [pagedResult, selectedJudge]);
 
-    // Court level filter
-    if (selectedCourts.length > 0) {
-      results = results.filter((j) =>
-        selectedCourts.some(
-          (c) => j.court_level?.toLowerCase() === c.toLowerCase()
-        )
-      );
-    }
-
-    // Year filter — use judgment_date first, fall back to publication_date
-    if (selectedYear && selectedYear !== "") {
-      const yr = parseInt(selectedYear, 10);
-      results = results.filter((j) => {
-        const dateStr = j.judgment_date || j.publication_date;
-        if (!dateStr) return false;
-        const year = new Date(dateStr).getFullYear();
-        return year === yr;
-      });
-    }
-
-    // Judge filter
-    if (selectedJudge) {
-      const q = selectedJudge.toLowerCase();
-      results = results.filter((j) =>
-        j.judges?.some((judge) => judge.name.toLowerCase().includes(q))
-      );
-    }
-
-    // Search filter
-    if (searchQuery.trim()) {
-      const q = searchQuery.toLowerCase();
-      results = results.filter(
-        (j) =>
-          j.title.toLowerCase().includes(q) ||
-          j.case_number?.toLowerCase().includes(q) ||
-          j.court_level?.toLowerCase().includes(q) ||
-          j.judges?.some((judge) => judge.name.toLowerCase().includes(q))
-      );
-    }
-
-    // Sort — prefer judgment_date, fall back to publication_date, then title
-    results.sort((a, b) => {
-      const dateA = a.judgment_date || a.publication_date || "";
-      const dateB = b.judgment_date || b.publication_date || "";
-      if (sortBy === "newest") {
-        if (!dateA && !dateB) return 0;
-        if (!dateA) return 1;  // no date → sort to end
-        if (!dateB) return -1;
-        return new Date(dateB).getTime() - new Date(dateA).getTime();
-      }
-      if (sortBy === "oldest") {
-        if (!dateA && !dateB) return 0;
-        if (!dateA) return 1;
-        if (!dateB) return -1;
-        return new Date(dateA).getTime() - new Date(dateB).getTime();
-      }
-      return a.title.localeCompare(b.title);
-    });
-
-    return results;
-  }, [allJudgments, selectedCourts, selectedYear, selectedJudge, searchQuery, sortBy]);
-
-  const visibleJudgments = filteredJudgments.slice(0, visibleCount);
-  const hasMore = visibleCount < filteredJudgments.length;
+  const totalResults = pagedResult?.total || 0;
+  const totalPages = pagedResult?.total_pages || 1;
+  const hasMore = page < totalPages;
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
-    // Search is handled by the filter above — no navigation needed
+    // Search is debounced and triggers API call automatically
   };
 
   const toggleCourt = (courtId: string) => {
@@ -188,15 +176,15 @@ export default function JudgmentsPage() {
         ? prev.filter((c) => c !== courtId)
         : [...prev, courtId]
     );
-    setVisibleCount(10);
+    setPage(1);
   };
 
   const resetFilters = () => {
     setSelectedCourts([]);
     setSelectedYear("");
-    // setSelectedArea(""); // TODO: re-enable when legal_area metadata available
+    setSelectedJudge("");
     setSearchQuery("");
-    setVisibleCount(10);
+    setPage(1);
   };
 
   return (
@@ -268,7 +256,7 @@ export default function JudgmentsPage() {
                   value={selectedYear}
                   onChange={(e) => {
                     setSelectedYear(e.target.value);
-                    setVisibleCount(10);
+                    setPage(1);
                   }}
                   className="w-full rounded-xl border-0 bg-surface-container px-4 py-3 text-sm font-medium focus:ring-2 focus:ring-primary"
                 >
@@ -295,7 +283,7 @@ export default function JudgmentsPage() {
                     value={selectedJudge}
                     onChange={(e) => {
                       setSelectedJudge(e.target.value);
-                      setVisibleCount(10);
+                      setPage(1);
                     }}
                     placeholder="Search by name..."
                     className="w-full rounded-xl border-0 bg-surface-container py-3 pl-9 pr-4 text-sm focus:ring-2 focus:ring-primary"
@@ -314,7 +302,7 @@ export default function JudgmentsPage() {
                     type="button"
                     onClick={() => {
                       setSelectedJudge("");
-                      setVisibleCount(10);
+                      setPage(1);
                     }}
                     className="mt-2 text-xs text-muted-foreground hover:text-foreground ll-transition"
                   >
@@ -337,7 +325,7 @@ export default function JudgmentsPage() {
               <p className="mt-1 font-serif text-base text-muted-foreground">
                 {isLoading
                   ? "Loading judgments..."
-                  : `Showing ${filteredJudgments.length} judgment${filteredJudgments.length !== 1 ? "s" : ""} matching your criteria`}
+                  : `Showing ${totalResults} judgment${totalResults !== 1 ? "s" : ""} matching your criteria`}
               </p>
             </div>
             <div className="hidden items-center gap-2 rounded-full bg-surface-container-high px-4 py-2 sm:flex">
@@ -375,7 +363,7 @@ export default function JudgmentsPage() {
                   </div>
                 </div>
               ))
-            ) : visibleJudgments.length === 0 ? (
+            ) : judgments.length === 0 ? (
               <div className="rounded-xl border border-transparent bg-card p-12 text-center shadow-soft dark:border-glass">
                 <Gavel className="mx-auto h-10 w-10 text-muted-foreground/30" />
                 <p className="mt-4 text-sm font-medium text-muted-foreground">
@@ -390,7 +378,7 @@ export default function JudgmentsPage() {
                 </button>
               </div>
             ) : (
-              visibleJudgments.map((judgment) => (
+              judgments.map((judgment) => (
                 <JudgmentCard key={judgment.id} judgment={judgment} />
               ))
             )}
@@ -398,10 +386,22 @@ export default function JudgmentsPage() {
 
           {/* Load More */}
           {hasMore && (
-            <div className="flex justify-center pb-12 pt-8">
+            <div className="flex items-center justify-center gap-4 pb-12 pt-8">
+              {page > 1 && (
+                <button
+                  type="button"
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  className="rounded-full border border-border/60 px-5 py-2.5 text-xs font-bold uppercase tracking-widest ll-transition hover:bg-primary hover:text-primary-foreground dark:border-glass"
+                >
+                  Previous
+                </button>
+              )}
+              <span className="text-xs text-muted-foreground">
+                Page {page} of {totalPages}
+              </span>
               <button
                 type="button"
-                onClick={() => setVisibleCount((c) => c + 10)}
+                onClick={() => setPage((p) => p + 1)}
                 className="group flex flex-col items-center gap-2"
               >
                 <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border/60 ll-transition group-hover:bg-primary group-hover:text-primary-foreground dark:border-glass">
