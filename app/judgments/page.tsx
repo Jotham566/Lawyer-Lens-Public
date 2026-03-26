@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 // import { useRouter } from "next/navigation";
 
@@ -15,7 +15,6 @@ import {
   Bookmark,
   Share2,
   Sparkles,
-  ChevronDown,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { getDocuments, getJudgmentYears, getAvailableJudges } from "@/lib/api";
@@ -98,18 +97,23 @@ export default function JudgmentsPage() {
     }
   }, [sortBy]);
 
-  // Server-side paginated query — only fetches 20 at a time
-  const { data: pagedResult, isLoading } = useQuery<PaginatedResponse<Document>>({
+  // Accumulated results for infinite scroll
+  const [allItems, setAllItems] = useState<Document[]>([]);
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
+
+  // Unique key for the current filter combination — reset accumulator when filters change
+  const filterKey = useMemo(
+    () => `${selectedCourts[0] || ""}-${selectedYear}-${debouncedSearch}-${sortParams.sort_by}-${sortParams.sort_order}`,
+    [selectedCourts, selectedYear, debouncedSearch, sortParams]
+  );
+
+  // Server-side paginated query
+  const { data: pagedResult, isLoading, isFetching } = useQuery<PaginatedResponse<Document>>({
     queryKey: [
       "judgments",
       page,
       PAGE_SIZE,
-      selectedCourts[0] || "",
-      selectedYear,
-      debouncedSearch,
-      sortParams.sort_by,
-      sortParams.sort_order,
-      selectedJudge,
+      filterKey,
     ],
     queryFn: () =>
       getDocuments({
@@ -121,8 +125,56 @@ export default function JudgmentsPage() {
         search: debouncedSearch || undefined,
         ...sortParams,
       }),
-    staleTime: 2 * 60 * 1000, // 2 minutes
-    placeholderData: (prev) => prev, // Keep previous data while loading new page
+    staleTime: 2 * 60 * 1000,
+  });
+
+  // Reset accumulator when filters change
+  const prevFilterKeyRef = useRef(filterKey);
+  useEffect(() => {
+    if (prevFilterKeyRef.current !== filterKey) {
+      setAllItems([]);
+      prevFilterKeyRef.current = filterKey;
+    }
+  }, [filterKey]);
+
+  // Accumulate results as new pages arrive
+  useEffect(() => {
+    if (!pagedResult?.items) return;
+    if (page === 1) {
+      setAllItems(pagedResult.items);
+    } else {
+      setAllItems((prev) => {
+        // Deduplicate by ID in case of re-fetches
+        const existingIds = new Set(prev.map((d) => d.id));
+        const newItems = pagedResult.items.filter((d) => !existingIds.has(d.id));
+        return [...prev, ...newItems];
+      });
+    }
+    setIsLoadingMore(false);
+  }, [pagedResult, page]);
+
+  // Load more handler
+  const loadMore = () => {
+    if (hasMore && !isFetching && !isLoadingMore) {
+      setIsLoadingMore(true);
+      setPage((p) => p + 1);
+    }
+  };
+
+  // Infinite scroll via scroll event (React Compiler compatible)
+  const sentinelRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    const handleScroll = () => {
+      const sentinel = sentinelRef.current;
+      if (!sentinel) return;
+      const rect = sentinel.getBoundingClientRect();
+      // Trigger when sentinel is within 300px of viewport bottom
+      if (rect.top < window.innerHeight + 300) {
+        loadMore();
+      }
+    };
+    window.addEventListener("scroll", handleScroll, { passive: true });
+    return () => window.removeEventListener("scroll", handleScroll);
   });
 
   // Load filter options from API
@@ -151,15 +203,14 @@ export default function JudgmentsPage() {
       .catch(() => setAvailableJudges([]));
   }, []);
 
-  // Server-side results — apply client-side judge filter only (not in API yet)
+  // Apply client-side judge filter on accumulated items (judge filter not in API yet)
   const judgments = useMemo(() => {
-    if (!pagedResult?.items) return [];
-    if (!selectedJudge) return pagedResult.items;
+    if (!selectedJudge) return allItems;
     const q = selectedJudge.toLowerCase();
-    return pagedResult.items.filter((j) =>
+    return allItems.filter((j) =>
       j.judges?.some((judge: { name: string }) => judge.name.toLowerCase().includes(q))
     );
-  }, [pagedResult, selectedJudge]);
+  }, [allItems, selectedJudge]);
 
   const totalResults = pagedResult?.total || 0;
   const totalPages = pagedResult?.total_pages || 1;
@@ -384,33 +435,20 @@ export default function JudgmentsPage() {
             )}
           </div>
 
-          {/* Load More */}
-          {hasMore && (
-            <div className="flex items-center justify-center gap-4 pb-12 pt-8">
-              {page > 1 && (
-                <button
-                  type="button"
-                  onClick={() => setPage((p) => Math.max(1, p - 1))}
-                  className="rounded-full border border-border/60 px-5 py-2.5 text-xs font-bold uppercase tracking-widest ll-transition hover:bg-primary hover:text-primary-foreground dark:border-glass"
-                >
-                  Previous
-                </button>
-              )}
-              <span className="text-xs text-muted-foreground">
-                Page {page} of {totalPages}
-              </span>
-              <button
-                type="button"
-                onClick={() => setPage((p) => p + 1)}
-                className="group flex flex-col items-center gap-2"
-              >
-                <span className="flex h-12 w-12 items-center justify-center rounded-full border border-border/60 ll-transition group-hover:bg-primary group-hover:text-primary-foreground dark:border-glass">
-                  <ChevronDown className="h-5 w-5" />
-                </span>
-                <span className="ll-label-xs">Load more cases</span>
-              </button>
-            </div>
-          )}
+          {/* Infinite scroll sentinel + loading indicator */}
+          <div ref={sentinelRef} className="pb-12 pt-4">
+            {(isFetching || isLoadingMore) && judgments.length > 0 && (
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-muted-foreground/20 border-t-primary" />
+                <span className="ll-label-xs">Loading more judgments...</span>
+              </div>
+            )}
+            {!hasMore && judgments.length > 0 && (
+              <p className="text-center text-xs text-muted-foreground">
+                Showing all {totalResults} judgments
+              </p>
+            )}
+          </div>
         </section>
       </div>
     </div>
