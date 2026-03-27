@@ -10,6 +10,7 @@ import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
 import { ScreenReaderAnnouncer } from "@/components/accessibility";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 import { useAuth } from "@/components/providers";
+import { BackToTop } from "@/components/common/back-to-top";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -75,6 +76,9 @@ export function AppShell({ children }: AppShellProps) {
       </main>
 
       <MobileBottomNav />
+
+      {/* Back to top — appears after scrolling down */}
+      {!pathname?.startsWith("/chat") && <BackToTop />}
     </div>
   );
 }

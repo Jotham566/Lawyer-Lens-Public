@@ -9,6 +9,7 @@ import { SkipLink } from "@/components/skip-link";
 import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
 import { ScreenReaderAnnouncer } from "@/components/accessibility";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
+import { BackToTop } from "@/components/common/back-to-top";
 
 interface DashboardShellProps {
   children: React.ReactNode;
@@ -63,6 +64,9 @@ export function DashboardShell({ children }: DashboardShellProps) {
 
         {/* Mobile bottom nav */}
         <MobileBottomNav />
+
+        {/* Back to top — appears after scrolling down */}
+        {!isChatRoute && <BackToTop />}
       </div>
     </div>
   );
