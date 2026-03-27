@@ -440,9 +440,35 @@ export default function JudgmentsPage() {
    Judgment Card Component
    ──────────────────────────────────────────────────────────── */
 function JudgmentCard({ judgment }: { judgment: Document }) {
-  const formattedDate = judgment.publication_date
-    ? formatDateOnly(judgment.publication_date)
+  const [bookmarked, setBookmarked] = useState(false);
+
+  // Prefer judgment_date (actual decision date), fall back to publication_date
+  const judgmentDateStr = judgment.judgment_date || judgment.publication_date;
+  const formattedDate = judgmentDateStr
+    ? formatDateOnly(judgmentDateStr)
     : null;
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/document/${judgment.id}`;
+    const title = judgment.title;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title, url });
+      } catch {
+        // User cancelled or share failed — fall back to clipboard
+        await navigator.clipboard.writeText(url);
+      }
+    } else {
+      await navigator.clipboard.writeText(url);
+      // Brief visual feedback
+      const btn = document.activeElement as HTMLButtonElement;
+      if (btn) {
+        const original = btn.title;
+        btn.title = "Link copied!";
+        setTimeout(() => { btn.title = original; }, 2000);
+      }
+    }
+  };
 
   // Determine court badge style
   const isSupreme = judgment.court_level
@@ -504,14 +530,21 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
         <div className="flex gap-2">
           <button
             type="button"
-            title="Bookmark"
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high text-foreground ll-transition hover:bg-surface-container-highest"
+            title={bookmarked ? "Remove bookmark" : "Bookmark"}
+            onClick={() => setBookmarked(!bookmarked)}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full ll-transition",
+              bookmarked
+                ? "bg-brand-gold/20 text-brand-gold"
+                : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+            )}
           >
-            <Bookmark className="h-4 w-4" />
+            <Bookmark className={cn("h-4 w-4", bookmarked && "fill-current")} />
           </button>
           <button
             type="button"
             title="Share"
+            onClick={handleShare}
             className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high text-foreground ll-transition hover:bg-surface-container-highest"
           >
             <Share2 className="h-4 w-4" />
