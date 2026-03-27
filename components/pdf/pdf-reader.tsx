@@ -52,8 +52,8 @@ export function PdfReader({ fileUrl, title, className }: PdfReaderProps) {
   const [pageNumber, setPageNumber] = useState(1);
   const [draftPage, setDraftPage] = useState("1");
   const [fitMode, setFitMode] = useState<FitMode>("width");
-  const [zoom, setZoom] = useState(0.5);
-  const [manualRotation, setManualRotation] = useState(270);
+  const [zoom, setZoom] = useState(1.0);
+  const [manualRotation, setManualRotation] = useState(0);
   const [containerSize, setContainerSize] = useState({ width: 0, height: 0 });
   const [pageSize, setPageSize] = useState({ width: 0, height: 0 });
   const [loadError, setLoadError] = useState<string | null>(null);
