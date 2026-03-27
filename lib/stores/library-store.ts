@@ -2,12 +2,23 @@
  * Library Store
  *
  * Global state for user's saved/bookmarked documents using Zustand.
- * Persists to localStorage for cross-session storage.
+ * Persists to localStorage for instant UI and syncs with the backend
+ * Collections API for cross-device persistence.
+ *
+ * Architecture:
+ * - Local: Zustand + localStorage → instant UI updates, survives refresh
+ * - Backend: Collections API → cross-device sync, permanent storage
+ * - On save/unsave: optimistic local update, then background API sync
+ * - On login: hydrate local store from backend collections
  */
 
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import type { DocumentType } from "@/lib/api/types";
+import { collectionsApi } from "@/lib/api/collections";
+import type { CollectionItem } from "@/lib/api/collections";
+
+const DEFAULT_COLLECTION_NAME = "My Library";
 
 // Saved document metadata (lightweight, stored in localStorage)
 export interface SavedDocument {
@@ -23,6 +34,8 @@ export interface SavedDocument {
   courtLevel?: string;
   publicationDate?: string;
   notes?: string;
+  // Backend sync metadata
+  _collectionItemId?: string; // ID of the item in the backend collection
 }
 
 // Reading history entry
@@ -46,26 +59,71 @@ interface LibraryState {
   isDocumentSaved: (documentId: string) => boolean;
   updateDocumentNotes: (documentId: string, notes: string) => void;
 
+  // Backend sync
+  _defaultCollectionId: string | null;
+  _syncInProgress: boolean;
+  syncWithBackend: () => Promise<void>;
+
   // Reading history
   readingHistory: ReadingHistoryEntry[];
   addToHistory: (
     doc: Omit<ReadingHistoryEntry, "lastAccessedAt" | "accessCount">
   ) => void;
   clearHistory: () => void;
-
-  // Collections (future enhancement)
-  // collections: Collection[];
-  // createCollection: (name: string) => void;
-  // addToCollection: (collectionId: string, documentId: string) => void;
 }
 
 const getStorageKey = (userId: string | null) =>
   userId ? `law-lens-library-${userId}` : "law-lens-library-anonymous";
 
+/**
+ * Background sync: ensure default collection exists and return its ID.
+ * Creates "My Library" if it doesn't exist.
+ */
+async function ensureDefaultCollection(): Promise<string | null> {
+  try {
+    const collections = await collectionsApi.getAll();
+    const defaultCol = collections.find(
+      (c) => c.name === DEFAULT_COLLECTION_NAME
+    );
+    if (defaultCol) return defaultCol.id;
+
+    // Create it
+    const newCol = await collectionsApi.create({
+      name: DEFAULT_COLLECTION_NAME,
+      description: "Your saved documents and bookmarks",
+    });
+    return newCol.id;
+  } catch {
+    // Not authenticated or network error — skip sync
+    return null;
+  }
+}
+
+/**
+ * Convert backend CollectionItem to local SavedDocument.
+ */
+function collectionItemToSaved(item: CollectionItem): SavedDocument {
+  return {
+    id: item.document_id,
+    humanReadableId: item.meta?.identifier || "",
+    title: item.meta?.title || "Untitled",
+    documentType: (item.meta?.document_type as DocumentType) || "act",
+    savedAt: item.created_at,
+    caseNumber: typeof item.meta?.case_number === "string" ? item.meta.case_number : undefined,
+    courtLevel: typeof item.meta?.court_level === "string" ? item.meta.court_level : undefined,
+    actYear: typeof item.meta?.act_year === "number" ? item.meta.act_year : undefined,
+    notes: item.notes || undefined,
+    _collectionItemId: item.id,
+  };
+}
+
 export const useLibraryStore = create<LibraryState>()(
   persist(
     (set, get) => ({
       userId: null,
+      _defaultCollectionId: null,
+      _syncInProgress: false,
+
       setUserId: (userId) => {
         const currentUserId = get().userId;
 
@@ -92,11 +150,83 @@ export const useLibraryStore = create<LibraryState>()(
             userId,
             savedDocuments: newSavedDocuments,
             readingHistory: newReadingHistory,
+            _defaultCollectionId: null,
           });
+
+          // Trigger background sync from backend after setting user
+          if (userId) {
+            void get().syncWithBackend();
+          }
           return;
         }
 
         set({ userId });
+      },
+
+      /**
+       * Sync local store with backend collections.
+       * Merges backend items into local store (backend is source of truth for cross-device).
+       */
+      syncWithBackend: async () => {
+        if (get()._syncInProgress || !get().userId) return;
+        set({ _syncInProgress: true });
+
+        try {
+          const collectionId = await ensureDefaultCollection();
+          if (!collectionId) {
+            set({ _syncInProgress: false });
+            return;
+          }
+
+          set({ _defaultCollectionId: collectionId });
+
+          // Fetch the full collection with items
+          const collection = await collectionsApi.get(collectionId);
+          const backendItems = collection.items || [];
+
+          // Merge: backend items are authoritative for cross-device sync
+          const localDocs = get().savedDocuments;
+          const backendDocIds = new Set(backendItems.map((i) => i.document_id));
+
+          // Convert backend items to SavedDocuments
+          const backendSaved = backendItems.map(collectionItemToSaved);
+
+          // Merge: keep backend items + local-only items
+          const merged: SavedDocument[] = [...backendSaved];
+          for (const localDoc of localDocs) {
+            if (!backendDocIds.has(localDoc.id)) {
+              // Local-only item — push to backend
+              merged.push(localDoc);
+              // Background: add to backend collection
+              void collectionsApi
+                .addItem(collectionId, {
+                  document_id: localDoc.id,
+                  item_type: "document",
+                  notes: localDoc.notes,
+                  meta: {
+                    title: localDoc.title,
+                    document_type: localDoc.documentType,
+                    identifier: localDoc.humanReadableId,
+                    case_number: localDoc.caseNumber,
+                    court_level: localDoc.courtLevel,
+                    act_year: localDoc.actYear,
+                  },
+                })
+                .catch(() => {}); // Non-blocking
+            }
+          }
+
+          // Sort by savedAt (newest first)
+          merged.sort(
+            (a, b) =>
+              new Date(b.savedAt).getTime() - new Date(a.savedAt).getTime()
+          );
+
+          set({ savedDocuments: merged, _syncInProgress: false });
+        } catch (error) {
+          console.warn("Library sync failed:", error);
+          set({ _syncInProgress: false });
+        }
       },
 
       // Saved documents
@@ -106,6 +236,7 @@ export const useLibraryStore = create<LibraryState>()(
         const existing = get().savedDocuments.find((d) => d.id === doc.id);
         if (existing) return; // Already saved
 
+        // Optimistic local update
         set((state) => ({
           savedDocuments: [
             {
@@ -115,14 +246,74 @@ export const useLibraryStore = create<LibraryState>()(
             ...state.savedDocuments,
           ],
         }));
+
+        // Background: sync to backend
+        const collectionId = get()._defaultCollectionId;
+        if (collectionId) {
+          void collectionsApi
+            .addItem(collectionId, {
+              document_id: doc.id,
+              item_type: "document",
+              notes: doc.notes,
+              meta: {
+                title: doc.title,
+                document_type: doc.documentType,
+                identifier: doc.humanReadableId,
+                case_number: doc.caseNumber,
+                court_level: doc.courtLevel,
+                act_year: doc.actYear,
+              },
+            })
+            .then((item) => {
+              // Update local doc with backend item ID for future removal
+              set((state) => ({
+                savedDocuments: state.savedDocuments.map((d) =>
+                  d.id === doc.id
+                    ? { ...d, _collectionItemId: item.id }
+                    : d
+                ),
+              }));
+            })
+            .catch(() => {
+              // Sync failed — local state is still correct, will retry on next sync
+            });
+        } else {
+          // No collection yet — try to create one and sync
+          void ensureDefaultCollection().then((newColId) => {
+            if (newColId) {
+              set({ _defaultCollectionId: newColId });
+              void collectionsApi
+                .addItem(newColId, {
+                  document_id: doc.id,
+                  item_type: "document",
+                  meta: { title: doc.title, document_type: doc.documentType },
+                })
+                .catch(() => {});
+            }
+          });
+        }
       },
 
       unsaveDocument: (documentId) => {
+        const doc = get().savedDocuments.find((d) => d.id === documentId);
+        const collectionItemId = doc?._collectionItemId;
+        const collectionId = get()._defaultCollectionId;
+
+        // Optimistic local update
         set((state) => ({
           savedDocuments: state.savedDocuments.filter(
-            (doc) => doc.id !== documentId
+            (d) => d.id !== documentId
           ),
         }));
+
+        // Background: remove from backend
+        if (collectionId && collectionItemId) {
+          void collectionsApi
+            .removeItem(collectionId, collectionItemId)
+            .catch(() => {
+              // Sync failed — item removed locally, will be re-synced if needed
+            });
+        }
       },
 
       isDocumentSaved: (documentId) => {
@@ -147,7 +338,6 @@ export const useLibraryStore = create<LibraryState>()(
           );
 
           if (existingIndex >= 0) {
-            // Update existing entry
             const updated = [...state.readingHistory];
             const existing = updated[existingIndex];
             updated.splice(existingIndex, 1);
@@ -159,11 +349,10 @@ export const useLibraryStore = create<LibraryState>()(
                   accessCount: existing.accessCount + 1,
                 },
                 ...updated,
-              ].slice(0, 50), // Keep last 50 items
+              ].slice(0, 50),
             };
           }
 
-          // Add new entry
           return {
             readingHistory: [
               {
@@ -204,13 +393,14 @@ export const useLibraryStore = create<LibraryState>()(
           localStorage.removeItem(key);
         },
       },
-      version: 1,
+      version: 2, // Bump version to force re-hydration with new fields
       partialize: (state) =>
         ({
           userId: state.userId,
           savedDocuments: state.savedDocuments,
           readingHistory: state.readingHistory,
-        }) as LibraryState,
+          _defaultCollectionId: state._defaultCollectionId,
+        }) as unknown as LibraryState,
     }
   )
 );
