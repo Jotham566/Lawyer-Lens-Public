@@ -17,6 +17,8 @@ import { useQuery } from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/landing";
 import { getRepositoryStats } from "@/lib/api";
 
+const UG_URL = process.env.NEXT_PUBLIC_UG_URL || "https://ug.lawlens.io";
+
 /* ═══════════════════════════════════════════════════════════
    LANDING PAGE
    One composed narrative surface. Fewer components,
@@ -62,7 +64,7 @@ export default function LandingPage() {
                   insight from internal records, and stay ahead of compliance
                   obligations and regulatory change.
                 </p>
-                <div className="mt-10">
+                <div className="mt-10 flex flex-wrap items-center gap-4">
                   <Link
                     href="/contact"
                     className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
@@ -70,6 +72,12 @@ export default function LandingPage() {
                     Request a Demo
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </Link>
+                  <a
+                    href={`${UG_URL}/register`}
+                    className="inline-flex h-12 items-center rounded-full border border-border/60 bg-card/80 px-8 text-sm font-bold text-foreground backdrop-blur-sm transition-all hover:border-border hover:bg-card hover:shadow-soft"
+                  >
+                    Get Started
+                  </a>
                 </div>
 
                 {/* Trust line — two strong claims, no word-break on mobile */}
@@ -271,19 +279,17 @@ export default function LandingPage() {
               ].map((uc) => (
                 <div
                   key={uc.title}
-                  className="flex items-start gap-5 py-5 lg:items-center"
+                  className="grid grid-cols-1 items-start gap-4 py-5 lg:grid-cols-[auto_1fr_2fr] lg:items-center"
                 >
                   <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-brand-gold/10 text-brand-gold">
                     <uc.icon className="h-4 w-4" />
                   </div>
-                  <div className="flex flex-1 flex-col gap-0.5 lg:flex-row lg:items-center lg:gap-10">
-                    <h3 className="min-w-[280px] text-[15px] font-bold tracking-tight lg:min-w-[340px]">
-                      {uc.title}
-                    </h3>
-                    <p className="text-sm leading-relaxed text-muted-foreground">
-                      {uc.description}
-                    </p>
-                  </div>
+                  <h3 className="text-[15px] font-bold tracking-tight">
+                    {uc.title}
+                  </h3>
+                  <p className="text-sm leading-relaxed text-muted-foreground">
+                    {uc.description}
+                  </p>
                 </div>
               ))}
             </div>
