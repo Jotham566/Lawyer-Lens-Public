@@ -151,12 +151,12 @@
     --surface-container-high: #ebe7e7;
     --surface-container-highest: #e4ddd8;
 
-    --sidebar: #f0edec;
-    --sidebar-foreground: #1b2a3d;
+    --sidebar: #f4f2f0;
+    --sidebar-foreground: #152336;
     --sidebar-primary: #002344;
     --sidebar-primary-foreground: #f8f4ec;
-    --sidebar-accent: #e4ddd8;
-    --sidebar-accent-foreground: #152336;
+    --sidebar-accent: #e8e4e0;
+    --sidebar-accent-foreground: #002344;
     --sidebar-border: rgb(78 70 57 / 0.13);
     --sidebar-ring: rgb(0 35 68 / 0.22);
 
@@ -247,9 +247,9 @@
     --sidebar-foreground: #d5e3fd;
     --sidebar-primary: #ffdea5;
     --sidebar-primary-foreground: #412d00;
-    --sidebar-accent: #394857;
-    --sidebar-accent-foreground: #edf4ff;
-    --sidebar-border: rgb(255 222 165 / 0.18);
+    --sidebar-accent: #1a2b41;
+    --sidebar-accent-foreground: #ffffff;
+    --sidebar-border: rgb(255 222 165 / 0.12);
     --sidebar-ring: rgb(255 222 165 / 0.28);
 
     --chart-1: #ffdea5;
@@ -313,16 +313,27 @@
     scroll-behavior: smooth;
   }
 
-  html,
-  body {
+  html {
     min-height: 100%;
+    /* Solid background on html prevents brand-wash gradient from bleeding
+       through macOS rounded window corners */
+    background: var(--background);
+    overscroll-behavior: none;
   }
 
   body {
+    min-height: 100%;
     @apply bg-background text-foreground font-sans antialiased;
+    overscroll-behavior: none;
+    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
+  }
+
+  /* Brand wash gradient applied to main content areas, not body,
+     to prevent gradient bleed at macOS window corners */
+  main[role="main"],
+  .brand-wash-bg {
     background-image: var(--brand-wash);
     background-attachment: fixed;
-    font-feature-settings: "rlig" 1, "calt" 1, "ss01" 1;
   }
 
   button,
@@ -1324,22 +1335,20 @@
   }
 
   .ll-sidebar-nav-button {
-    @apply flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2 text-left text-sm transition-[background-color,border-color,box-shadow,transform,color] duration-200;
-    color: var(--muted-foreground);
+    @apply flex w-full items-center justify-between gap-2 rounded-xl px-3 py-2.5 text-left text-[13px] font-semibold tracking-wide transition-[background-color,border-color,box-shadow,color] duration-200;
+    color: color-mix(in srgb, var(--sidebar-foreground) 60%, transparent);
   }
 
   .ll-sidebar-nav-button:hover,
   .ll-sidebar-nav-button:focus-visible {
-    transform: translateY(-1px);
-    background: var(--interactive-hover-surface);
-    color: var(--interactive-hover-foreground);
-    box-shadow: var(--shadow-soft);
+    background: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
   }
 
   .ll-sidebar-nav-button-active {
-    background: var(--secondary);
-    color: var(--secondary-foreground);
-    box-shadow: var(--shadow-soft);
+    background: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
+    font-weight: 700;
   }
 
   .ll-chip-button {

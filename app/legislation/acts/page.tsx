@@ -1,552 +1,276 @@
 "use client";
 
-import { Suspense, useMemo, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowRight,
-  Calendar,
-  ChevronLeft,
-  ChevronRight,
-  FileText,
-  Grid3X3,
-  List,
   Search,
-  SlidersHorizontal,
-  X,
+  FileText,
+  Calendar,
+  BookOpen,
+  Bookmark,
+  Share2,
 } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
-import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
-import { useAllDocumentsByType } from "@/lib/hooks";
-import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
-import { resolveDocumentYear } from "@/lib/utils/document-year";
+import { getDocuments } from "@/lib/api";
+import type { Document } from "@/lib/api/types";
+import { useInfiniteQuery } from "@tanstack/react-query";
+import { Skeleton } from "@/components/ui/skeleton";
+import { useIsDocumentSaved, useLibraryStore } from "@/lib/stores";
+import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 
-const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
-const DEFAULT_PAGE_SIZE = 20;
+const PAGE_SIZE = 20;
 
-const yearBuckets = [
-  { label: "All Years", value: "all" },
-  { label: "2020-Present", value: "2020s" },
-  { label: "2010-2019", value: "2010s" },
-  { label: "2000-2009", value: "2000s" },
-  { label: "1990-1999", value: "1990s" },
-  { label: "Before 1990", value: "archive" },
-];
-
+/* ────────────────────────────────────────────────────────────
+   Sort options
+   ──────────────────────────────────────────────────────────── */
 const sortOptions = [
-  { label: "Title A-Z", value: "title_asc" },
-  { label: "Title Z-A", value: "title_desc" },
-  { label: "Newest first", value: "year_desc" },
-  { label: "Oldest first", value: "year_asc" },
-];
+  { label: "Title A-Z", value: "title_asc", sort_by: "title", sort_order: "asc" },
+  { label: "Title Z-A", value: "title_desc", sort_by: "title", sort_order: "desc" },
+  { label: "Newest First", value: "newest", sort_by: "updated_at", sort_order: "desc" },
+  { label: "Oldest First", value: "oldest", sort_by: "updated_at", sort_order: "asc" },
+] as const;
 
-function matchesYearBucket(year: number | null, bucket: string) {
-  if (!year) return bucket === "all";
-  switch (bucket) {
-    case "2020s":
-      return year >= 2020;
-    case "2010s":
-      return year >= 2010 && year <= 2019;
-    case "2000s":
-      return year >= 2000 && year <= 2009;
-    case "1990s":
-      return year >= 1990 && year <= 1999;
-    case "archive":
-      return year < 1990;
-    default:
-      return true;
-  }
+/* ────────────────────────────────────────────────────────────
+   Helper: extract year from act title (e.g., "Cap. 95-2006" → 2006)
+   ──────────────────────────────────────────────────────────── */
+function extractYear(doc: Document): string | null {
+  if (doc.act_year) return doc.act_year.toString();
+  // Try to extract from title: "...-2006" or "... 2006"
+  const match = doc.title.match(/[-\s](\d{4})(?:\s|$)/);
+  return match ? match[1] : null;
 }
 
-function parseDisplayYear(value: string | null): number | null {
-  if (!value) return null;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : null;
+/* ────────────────────────────────────────────────────────────
+   Helper: get the meaningful start of a title, stripping "The "
+   ──────────────────────────────────────────────────────────── */
+function titleForLetterFilter(title: string): string {
+  return title.replace(/^the\s+/i, "");
 }
 
-function ActsContent() {
-  const router = useRouter();
-  const searchParams = useSearchParams();
+/* ────────────────────────────────────────────────────────────
+   Helper: extract chapter from title (e.g., "Cap. 95")
+   ──────────────────────────────────────────────────────────── */
+function extractChapter(doc: Document): string | null {
+  if (doc.chapter) return `Cap. ${doc.chapter}`;
+  const match = doc.title.match(/Cap\.?\s*(\d+)/i);
+  return match ? `Cap. ${match[1]}` : null;
+}
 
-  const page = Math.max(Number(searchParams.get("page") || "1"), 1);
-  const letter = searchParams.get("letter") || "";
-  const year = searchParams.get("year") || "all";
-  const sort = searchParams.get("sort") || "title_asc";
-  const query = searchParams.get("q") || "";
-  const view = searchParams.get("view") === "list" ? "list" : "grid";
+/* ════════════════════════════════════════════════════════════
+   PAGE COMPONENT
+   ════════════════════════════════════════════════════════════ */
+export default function ActsPage() {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearch, setDebouncedSearch] = useState("");
+  const [sortBy, setSortBy] = useState("title_asc");
+  const [selectedLetter, setSelectedLetter] = useState<string>("");
+  const loadMoreRef = useRef<HTMLDivElement>(null);
 
-  const [searchInput, setSearchInput] = useState(query);
+  // Debounce search
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedSearch(searchQuery), 300);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
-  const { data, isLoading, error } = useAllDocumentsByType("act");
+  const sortParams = useMemo(() => {
+    const opt = sortOptions.find((o) => o.value === sortBy) || sortOptions[0];
+    return { sort_by: opt.sort_by, sort_order: opt.sort_order };
+  }, [sortBy]);
 
-  const currentActsUrl = useMemo(() => {
-    const params = searchParams.toString();
-    return params ? `/legislation/acts?${params}` : "/legislation/acts";
-  }, [searchParams]);
+  // Fetch acts with infinite query
+  const {
+    data,
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    isLoading,
+  } = useInfiniteQuery({
+    queryKey: ["acts", debouncedSearch, sortBy],
+    queryFn: ({ pageParam }) =>
+      getDocuments({
+        document_type: "act",
+        page: pageParam,
+        size: PAGE_SIZE,
+        search: debouncedSearch || undefined,
+        ...sortParams,
+      }),
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.page < lastPage.total_pages ? lastPage.page + 1 : undefined,
+    staleTime: 2 * 60 * 1000,
+  });
 
-  const updateParams = (updates: Record<string, string | undefined>) => {
-    const params = new URLSearchParams(searchParams.toString());
+  // Flatten pages into single array, with client-side letter filter as safety net
+  // Strip leading "The " so "The Income Tax Act" matches under "I", not "T"
+  const allActs = useMemo(() => {
+    const items = data?.pages.flatMap((p) => p.items) || [];
+    if (selectedLetter) {
+      return items.filter((act) =>
+        titleForLetterFilter(act.title).toUpperCase().startsWith(selectedLetter)
+      );
+    }
+    return items;
+  }, [data, selectedLetter]);
+  const totalCount = data?.pages[0]?.total || 0;
 
-    Object.entries(updates).forEach(([key, value]) => {
-      if (!value) {
-        params.delete(key);
-      } else {
-        params.set(key, value);
-      }
-    });
-
-    const next = params.toString();
-    router.push(next ? `/legislation/acts?${next}` : "/legislation/acts");
-  };
-
-  const acts = useMemo(() => {
-    const items = [...(data || [])];
-
-      const filtered = items.filter((item) => {
-      const displayYear = parseDisplayYear(resolveDocumentYear(item));
-      const normalizedTitle = item.title.toUpperCase();
-      const normalizedQuery = query.trim().toLowerCase();
-      const searchableText = [
-        item.title,
-        item.short_title,
-        item.chapter,
-        item.act_number ? `Act No. ${item.act_number}` : "",
-      ]
-        .filter(Boolean)
-        .join(" ")
-        .toLowerCase();
-
-      if (letter && !normalizedTitle.startsWith(letter)) {
-        return false;
-      }
-
-      if (year !== "all" && !matchesYearBucket(displayYear, year)) {
-        return false;
-      }
-
-      if (normalizedQuery && !searchableText.includes(normalizedQuery)) {
-        return false;
-      }
-
-      return true;
-    });
-
-      filtered.sort((a, b) => {
-      const aYear = parseDisplayYear(resolveDocumentYear(a)) || 0;
-      const bYear = parseDisplayYear(resolveDocumentYear(b)) || 0;
-      const titleCompare = a.title.localeCompare(b.title);
-
-      switch (sort) {
-        case "title_desc":
-          return b.title.localeCompare(a.title);
-        case "year_desc":
-          return bYear - aYear || titleCompare;
-        case "year_asc":
-          return aYear - bYear || titleCompare;
-        default:
-          return titleCompare;
-      }
-    });
-
-    return filtered;
-  }, [data, letter, year, query, sort]);
-
-  const totalPages = Math.max(Math.ceil(acts.length / DEFAULT_PAGE_SIZE), 1);
-  const safePage = Math.min(page, totalPages);
-  const paginatedActs = acts.slice(
-    (safePage - 1) * DEFAULT_PAGE_SIZE,
-    safePage * DEFAULT_PAGE_SIZE
-  );
-
-  const activeFilters = [
-    letter ? { key: "letter", label: `Starts with ${letter}` } : null,
-    year !== "all"
-      ? {
-          key: "year",
-          label: yearBuckets.find((bucket) => bucket.value === year)?.label || year,
+  // Infinite scroll observer
+  useEffect(() => {
+    if (!loadMoreRef.current || !hasNextPage) return;
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && hasNextPage && !isFetchingNextPage) {
+          void fetchNextPage();
         }
-      : null,
-    query ? { key: "q", label: `Search: ${query}` } : null,
-  ].filter(Boolean) as Array<{ key: string; label: string }>;
+      },
+      { threshold: 0.1 }
+    );
+    observer.observe(loadMoreRef.current);
+    return () => observer.disconnect();
+  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
 
-  const resultLabel = `${acts.length} act${acts.length === 1 ? "" : "s"}`;
+  // Alphabet quick jump
+  const alphabet = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
   return (
-    <div className="container mx-auto max-w-6xl px-4 py-6">
-      <Breadcrumbs className="mb-6" />
+    <div className="min-h-screen">
+      {/* Breadcrumbs */}
+      <div className="px-6 pt-4 lg:px-12">
+        <Breadcrumbs
+          items={[
+            { label: "Home", href: "/", isCurrentPage: false },
+            { label: "Legislation", href: "/legislation", isCurrentPage: false },
+            { label: "Acts", href: "/legislation/acts", isCurrentPage: true },
+          ]}
+        />
+      </div>
 
-      <div className="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-        <div className="max-w-2xl">
-          <div className="mb-3 inline-flex h-11 w-11 items-center justify-center rounded-2xl bg-primary/10 text-primary dark:bg-primary/15">
-            <FileText className="h-5 w-5" />
+      {/* ── Search Header ── */}
+      <div className="px-6 pb-4 pt-6 lg:px-12">
+        <div className="mx-auto max-w-2xl">
+          <div className="relative overflow-hidden rounded-full bg-card shadow-soft ring-1 ring-border/60 transition-all focus-within:ring-[3px] focus-within:ring-primary/50 dark:ring-glass dark:focus-within:ring-brand-gold/40">
+            <div className="flex items-center px-5 py-3">
+              <Search className="mr-3 h-5 w-5 shrink-0 text-muted-foreground" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => {
+                  setSearchQuery(e.target.value);
+                  setSelectedLetter("");
+                }}
+                placeholder="Search acts by title, chapter, or keyword..."
+                className="min-w-0 flex-1 border-0 bg-transparent text-base font-sans shadow-none ring-0 placeholder:text-muted-foreground/60 focus:outline-none focus:ring-0"
+              />
+            </div>
           </div>
-          <h1 className="text-3xl font-semibold tracking-tight">Acts of Parliament</h1>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Search, filter, and sort Uganda&apos;s primary legislation with cleaner navigation and faster access to the Act you need.
-          </p>
-        </div>
-
-        <div className="rounded-2xl border border-transparent bg-muted/20 px-4 py-3 text-sm dark:border-glass lg:min-w-[180px]">
-          <p className="font-medium">{data?.length ?? "..."} total acts indexed</p>
-          <p className="text-muted-foreground">{resultLabel} in current view</p>
         </div>
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-[280px_minmax(0,1fr)] xl:grid-cols-[300px_minmax(0,1fr)]">
-        <aside className="lg:sticky lg:top-24 lg:self-start">
-          <Card className="border-border/70 dark:border-glass">
-            <CardContent className="space-y-5 pt-5">
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Search acts
-                </label>
-                <div className="relative">
-                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-                  <Input
-                    value={searchInput}
-                    onChange={(event) => setSearchInput(event.target.value)}
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        updateParams({
-                          q: searchInput.trim() || undefined,
-                          page: "1",
-                        });
-                      }
-                    }}
-                    placeholder="Title, short title, chapter, act number..."
-                    className="pl-9"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Year range
-                </label>
-                <Select
-                  value={year}
-                  onValueChange={(value) => updateParams({ year: value === "all" ? undefined : value, page: "1" })}
-                >
-                  <SelectTrigger>
-                    <Calendar className="mr-2 h-4 w-4" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {yearBuckets.map((bucket) => (
-                      <SelectItem key={bucket.value} value={bucket.value}>
-                        {bucket.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Sort by
-                </label>
-                <Select
-                  value={sort}
-                  onValueChange={(value) => updateParams({ sort: value, page: "1" })}
-                >
-                  <SelectTrigger>
-                    <SlidersHorizontal className="mr-2 h-4 w-4" />
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {sortOptions.map((option) => (
-                      <SelectItem key={option.value} value={option.value}>
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  Browse by letter
-                </label>
-                <Select
-                  value={letter || "all"}
-                  onValueChange={(value) => updateParams({ letter: value === "all" ? undefined : value, page: "1" })}
-                >
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="all">All titles</SelectItem>
-                    {alphabet.map((item) => (
-                      <SelectItem key={item} value={item}>
-                        {item}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="space-y-2">
-                <label className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                  View
-                </label>
-                <ToggleGroup
-                  type="single"
-                  value={view}
-                  onValueChange={(value) => {
-                    if (value) {
-                      updateParams({ view: value, page: "1" });
-                    }
-                  }}
-                  className="justify-start"
-                >
-                  <ToggleGroupItem value="list" aria-label="List view">
-                    <List className="h-4 w-4" />
-                  </ToggleGroupItem>
-                  <ToggleGroupItem value="grid" aria-label="Grid view">
-                    <Grid3X3 className="h-4 w-4" />
-                  </ToggleGroupItem>
-                </ToggleGroup>
-              </div>
-
-              <div className="flex flex-wrap items-center gap-2">
-                <Button
-                  variant="brand"
-                  size="sm"
-                  onClick={() =>
-                    updateParams({
-                      q: searchInput.trim() || undefined,
-                      page: "1",
-                    })
-                  }
-                >
-                  Apply search
-                </Button>
-                {activeFilters.length > 0 && (
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      setSearchInput("");
-                      router.push("/legislation/acts");
-                    }}
-                  >
-                    Reset all
-                  </Button>
-                )}
-              </div>
-
-              <div className="space-y-2 border-t pt-4">
-                <div className="flex items-center justify-between gap-3">
-                  <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">
-                    Quick jump
-                  </p>
-                  {letter && (
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      className="h-auto px-0 py-0 text-xs"
-                      onClick={() => updateParams({ letter: undefined, page: "1" })}
-                    >
-                      Clear
-                    </Button>
-                  )}
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <Button
-                    variant={!letter ? "secondary" : "outline"}
-                    size="sm"
-                    className="h-8 rounded-full px-3"
-                    onClick={() => updateParams({ letter: undefined, page: "1" })}
-                  >
-                    All
-                  </Button>
-                  {alphabet.map((item) => (
-                    <Button
-                      key={item}
-                      variant={letter === item ? "secondary" : "outline"}
-                      size="sm"
-                      className="h-8 min-w-8 rounded-full px-2.5"
-                      onClick={() => updateParams({ letter: item, page: "1" })}
-                    >
-                      {item}
-                    </Button>
-                  ))}
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </aside>
-
-        <div className="min-w-0">
-          {activeFilters.length > 0 && (
-            <div className="mb-4 flex flex-wrap gap-2">
-              {activeFilters.map((filter) => (
-                <Badge key={filter.key} variant="secondary" className="gap-1 rounded-full px-3 py-1">
-                  {filter.label}
-                  <button
-                    type="button"
-                    className={cn("rounded-full", surfaceClasses.iconButton)}
-                    onClick={() => {
-                      if (filter.key === "q") {
-                        setSearchInput("");
-                      }
-                      updateParams({ [filter.key]: undefined, page: "1" });
-                    }}
-                    aria-label={`Remove ${filter.label}`}
-                  >
-                    <X className="h-3 w-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
-
-          <div className="mb-4 flex items-center justify-between text-sm text-muted-foreground">
-            <p>
-              Showing {acts.length === 0 ? 0 : (safePage - 1) * DEFAULT_PAGE_SIZE + 1}
-              {"-"}
-              {Math.min(safePage * DEFAULT_PAGE_SIZE, acts.length)} of {acts.length}
+      {/* ── Results Header + Sort ── */}
+      <div className="px-6 pb-2 lg:px-12">
+        <div className="flex flex-wrap items-baseline justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">
+              Acts of Parliament
+            </h1>
+            <p className="text-sm text-muted-foreground">
+              Showing {allActs.length} of {totalCount} acts
             </p>
-            <p>{sortOptions.find((option) => option.value === sort)?.label || "Title A-Z"}</p>
           </div>
-
-          {isLoading && (
-            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-              {Array.from({ length: 9 }).map((_, index) => (
-                <Card key={index}>
-                  <CardHeader className="pb-2">
-                    <Skeleton className="h-5 w-3/4" />
-                  </CardHeader>
-                  <CardContent>
-                    <Skeleton className="h-4 w-1/2" />
-                  </CardContent>
-                </Card>
+          <div className="flex items-center gap-2 rounded-full bg-surface-container-high px-4 py-2">
+            <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+              Sort by:
+            </span>
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="border-0 bg-transparent text-[10px] font-bold uppercase tracking-widest text-foreground focus:ring-0"
+            >
+              {sortOptions.map((opt) => (
+                <option key={opt.value} value={opt.value}>
+                  {opt.label}
+                </option>
               ))}
-            </div>
-          )}
+            </select>
+          </div>
+        </div>
+      </div>
 
-          {error && (
-            <Card className="border-destructive">
-              <CardContent className="pt-6">
-                <p className="text-sm text-destructive">Failed to load acts. Please try again.</p>
-              </CardContent>
-            </Card>
-          )}
+      {/* ── Alphabet Quick Jump ── */}
+      <div className="px-6 pb-6 lg:px-12">
+        <div className="flex flex-wrap gap-1">
+          <button
+            type="button"
+            onClick={() => {
+              setSelectedLetter("");
+              setSearchQuery("");
+            }}
+            className={cn(
+              "ll-transition h-8 w-8 rounded-full text-xs font-bold",
+              !selectedLetter
+                ? "bg-primary text-primary-foreground"
+                : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+            )}
+          >
+            All
+          </button>
+          {alphabet.map((letter) => (
+            <button
+              key={letter}
+              type="button"
+              onClick={() => {
+                setSelectedLetter(letter);
+                setSearchQuery("");
+              }}
+              className={cn(
+                "ll-transition h-8 w-8 rounded-full text-xs font-bold",
+                selectedLetter === letter
+                  ? "bg-primary text-primary-foreground"
+                  : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+              )}
+            >
+              {letter}
+            </button>
+          ))}
+        </div>
+      </div>
 
-          {!isLoading && !error && acts.length === 0 && (
-            <Card>
-              <CardContent className="py-14 text-center">
-                <FileText className="mx-auto h-12 w-12 text-muted-foreground/40" />
-                <h3 className="mt-4 text-lg font-medium">No acts match these filters</h3>
-                <p className="mt-2 text-sm text-muted-foreground">
-                  Adjust the search, clear a filter, or browse all Acts again.
-                </p>
-                <div className="mt-5 flex justify-center gap-2">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setSearchInput("");
-                      router.push("/legislation/acts");
-                    }}
-                  >
-                    Clear all filters
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          )}
-
-          {!isLoading && !error && paginatedActs.length > 0 && (
-            <div className={cn(view === "grid" ? "grid gap-4 sm:grid-cols-2 xl:grid-cols-3" : "space-y-3")}>
-              {paginatedActs.map((act) => {
-                const displayYear = resolveDocumentYear(act);
-                const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent(currentActsUrl)}&from=acts`;
-                return (
-                  <Link key={act.id} href={documentHref} className="group block">
-                    <Card className={cn("h-full border-border/70 dark:border-glass", surfaceClasses.pagePanelInteractive)}>
-                      <CardHeader className={cn(view === "grid" ? "pb-2" : "py-3")}>
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0 space-y-2">
-                            <div className="flex flex-wrap items-center gap-2 text-[11px] font-medium text-muted-foreground">
-                              <Badge variant="outline" className="rounded-full text-[11px] text-foreground/80">
-                                Act
-                              </Badge>
-                              {act.human_readable_id && (
-                                <span className="truncate text-foreground/65">{act.human_readable_id}</span>
-                              )}
-                            </div>
-                            <h3 className={cn("font-medium leading-tight", view === "grid" && "line-clamp-2 text-sm")}>
-                              {act.title}
-                            </h3>
-                            {act.short_title && act.short_title !== act.title && (
-                              <p className="text-sm text-muted-foreground">{act.short_title}</p>
-                            )}
-                          </div>
-                          <Badge variant="secondary" className="shrink-0 rounded-full">
-                            {displayYear || "N/A"}
-                          </Badge>
-                        </div>
-                      </CardHeader>
-                      <CardContent className={cn("space-y-3", view === "grid" ? "pt-0 pb-4" : "pb-3 pt-0")}>
-                        <div className="flex flex-wrap items-center gap-2 text-xs font-medium text-foreground/75">
-                          {act.chapter && <span className={surfaceClasses.chipButton}>Chapter {act.chapter}</span>}
-                          {act.act_number && <span className={surfaceClasses.chipButton}>Act No. {act.act_number}</span>}
-                          {act.publication_date && <span className={surfaceClasses.chipButton}>Published text</span>}
-                        </div>
-                        <div className="flex items-center justify-end text-sm">
-                          <span className="inline-flex items-center font-medium text-brand-gold ll-transition group-hover:text-brand-gold-soft">
-                            Open Act
-                            <ArrowRight className="ml-1 h-4 w-4 ll-transition group-hover:translate-x-1" />
-                          </span>
-                        </div>
-                      </CardContent>
-                    </Card>
-                  </Link>
-                );
-              })}
-            </div>
-          )}
-
-          {!isLoading && !error && totalPages > 1 && (
-            <div className="mt-8 flex flex-col gap-3 border-t pt-5 sm:flex-row sm:items-center sm:justify-between">
-              <p className="text-sm text-muted-foreground">
-                Page {safePage} of {totalPages}
+      {/* ── Act Cards ── */}
+      <div className="px-6 pb-16 lg:px-12">
+        <div className="space-y-4">
+          {isLoading ? (
+            Array.from({ length: 5 }).map((_, i) => (
+              <Skeleton key={i} className="h-28 w-full rounded-xl" />
+            ))
+          ) : allActs.length === 0 ? (
+            <div className="rounded-xl border border-transparent bg-card p-12 text-center shadow-soft dark:border-glass">
+              <FileText className="mx-auto h-10 w-10 text-muted-foreground/40" />
+              <h3 className="mt-4 text-lg font-semibold">No acts found</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                {searchQuery || selectedLetter
+                  ? "Try adjusting your search or filter"
+                  : "No acts have been published yet"}
               </p>
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={safePage <= 1}
-                  onClick={() => updateParams({ page: String(safePage - 1) })}
-                >
-                  <ChevronLeft className="mr-1 h-4 w-4" />
-                  Previous
-                </Button>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  disabled={safePage >= totalPages}
-                  onClick={() => updateParams({ page: String(safePage + 1) })}
-                >
-                  Next
-                  <ChevronRight className="ml-1 h-4 w-4" />
-                </Button>
+            </div>
+          ) : (
+            allActs.map((act) => <ActCard key={act.id} act={act} />)
+          )}
+
+          {/* Infinite scroll sentinel */}
+          <div ref={loadMoreRef} className="h-1" />
+
+          {isFetchingNextPage && (
+            <div className="flex justify-center py-8">
+              <div className="flex flex-col items-center gap-2">
+                <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+                <span className="text-xs text-muted-foreground">Loading more acts...</span>
               </div>
             </div>
+          )}
+
+          {!hasNextPage && allActs.length > 0 && allActs.length >= PAGE_SIZE && (
+            <p className="py-4 text-center text-xs text-muted-foreground">
+              All {totalCount} acts loaded
+            </p>
           )}
         </div>
       </div>
@@ -554,22 +278,145 @@ function ActsContent() {
   );
 }
 
-export default function ActsPage() {
+/* ────────────────────────────────────────────────────────────
+   Act Card Component
+   ──────────────────────────────────────────────────────────── */
+function ActCard({ act }: { act: Document }) {
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Persistent bookmark
+  const isSaved = useIsDocumentSaved(act.id);
+  const saveDocument = useLibraryStore((s) => s.saveDocument);
+  const unsaveDocument = useLibraryStore((s) => s.unsaveDocument);
+
+  const year = extractYear(act);
+  const chapter = extractChapter(act);
+  const documentHref = `/document/${act.id}?returnTo=${encodeURIComponent("/legislation/acts")}&from=acts`;
+
+  const handleBookmark = () => {
+    if (isSaved) {
+      unsaveDocument(act.id);
+    } else {
+      saveDocument({
+        id: act.id,
+        humanReadableId: act.human_readable_id,
+        title: act.title,
+        documentType: act.document_type,
+        actYear: act.act_year || (year ? parseInt(year, 10) : undefined),
+      });
+    }
+  };
+
+  const handleShare = async () => {
+    const url = `${window.location.origin}/document/${act.id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({ title: act.title, url });
+        return;
+      } catch { /* cancelled */ }
+    }
+    try {
+      await navigator.clipboard.writeText(url);
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch { /* clipboard unavailable */ }
+  };
+
   return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto max-w-6xl px-4 py-6">
-          <Skeleton className="mb-6 h-8 w-40" />
-          <Skeleton className="mb-6 h-40 w-full" />
-          <div className="space-y-3">
-            {Array.from({ length: 8 }).map((_, index) => (
-              <Skeleton key={index} className="h-24 w-full" />
-            ))}
+    <div className="relative overflow-hidden rounded-xl border border-transparent bg-card p-6 shadow-soft ll-transition hover:shadow-floating dark:border-glass">
+      {/* Top row: badge + year + actions */}
+      <div className="flex items-start justify-between">
+        <div className="flex-1">
+          {/* Badge row */}
+          <div className="mb-3 flex flex-wrap items-center gap-2">
+            <span className="inline-block rounded-full bg-primary text-primary-foreground px-3 py-1 text-[10px] font-bold uppercase tracking-widest">
+              Act
+            </span>
+            {year && (
+              <span className="inline-block rounded-full bg-brand-gold/15 text-brand-ink dark:text-brand-gold px-3 py-1 text-[10px] font-bold">
+                {year}
+              </span>
+            )}
+          </div>
+
+          {/* Title */}
+          <h3 className="text-xl font-extrabold leading-tight lg:text-2xl">
+            <Link href={documentHref} className="ll-transition hover:text-brand-gold">
+              {act.title}
+            </Link>
+          </h3>
+
+          {/* Metadata row */}
+          <div className="mt-2 flex flex-wrap gap-4 text-xs font-bold uppercase tracking-widest text-muted-foreground">
+            {chapter && (
+              <span className="flex items-center gap-1.5">
+                <BookOpen className="h-3.5 w-3.5" />
+                {chapter}
+              </span>
+            )}
+            {act.commencement_date && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-3.5 w-3.5" />
+                Commenced {act.commencement_date}
+              </span>
+            )}
+            {act.short_title && (
+              <span className="flex items-center gap-1.5">
+                <FileText className="h-3.5 w-3.5" />
+                {act.short_title}
+              </span>
+            )}
           </div>
         </div>
-      }
-    >
-      <ActsContent />
-    </Suspense>
+
+        {/* Action buttons */}
+        <div className="ml-4 flex gap-2">
+          <button
+            type="button"
+            title={isSaved ? "Remove from library" : "Save to library"}
+            onClick={handleBookmark}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full ll-transition",
+              isSaved
+                ? "bg-brand-gold/20 text-brand-gold"
+                : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+            )}
+          >
+            <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
+          </button>
+          <button
+            type="button"
+            title={shareCopied ? "Link copied!" : "Share"}
+            onClick={handleShare}
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full ll-transition",
+              shareCopied
+                ? "bg-status-success-bg text-status-success-fg"
+                : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+            )}
+          >
+            <Share2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      {/* Action buttons row */}
+      <div className="mt-5 flex flex-wrap items-center gap-4">
+        <Link
+          href={documentHref}
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-6 py-3 text-xs font-bold uppercase tracking-widest text-primary-foreground ll-transition hover:opacity-90"
+        >
+          View Full Act
+        </Link>
+        <Link
+          href={`/chat?doc=${act.id}&q=${encodeURIComponent(
+            `Provide a comprehensive overview of the "${act.title}". Cover: (1) Purpose and Scope, (2) Key Provisions, (3) Definitions, (4) Penalties and Enforcement, and (5) Practical Implications for legal practitioners.`
+          )}`}
+          className="text-xs font-bold uppercase tracking-widest text-brand-700 underline-offset-4 ll-transition hover:underline dark:text-brand-gold"
+        >
+          AI Act Analysis
+        </Link>
+      </div>
+    </div>
   );
 }

@@ -27,7 +27,7 @@ export function DashboardShell({ children }: DashboardShellProps) {
   const isChatRoute = pathname?.startsWith("/chat");
 
   return (
-    <div className="fixed inset-0 flex bg-background">
+    <div className="fixed inset-0 flex overflow-hidden bg-background">
       {/* Screen reader announcements */}
       <ScreenReaderAnnouncer />
       <SkipLink />

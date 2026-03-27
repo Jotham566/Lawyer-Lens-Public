@@ -118,6 +118,7 @@ export interface DocumentFilters {
   year_to?: number;
   court_level?: string;
   search?: string;
+  title_starts_with?: string;
   status?: DocumentStatus;
   page?: number;
   size?: number;

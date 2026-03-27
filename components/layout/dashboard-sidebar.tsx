@@ -47,9 +47,9 @@ export function DashboardSidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar">
+    <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
       {/* Logo */}
-      <div className="flex h-14 items-center px-5">
+      <div className="flex h-16 items-center px-5">
         <Logo />
       </div>
 
