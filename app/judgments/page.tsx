@@ -23,6 +23,7 @@ import type { Document } from "@/lib/api/types";
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { Skeleton } from "@/components/ui/skeleton";
+import { useIsDocumentSaved, useLibraryStore } from "@/lib/stores";
 
 /* ────────────────────────────────────────────────────────────
    Court level config
@@ -440,7 +441,28 @@ export default function JudgmentsPage() {
    Judgment Card Component
    ──────────────────────────────────────────────────────────── */
 function JudgmentCard({ judgment }: { judgment: Document }) {
-  const [bookmarked, setBookmarked] = useState(false);
+  const [shareCopied, setShareCopied] = useState(false);
+
+  // Persistent bookmark via library store (survives refresh, syncs across tabs)
+  const isSaved = useIsDocumentSaved(judgment.id);
+  const saveDocument = useLibraryStore((s) => s.saveDocument);
+  const unsaveDocument = useLibraryStore((s) => s.unsaveDocument);
+
+  const handleBookmark = () => {
+    if (isSaved) {
+      unsaveDocument(judgment.id);
+    } else {
+      saveDocument({
+        id: judgment.id,
+        humanReadableId: judgment.human_readable_id,
+        title: judgment.title,
+        documentType: judgment.document_type,
+        caseNumber: judgment.case_number || undefined,
+        courtLevel: judgment.court_level || undefined,
+        publicationDate: judgment.judgment_date || judgment.publication_date || undefined,
+      });
+    }
+  };
 
   // Prefer judgment_date (actual decision date), fall back to publication_date
   const judgmentDateStr = judgment.judgment_date || judgment.publication_date;
@@ -454,19 +476,17 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
     if (navigator.share) {
       try {
         await navigator.share({ title, url });
+        return;
       } catch {
         // User cancelled or share failed — fall back to clipboard
-        await navigator.clipboard.writeText(url);
       }
-    } else {
+    }
+    try {
       await navigator.clipboard.writeText(url);
-      // Brief visual feedback
-      const btn = document.activeElement as HTMLButtonElement;
-      if (btn) {
-        const original = btn.title;
-        btn.title = "Link copied!";
-        setTimeout(() => { btn.title = original; }, 2000);
-      }
+      setShareCopied(true);
+      setTimeout(() => setShareCopied(false), 2000);
+    } catch {
+      // Clipboard API not available
     }
   };
 
@@ -530,22 +550,27 @@ function JudgmentCard({ judgment }: { judgment: Document }) {
         <div className="flex gap-2">
           <button
             type="button"
-            title={bookmarked ? "Remove bookmark" : "Bookmark"}
-            onClick={() => setBookmarked(!bookmarked)}
+            title={isSaved ? "Remove from library" : "Save to library"}
+            onClick={handleBookmark}
             className={cn(
               "flex h-10 w-10 items-center justify-center rounded-full ll-transition",
-              bookmarked
+              isSaved
                 ? "bg-brand-gold/20 text-brand-gold"
                 : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
             )}
           >
-            <Bookmark className={cn("h-4 w-4", bookmarked && "fill-current")} />
+            <Bookmark className={cn("h-4 w-4", isSaved && "fill-current")} />
           </button>
           <button
             type="button"
-            title="Share"
+            title={shareCopied ? "Link copied!" : "Share"}
             onClick={handleShare}
-            className="flex h-10 w-10 items-center justify-center rounded-full bg-surface-container-high text-foreground ll-transition hover:bg-surface-container-highest"
+            className={cn(
+              "flex h-10 w-10 items-center justify-center rounded-full ll-transition",
+              shareCopied
+                ? "bg-status-success-bg text-status-success-fg"
+                : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+            )}
           >
             <Share2 className="h-4 w-4" />
           </button>
