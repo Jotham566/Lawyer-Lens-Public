@@ -11,6 +11,7 @@ import { ScreenReaderAnnouncer } from "@/components/accessibility";
 import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 import { useAuth } from "@/components/providers";
 import { BackToTop } from "@/components/common/back-to-top";
+import { LandingFooter } from "@/components/landing/landing-footer";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -19,9 +20,15 @@ interface AppShellProps {
 // Routes that bypass the shell entirely (they have their own layout)
 const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
 
+// Landing routes bypass the shell (they have their own landing layout)
+const LANDING_PREFIX = "/landing";
+
 // Public/marketing routes that always use the header-based layout (even for authenticated users)
 // Note: /help is NOT here — authenticated users see it inside the dashboard shell
 const PUBLIC_HEADER_ROUTES = ["/", "/pricing", "/about", "/contact", "/privacy", "/terms", "/waitlist"];
+
+// Public pages that show the landing footer (static info pages)
+const FOOTER_ROUTES = ["/about", "/contact", "/privacy", "/terms", "/pricing", "/help", "/waitlist"];
 
 /**
  * Application shell — routes between two layouts:
@@ -41,11 +48,19 @@ export function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
+  // Landing routes — no shell (landing has its own header/footer)
+  if (pathname.startsWith(LANDING_PREFIX)) {
+    return <>{children}</>;
+  }
+
   // Authenticated users on app routes → sidebar dashboard shell
   const isPublicHeaderRoute = PUBLIC_HEADER_ROUTES.some((route) => pathname === route);
   if (isAuthenticated && !isPublicHeaderRoute) {
     return <DashboardShell>{children}</DashboardShell>;
   }
+
+  // Should this page show the landing footer?
+  const showFooter = FOOTER_ROUTES.some((route) => pathname === route);
 
   // Unauthenticated users or public pages → header-based layout
   return (
@@ -73,6 +88,7 @@ export function AppShell({ children }: AppShellProps) {
         aria-label="Main content"
       >
         {children}
+        {showFooter && <LandingFooter />}
       </main>
 
       <MobileBottomNav />

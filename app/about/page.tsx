@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 
 export default function AboutPage() {
   return (
-    <div className="container mx-auto max-w-5xl px-4 py-6">
+    <div className="px-6 py-6 lg:px-12 xl:px-20">
       <Breadcrumbs className="mb-6" />
 
       <section className="rounded-hero border border-border/60 bg-surface-container px-6 py-8 shadow-soft sm:px-8 sm:py-10">

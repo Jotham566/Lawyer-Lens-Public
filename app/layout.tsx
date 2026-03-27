@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
 import Script from "next/script";
+import { headers } from "next/headers";
 import "./globals.css";
 import "katex/dist/katex.min.css";
 import { Providers } from "@/components/providers";
@@ -113,11 +114,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const headersList = await headers();
+  const isLandingDomain = headersList.get("x-ll-domain") === "landing";
+  // Also detect /landing path directly (for dev testing on localhost)
+  const pathname = headersList.get("x-next-url") || headersList.get("x-invoke-path") || "";
+  const isLanding = isLandingDomain || pathname.startsWith("/landing");
+
   const umamiHost = process.env.NEXT_PUBLIC_UMAMI_HOST?.replace(/\/+$/, "");
   const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID_PUBLIC;
   const umamiScript =
@@ -136,7 +143,7 @@ export default function RootLayout({
       >
         <Providers>
           <ThemeFavicon />
-          <AppShell>{children}</AppShell>
+          {isLanding ? children : <AppShell>{children}</AppShell>}
           <Toaster richColors position="top-right" />
         </Providers>
         {umamiScript}

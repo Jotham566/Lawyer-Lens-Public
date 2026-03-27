@@ -4,7 +4,7 @@ import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
 
 export default function PrivacyPage() {
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
+    <div className="px-6 py-6 lg:px-12 xl:px-20">
       <Breadcrumbs className="mb-6" />
 
       {/* Header */}
