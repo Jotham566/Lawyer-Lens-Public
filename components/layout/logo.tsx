@@ -9,16 +9,18 @@ interface LogoProps {
   className?: string;
   /** Height of the logo in pixels (default: 155) */
   height?: number;
+  /** Override the default link destination (default: "/") */
+  href?: string;
 }
 
-export function Logo({ collapsed = false, className, height = 155 }: LogoProps) {
+export function Logo({ collapsed = false, className, height = 155, href = "/" }: LogoProps) {
   // Calculate width based on SVG aspect ratio (1264:848 ≈ 1.49)
   const aspectRatio = 1264 / 848;
   const width = Math.round(height * aspectRatio);
 
   return (
     <Link
-      href="/"
+      href={href}
       className={cn(
         "flex items-center transition-opacity hover:opacity-90",
         className

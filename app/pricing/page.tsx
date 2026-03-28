@@ -1,16 +1,19 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { PricingTierCard, PricingTier, PricingFAQ } from "@/components/pricing";
 import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchSubscription } from "@/lib/api/billing";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { useAuth } from "@/components/providers";
 
 export default function PricingPage() {
   const router = useRouter();
+  const { openRegister } = useAuthModal();
+  const { isAuthenticated } = useAuth();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -51,16 +54,19 @@ export default function PricingPage() {
 
   const handleSelectTier = (tier: string) => {
     if (tier === "enterprise") {
-      // Open contact form or mailto
       window.location.href = "mailto:sales@lawlens.io?subject=Enterprise%20Inquiry";
       return;
     }
     if (tier === "free") {
-      router.push("/register");
+      openRegister();
       return;
     }
-    // Navigate to checkout with selected tier and billing cycle
-    router.push(`/checkout?tier=${tier}&billing=${billingCycle}`);
+    // Paid tiers — authenticated users go to checkout, others register first
+    if (isAuthenticated) {
+      router.push(`/checkout?tier=${tier}&billing=${billingCycle}`);
+    } else {
+      openRegister(`/checkout?tier=${tier}&billing=${billingCycle}`);
+    }
   };
 
   return (
@@ -310,10 +316,13 @@ export default function PricingPage() {
             Start with a free account and upgrade when you&apos;re ready.
             No credit card required.
           </p>
-          <Button asChild variant="brand" size="lg">
-            <Link href="/register" aria-label="Get started with a free account">
-              Get Started Free
-            </Link>
+          <Button
+            variant="brand"
+            size="lg"
+            onClick={() => openRegister()}
+            aria-label="Get started with a free account"
+          >
+            Get Started Free
           </Button>
         </div>
       </section>

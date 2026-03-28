@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import { headers } from "next/headers";
+import { LandingShell } from "./landing-shell";
 
 export const metadata: Metadata = {
   title: "Pricing - Law Lens Uganda Legal Intelligence | AI Legal Research Plans",
@@ -141,7 +142,7 @@ export default async function PricingLayout({
         nonce={nonce}
         dangerouslySetInnerHTML={{ __html: JSON.stringify(pricingJsonLd) }}
       />
-      {children}
+      <LandingShell>{children}</LandingShell>
     </>
   );
 }

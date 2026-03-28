@@ -3,29 +3,29 @@
 import { useState } from "react";
 import { X, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
-interface DemoRequestModalProps {
+interface ContactModalProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }
 
-export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) {
+export function ContactModal({ open, onOpenChange }: ContactModalProps) {
   const [form, setForm] = useState({
-    name: "",
+    firstName: "",
+    lastName: "",
     email: "",
     phone: "",
-    organization: "",
-    role: "",
+    subject: "",
     message: "",
   });
   const [status, setStatus] = useState<"idle" | "sending" | "sent" | "error">("idle");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.name.trim() || !form.email.trim()) return;
+    if (!form.firstName.trim() || !form.email.trim() || !form.message.trim()) return;
 
     setStatus("sending");
     try {
-      const res = await fetch("/api/demo-request", {
+      const res = await fetch("/api/contact", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(form),
@@ -40,10 +40,9 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
 
   const handleClose = () => {
     onOpenChange(false);
-    // Reset after animation
     setTimeout(() => {
       setStatus("idle");
-      setForm({ name: "", email: "", phone: "", organization: "", role: "", message: "" });
+      setForm({ firstName: "", lastName: "", email: "", phone: "", subject: "", message: "" });
     }, 200);
   };
 
@@ -58,7 +57,7 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
       />
 
       {/* Modal */}
-      <div className="relative mx-4 w-full max-w-lg rounded-2xl border border-border/50 bg-card p-8 shadow-2xl dark:border-glass/50">
+      <div className="relative mx-4 max-h-[90vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-border/50 bg-card p-8 shadow-2xl dark:border-glass/50">
         <button
           type="button"
           onClick={handleClose}
@@ -68,14 +67,13 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
         </button>
 
         {status === "sent" ? (
-          /* Success state */
           <div className="py-8 text-center">
             <CheckCircle2 className="mx-auto h-12 w-12 text-green-500" />
             <h2 className="mt-4 text-2xl font-extrabold tracking-tight">
-              Request received
+              Message sent
             </h2>
             <p className="mt-2 text-sm text-muted-foreground">
-              We&apos;ll be in touch within one business day to schedule your demo.
+              Thank you for reaching out. We&apos;ll get back to you within one business day.
             </p>
             <button
               type="button"
@@ -86,63 +84,79 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
             </button>
           </div>
         ) : (
-          /* Form state */
           <>
             <h2 className="text-xl font-extrabold tracking-tight">
-              Request a Demo
+              Get in touch
             </h2>
             <p className="mt-1.5 text-sm text-muted-foreground">
-              See how Law Lens can support your institution with faster research,
-              grounded answers, and compliance visibility.
+              Whether you&apos;re interested in a demo, enterprise deployment, or have
+              questions — we&apos;d love to hear from you.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 space-y-4">
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
                   <label
-                    htmlFor="demo-name"
+                    htmlFor="contact-first"
                     className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                   >
-                    Full Name *
+                    First Name *
                   </label>
                   <input
-                    id="demo-name"
+                    id="contact-first"
                     type="text"
                     required
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    value={form.firstName}
+                    onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
                     className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Jane Nakamya"
+                    placeholder="Jane"
                   />
                 </div>
                 <div>
                   <label
-                    htmlFor="demo-email"
+                    htmlFor="contact-last"
                     className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                   >
-                    Work Email *
+                    Last Name
                   </label>
                   <input
-                    id="demo-email"
-                    type="email"
-                    required
-                    value={form.email}
-                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    id="contact-last"
+                    type="text"
+                    value={form.lastName}
+                    onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
                     className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="jane@example.com"
+                    placeholder="Doe"
                   />
                 </div>
               </div>
 
               <div>
                 <label
-                  htmlFor="demo-phone"
+                  htmlFor="contact-email"
+                  className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                >
+                  Email *
+                </label>
+                <input
+                  id="contact-email"
+                  type="email"
+                  required
+                  value={form.email}
+                  onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                  className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                  placeholder="jane@example.com"
+                />
+              </div>
+
+              <div>
+                <label
+                  htmlFor="contact-phone"
                   className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
                   Phone Number
                 </label>
                 <input
-                  id="demo-phone"
+                  id="contact-phone"
                   type="tel"
                   value={form.phone}
                   onChange={(e) => setForm((f) => ({ ...f, phone: e.target.value }))}
@@ -151,63 +165,51 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
                 />
               </div>
 
-              <div className="grid gap-4 sm:grid-cols-2">
-                <div>
-                  <label
-                    htmlFor="demo-org"
-                    className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
-                  >
-                    Organization
-                  </label>
-                  <input
-                    id="demo-org"
-                    type="text"
-                    value={form.organization}
-                    onChange={(e) => setForm((f) => ({ ...f, organization: e.target.value }))}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="Your organization"
-                  />
-                </div>
-                <div>
-                  <label
-                    htmlFor="demo-role"
-                    className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
-                  >
-                    Role
-                  </label>
-                  <input
-                    id="demo-role"
-                    type="text"
-                    value={form.role}
-                    onChange={(e) => setForm((f) => ({ ...f, role: e.target.value }))}
-                    className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                    placeholder="e.g. Legal Counsel, CTO"
-                  />
-                </div>
+              <div>
+                <label
+                  htmlFor="contact-subject"
+                  className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
+                >
+                  Subject
+                </label>
+                <select
+                  id="contact-subject"
+                  value={form.subject}
+                  onChange={(e) => setForm((f) => ({ ...f, subject: e.target.value }))}
+                  className="mt-1.5 h-10 w-full rounded-lg border border-border/60 bg-background px-3 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+                >
+                  <option value="">Select a topic...</option>
+                  <option value="demo">Request a Demo</option>
+                  <option value="enterprise">Enterprise Inquiry</option>
+                  <option value="partnership">Partnership</option>
+                  <option value="support">Technical Support</option>
+                  <option value="other">Other</option>
+                </select>
               </div>
 
               <div>
                 <label
-                  htmlFor="demo-message"
+                  htmlFor="contact-message"
                   className="block text-[11px] font-bold uppercase tracking-widest text-muted-foreground"
                 >
-                  What are you looking to solve?
+                  Message *
                 </label>
                 <textarea
-                  id="demo-message"
-                  rows={3}
+                  id="contact-message"
+                  rows={4}
+                  required
                   value={form.message}
                   onChange={(e) => setForm((f) => ({ ...f, message: e.target.value }))}
                   className="mt-1.5 w-full rounded-lg border border-border/60 bg-background px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
-                  placeholder="Optional — tell us about your use case"
+                  placeholder="Tell us about your needs..."
                 />
               </div>
 
               {status === "error" && (
                 <p className="text-sm text-red-500">
                   Something went wrong. Please try again or email us at{" "}
-                  <a href="mailto:sales@lawlens.io" className="underline">
-                    sales@lawlens.io
+                  <a href="mailto:info@lawlens.io" className="underline">
+                    info@lawlens.io
                   </a>
                 </p>
               )}
@@ -224,7 +226,7 @@ export function DemoRequestModal({ open, onOpenChange }: DemoRequestModalProps) 
                   </>
                 ) : (
                   <>
-                    Request Demo
+                    Send Message
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                   </>
                 )}

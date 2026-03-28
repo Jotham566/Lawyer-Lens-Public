@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
+import { MapPin, Phone, Mail } from "lucide-react";
 
 interface FooterLink {
   label: string;
@@ -9,12 +10,11 @@ interface FooterLink {
 const footerLinks: Record<string, FooterLink[]> = {
   Product: [
     { label: "Features", href: "/landing#features" },
-    { label: "Pricing", href: "/landing/pricing" },
+    { label: "Pricing", href: "/pricing" },
     { label: "Uganda Portal", href: "/chat" },
   ],
   Company: [
-    { label: "About", href: "/landing/about" },
-    { label: "Contact", href: "/landing/contact" },
+    { label: "About", href: "/about" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
@@ -40,6 +40,36 @@ export function LandingFooter() {
               grounded answers, and clearer visibility into legal risk,
               compliance, and regulatory change.
             </p>
+
+            {/* Address */}
+            <div className="mt-6 space-y-2.5 text-sm text-muted-foreground">
+              <div className="flex items-start gap-2.5">
+                <MapPin className="mt-0.5 h-4 w-4 shrink-0 text-brand-gold/70" />
+                <span>
+                  National ICT Innovation Hub
+                  <br />
+                  Plot 19-21 Port Bell Road, Kampala
+                </span>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Phone className="h-4 w-4 shrink-0 text-brand-gold/70" />
+                <a
+                  href="tel:+256750990718"
+                  className="transition-colors hover:text-foreground"
+                >
+                  +256 750 990 718
+                </a>
+              </div>
+              <div className="flex items-center gap-2.5">
+                <Mail className="h-4 w-4 shrink-0 text-brand-gold/70" />
+                <a
+                  href="mailto:info@lawlens.io"
+                  className="transition-colors hover:text-foreground"
+                >
+                  info@lawlens.io
+                </a>
+              </div>
+            </div>
           </div>
 
           {/* Link Columns */}

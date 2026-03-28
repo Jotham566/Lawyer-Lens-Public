@@ -70,7 +70,7 @@ export default function LandingPage() {
       {/* ─────────────────────────────────────────────────────
           HERO — One message, one CTA, one proof element
           ───────────────────────────────────────────────────── */}
-      <section className="relative isolate overflow-hidden pt-32 pb-0 lg:pt-40">
+      <section className="relative isolate overflow-hidden pt-40 pb-0 lg:pt-48">
         {/* Background — restrained */}
         <div className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-primary/[0.02] to-transparent dark:from-primary/[0.06]" />

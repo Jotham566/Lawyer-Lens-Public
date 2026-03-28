@@ -48,9 +48,9 @@ export function DashboardSidebar() {
 
   return (
     <aside className="hidden lg:flex w-64 shrink-0 flex-col bg-sidebar border-r border-sidebar-border">
-      {/* Logo */}
+      {/* Logo — links to landing page */}
       <div className="flex h-16 items-center px-5">
-        <Logo />
+        <Logo href="/landing" />
       </div>
 
       {/* Primary navigation */}

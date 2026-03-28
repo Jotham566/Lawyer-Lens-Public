@@ -27,6 +27,7 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Mail, CheckCircle2, Clock, AlertCircle, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
 
 interface WaitlistStatus {
   email?: string;
@@ -42,6 +43,7 @@ const USE_MOCK_DATA = process.env.NEXT_PUBLIC_USE_MOCK_WAITLIST === "true";
 
 function WaitlistStatusContent() {
   const searchParams = useSearchParams();
+  const { openRegister, openLogin } = useAuthModal();
   const [status, setStatus] = useState<WaitlistStatus | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -196,8 +198,8 @@ function WaitlistStatusContent() {
               <p className="text-sm text-muted-foreground text-center mb-4">
                 Can&apos;t find the email? Check your spam folder or contact support.
               </p>
-              <Button asChild className="w-full">
-                <Link href="/register">Register Now</Link>
+              <Button className="w-full" onClick={() => openRegister()}>
+                Register Now
               </Button>
             </div>
           </CardContent>
@@ -226,8 +228,8 @@ function WaitlistStatusContent() {
             <p className="text-center text-muted-foreground">
               You&apos;ve already registered with <strong>{status.email || email || "this account"}</strong>
             </p>
-            <Button asChild className="w-full">
-              <Link href="/login">Sign In</Link>
+            <Button className="w-full" onClick={() => openLogin()}>
+              Sign In
             </Button>
           </CardContent>
         </Card>

@@ -2,24 +2,27 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { Menu, X } from "lucide-react";
+import { Menu, X, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
+import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { DemoRequestModal } from "./demo-request-modal";
+import { ContactModal } from "./contact-modal";
 
 const navLinks = [
   { label: "Product", href: "/landing#product" },
-  { label: "Pricing", href: "/landing/pricing" },
-  { label: "About", href: "/landing/about" },
-  { label: "Contact", href: "/landing/contact" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "About", href: "/about" },
 ];
 
 export function LandingHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
+  const [showContactModal, setShowContactModal] = useState(false);
   const { openLogin } = useAuthModal();
+  const { isAuthenticated, user } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -34,6 +37,16 @@ export function LandingHeader() {
     },
     [openLogin]
   );
+
+  // Get user initials for avatar
+  const initials = user?.full_name
+    ? user.full_name
+        .split(" ")
+        .map((n) => n[0])
+        .join("")
+        .toUpperCase()
+        .slice(0, 2)
+    : "U";
 
   return (
     <>
@@ -60,24 +73,52 @@ export function LandingHeader() {
                 {link.label}
               </Link>
             ))}
-          </nav>
-
-          {/* Desktop CTA */}
-          <div className="hidden items-center gap-6 md:flex">
             <button
               type="button"
-              onClick={handleLogin}
+              onClick={() => setShowContactModal(true)}
               className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
-              Log In
+              Contact
             </button>
-            <button
-              type="button"
-              onClick={() => setShowDemoModal(true)}
-              className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
-            >
-              Request Demo
-            </button>
+          </nav>
+
+          {/* Desktop CTA — changes based on auth state */}
+          <div className="hidden items-center gap-4 md:flex">
+            {isAuthenticated ? (
+              <>
+                <Link
+                  href="/chat"
+                  className="group inline-flex h-9 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Go to Dashboard
+                  <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
+                </Link>
+                <Link
+                  href="/settings"
+                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/20 text-xs font-bold text-brand-gold transition-colors hover:bg-brand-gold/30"
+                  title={user?.full_name || user?.email || "Account"}
+                >
+                  {initials}
+                </Link>
+              </>
+            ) : (
+              <>
+                <button
+                  type="button"
+                  onClick={handleLogin}
+                  className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  Log In
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setShowDemoModal(true)}
+                  className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Request Demo
+                </button>
+              </>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -105,33 +146,66 @@ export function LandingHeader() {
                   {link.label}
                 </Link>
               ))}
-              <hr className="my-2 border-border/40" />
-              <button
-                type="button"
-                onClick={(e) => {
-                  setMobileOpen(false);
-                  handleLogin(e);
-                }}
-                className="rounded-lg px-3 py-2.5 text-left text-base font-semibold text-muted-foreground"
-              >
-                Log In
-              </button>
               <button
                 type="button"
                 onClick={() => {
                   setMobileOpen(false);
-                  setShowDemoModal(true);
+                  setShowContactModal(true);
                 }}
-                className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                className="rounded-lg px-3 py-2.5 text-left text-base font-semibold text-foreground transition-colors hover:bg-surface-container-high"
               >
-                Request Demo
+                Contact
               </button>
+              <hr className="my-2 border-border/40" />
+
+              {isAuthenticated ? (
+                <>
+                  <Link
+                    href="/chat"
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-base font-semibold text-foreground transition-colors hover:bg-surface-container-high"
+                  >
+                    Go to Dashboard
+                  </Link>
+                  <Link
+                    href="/settings"
+                    onClick={() => setMobileOpen(false)}
+                    className="rounded-lg px-3 py-2.5 text-base font-semibold text-muted-foreground"
+                  >
+                    {user?.full_name || "Account Settings"}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      setMobileOpen(false);
+                      handleLogin(e);
+                    }}
+                    className="rounded-lg px-3 py-2.5 text-left text-base font-semibold text-muted-foreground"
+                  >
+                    Log In
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      setShowDemoModal(true);
+                    }}
+                    className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                  >
+                    Request Demo
+                  </button>
+                </>
+              )}
             </nav>
           </div>
         )}
       </header>
 
       <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
+      <ContactModal open={showContactModal} onOpenChange={setShowContactModal} />
     </>
   );
 }

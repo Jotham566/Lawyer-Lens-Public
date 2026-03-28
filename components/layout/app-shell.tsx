@@ -23,12 +23,11 @@ const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 // Landing routes bypass the shell (they have their own landing layout)
 const LANDING_PREFIX = "/landing";
 
-// Public/marketing routes that always use the header-based layout (even for authenticated users)
-// Note: /help is NOT here — authenticated users see it inside the dashboard shell
-const PUBLIC_HEADER_ROUTES = ["/privacy", "/terms", "/waitlist", "/help"];
+// Pages that always bypass the app shell (landing header/footer regardless of auth)
+const LANDING_PAGES = ["/pricing", "/about", "/privacy", "/terms", "/waitlist"];
 
-// Public pages that show the landing footer (static info pages)
-const FOOTER_ROUTES = ["/privacy", "/terms", "/help", "/waitlist"];
+// Pages that use landing layout only for unauthenticated users, dashboard for authenticated
+const HYBRID_PAGES = ["/help"];
 
 /**
  * Application shell — routes between two layouts:
@@ -39,7 +38,7 @@ const FOOTER_ROUTES = ["/privacy", "/terms", "/help", "/waitlist"];
  */
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, isLoading } = useAuth();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   // Auth routes — no shell at all
@@ -49,18 +48,34 @@ export function AppShell({ children }: AppShellProps) {
   }
 
   // Landing routes — no shell (landing has its own header/footer)
-  if (pathname.startsWith(LANDING_PREFIX)) {
+  const isLandingPage = pathname.startsWith(LANDING_PREFIX) || LANDING_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  if (isLandingPage) {
+    return <>{children}</>;
+  }
+
+  // While auth is loading on app routes, show minimal loading state
+  // to avoid flashing the public shell before the dashboard appears
+  if (isLoading) {
+    return (
+      <div className="fixed inset-0 flex items-center justify-center bg-background">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+      </div>
+    );
+  }
+
+  // Hybrid pages — landing layout for unauthenticated, dashboard for authenticated
+  const isHybridPage = HYBRID_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  if (isHybridPage && !isAuthenticated) {
     return <>{children}</>;
   }
 
   // Authenticated users on app routes → sidebar dashboard shell
-  const isPublicHeaderRoute = PUBLIC_HEADER_ROUTES.some((route) => pathname === route);
-  if (isAuthenticated && !isPublicHeaderRoute) {
+  if (isAuthenticated) {
     return <DashboardShell>{children}</DashboardShell>;
   }
 
   // Should this page show the landing footer?
-  const showFooter = FOOTER_ROUTES.some((route) => pathname === route);
+  const showFooter = false;
 
   // Unauthenticated users or public pages → header-based layout
   return (
