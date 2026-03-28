@@ -10,7 +10,10 @@ interface AppShellProps {
 }
 
 // Routes that bypass the shell entirely (they have their own layout)
-const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password", "/verify-email"];
+const AUTH_ROUTES = [
+  "/login", "/register", "/forgot-password", "/reset-password", "/verify-email",
+  "/invite", "/auth/callback", "/account/delete",
+];
 
 // Landing routes bypass the shell (they have their own landing layout)
 const LANDING_PREFIX = "/landing";
