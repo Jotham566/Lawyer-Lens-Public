@@ -356,9 +356,9 @@ export default function InvoicesPage() {
       <div className="mt-6 text-center text-sm text-muted-foreground">
         <p>
           Need help with an invoice?{" "}
-          <Link href="/contact" className="text-primary hover:underline">
+          <a href="mailto:hello@lawlens.io" className="text-primary hover:underline">
             Contact our support team
-          </Link>
+          </a>
         </p>
       </div>
     </div>

@@ -304,9 +304,9 @@ export default function PlansPage() {
           <Link href="/help">
             <Button variant="outline">View FAQ</Button>
           </Link>
-          <Link href="/contact">
+          <a href="mailto:sales@lawlens.io">
             <Button>Contact Sales</Button>
-          </Link>
+          </a>
         </div>
       </div>
     </div>

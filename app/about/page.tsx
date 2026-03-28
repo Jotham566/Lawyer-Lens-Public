@@ -1,124 +1,168 @@
-import { Scale, Users, Target, BookOpen } from "lucide-react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Breadcrumbs } from "@/components/navigation/breadcrumbs";
+import {
+  Search,
+  Shield,
+  FileSearch,
+  GitCompare,
+  BookOpen,
+  Scale,
+  Building2,
+  Globe,
+  Briefcase,
+} from "lucide-react";
 
 export default function AboutPage() {
   return (
-    <div className="px-6 py-6 lg:px-12 xl:px-20">
-      <Breadcrumbs className="mb-6" />
-
-      <section className="rounded-hero border border-border/60 bg-surface-container px-6 py-8 shadow-soft sm:px-8 sm:py-10">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
-          About
-        </p>
-        <h1 className="mt-4 font-serif text-4xl font-semibold tracking-[-0.03em] text-foreground sm:text-5xl">
-          About Law Lens Uganda
-        </h1>
-        <p className="mt-4 max-w-3xl text-base leading-8 text-muted-foreground">
-          Uganda&apos;s Legal Intelligence Platform
-        </p>
-        <div className="mt-8 grid gap-4 md:grid-cols-[1.2fr_0.8fr]">
-          <div className="rounded-panel bg-surface-container-high px-6 py-6">
-            <h2 className="text-xl font-semibold">Our Mission</h2>
-            <p className="mt-4 leading-8 text-muted-foreground">
-              Law Lens Uganda is dedicated to making Uganda&apos;s legal information accessible,
-              searchable, and understandable. We provide legal professionals, researchers,
-              students, and citizens with instant access to legislation, court judgments,
-              and regulatory documents.
-            </p>
-          </div>
-          <div className="rounded-panel bg-surface-container-high px-6 py-6">
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
-              Positioning
-            </p>
-            <p className="mt-4 font-serif text-2xl font-semibold leading-tight text-foreground">
-              A legal research surface that feels institutional, current, and authoritative.
-            </p>
-          </div>
-        </div>
-      </section>
-
-      {/* Mission */}
-      <section className="mt-10">
-        <div className="mb-5">
-          <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
-            Capabilities
+    <div className="px-6 py-10 lg:px-12 xl:px-20">
+      {/* Hero — generous, sets the tone */}
+      <section className="grid gap-10 lg:grid-cols-2 lg:gap-16">
+        <div>
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+            About
           </p>
-          <h2 className="mt-3 font-serif text-3xl font-semibold tracking-[-0.02em] text-foreground">
-            What We Offer
-          </h2>
+          <h1 className="mt-4 text-3xl font-extrabold tracking-tight lg:text-4xl">
+            About Law Lens Uganda
+          </h1>
+          <p className="mt-5 text-[15px] leading-[1.75] text-muted-foreground">
+            Law Lens Uganda is a legal intelligence platform built to help
+            institutions and legal professionals search the law faster, work with
+            grounded legal answers, and stay ahead of legal risk, compliance, and
+            regulatory change.
+          </p>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
-          <Card className="border-border/60 bg-surface-container shadow-soft">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <BookOpen className="h-5 w-5 text-primary" />
-                Comprehensive Legal Database
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Access thousands of Acts of Parliament, court judgments, regulations,
-                and the Constitution of Uganda.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60 bg-surface-container shadow-soft">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Target className="h-5 w-5 text-primary" />
-                Instant Answers
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Get quick answers to legal questions with citations to authoritative
-                sources and relevant provisions.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60 bg-surface-container shadow-soft">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Users className="h-5 w-5 text-primary" />
-                For Everyone
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                Whether you&apos;re a lawyer, student, researcher, or citizen,
-                Law Lens Uganda helps you navigate Uganda&apos;s legal landscape.
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border/60 bg-surface-container shadow-soft">
-            <CardHeader className="pb-2">
-              <CardTitle className="flex items-center gap-2 text-base">
-                <Scale className="h-5 w-5 text-primary" />
-                Authoritative Sources
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                All documents are sourced from official publications and verified
-                for accuracy and completeness.
-              </p>
-            </CardContent>
-          </Card>
+        {/* Anchor panel — institutional positioning */}
+        <div className="flex flex-col justify-center rounded-xl border border-brand-gold/20 bg-primary/[0.03] p-8 dark:bg-primary/[0.06]">
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+            Our Focus
+          </p>
+          <h2 className="mt-3 text-xl font-extrabold tracking-tight lg:text-2xl">
+            Built for institutions where legal accuracy, trust, and timeliness matter
+          </h2>
+          <p className="mt-4 text-[15px] leading-[1.75] text-muted-foreground">
+            We are building Law Lens to make judgments, laws, contracts, policies,
+            and internal records searchable, usable, and actionable — without
+            forcing teams to work through fragmented PDFs, drives, archives, and
+            manual compliance workflows.
+          </p>
         </div>
       </section>
 
-      {/* Disclaimer */}
-      <section className="mt-10 rounded-panel border border-border/60 bg-surface-container px-6 py-6 shadow-soft">
-        <h2 className="font-serif text-2xl font-semibold tracking-[-0.02em] text-foreground">Legal Disclaimer</h2>
-        <p className="mt-4 text-sm leading-7 text-muted-foreground">
-          The information provided on Law Lens Uganda is for general informational purposes
-          only and does not constitute legal advice. While we strive to ensure accuracy,
-          we make no warranties about the completeness or reliability of the information.
-          For specific legal matters, please consult a qualified legal professional.
+      {/* What We Do — 2×2 grid, the largest section */}
+      <section className="mt-16">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+          What We Do
+        </p>
+        <h2 className="mt-3 text-2xl font-extrabold tracking-tight">
+          Core capabilities
+        </h2>
+
+        <div className="mt-10 grid gap-px overflow-hidden rounded-2xl border border-border/40 bg-border/40 sm:grid-cols-2 dark:border-glass/40 dark:bg-glass/40">
+          {[
+            {
+              icon: Search,
+              title: "Legal Research Automation",
+              description:
+                "Search judgments, statutes, and regulations in plain language and get to relevant authorities faster.",
+            },
+            {
+              icon: Shield,
+              title: "Grounded Legal Intelligence",
+              description:
+                "Work with citation-backed answers, verified sources, and traceable legal analysis.",
+            },
+            {
+              icon: BookOpen,
+              title: "Internal Knowledge Intelligence",
+              description:
+                "Turn contracts, policies, employee records, and archived documents into usable institutional knowledge.",
+            },
+            {
+              icon: GitCompare,
+              title: "Compliance & Regulatory Monitoring",
+              description:
+                "Track obligations, surface legal exposure, and understand how legal and regulatory change may affect the organization.",
+            },
+          ].map((item) => (
+            <div key={item.title} className="flex gap-4 bg-card p-8">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-gold/10 text-brand-gold">
+                <item.icon className="h-[18px] w-[18px]" />
+              </div>
+              <div>
+                <h3 className="text-[15px] font-bold tracking-tight">
+                  {item.title}
+                </h3>
+                <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+                  {item.description}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Who We Serve — compact list */}
+      <section className="mt-16">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+          Who We Serve
+        </p>
+        <div className="mt-6 flex flex-wrap gap-3">
+          {[
+            { icon: Scale, label: "Judiciary, courts & tribunals" },
+            { icon: Building2, label: "Law firms" },
+            { icon: Globe, label: "Regulators & tax teams" },
+            { icon: FileSearch, label: "Corporate legal & compliance" },
+            { icon: Briefcase, label: "Solo practitioners" },
+          ].map((item) => (
+            <div
+              key={item.label}
+              className="inline-flex items-center gap-2.5 rounded-full border border-border/40 bg-card px-5 py-2.5 text-sm font-semibold dark:border-glass/40"
+            >
+              <item.icon className="h-4 w-4 text-brand-gold" />
+              {item.label}
+            </div>
+          ))}
+        </div>
+      </section>
+
+      {/* Why It Matters — elevated, more weight */}
+      <section className="mt-16 border-t-2 border-brand-gold/20 bg-primary/[0.03] -mx-6 px-6 py-14 lg:-mx-12 lg:px-12 xl:-mx-20 xl:px-20 dark:bg-primary/[0.06]">
+        <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+          <div className="lg:col-span-5">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+              Why It Matters
+            </p>
+            <h2 className="mt-3 text-2xl font-extrabold tracking-tight lg:text-3xl">
+              From reactive legal work to informed action
+            </h2>
+          </div>
+          <div className="lg:col-span-7">
+            <p className="text-[15px] leading-[1.75] text-muted-foreground">
+              Legal and regulatory information is often available, but not
+              operationally usable. Law Lens is built to reduce research time,
+              improve visibility, and help institutions move from reactive legal
+              work to more informed action.
+            </p>
+            <p className="mt-4 text-[15px] leading-[1.75] text-muted-foreground">
+              By making judgments, laws, contracts, and internal records
+              searchable and actionable in one system, we help legal and
+              compliance teams spend less time searching and more time on work
+              that matters.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* Closing — compact */}
+      <section className="mt-14 rounded-xl border border-border/40 bg-surface-container-low p-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+          Uganda-First
+        </p>
+        <h2 className="mt-3 text-lg font-bold tracking-tight">
+          Built for institutional adoption
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          We are starting with Uganda&apos;s legal and regulatory landscape,
+          with a focus on building trusted tools that fit how legal and
+          compliance work actually happens.
         </p>
       </section>
     </div>

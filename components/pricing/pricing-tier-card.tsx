@@ -75,6 +75,7 @@ const FEATURE_LABELS: Record<string, string> = {
   roleBasedAccess: "Role-based access",
   sharedWorkspaces: "Shared workspaces",
   activityLogs: "Activity logs",
+  privateKnowledgeBase: "Private organizational knowledge base",
   ssoSaml: "SSO/SAML",
   customIntegrations: "Custom integrations",
   apiAccess: "API access",
@@ -190,15 +191,15 @@ export function PricingTierCard({
             )}
 
             {/* Key Features */}
-            {enabledFeatures.slice(0, 6).map((feature) => (
+            {enabledFeatures.slice(0, isEnterprise ? 8 : 6).map((feature) => (
               <li key={feature} className="flex items-start gap-2 text-sm">
                 <Check className="h-4 w-4 text-primary mt-0.5 shrink-0" />
                 <span>{feature}</span>
               </li>
             ))}
-            {enabledFeatures.length > 6 && (
+            {enabledFeatures.length > (isEnterprise ? 8 : 6) && (
               <li className="text-sm text-muted-foreground pl-6">
-                +{enabledFeatures.length - 6} more features
+                +{enabledFeatures.length - (isEnterprise ? 8 : 6)} more features
               </li>
             )}
           </ul>

@@ -4,23 +4,23 @@ import { headers } from "next/headers";
 import { LandingShell } from "./landing-shell";
 
 export const metadata: Metadata = {
-  title: "Pricing - Law Lens Uganda Legal Intelligence | AI Legal Research Plans",
+  title: "Pricing — Plans for Legal Research, Compliance & Enterprise | Law Lens",
   description:
-    "Choose the perfect plan for your legal research needs. From free basic access to enterprise solutions. AI-powered legal research for Uganda with transparent pricing.",
+    "Plans for solo practitioners, law firms, and institutional deployments. Citation-backed legal research, compliance monitoring, and internal knowledge intelligence.",
   keywords: [
-    "legal research pricing",
-    "AI legal assistant pricing",
-    "Uganda legal database",
-    "law firm software pricing",
-    "legal tech subscription",
-    "legal research tools",
-    "contract analysis software",
-    "legal document management",
+    "legal intelligence pricing",
+    "legal research platform",
+    "Uganda legal technology",
+    "law firm legal research",
+    "compliance monitoring software",
+    "enterprise legal tools",
+    "contract analysis pricing",
+    "regulatory change monitoring",
   ],
   openGraph: {
-    title: "Pricing Plans | Law Lens Uganda Legal Intelligence",
+    title: "Pricing — Law Lens Legal Intelligence",
     description:
-      "Simple, transparent pricing for AI-powered legal research. Start free, upgrade when ready. Plans for solo practitioners, teams, and enterprises.",
+      "Plans for every stage of legal practice. Solo practitioners, firms, and institutional deployments with citation-backed research and compliance monitoring.",
     type: "website",
     url: "/pricing",
     siteName: "Law Lens Uganda Legal Intelligence",
@@ -53,9 +53,9 @@ export const metadata: Metadata = {
 const pricingJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
-  name: "Pricing - Law Lens Uganda Legal Intelligence",
+  name: "Pricing — Law Lens Legal Intelligence",
   description:
-    "Choose the perfect plan for AI-powered legal research in Uganda",
+    "Plans for legal research, compliance monitoring, and institutional deployments",
   url: "https://lawlens.io/pricing",
   mainEntity: {
     "@type": "ItemList",
@@ -64,12 +64,12 @@ const pricingJsonLd = {
         "@type": "Product",
         position: 1,
         name: "Free Plan",
-        description: "Basic legal research access with 50 AI queries per month",
+        description: "Basic citation-backed legal research with 50 AI queries per month",
         offers: {
           "@type": "Offer",
           price: "0",
           priceCurrency: "USD",
-          priceValidUntil: "2025-12-31",
+          priceValidUntil: "2026-12-31",
         },
       },
       {
@@ -77,12 +77,12 @@ const pricingJsonLd = {
         position: 2,
         name: "Professional Plan",
         description:
-          "For solo practitioners with 500 AI queries, contract drafting, and deep research",
+          "For solo practitioners — 500 AI queries, contract analysis, deep research, and compliance tools",
         offers: {
           "@type": "Offer",
           price: "25",
           priceCurrency: "USD",
-          priceValidUntil: "2025-12-31",
+          priceValidUntil: "2026-12-31",
           billingDuration: "P1M",
         },
       },
@@ -91,12 +91,12 @@ const pricingJsonLd = {
         position: 3,
         name: "Team Plan",
         description:
-          "For law firms and teams with 2000 AI queries per user, team management, and SSO",
+          "For law firms and legal teams — 2000 AI queries per user, shared workspaces, and team management",
         offers: {
           "@type": "Offer",
           price: "30",
           priceCurrency: "USD",
-          priceValidUntil: "2025-12-31",
+          priceValidUntil: "2026-12-31",
           billingDuration: "P1M",
           eligibleQuantity: {
             "@type": "QuantitativeValue",
@@ -109,7 +109,7 @@ const pricingJsonLd = {
         position: 4,
         name: "Enterprise Plan",
         description:
-          "Custom solutions with unlimited queries, private knowledge base, and dedicated support",
+          "For courts, regulators, and large organizations — unlimited queries, private knowledge base, compliance monitoring, and dedicated support",
         offers: {
           "@type": "Offer",
           priceSpecification: {
@@ -122,8 +122,8 @@ const pricingJsonLd = {
   },
   provider: {
     "@type": "Organization",
-    name: "Law Lens Uganda Legal Intelligence",
-    url: "https://lawlens.ug",
+    name: "Law Lens",
+    url: "https://lawlens.io",
   },
 };
 

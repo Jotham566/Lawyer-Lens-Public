@@ -14,6 +14,8 @@ import {
 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { useGetStarted } from "@/hooks/use-get-started";
+import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -28,8 +30,9 @@ import { useEntitlements } from "@/hooks/use-entitlements";
 
 export function UserMenu() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
-  const { openLogin, openRegister } = useAuthModal();
+  const { openLogin } = useAuthModal();
   const { entitlements } = useEntitlements();
+  const { handleGetStarted: onGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
   const isFreeTier = !entitlements || entitlements.tier === "free";
   const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";
 
@@ -55,9 +58,10 @@ export function UserMenu() {
           <LogIn className="h-4 w-4 sm:hidden" />
           <span className="hidden sm:inline">Sign in</span>
         </Button>
-        <Button size="sm" onClick={() => openRegister()} className="rounded-full">
+        <Button size="sm" onClick={() => onGetStarted()} className="rounded-full">
           Get Started
         </Button>
+        <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
       </div>
     );
   }

@@ -24,10 +24,7 @@ const AUTH_ROUTES = ["/login", "/register", "/forgot-password", "/reset-password
 const LANDING_PREFIX = "/landing";
 
 // Pages that always bypass the app shell (landing header/footer regardless of auth)
-const LANDING_PAGES = ["/pricing", "/about", "/privacy", "/terms", "/waitlist"];
-
-// Pages that use landing layout only for unauthenticated users, dashboard for authenticated
-const HYBRID_PAGES = ["/help"];
+const LANDING_PAGES = ["/pricing", "/about", "/privacy", "/terms", "/waitlist", "/help"];
 
 /**
  * Application shell — routes between two layouts:
@@ -61,12 +58,6 @@ export function AppShell({ children }: AppShellProps) {
         <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
       </div>
     );
-  }
-
-  // Hybrid pages — landing layout for unauthenticated, dashboard for authenticated
-  const isHybridPage = HYBRID_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
-  if (isHybridPage && !isAuthenticated) {
-    return <>{children}</>;
   }
 
   // Authenticated users on app routes → sidebar dashboard shell

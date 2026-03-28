@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState } from "react";
 import {
   Search,
   Shield,
@@ -15,12 +15,10 @@ import {
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/landing";
-import { getRepositoryStats, getPublicBetaMode } from "@/lib/api";
-import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { getRepositoryStats } from "@/lib/api";
 import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import { DemoRequestModal } from "@/components/landing/demo-request-modal";
-
-
+import { useGetStarted } from "@/hooks/use-get-started";
 
 /* ═══════════════════════════════════════════════════════════
    LANDING PAGE
@@ -28,34 +26,13 @@ import { DemoRequestModal } from "@/components/landing/demo-request-modal";
    stronger typography, more restraint, more proof.
    ═══════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const { openRegister } = useAuthModal();
-  const [betaEnabled, setBetaEnabled] = useState(false);
-  const [showWaitlist, setShowWaitlist] = useState(false);
+  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   // Force scroll to top on mount/refresh
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
-
-  // Check beta mode
-  useEffect(() => {
-    getPublicBetaMode()
-      .then((res) => setBetaEnabled(res.enabled))
-      .catch(() => {});
-  }, []);
-
-  const handleGetStarted = useCallback(
-    (e: React.MouseEvent) => {
-      e.preventDefault();
-      if (betaEnabled) {
-        setShowWaitlist(true);
-      } else {
-        openRegister();
-      }
-    },
-    [betaEnabled, openRegister]
-  );
 
   const { data: stats } = useQuery({
     queryKey: ["repository-stats"],

@@ -7,17 +7,20 @@ import { Button } from "@/components/ui/button";
 import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Skeleton } from "@/components/ui/skeleton";
 import { fetchSubscription } from "@/lib/api/billing";
-import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { useAuth } from "@/components/providers";
+import { DemoRequestModal } from "@/components/landing/demo-request-modal";
+import { BetaAccessModal } from "@/components/beta/beta-access-modal";
+import { useGetStarted } from "@/hooks/use-get-started";
 
 export default function PricingPage() {
   const router = useRouter();
-  const { openRegister } = useAuthModal();
   const { isAuthenticated } = useAuth();
+  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [loading, setLoading] = useState(true);
   const [currentTier, setCurrentTier] = useState<string | undefined>();
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   useEffect(() => {
     async function fetchPricing() {
@@ -54,32 +57,36 @@ export default function PricingPage() {
 
   const handleSelectTier = (tier: string) => {
     if (tier === "enterprise") {
-      window.location.href = "mailto:sales@lawlens.io?subject=Enterprise%20Inquiry";
+      setShowDemoModal(true);
       return;
     }
     if (tier === "free") {
-      openRegister();
+      handleGetStarted();
       return;
     }
-    // Paid tiers — authenticated users go to checkout, others register first
+    // Paid tiers — authenticated users go to checkout, others use get-started flow
     if (isAuthenticated) {
       router.push(`/checkout?tier=${tier}&billing=${billingCycle}`);
     } else {
-      openRegister(`/checkout?tier=${tier}&billing=${billingCycle}`);
+      handleGetStarted(undefined, `/checkout?tier=${tier}&billing=${billingCycle}`);
     }
   };
 
   return (
     <main className="min-h-screen bg-background" role="main">
       {/* Header */}
-      <header className="bg-gradient-to-b from-muted/50 to-background pt-16 pb-12">
+      <header className="bg-gradient-to-b from-muted/50 to-background pt-8 pb-12">
         <div className="container mx-auto px-4 text-center">
-          <h1 className="text-4xl font-bold tracking-tight mb-4">
-            Simple, transparent pricing
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+            Pricing
+          </p>
+          <h1 className="mt-3 text-4xl font-bold tracking-tight mb-4">
+            Pricing for Solo Practitioners, Teams, and Institutions
           </h1>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto mb-8">
-            Choose the plan that fits your needs. All plans include access to
-            Uganda&apos;s comprehensive legal database powered by AI.
+          <p className="text-lg text-muted-foreground max-w-3xl mx-auto mb-8">
+            Choose the plan that fits your workflow — from self-serve legal
+            research for individual practitioners to team and enterprise
+            deployments for firms, regulators, and corporate legal departments.
           </p>
 
           {/* Billing Toggle */}
@@ -139,9 +146,15 @@ export default function PricingPage() {
 
       {/* Feature Comparison Table */}
       <section className="container mx-auto px-4 py-12" aria-labelledby="feature-comparison">
-        <h2 id="feature-comparison" className="text-2xl font-bold text-center mb-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold text-center">
+          Feature Comparison
+        </p>
+        <h2 id="feature-comparison" className="text-2xl font-bold text-center mt-2 mb-2">
           Compare all features
         </h2>
+        <p className="text-sm text-muted-foreground text-center mb-8">
+          Every plan includes citation-backed legal research and access to Uganda&apos;s legal corpus.
+        </p>
         <div className="max-w-5xl mx-auto overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
@@ -162,7 +175,7 @@ export default function PricingPage() {
                 </td>
               </tr>
               <tr className="border-b">
-                <td className="py-3 px-4 text-sm">AI Queries / month</td>
+                <td className="py-2.5 px-4 text-sm">AI Queries / month</td>
                 {tiers.map((tier) => (
                   <td key={tier.tier} className="text-center py-3 px-4 text-sm">
                     {tier.limits.monthlyAiQueries === null
@@ -172,7 +185,7 @@ export default function PricingPage() {
                 ))}
               </tr>
               <tr className="border-b">
-                <td className="py-3 px-4 text-sm">Storage</td>
+                <td className="py-2.5 px-4 text-sm">Storage</td>
                 {tiers.map((tier) => (
                   <td key={tier.tier} className="text-center py-3 px-4 text-sm">
                     {tier.limits.storageGb === null
@@ -182,7 +195,7 @@ export default function PricingPage() {
                 ))}
               </tr>
               <tr className="border-b">
-                <td className="py-3 px-4 text-sm">Team Members</td>
+                <td className="py-2.5 px-4 text-sm">Team Members</td>
                 {tiers.map((tier) => (
                   <td key={tier.tier} className="text-center py-3 px-4 text-sm">
                     {tier.limits.maxMembers === null
@@ -192,7 +205,7 @@ export default function PricingPage() {
                 ))}
               </tr>
               <tr className="border-b">
-                <td className="py-3 px-4 text-sm">Deep Research / month</td>
+                <td className="py-2.5 px-4 text-sm">Deep Research / month</td>
                 {tiers.map((tier) => (
                   <td key={tier.tier} className="text-center py-3 px-4 text-sm">
                     {tier.limits.monthlyDeepResearch === null
@@ -204,7 +217,7 @@ export default function PricingPage() {
                 ))}
               </tr>
               <tr className="border-b">
-                <td className="py-3 px-4 text-sm">Chat History Retention</td>
+                <td className="py-2.5 px-4 text-sm">Chat History Retention</td>
                 {tiers.map((tier) => (
                   <td key={tier.tier} className="text-center py-3 px-4 text-sm">
                     {tier.limits.chatHistoryDays === null
@@ -231,7 +244,7 @@ export default function PricingPage() {
                 ["exportPdf", "PDF Export"],
               ].map(([key, label]) => (
                 <tr key={key} className="border-b">
-                  <td className="py-3 px-4 text-sm">{label}</td>
+                  <td className="py-2.5 px-4 text-sm">{label}</td>
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
@@ -258,7 +271,7 @@ export default function PricingPage() {
                 ["apiAccess", "API Access"],
               ].map(([key, label]) => (
                 <tr key={key} className="border-b">
-                  <td className="py-3 px-4 text-sm">{label}</td>
+                  <td className="py-2.5 px-4 text-sm">{label}</td>
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
@@ -277,13 +290,26 @@ export default function PricingPage() {
                   Enterprise Features
                 </td>
               </tr>
+              {/* Static row: Private Knowledge Base */}
+              <tr className="border-b">
+                <td className="py-2.5 px-4 text-sm">Private Organizational Knowledge Base</td>
+                {tiers.map((tier) => (
+                  <td key={tier.tier} className="text-center py-2.5 px-4">
+                    {tier.tier === "enterprise" ? (
+                      <span className="text-secondary-foreground">&#10003;</span>
+                    ) : (
+                      <span className="text-muted-foreground">-</span>
+                    )}
+                  </td>
+                ))}
+              </tr>
               {[
                 ["ssoSaml", "SSO/SAML"],
                 ["customIntegrations", "Custom Integrations"],
                 ["dedicatedSupport", "Dedicated Support"],
               ].map(([key, label]) => (
                 <tr key={key} className="border-b">
-                  <td className="py-3 px-4 text-sm">{label}</td>
+                  <td className="py-2.5 px-4 text-sm">{label}</td>
                   {tiers.map((tier) => (
                     <td key={tier.tier} className="text-center py-3 px-4">
                       {tier.features[key as keyof typeof tier.features] ? (
@@ -300,32 +326,93 @@ export default function PricingPage() {
         </div>
       </section>
 
+      {/* Enterprise callout */}
+      <section className="container mx-auto px-4 py-10">
+        <div className="mx-auto max-w-5xl rounded-2xl border border-brand-gold/20 bg-primary/[0.03] p-8 lg:p-10 dark:bg-primary/[0.06]">
+          <div className="grid gap-8 lg:grid-cols-[1fr_auto] lg:items-start">
+            <div>
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+                Enterprise
+              </p>
+              <h3 className="mt-2 text-xl font-extrabold tracking-tight">
+                Custom solutions for institutions with advanced legal, compliance, and knowledge workflows
+              </h3>
+              <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
+                Bring your internal legal and compliance records into one secure
+                intelligence workspace. Tailored to your institution&apos;s
+                requirements.
+              </p>
+              <ul className="mt-4 grid gap-x-8 gap-y-1.5 text-sm text-muted-foreground sm:grid-cols-2">
+                {[
+                  "Private organizational knowledge base",
+                  "Internal document ingestion",
+                  "Secure institutional workspace",
+                  "Compliance monitoring",
+                  "SSO/SAML",
+                  "Custom integrations",
+                  "Dedicated support",
+                ].map((item) => (
+                  <li key={item} className="flex items-center gap-2">
+                    <span className="text-brand-gold">✓</span>
+                    {item}
+                  </li>
+                ))}
+              </ul>
+            </div>
+            <Button
+              variant="brand"
+              size="lg"
+              onClick={() => setShowDemoModal(true)}
+              className="mt-2 whitespace-nowrap"
+            >
+              Talk to Sales
+            </Button>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ Section */}
-      <section className="container mx-auto px-4 py-16" aria-labelledby="pricing-faq">
+      <section className="container mx-auto px-4 py-12" aria-labelledby="pricing-faq">
         <h2 id="pricing-faq" className="sr-only">Frequently Asked Questions</h2>
         <PricingFAQ />
       </section>
 
       {/* CTA Section */}
-      <section className="bg-muted/50 py-16" aria-labelledby="cta-section">
+      <section className="border-t-2 border-brand-gold/20 bg-primary/[0.03] py-16 dark:bg-primary/[0.06]" aria-labelledby="cta-section">
         <div className="container mx-auto px-4 text-center">
-          <h2 id="cta-section" className="text-2xl font-bold mb-4">
-            Ready to transform your legal research?
-          </h2>
-          <p className="text-muted-foreground mb-8 max-w-xl mx-auto">
-            Start with a free account and upgrade when you&apos;re ready.
-            No credit card required.
+          <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+            Get Started
           </p>
-          <Button
-            variant="brand"
-            size="lg"
-            onClick={() => openRegister()}
-            aria-label="Get started with a free account"
-          >
-            Get Started Free
-          </Button>
+          <h2 id="cta-section" className="mt-3 text-2xl font-bold">
+            Not sure which plan fits?
+          </h2>
+          <p className="text-muted-foreground mt-3 mb-8 max-w-xl mx-auto">
+            Talk to us about your team size, use cases, and requirements.
+            We&apos;ll help you find the right setup.
+          </p>
+          <div className="flex flex-wrap items-center justify-center gap-4">
+            <Button
+              variant="brand"
+              size="lg"
+              onClick={() => handleGetStarted()}
+              aria-label="Get started"
+            >
+              Get Started
+            </Button>
+            <Button
+              variant="outline"
+              size="lg"
+              onClick={() => setShowDemoModal(true)}
+              aria-label="Talk to sales"
+            >
+              Talk to Sales
+            </Button>
+          </div>
         </div>
       </section>
+
+      <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
+      <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
     </main>
   );
 }

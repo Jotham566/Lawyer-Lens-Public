@@ -122,7 +122,7 @@ const PRICING_TIERS = [
   {
     tier: "enterprise",
     name: "Enterprise",
-    description: "Custom solutions for large organizations",
+    description: "For courts, regulators, and large organizations",
     monthlyPrice: 0,
     annualPrice: 0,
     isPerSeat: true,
@@ -143,6 +143,7 @@ const PRICING_TIERS = [
       aiChat: true,
       citations: true,
       deepResearch: true,
+      privateKnowledgeBase: true,
       contractDrafting: true,
       contractAnalysis: true,
       documentUpload: true,

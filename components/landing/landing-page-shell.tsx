@@ -12,7 +12,7 @@ export function LandingPageShell({ children }: { children: React.ReactNode }) {
   return (
     <AuthModalProvider>
       <LandingHeader />
-      <main className="min-h-screen pt-32">{children}</main>
+      <main className="min-h-screen pt-40">{children}</main>
       <LandingFooter />
     </AuthModalProvider>
   );

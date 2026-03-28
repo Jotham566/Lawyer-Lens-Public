@@ -33,7 +33,7 @@ export function LandingFooter() {
           {/* Brand Column */}
           <div className="lg:col-span-2">
             <div className="-ml-7 -mb-2">
-              <Logo height={120} />
+              <Logo height={120} href="/landing" />
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
               Legal intelligence for institutions that need faster research,
