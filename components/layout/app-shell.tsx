@@ -1,17 +1,9 @@
 "use client";
 
-import { useState } from "react";
-import { usePathname } from "next/navigation";
-import { HeaderRedesign } from "./header-redesign";
-import { MobileNav, MobileBottomNav } from "./mobile-nav";
+import { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import { DashboardShell } from "./dashboard-shell";
-import { SkipLink } from "@/components/skip-link";
-import { GlobalUsageAlert } from "@/components/entitlements/usage-indicator";
-import { ScreenReaderAnnouncer } from "@/components/accessibility";
-import { EmailVerificationBanner } from "@/components/auth/email-verification-banner";
 import { useAuth } from "@/components/providers";
-import { BackToTop } from "@/components/common/back-to-top";
-import { LandingFooter } from "@/components/landing/landing-footer";
 
 interface AppShellProps {
   children: React.ReactNode;
@@ -26,32 +18,35 @@ const LANDING_PREFIX = "/landing";
 // Pages that always bypass the app shell (landing header/footer regardless of auth)
 const LANDING_PAGES = ["/pricing", "/about", "/privacy", "/terms", "/waitlist", "/help"];
 
+// Public-access routes that unauthenticated users can view (with their own layouts)
+const PUBLIC_CONTENT_ROUTES = [
+  "/judgments", "/legislation", "/document", "/browse", "/search",
+];
+
 /**
- * Application shell — routes between two layouts:
+ * Application shell — three states:
  *
- * 1. **DashboardShell** (sidebar + topbar) for authenticated users on app routes
- * 2. **PublicShell** (header + bottom nav) for unauthenticated users or public pages
- * 3. **No shell** for auth routes (login, register, etc.)
+ * 1. **No shell** for auth routes, landing routes, and public pages (they have their own layouts)
+ * 2. **DashboardShell** (sidebar + topbar) for authenticated users on app routes
+ * 3. **Redirect to /login** for unauthenticated users on protected routes
  */
 export function AppShell({ children }: AppShellProps) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // Auth routes — no shell at all
+  // Auth routes — no shell at all (auth layout handles these)
   const isAuthRoute = AUTH_ROUTES.some((route) => pathname === route || pathname.startsWith(route + "/"));
   if (isAuthRoute) {
     return <>{children}</>;
   }
 
-  // Landing routes — no shell (landing has its own header/footer)
+  // Landing routes — no shell (landing layout handles these)
   const isLandingPage = pathname.startsWith(LANDING_PREFIX) || LANDING_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
   if (isLandingPage) {
     return <>{children}</>;
   }
 
-  // While auth is loading on app routes, show minimal loading state
-  // to avoid flashing the public shell before the dashboard appears
+  // While auth is loading, show minimal loading state
   if (isLoading) {
     return (
       <div className="fixed inset-0 flex items-center justify-center bg-background">
@@ -60,47 +55,41 @@ export function AppShell({ children }: AppShellProps) {
     );
   }
 
-  // Authenticated users on app routes → sidebar dashboard shell
+  // Authenticated users → dashboard shell
   if (isAuthenticated) {
     return <DashboardShell>{children}</DashboardShell>;
   }
 
-  // Should this page show the landing footer?
-  const showFooter = false;
+  // Public content routes that unauthenticated users can browse
+  const isPublicContent = PUBLIC_CONTENT_ROUTES.some((r) => pathname === r || pathname.startsWith(r + "/"));
+  if (isPublicContent) {
+    return <DashboardShell>{children}</DashboardShell>;
+  }
 
-  // Unauthenticated users or public pages → header-based layout
+  // Unauthenticated users on protected routes → redirect to login
+  return <RedirectToLogin returnTo={pathname} />;
+}
+
+/**
+ * Redirects unauthenticated users to login, preserving the return URL.
+ * Shows a clean loading state during redirect — never the old public shell.
+ */
+function RedirectToLogin({ returnTo }: { returnTo: string | null }) {
+  const router = useRouter();
+
+  useEffect(() => {
+    const loginUrl = returnTo && returnTo !== "/"
+      ? `/login?returnTo=${encodeURIComponent(returnTo)}`
+      : "/login";
+    router.replace(loginUrl);
+  }, [returnTo, router]);
+
   return (
-    <div className="fixed inset-0 flex flex-col bg-background">
-      <ScreenReaderAnnouncer />
-      <SkipLink />
-
-      <HeaderRedesign
-        onMobileMenuToggle={() => setMobileMenuOpen(!mobileMenuOpen)}
-        isMobileMenuOpen={mobileMenuOpen}
-      />
-
-      <GlobalUsageAlert />
-      <EmailVerificationBanner />
-
-      <MobileNav open={mobileMenuOpen} onOpenChange={setMobileMenuOpen} />
-
-      <main
-        id="main-content"
-        role="main"
-        tabIndex={-1}
-        className={`flex-1 pb-16 lg:pb-0 focus:outline-none ${
-          pathname?.startsWith("/chat") ? "overflow-hidden" : "overflow-auto"
-        }`}
-        aria-label="Main content"
-      >
-        {children}
-        {showFooter && <LandingFooter />}
-      </main>
-
-      <MobileBottomNav />
-
-      {/* Back to top — appears after scrolling down */}
-      {!pathname?.startsWith("/chat") && <BackToTop />}
+    <div className="fixed inset-0 flex items-center justify-center bg-background">
+      <div className="flex flex-col items-center gap-3">
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-primary border-t-transparent" />
+        <p className="text-sm text-muted-foreground">Redirecting to sign in...</p>
+      </div>
     </div>
   );
 }
