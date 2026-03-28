@@ -155,7 +155,8 @@ export default function PricingPage() {
         <p className="text-sm text-muted-foreground text-center mb-8">
           Every plan includes citation-backed legal research and access to Uganda&apos;s legal corpus.
         </p>
-        <div className="max-w-5xl mx-auto overflow-x-auto">
+        {/* Desktop table */}
+        <div className="max-w-5xl mx-auto hidden md:block overflow-x-auto">
           <table className="w-full border-collapse">
             <thead>
               <tr className="border-b">
@@ -323,6 +324,99 @@ export default function PricingPage() {
               ))}
             </tbody>
           </table>
+        </div>
+
+        {/* Mobile: stacked per-plan feature cards */}
+        <div className="max-w-5xl mx-auto md:hidden space-y-6">
+          {tiers.map((tier) => {
+            const featureGroups = [
+              {
+                group: "Usage Limits",
+                items: [
+                  { label: "AI Queries / month", value: tier.limits.monthlyAiQueries === null ? "Unlimited" : tier.limits.monthlyAiQueries.toLocaleString() },
+                  { label: "Storage", value: tier.limits.storageGb === null ? "Unlimited" : `${tier.limits.storageGb} GB` },
+                  { label: "Team Members", value: tier.limits.maxMembers === null ? "Unlimited" : String(tier.limits.maxMembers) },
+                  { label: "Deep Research / month", value: tier.limits.monthlyDeepResearch === null ? "Unlimited" : tier.limits.monthlyDeepResearch === 0 ? "-" : String(tier.limits.monthlyDeepResearch) },
+                  { label: "Chat History", value: tier.limits.chatHistoryDays === null ? "Unlimited" : `${tier.limits.chatHistoryDays} days` },
+                ],
+              },
+              {
+                group: "Core Features",
+                items: (
+                  [
+                    ["basicSearch", "Legal Search"],
+                    ["aiChat", "AI Chat"],
+                    ["citations", "Case Citations"],
+                    ["deepResearch", "Deep Research"],
+                    ["contractDrafting", "Contract Drafting"],
+                    ["contractAnalysis", "Contract Analysis"],
+                    ["documentUpload", "Document Uploads"],
+                    ["exportPdf", "PDF Export"],
+                  ] as const
+                ).map(([key, label]) => ({
+                  label,
+                  value: tier.features[key as keyof typeof tier.features] ? "✓" : "-",
+                })),
+              },
+              {
+                group: "Team & Enterprise",
+                items: [
+                  ...(
+                    [
+                      ["teamManagement", "Team Management"],
+                      ["roleBasedAccess", "Role-Based Access"],
+                      ["sharedWorkspaces", "Shared Workspaces"],
+                      ["activityLogs", "Activity Logs"],
+                      ["apiAccess", "API Access"],
+                      ["ssoSaml", "SSO/SAML"],
+                      ["customIntegrations", "Custom Integrations"],
+                      ["dedicatedSupport", "Dedicated Support"],
+                    ] as const
+                  ).map(([key, label]) => ({
+                    label,
+                    value: tier.features[key as keyof typeof tier.features] ? "✓" : "-",
+                  })),
+                  {
+                    label: "Private Knowledge Base",
+                    value: tier.tier === "enterprise" ? "✓" : "-",
+                  },
+                ],
+              },
+            ];
+
+            return (
+              <div
+                key={tier.tier}
+                className="rounded-xl border border-border/40 bg-card overflow-hidden"
+              >
+                <div className="border-b border-border/40 bg-surface-container-low px-5 py-3">
+                  <h3 className="text-base font-bold">{tier.name}</h3>
+                </div>
+                {featureGroups.map((fg) => (
+                  <div key={fg.group}>
+                    <div className="border-b border-border/30 bg-muted/30 px-5 py-2">
+                      <p className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground">
+                        {fg.group}
+                      </p>
+                    </div>
+                    <div className="divide-y divide-border/20">
+                      {fg.items.map((item) => (
+                        <div
+                          key={item.label}
+                          className="flex items-center justify-between px-5 py-2.5"
+                        >
+                          <span className="text-sm text-muted-foreground">{item.label}</span>
+                          <span className={`text-sm font-medium ${item.value === "-" ? "text-muted-foreground/40" : "text-foreground"}`}>
+                            {item.value}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })}
         </div>
       </section>
 

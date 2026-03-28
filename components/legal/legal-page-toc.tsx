@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface TocItem {
@@ -14,11 +15,12 @@ interface LegalPageTocProps {
 
 /**
  * Sticky sidebar TOC for legal pages (Privacy, Terms).
- * Mobile: horizontal pill chips at the top.
+ * Mobile: collapsible "On this page" dropdown.
  * Desktop: sticky sidebar with active-section highlighting.
  */
 export function LegalPageToc({ items }: LegalPageTocProps) {
   const [activeId, setActiveId] = useState<string>(items[0]?.id ?? "");
+  const [mobileOpen, setMobileOpen] = useState(false);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -42,32 +44,52 @@ export function LegalPageToc({ items }: LegalPageTocProps) {
   const scrollTo = (id: string) => {
     const el = document.getElementById(id);
     if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+    setMobileOpen(false);
   };
 
   return (
     <>
-      {/* Mobile — horizontal chips */}
-      <nav aria-label="Page sections" className="mb-10 lg:hidden">
-        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-muted-foreground/50">
-          On this page
-        </p>
-        <div className="mt-3 flex flex-wrap gap-2">
-          {items.map((item) => (
-            <button
-              key={item.id}
-              type="button"
-              onClick={() => scrollTo(item.id)}
-              className={cn(
-                "rounded-full border px-3.5 py-1.5 text-xs font-medium transition-colors",
-                activeId === item.id
-                  ? "border-brand-gold/30 bg-brand-gold/10 text-foreground"
-                  : "border-border/40 bg-card text-muted-foreground hover:border-border hover:text-foreground"
-              )}
-            >
-              {item.label}
-            </button>
-          ))}
-        </div>
+      {/* Mobile — collapsible dropdown */}
+      <nav aria-label="Page sections" className="mb-8 lg:hidden">
+        <button
+          type="button"
+          onClick={() => setMobileOpen(!mobileOpen)}
+          className="flex w-full items-center justify-between rounded-lg border border-border/40 bg-card px-4 py-3 text-sm font-semibold transition-colors hover:bg-surface-container-low"
+        >
+          <span className="flex items-center gap-2">
+            <span className="text-[10px] font-bold uppercase tracking-[0.15em] text-brand-gold">
+              On this page
+            </span>
+            <span className="text-muted-foreground">
+              — {items.find((i) => i.id === activeId)?.label || items[0]?.label}
+            </span>
+          </span>
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 text-muted-foreground transition-transform",
+              mobileOpen && "rotate-180"
+            )}
+          />
+        </button>
+        {mobileOpen && (
+          <div className="mt-2 rounded-lg border border-border/40 bg-card p-2">
+            {items.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                onClick={() => scrollTo(item.id)}
+                className={cn(
+                  "block w-full rounded-md px-3 py-2 text-left text-sm transition-colors",
+                  activeId === item.id
+                    ? "bg-brand-gold/10 font-semibold text-foreground"
+                    : "text-muted-foreground hover:bg-surface-container-low hover:text-foreground"
+                )}
+              >
+                {item.label}
+              </button>
+            ))}
+          </div>
+        )}
       </nav>
 
       {/* Desktop — sticky sidebar */}
