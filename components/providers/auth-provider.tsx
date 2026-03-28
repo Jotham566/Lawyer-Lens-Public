@@ -141,7 +141,7 @@ export function AuthProvider({ children }: AuthProviderProps) {
         useChatStore.getState().setUserId(null);
         useLibraryStore.getState().setUserId(null);
         useResearchSessionsStore.getState().setUserId(null);
-        router.push("/");
+        router.push("/landing");
       })();
     });
 
@@ -231,8 +231,8 @@ export function AuthProvider({ children }: AuthProviderProps) {
       // Ignore logout errors
     }
 
-    // Redirect to home
-    router.push("/");
+    // Redirect to landing page directly (avoid flash through root redirect)
+    router.push("/landing");
   }, [router]);
 
   const value = useMemo(

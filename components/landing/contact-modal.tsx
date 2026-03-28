@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
 import { X, ArrowRight, CheckCircle2, Loader2 } from "lucide-react";
 
 interface ContactModalProps {
@@ -237,4 +237,20 @@ export function ContactModal({ open, onOpenChange }: ContactModalProps) {
       </div>
     </div>
   );
+}
+
+/**
+ * Hook for easily using the ContactModal in any component.
+ * Returns { ContactModal, openContactModal }
+ */
+export function useContactModal() {
+  const [open, setOpen] = useState(false);
+  const openContactModal = useCallback(() => setOpen(true), []);
+
+  const Modal = useCallback(
+    () => <ContactModal open={open} onOpenChange={setOpen} />,
+    [open]
+  );
+
+  return { ContactModal: Modal, openContactModal };
 }
