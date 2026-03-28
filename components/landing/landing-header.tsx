@@ -1,11 +1,12 @@
 "use client";
 
-import { useState, useEffect, useCallback} from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { Menu, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { DemoRequestModal } from "./demo-request-modal";
 
 const navLinks = [
   { label: "Product", href: "/landing#product" },
@@ -17,6 +18,7 @@ const navLinks = [
 export function LandingHeader() {
   const [scrolled, setScrolled] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
   const { openLogin } = useAuthModal();
 
   useEffect(() => {
@@ -69,12 +71,13 @@ export function LandingHeader() {
             >
               Log In
             </button>
-            <Link
-              href="/landing/contact"
+            <button
+              type="button"
+              onClick={() => setShowDemoModal(true)}
               className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
             >
               Request Demo
-            </Link>
+            </button>
           </div>
 
           {/* Mobile Menu Button */}
@@ -113,18 +116,22 @@ export function LandingHeader() {
               >
                 Log In
               </button>
-              <Link
-                href="/landing/contact"
-                onClick={() => setMobileOpen(false)}
+              <button
+                type="button"
+                onClick={() => {
+                  setMobileOpen(false);
+                  setShowDemoModal(true);
+                }}
                 className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
               >
                 Request Demo
-              </Link>
+              </button>
             </nav>
           </div>
         )}
       </header>
 
+      <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
     </>
   );
 }

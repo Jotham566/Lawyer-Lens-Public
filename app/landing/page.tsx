@@ -12,13 +12,13 @@ import {
   Building2,
   Globe,
 } from "lucide-react";
-import Link from "next/link";
 import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/landing";
 import { getRepositoryStats, getPublicBetaMode } from "@/lib/api";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { BetaAccessModal } from "@/components/beta/beta-access-modal";
+import { DemoRequestModal } from "@/components/landing/demo-request-modal";
 
 
 
@@ -31,6 +31,7 @@ export default function LandingPage() {
   const { openRegister } = useAuthModal();
   const [betaEnabled, setBetaEnabled] = useState(false);
   const [showWaitlist, setShowWaitlist] = useState(false);
+  const [showDemoModal, setShowDemoModal] = useState(false);
 
   // Force scroll to top on mount/refresh
   useEffect(() => {
@@ -96,13 +97,14 @@ export default function LandingPage() {
                   obligations and regulatory change.
                 </p>
                 <div className="mt-10 flex flex-wrap items-center gap-4">
-                  <Link
-                    href="/landing/contact"
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoModal(true)}
                     className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
                   >
                     Request a Demo
                     <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </Link>
+                  </button>
                   <button
                     type="button"
                     onClick={handleGetStarted}
@@ -491,21 +493,23 @@ export default function LandingPage() {
                 legal risk, compliance, and regulatory change.
               </p>
               <div className="mt-8">
-                <Link
-                  href="/landing/contact"
+                <button
+                  type="button"
+                  onClick={() => setShowDemoModal(true)}
                   className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-all hover:brightness-110"
                 >
                   Request a Demo
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                </Link>
+                </button>
               </div>
             </div>
           </AnimatedSection>
         </div>
       </section>
 
-      {/* Waitlist modal for beta mode */}
+      {/* Modals */}
       <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
+      <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
     </>
   );
 }
