@@ -333,7 +333,7 @@ export default function LandingPage() {
       <section className="border-t border-border/30 py-12 lg:py-14">
         <div className="px-6 lg:px-12 xl:px-20">
           <AnimatedSection variant="fade-up">
-            <div className="grid gap-8 lg:grid-cols-12 lg:gap-12">
+            <div className="grid gap-6 lg:grid-cols-12 lg:gap-10">
               {/* Left — heading */}
               <div className="lg:col-span-4">
                 <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
@@ -346,7 +346,7 @@ export default function LandingPage() {
 
               {/* Right — structured list */}
               <div className="lg:col-span-8">
-                <div className="grid gap-6 sm:grid-cols-2">
+                <div className="grid gap-5 sm:grid-cols-2">
                   {[
                     {
                       icon: Scale,
@@ -479,13 +479,16 @@ export default function LandingPage() {
       </section>
 
       {/* ─────────────────────────────────────────────────────
-          FINAL CTA — One message, one action
+          FINAL CTA — Conclusive, destination-like
           ───────────────────────────────────────────────────── */}
-      <section className="border-t border-border/30 py-12 lg:py-14">
+      <section className="border-t-2 border-brand-gold/20 bg-primary/[0.03] py-16 lg:py-20 dark:bg-primary/[0.06]">
         <div className="px-6 lg:px-12 xl:px-20">
           <AnimatedSection variant="fade-up">
             <div className="mx-auto max-w-2xl text-center">
-              <h2 className="text-2xl font-extrabold tracking-tight lg:text-[2.25rem] lg:leading-tight">
+              <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+                Get Started
+              </p>
+              <h2 className="mt-3 text-2xl font-extrabold tracking-tight lg:text-[2.25rem] lg:leading-tight">
                 See how Law Lens can support your institution.
               </h2>
               <p className="mt-4 text-[15px] leading-relaxed text-muted-foreground">
