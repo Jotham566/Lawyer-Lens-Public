@@ -8,8 +8,6 @@ export const metadata: Metadata = {
     "Law Lens pricing plans for solo practitioners, law firms, and enterprise legal teams.",
 };
 
-const UG_URL = process.env.NEXT_PUBLIC_UG_URL || "https://ug.lawlens.io";
-
 const tiers = [
   {
     name: "Free",
@@ -23,7 +21,7 @@ const tiers = [
       "5 AI questions per day",
     ],
     cta: "Get Started Free",
-    href: `${UG_URL}/register`,
+    href: "/register",
     highlighted: false,
   },
   {
@@ -40,7 +38,7 @@ const tiers = [
       "Priority support",
     ],
     cta: "Start Free Trial",
-    href: `${UG_URL}/register?plan=professional`,
+    href: "/register?plan=professional",
     highlighted: true,
   },
   {
@@ -57,7 +55,7 @@ const tiers = [
       "Dedicated account manager",
     ],
     cta: "Contact Sales",
-    href: "/contact",
+    href: "/landing/contact",
     highlighted: false,
   },
 ];

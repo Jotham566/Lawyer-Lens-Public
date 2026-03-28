@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { LandingHeader, LandingFooter } from "@/components/landing";
+import { LandingBetaBanner } from "@/components/landing/landing-beta-banner";
 
 export const metadata: Metadata = {
   title: {
@@ -31,6 +32,10 @@ export default function LandingLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
+      {/* Floating waitlist ribbon — fixed at top, above everything */}
+      <div className="fixed inset-x-0 top-0 z-[60]">
+        <LandingBetaBanner />
+      </div>
       <LandingHeader />
       <main className="flex-1">{children}</main>
       <LandingFooter />

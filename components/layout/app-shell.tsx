@@ -25,10 +25,10 @@ const LANDING_PREFIX = "/landing";
 
 // Public/marketing routes that always use the header-based layout (even for authenticated users)
 // Note: /help is NOT here — authenticated users see it inside the dashboard shell
-const PUBLIC_HEADER_ROUTES = ["/", "/pricing", "/about", "/contact", "/privacy", "/terms", "/waitlist"];
+const PUBLIC_HEADER_ROUTES = ["/privacy", "/terms", "/waitlist", "/help"];
 
 // Public pages that show the landing footer (static info pages)
-const FOOTER_ROUTES = ["/about", "/contact", "/privacy", "/terms", "/pricing", "/help", "/waitlist"];
+const FOOTER_ROUTES = ["/privacy", "/terms", "/help", "/waitlist"];
 
 /**
  * Application shell — routes between two layouts:

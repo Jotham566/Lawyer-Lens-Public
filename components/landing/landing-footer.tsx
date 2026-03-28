@@ -1,29 +1,27 @@
 import Link from "next/link";
 import { Logo } from "@/components/layout/logo";
 
-const UG_URL = process.env.NEXT_PUBLIC_UG_URL || "https://ug.lawlens.io";
-
 interface FooterLink {
   label: string;
   href: string;
-  external?: boolean;
 }
 
 const footerLinks: Record<string, FooterLink[]> = {
   Product: [
-    { label: "Features", href: "#features" },
-    { label: "Uganda Portal", href: UG_URL, external: true },
+    { label: "Features", href: "/landing#features" },
+    { label: "Pricing", href: "/landing/pricing" },
+    { label: "Uganda Portal", href: "/chat" },
   ],
   Company: [
-    { label: "About", href: "/about" },
-    { label: "Contact", href: "/contact" },
+    { label: "About", href: "/landing/about" },
+    { label: "Contact", href: "/landing/contact" },
   ],
   Legal: [
     { label: "Privacy Policy", href: "/privacy" },
     { label: "Terms of Service", href: "/terms" },
   ],
   Resources: [
-    { label: "Help Center", href: `${UG_URL}/help`, external: true },
+    { label: "Help Center", href: "/help" },
   ],
 };
 
@@ -53,23 +51,12 @@ export function LandingFooter() {
               <ul className="mt-4 space-y-2.5">
                 {links.map((link) => (
                   <li key={link.label}>
-                    {link.external ? (
-                      <a
-                        href={link.href}
-                        className="text-sm text-foreground/80 transition-colors hover:text-foreground"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                      >
-                        {link.label}
-                      </a>
-                    ) : (
-                      <Link
-                        href={link.href}
-                        className="text-sm text-foreground/80 transition-colors hover:text-foreground"
-                      >
-                        {link.label}
-                      </Link>
-                    )}
+                    <Link
+                      href={link.href}
+                      className="text-sm text-foreground/80 transition-colors hover:text-foreground"
+                    >
+                      {link.label}
+                    </Link>
                   </li>
                 ))}
               </ul>
