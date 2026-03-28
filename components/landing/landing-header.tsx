@@ -60,7 +60,9 @@ export function LandingHeader() {
       >
         <div className="mx-auto flex items-center justify-between px-6 py-4 lg:px-12 xl:px-16">
           {/* Logo — always links to landing page */}
-          <Logo height={155} className="shrink-0" href="/landing" />
+          <div className="-ml-3.5">
+            <Logo height={155} className="shrink-0" href="/landing" />
+          </div>
 
           {/* Desktop Navigation */}
           <nav className="hidden items-center gap-8 md:flex">

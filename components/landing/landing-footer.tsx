@@ -32,7 +32,7 @@ export function LandingFooter() {
         <div className="grid gap-10 md:grid-cols-2 lg:grid-cols-6">
           {/* Brand Column */}
           <div className="lg:col-span-2">
-            <div className="-ml-7 -mb-2">
+            <div className="-ml-3 -mb-1">
               <Logo height={120} href="/landing" />
             </div>
             <p className="max-w-sm text-sm leading-relaxed text-muted-foreground">
