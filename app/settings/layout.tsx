@@ -84,7 +84,9 @@ export default function SettingsLayout({
         </div>
 
         {/* Horizontal tab navigation */}
-        <nav className="mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+        <nav className="relative mb-8 -mx-4 px-4 sm:mx-0 sm:px-0">
+          {/* Right fade hint for scroll affordance on mobile */}
+          <div className="pointer-events-none absolute right-0 top-0 z-10 h-full w-8 bg-gradient-to-l from-background to-transparent sm:hidden" />
           <div className="flex gap-1 overflow-x-auto scrollbar-hide rounded-xl bg-surface-container-high/50 p-1">
             {visibleNavItems.map((item) => {
               const isActive = pathname === item.href ||
