@@ -96,11 +96,15 @@ export const metadata: Metadata = {
   },
   icons: {
     icon: [
+      { url: "/icons/light/favicon.svg", type: "image/svg+xml", media: "(prefers-color-scheme: light)" },
+      { url: "/icons/dark/favicon.svg", type: "image/svg+xml", media: "(prefers-color-scheme: dark)" },
       { url: "/icons/light/favicon-32x32.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: light)" },
       { url: "/icons/dark/favicon-32x32.png", sizes: "32x32", type: "image/png", media: "(prefers-color-scheme: dark)" },
+      { url: "/icons/light/favicon-16x16.png", sizes: "16x16", type: "image/png", media: "(prefers-color-scheme: light)" },
+      { url: "/icons/dark/favicon-16x16.png", sizes: "16x16", type: "image/png", media: "(prefers-color-scheme: dark)" },
     ],
     apple: [
-      { url: "/icons/light/apple-touch-icon.png", sizes: "96x96" },
+      { url: "/icons/light/apple-touch-icon.png", sizes: "180x180" },
     ],
   },
 };

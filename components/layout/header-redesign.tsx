@@ -101,8 +101,8 @@ export function HeaderRedesign({
     >
       <div className="container flex h-18 items-center gap-4 overflow-x-clip px-4 py-3">
         {/* Logo */}
-        <div className="mr-3 flex shrink-0 items-center max-w-[140px] sm:max-w-none">
-          <Logo height={148} />
+        <div className="mr-3 flex shrink-0 items-center max-w-[190px] sm:max-w-none">
+          <Logo height={54} />
         </div>
 
         {/* Desktop Navigation - Only render after mount to prevent hydration mismatch */}

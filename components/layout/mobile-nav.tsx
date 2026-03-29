@@ -46,10 +46,10 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
-      <SheetContent side="left" className="ll-slide-panel w-80 bg-background p-0">
+        <SheetContent side="left" className="ll-slide-panel w-80 bg-background p-0">
         <SheetHeader className="p-5">
           <SheetTitle>
-            <Logo height={140} />
+            <Logo height={52} />
           </SheetTitle>
           <SheetDescription className="sr-only">
             Main navigation menu for Law Lens Uganda

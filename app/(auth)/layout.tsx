@@ -12,7 +12,7 @@ export default function AuthLayout({
       <header className="border-b border-border/40 bg-background/90 backdrop-blur">
         <div className="flex h-16 items-center justify-between px-6 lg:px-12">
           <div className="-ml-3.5">
-            <Logo height={155} href="/landing" />
+            <Logo height={56} href="/landing" />
           </div>
         </div>
       </header>

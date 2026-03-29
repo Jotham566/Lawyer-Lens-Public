@@ -7,16 +7,17 @@ import { cn } from "@/lib/utils";
 interface LogoProps {
   collapsed?: boolean;
   className?: string;
-  /** Height of the logo in pixels (default: 155) */
+  /** Target rendered height of the logo in pixels */
   height?: number;
   /** Override the default link destination (default: "/") */
   href?: string;
 }
 
-export function Logo({ collapsed = false, className, height = 155, href = "/" }: LogoProps) {
-  // Calculate width based on SVG aspect ratio (1264:848 ≈ 1.49)
-  const aspectRatio = 1264 / 848;
-  const width = Math.round(height * aspectRatio);
+const LOGO_WIDTH = 1000;
+const LOGO_HEIGHT = 280;
+
+export function Logo({ collapsed = false, className, height = 48, href = "/" }: LogoProps) {
+  const width = Math.round(height * (LOGO_WIDTH / LOGO_HEIGHT));
 
   return (
     <Link
@@ -56,20 +57,20 @@ export function Logo({ collapsed = false, className, height = 155, href = "/" }:
           <Image
             src="/logos/lm-lawlens-logo.svg"
             alt="Law Lens Uganda"
-            width={width}
-            height={height}
+            width={LOGO_WIDTH}
+            height={LOGO_HEIGHT}
             className="dark:hidden max-w-full h-auto"
-            style={{ width: 'auto', height: height, maxWidth: '100%' }}
+            style={{ width, height: "auto", maxWidth: "100%" }}
             loading="eager"
           />
           {/* Dark mode logo */}
           <Image
             src="/logos/dm-lawlens-logo.svg"
             alt="Law Lens Uganda"
-            width={width}
-            height={height}
+            width={LOGO_WIDTH}
+            height={LOGO_HEIGHT}
             className="hidden dark:block max-w-full h-auto"
-            style={{ width: 'auto', height: height, maxWidth: '100%' }}
+            style={{ width, height: "auto", maxWidth: "100%" }}
             loading="eager"
           />
         </>

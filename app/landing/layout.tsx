@@ -32,7 +32,7 @@ export default function LandingLayout({
 }) {
   return (
     <div className="flex min-h-screen flex-col bg-background">
-      {/* Floating waitlist ribbon — fixed at top, above everything */}
+      {/* Floating waitlist ribbon — fixed at top, above the landing header */}
       <div className="fixed inset-x-0 top-0 z-[60]">
         <LandingBetaBanner />
       </div>

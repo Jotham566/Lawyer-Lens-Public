@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { Sparkles, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
@@ -10,10 +10,46 @@ interface BetaAnnouncementBannerProps {
 }
 
 export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerProps) {
+  const bannerRef = useRef<HTMLDivElement>(null);
   const [isVisible, setIsVisible] = useState(() => {
     if (typeof window === "undefined") return true;
     return sessionStorage.getItem("beta-banner-dismissed") !== "true";
   });
+
+  useLayoutEffect(() => {
+    const root = document.documentElement;
+
+    if (!isVisible) {
+      root.style.setProperty("--landing-beta-banner-height", "0px");
+      return () => {
+        root.style.removeProperty("--landing-beta-banner-height");
+      };
+    }
+
+    const updateHeight = () => {
+      const height = bannerRef.current?.offsetHeight ?? 0;
+      root.style.setProperty("--landing-beta-banner-height", `${height}px`);
+    };
+
+    updateHeight();
+
+    const observer =
+      typeof ResizeObserver !== "undefined" && bannerRef.current
+        ? new ResizeObserver(updateHeight)
+        : null;
+
+    if (observer && bannerRef.current) {
+      observer.observe(bannerRef.current);
+    } else {
+      window.addEventListener("resize", updateHeight);
+    }
+
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", updateHeight);
+      root.style.removeProperty("--landing-beta-banner-height");
+    };
+  }, [isVisible]);
 
   const handleDismiss = () => {
     setIsVisible(false);
@@ -24,6 +60,7 @@ export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerPr
 
   return (
     <div
+      ref={bannerRef}
       className={cn(
         "relative z-40",
         "border-b border-border/60 bg-secondary/50",

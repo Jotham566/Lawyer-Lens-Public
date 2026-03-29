@@ -57,11 +57,12 @@ export function LandingHeader() {
             ? "border-b border-border/40 bg-background/90 backdrop-blur-xl shadow-soft"
             : "bg-background/80 backdrop-blur-md"
         )}
+        style={{ top: "var(--landing-beta-banner-height, 0px)" }}
       >
         <div className="mx-auto flex items-center justify-between px-6 py-4 lg:px-12 xl:px-16">
           {/* Logo — always links to landing page */}
           <div className="-ml-3.5">
-            <Logo height={155} className="shrink-0" href="/landing" />
+            <Logo height={64} className="shrink-0" href="/landing" />
           </div>
 
           {/* Desktop Navigation */}

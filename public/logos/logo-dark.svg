@@ -24,7 +24,13 @@
   </defs>
 
   <!-- Background -->
-  <!-- transparent background -->
+  <defs>
+    <linearGradient id="bg-navy" x1="1000" y1="0" x2="0" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#002344"/>
+      <stop offset="1" stop-color="#000c1e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="280" fill="url(#bg-navy)"/>
 
   <!-- "law" — 'l' slot knocked out by mask -->
   <text

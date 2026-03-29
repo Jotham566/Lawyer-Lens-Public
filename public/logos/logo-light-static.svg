@@ -24,7 +24,7 @@
   </defs>
 
   <!-- Background -->
-  <!-- transparent background -->
+  <rect width="1000" height="280" fill="#fcf9f8"/>
 
   <!-- "law" — 'l' slot knocked out by mask -->
   <text
@@ -33,7 +33,7 @@
     font-size="198"
     font-weight="500"
     letter-spacing="0"
-    fill="#ffffff"
+    fill="#000c1e"
     mask="url(#law-mask)">law</text>
 
   <!-- "lens" — untouched; Plus Jakarta Sans 'l' has a curved foot,
@@ -44,7 +44,7 @@
     font-size="198"
     font-weight="500"
     letter-spacing="0"
-    fill="#ffffff">lens</text>
+    fill="#000c1e">lens</text>
 
   <!-- Gold dot separator — the only accent colour -->
   <circle cx="436.1" cy="141.5" r="11.5" fill="#e9c176"/>
@@ -54,28 +54,13 @@
        Crossbars span 90% of the 'l' advance width. -->
   <g transform="translate(-4 0)">
     <!-- vertical stem -->
-    <rect x="79.95" y="46.5" width="16.8" height="146.5" rx="8.4" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
+    <rect x="79.95" y="46.5" width="16.8" height="146.5" rx="8.4" fill="#000c1e">
     </rect>
     <!-- top crossbar -->
-    <rect x="64.65" y="46.5" width="47.5" height="15.8" rx="7.9" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
+    <rect x="64.65" y="46.5" width="47.5" height="15.8" rx="7.9" fill="#000c1e">
     </rect>
     <!-- bottom crossbar -->
-    <rect x="64.65" y="177.2" width="47.5" height="15.8" rx="7.9" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
+    <rect x="64.65" y="177.2" width="47.5" height="15.8" rx="7.9" fill="#000c1e">
     </rect>
   </g>
 

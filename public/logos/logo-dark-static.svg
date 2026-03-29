@@ -24,7 +24,13 @@
   </defs>
 
   <!-- Background -->
-  <!-- transparent background -->
+  <defs>
+    <linearGradient id="bg-navy" x1="1000" y1="0" x2="0" y2="280" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#002344"/>
+      <stop offset="1" stop-color="#000c1e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1000" height="280" fill="url(#bg-navy)"/>
 
   <!-- "law" — 'l' slot knocked out by mask -->
   <text
@@ -55,27 +61,12 @@
   <g transform="translate(-4 0)">
     <!-- vertical stem -->
     <rect x="79.95" y="46.5" width="16.8" height="146.5" rx="8.4" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
     </rect>
     <!-- top crossbar -->
     <rect x="64.65" y="46.5" width="47.5" height="15.8" rx="7.9" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
     </rect>
     <!-- bottom crossbar -->
     <rect x="64.65" y="177.2" width="47.5" height="15.8" rx="7.9" fill="#ffffff">
-      <animate attributeName="opacity"
-        values="1;1;0.35;0.35;1"
-        keyTimes="0;0.45;0.5;0.95;1"
-        dur="1.05s"
-        repeatCount="indefinite"/>
     </rect>
   </g>
 

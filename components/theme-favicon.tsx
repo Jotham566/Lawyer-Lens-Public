@@ -5,45 +5,60 @@ import { useTheme } from "next-themes";
 
 /**
  * Dynamically switches favicon based on color scheme (light/dark mode)
- * Uses the icons from /public/icons/light and /public/icons/dark
+ * Prefers animated SVG favicons while keeping PNG and touch-icon fallbacks in sync.
  */
 export function ThemeFavicon() {
   const { resolvedTheme } = useTheme();
 
   useEffect(() => {
+    const upsertLink = (
+      selector: string,
+      attributes: Record<string, string>,
+    ) => {
+      let link = document.querySelector<HTMLLinkElement>(selector);
+      if (!link) {
+        link = document.createElement("link");
+        document.head.appendChild(link);
+      }
+
+      Object.entries(attributes).forEach(([key, value]) => {
+        link!.setAttribute(key, value);
+      });
+    };
+
     const updateFavicon = () => {
       const isDark = resolvedTheme === "dark";
       const iconPath = isDark ? "/icons/dark" : "/icons/light";
 
-      // Update favicon - use 32x32 for better visibility
-      const favicon = document.querySelector<HTMLLinkElement>('link[rel="icon"]');
-      if (favicon) {
-        favicon.href = `${iconPath}/favicon-32x32.png`;
-      } else {
-        const link = document.createElement("link");
-        link.rel = "icon";
-        link.type = "image/png";
-        link.href = `${iconPath}/favicon-32x32.png`;
-        document.head.appendChild(link);
-      }
+      upsertLink('link[data-ll-favicon="svg"]', {
+        rel: "icon",
+        type: "image/svg+xml",
+        href: `${iconPath}/favicon.svg`,
+        "data-ll-favicon": "svg",
+      });
 
-      // Update apple-touch-icon
-      const appleIcon = document.querySelector<HTMLLinkElement>('link[rel="apple-touch-icon"]');
-      if (appleIcon) {
-        appleIcon.href = `${iconPath}/apple-touch-icon.png`;
-      }
+      upsertLink('link[data-ll-favicon="16"]', {
+        rel: "icon",
+        type: "image/png",
+        sizes: "16x16",
+        href: `${iconPath}/favicon-16x16.png`,
+        "data-ll-favicon": "16",
+      });
 
-      // Update 16x16 favicon
-      const favicon16 = document.querySelector<HTMLLinkElement>('link[rel="icon"][sizes="16x16"]');
-      if (favicon16) {
-        favicon16.href = `${iconPath}/favicon-16x16.png`;
-      }
+      upsertLink('link[data-ll-favicon="32"]', {
+        rel: "icon",
+        type: "image/png",
+        sizes: "32x32",
+        href: `${iconPath}/favicon-32x32.png`,
+        "data-ll-favicon": "32",
+      });
 
-      // Update 32x32 favicon
-      const favicon32 = document.querySelector<HTMLLinkElement>('link[rel="icon"][sizes="32x32"]');
-      if (favicon32) {
-        favicon32.href = `${iconPath}/favicon-32x32.png`;
-      }
+      upsertLink('link[data-ll-favicon="apple"]', {
+        rel: "apple-touch-icon",
+        sizes: "180x180",
+        href: `${iconPath}/apple-touch-icon.png`,
+        "data-ll-favicon": "apple",
+      });
     };
 
     updateFavicon();
