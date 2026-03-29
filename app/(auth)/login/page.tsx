@@ -25,18 +25,15 @@ function LoginContent() {
       return;
     }
 
-    // If not loading and not authenticated, open the modal and go home
+    // If not loading and not authenticated, go to landing and open modal
     if (!isLoading && !isAuthenticated) {
       // Store returnUrl if provided
       if (returnUrl) {
         setReturnUrl(decodeURIComponent(returnUrl));
       }
 
-      router.replace("/");
-      // Small delay to ensure navigation completes
-      setTimeout(() => {
-        openLogin();
-      }, 100);
+      openLogin();
+      router.replace("/landing");
     }
   }, [isLoading, isAuthenticated, router, openLogin, returnUrl, setReturnUrl]);
 

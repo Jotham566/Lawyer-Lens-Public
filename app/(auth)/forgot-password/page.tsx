@@ -7,8 +7,7 @@ import { Loader2 } from "lucide-react";
 import { useAuth, useAuthModal } from "@/components/providers";
 
 /**
- * Forgot password page - redirects to home and opens auth modal.
- * This page handles direct URL access to /forgot-password by opening the modal.
+ * Forgot password page - redirects to landing and opens auth modal.
  */
 export default function ForgotPasswordPage() {
   const router = useRouter();
@@ -16,20 +15,15 @@ export default function ForgotPasswordPage() {
   const { openForgotPassword } = useAuthModal();
 
   useEffect(() => {
-    // If already authenticated, redirect to home
-    if (!isLoading && isAuthenticated) {
-      router.replace("/");
+    if (isLoading) return;
+
+    if (isAuthenticated) {
+      router.replace("/chat");
       return;
     }
 
-    // If not loading and not authenticated, open the modal and go home
-    if (!isLoading && !isAuthenticated) {
-      router.replace("/");
-      // Small delay to ensure navigation completes
-      setTimeout(() => {
-        openForgotPassword();
-      }, 100);
-    }
+    openForgotPassword();
+    router.replace("/landing");
   }, [isLoading, isAuthenticated, router, openForgotPassword]);
 
   return (

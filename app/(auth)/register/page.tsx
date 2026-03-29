@@ -26,20 +26,16 @@ function RegisterContent() {
       return;
     }
 
-    // If not loading and not authenticated, open the modal and go home
+    // If not loading and not authenticated, go to landing and open modal
     if (!isLoading && !isAuthenticated) {
       // Store returnUrl if provided
       if (returnUrl) {
         setReturnUrl(decodeURIComponent(returnUrl));
       }
 
-      // Open modal FIRST (this stores the invitation token in sessionStorage)
+      // Open modal and navigate to landing (no intermediate redirect)
       openRegister(undefined, inviteToken || undefined);
-
-      // Then redirect to home (modal state persists)
-      setTimeout(() => {
-        router.replace("/");
-      }, 50);
+      router.replace("/landing");
     }
   }, [isLoading, isAuthenticated, router, openRegister, returnUrl, inviteToken, setReturnUrl]);
 
