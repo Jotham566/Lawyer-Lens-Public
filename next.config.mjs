@@ -27,6 +27,11 @@ const nextConfig = {
       },
       {
         protocol: "https",
+        hostname: "api.lawlens.io",
+        pathname: "/api/v1/**",
+      },
+      {
+        protocol: "https",
         hostname: "api.ug.lawlens.io",
         pathname: "/api/v1/**",
       },
@@ -41,11 +46,6 @@ const nextConfig = {
         pathname: "/avatars/**",
       },
     ],
-  },
-
-  // Environment variables validation
-  env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1",
   },
 
   // Turbopack configuration (Next.js 16+ default bundler)

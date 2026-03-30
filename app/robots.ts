@@ -22,7 +22,6 @@ export default function robots(): MetadataRoute.Robots {
           "/terms",
           "/judgments",
           "/legislation",
-          "/browse",
           "/document",
         ],
         disallow: [
@@ -48,7 +47,8 @@ export default function robots(): MetadataRoute.Robots {
           "/auth/",
           "/account/",
           "/waitlist",
-          "/search", // internal search, not a landing page
+          "/browse",
+          "/search",
         ],
       },
     ],

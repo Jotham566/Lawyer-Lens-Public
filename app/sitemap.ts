@@ -76,19 +76,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
-      url: `${BASE_URL}/browse`,
-      lastModified: now,
-      changeFrequency: "weekly",
-      priority: 0.6,
-    },
-    {
-      url: `${BASE_URL}/browse/judgments`,
-      lastModified: now,
-      changeFrequency: "daily",
-      priority: 0.7,
-    },
-    {
-      url: `${BASE_URL}/browse/constitution`,
+      url: `${BASE_URL}/legislation/constitution`,
       lastModified: now,
       changeFrequency: "yearly",
       priority: 0.6,
