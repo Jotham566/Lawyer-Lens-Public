@@ -8,21 +8,37 @@
 // API Base URL configuration
 // - NEXT_PUBLIC_API_URL: Used for client-side (browser) requests (baked in at build time)
 // - INTERNAL_API_URL: Used for server-side requests in Docker (runtime env var)
-const getApiBase = () => {
-  // Server-side: use INTERNAL_API_URL if available (for Docker networking)
-  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
-    return process.env.INTERNAL_API_URL;
-  }
-  // Client-side or fallback: use NEXT_PUBLIC_API_URL or default
-  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
-  // Ensure production URLs always use HTTPS
-  if (typeof window !== "undefined" && url.startsWith("http://") && !url.includes("localhost")) {
+/**
+ * Ensure non-localhost URLs always use HTTPS.
+ * Prevents mixed-content errors when env vars lose the 's' in https.
+ */
+function ensureHttps(url: string): string {
+  if (url.startsWith("http://") && !url.includes("localhost") && !url.includes("127.0.0.1")) {
     return url.replace("http://", "https://");
   }
   return url;
-};
+}
 
-const API_BASE = getApiBase();
+/**
+ * Get the API base URL. Evaluated fresh on each call to handle
+ * SSR → client hydration correctly (server uses INTERNAL_API_URL,
+ * client uses NEXT_PUBLIC_API_URL).
+ */
+function getApiBase(): string {
+  // Server-side: use INTERNAL_API_URL if available (for Docker networking)
+  if (typeof window === "undefined" && process.env.INTERNAL_API_URL) {
+    return ensureHttps(process.env.INTERNAL_API_URL);
+  }
+  // Client-side or fallback: use NEXT_PUBLIC_API_URL or default
+  return ensureHttps(process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1");
+}
+
+// For backward compat: eagerly evaluate once, but also re-check on client
+let API_BASE = getApiBase();
+if (typeof window !== "undefined") {
+  // Re-evaluate on client to override any SSR-baked value
+  API_BASE = getApiBase();
+}
 
 const CSRF_COOKIE_NAME = process.env.NEXT_PUBLIC_CSRF_COOKIE_NAME || "csrf_token";
 
