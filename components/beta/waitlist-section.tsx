@@ -33,7 +33,8 @@ export function WaitlistSection({ id, className }: WaitlistSectionProps) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+      const { getApiUrl } = await import("@/lib/api/ensure-https");
+      const apiUrl = getApiUrl();
 
       // Prepare payload with source field
       const payload = {

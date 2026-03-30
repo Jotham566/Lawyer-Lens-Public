@@ -75,7 +75,8 @@ interface Payment {
   flutterwave_tx_id: string | null;
 }
 
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+import { getApiUrl } from "@/lib/api/ensure-https";
+const API_BASE = getApiUrl();
 
 function AdminBillingContent() {
   const { isAuthenticated } = useAuth();

@@ -37,7 +37,8 @@ export function BetaAccessModal({ open, onOpenChange }: BetaAccessModalProps) {
     setError(null);
 
     try {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+      const { getApiUrl } = await import("@/lib/api/ensure-https");
+      const apiUrl = getApiUrl();
 
       const payload = {
         email: formData.email,

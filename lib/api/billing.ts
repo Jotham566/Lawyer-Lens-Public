@@ -4,7 +4,9 @@
  * Provides authenticated API calls for billing endpoints.
  */
 
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+import { getApiUrl } from "./ensure-https";
+
+const API_BASE_URL = getApiUrl();
 
 // =============================================================================
 // Subscription API

@@ -408,7 +408,7 @@ export async function apiFetch<T>(
   endpoint: string,
   options?: RequestInit
 ): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
+  const url = ensureHttps(`${API_BASE}${endpoint}`);
 
   const method = options?.method ?? "GET";
   const providedHeaders = (options?.headers as Record<string, string> | undefined) || {};
@@ -540,7 +540,7 @@ export async function apiUpload<T>(
   fieldName = "file",
   accessToken?: string
 ): Promise<T> {
-  const url = `${API_BASE}${endpoint}`;
+  const url = ensureHttps(`${API_BASE}${endpoint}`);
 
   const formData = new FormData();
   formData.append(fieldName, file);
