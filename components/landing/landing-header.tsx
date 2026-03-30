@@ -21,8 +21,9 @@ export function LandingHeader() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [showDemoModal, setShowDemoModal] = useState(false);
   const [showContactModal, setShowContactModal] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { openLogin } = useAuthModal();
-  const { isAuthenticated, user } = useAuth();
+  const { isAuthenticated, user, logout } = useAuth();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -96,13 +97,66 @@ export function LandingHeader() {
                   Go to Dashboard
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
                 </Link>
-                <Link
-                  href="/settings"
-                  className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/20 text-xs font-bold text-brand-gold transition-colors hover:bg-brand-gold/30"
-                  title={user?.full_name || user?.email || "Account"}
-                >
-                  {initials}
-                </Link>
+                {/* User avatar with dropdown */}
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setUserMenuOpen(!userMenuOpen)}
+                    className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-surface-container-high"
+                    title={user?.full_name || user?.email || "Account"}
+                  >
+                    <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/20 text-xs font-bold text-brand-gold">
+                      {initials}
+                    </span>
+                    <svg
+                      className={cn("h-3.5 w-3.5 text-muted-foreground transition-transform", userMenuOpen && "rotate-180")}
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      strokeWidth={2.5}
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </button>
+                  {userMenuOpen && (
+                    <>
+                      {/* Backdrop to close menu */}
+                      <div className="fixed inset-0 z-40" onClick={() => setUserMenuOpen(false)} />
+                      <div className="absolute right-0 top-full z-50 mt-2 w-56 rounded-xl border border-border/60 bg-card p-1.5 shadow-floating dark:border-glass">
+                        <div className="border-b border-border/30 px-3 py-2.5 mb-1">
+                          <p className="text-sm font-semibold truncate">{user?.full_name || "User"}</p>
+                          <p className="text-xs text-muted-foreground truncate">{user?.email}</p>
+                        </div>
+                        <Link
+                          href="/chat"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-container-high"
+                        >
+                          Dashboard
+                        </Link>
+                        <Link
+                          href="/settings"
+                          onClick={() => setUserMenuOpen(false)}
+                          className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-foreground transition-colors hover:bg-surface-container-high"
+                        >
+                          Settings
+                        </Link>
+                        <div className="mt-1 border-t border-border/30 pt-1">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setUserMenuOpen(false);
+                              logout();
+                            }}
+                            className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm font-medium text-destructive transition-colors hover:bg-destructive/10"
+                          >
+                            Sign Out
+                          </button>
+                        </div>
+                      </div>
+                    </>
+                  )}
+                </div>
               </>
             ) : (
               <>
@@ -177,6 +231,16 @@ export function LandingHeader() {
                   >
                     {user?.full_name || "Account Settings"}
                   </Link>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMobileOpen(false);
+                      logout();
+                    }}
+                    className="rounded-lg px-3 py-2.5 text-left text-base font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                  >
+                    Sign Out
+                  </button>
                 </>
               ) : (
                 <>
