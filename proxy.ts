@@ -8,7 +8,7 @@ const ROOT_DOMAIN = process.env.NEXT_PUBLIC_ROOT_DOMAIN || "lawlens.io";
 const WWW_DOMAIN = `www.${ROOT_DOMAIN}`;
 
 /** Landing routes that exist in app/landing/ */
-const LANDING_ROUTES = ["/", "/pricing", "/about", "/contact"];
+const LANDING_ROUTES = ["/"];
 
 /** Routes served identically on both domains (privacy, terms) */
 const SHARED_ROUTES = ["/privacy", "/terms"];
