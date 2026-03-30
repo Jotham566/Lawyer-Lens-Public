@@ -24,8 +24,9 @@ const categories = [
   { label: "All Resources", value: "all", href: "/legislation" },
   { label: "Laws", value: "act", href: "/legislation/acts" },
   { label: "Judgements", value: "judgment", href: "/judgments" },
+  { label: "Constitution", value: "constitution", href: "/legislation/constitution" },
   { label: "Regulations", value: "regulation", href: "/legislation/regulations" },
-  { label: "Bills", value: "bill", href: "/search?type=bill" },
+  { label: "Bills", value: "bill", href: "/legislation/bills" },
   { label: "Internal KB", value: "kb", href: "/knowledge-base" },
 ] as const;
 

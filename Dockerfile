@@ -35,9 +35,9 @@ COPY frontend-public/ ./
 
 # Set build-time environment variables
 # Note: NEXT_PUBLIC_API_URL must include /api/v1 as the api-client uses it as the base URL
-ARG NEXT_PUBLIC_API_URL=https://api.ug.lawlens.io/api/v1
+ARG NEXT_PUBLIC_API_URL=https://api.lawlens.io/api/v1
 ARG NEXT_PUBLIC_ENVIRONMENT=production
-ARG NEXT_PUBLIC_UMAMI_HOST=https://analytics.ug.lawlens.io
+ARG NEXT_PUBLIC_UMAMI_HOST=https://analytics.lawlens.io
 ARG NEXT_PUBLIC_UMAMI_WEBSITE_ID_PUBLIC=d5b1cdd3-2bf8-43d7-996f-b9c8e3cd591f
 
 ENV NEXT_PUBLIC_API_URL=$NEXT_PUBLIC_API_URL

@@ -190,7 +190,7 @@ function SecuritySettingsContent() {
 
   if (loading) {
     return (
-      <div className="container max-w-4xl py-8 space-y-6">
+      <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-64" />
         <Skeleton className="h-64" />
@@ -203,7 +203,7 @@ function SecuritySettingsContent() {
 
   if (!isOwner) {
     return (
-      <div className="container max-w-4xl py-8">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card className="max-w-lg mx-auto">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -226,7 +226,7 @@ function SecuritySettingsContent() {
   const spAcsUrl = `https://app.lawlens.io/auth/saml/${organization?.slug}/callback`;
 
   return (
-    <div className="container max-w-4xl py-8 space-y-6">
+    <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -665,7 +665,7 @@ export default function SecuritySettingsPage() {
     <FeatureGate
       feature="team_management"
       fallback={
-        <div className="container max-w-4xl py-8">
+        <div className="min-h-screen px-6 py-6 lg:px-12">
           <Card className="max-w-lg mx-auto">
             <CardHeader>
               <CardTitle>Security Settings</CardTitle>

@@ -36,7 +36,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (authLoading || loadingOrg) {
     return (
-      <div className="container max-w-5xl py-12">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card>
           <CardHeader>
             <CardTitle>Loading admin console...</CardTitle>
@@ -53,7 +53,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   if (!isAdmin) {
     return (
-      <div className="container max-w-4xl py-12">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card>
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -66,7 +66,7 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/dashboard">Go to Dashboard</Link>
+              <Link href="/chat">Go to Dashboard</Link>
             </Button>
           </CardContent>
         </Card>

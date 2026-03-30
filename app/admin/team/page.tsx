@@ -293,7 +293,7 @@ function TeamManagementContent() {
 
   if (loading) {
     return (
-      <div className="container max-w-6xl py-8 space-y-6">
+      <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
         <Skeleton className="h-8 w-48" />
         <div className="grid gap-4 md:grid-cols-3">
           {[1, 2, 3].map((i) => (
@@ -307,7 +307,7 @@ function TeamManagementContent() {
 
   if (!isAdmin) {
     return (
-      <div className="container max-w-6xl py-8">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card className="max-w-lg mx-auto">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -330,7 +330,7 @@ function TeamManagementContent() {
   const pendingCount = invitations.filter((i) => i.status === "pending").length;
 
   return (
-    <div className="container max-w-6xl py-8 space-y-6">
+    <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -714,7 +714,7 @@ export default function TeamManagementPage() {
     <FeatureGate
       feature="team_management"
       fallback={
-        <div className="container max-w-6xl py-8">
+        <div className="min-h-screen px-6 py-6 lg:px-12">
           <Card className="max-w-lg mx-auto">
             <CardHeader>
               <CardTitle>Team Management</CardTitle>

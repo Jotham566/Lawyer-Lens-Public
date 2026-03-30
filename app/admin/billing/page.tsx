@@ -261,7 +261,7 @@ function AdminBillingContent() {
   };
 
   return (
-    <div className="container mx-auto py-8 space-y-8">
+    <div className="min-h-screen px-6 py-6 lg:px-12 space-y-8">
       <div>
         <h1 className="text-3xl font-bold">Billing Dashboard</h1>
         <p className="text-muted-foreground">

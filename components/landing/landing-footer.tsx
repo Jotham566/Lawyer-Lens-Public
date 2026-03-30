@@ -11,7 +11,7 @@ const footerLinks: Record<string, FooterLink[]> = {
   Product: [
     { label: "Features", href: "/landing#features" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Uganda Portal", href: "/chat" },
+    { label: "Browse Documents", href: "/browse" },
   ],
   Company: [
     { label: "About", href: "/about" },

@@ -30,7 +30,6 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import {
-  PageHeader,
   EmptyState,
   AlertBanner,
 } from "@/components/common";
@@ -227,14 +226,19 @@ export default function ResearchHistoryPage() {
   };
 
   return (
-    <div className="container mx-auto max-w-3xl px-4 py-8">
-      <PageHeader
-        title="Research History"
-        description="View and manage your past research sessions"
-        backHref="/research"
-        backLabel="New Research"
-        actions={
-          sessions.length > 0 && (
+    <div className="min-h-screen px-6 py-6 lg:px-12">
+      <div className="mx-auto max-w-4xl">
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight lg:text-3xl">
+            Research History
+          </h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            View and manage your past deep research sessions
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          {sessions.length > 0 && (
             <Button
               variant="outline"
               size="sm"
@@ -242,9 +246,15 @@ export default function ResearchHistoryPage() {
             >
               Clear All
             </Button>
-          )
-        }
-      />
+          )}
+          <Button
+            size="sm"
+            onClick={() => router.push("/research")}
+          >
+            New Research
+          </Button>
+        </div>
+      </div>
 
       {sessions.length === 0 ? (
         <div className="mt-8">
@@ -261,37 +271,26 @@ export default function ResearchHistoryPage() {
       ) : (
         <>
           {/* Filter Tabs */}
-          <div className="flex items-center gap-2 mb-6 mt-6">
-            <Button
-              variant={filter === "all" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilter("all")}
-            >
-              All ({sessions.length})
-            </Button>
-            <Button
-              variant={filter === "complete" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilter("complete")}
-            >
-              Complete (
-              {sessions.filter((s) => s.status === "complete").length})
-            </Button>
-            <Button
-              variant={filter === "in_progress" ? "default" : "ghost"}
-              size="sm"
-              onClick={() => setFilter("in_progress")}
-            >
-              In Progress (
-              {
-                sessions.filter((s) =>
-                  ["clarifying", "brief_review", "researching", "writing"].includes(
-                    s.status
-                  )
-                ).length
-              }
-              )
-            </Button>
+          <div className="flex flex-wrap items-center gap-2 mb-6 mt-6">
+            {([
+              { key: "all" as const, label: "All", count: sessions.length },
+              { key: "complete" as const, label: "Complete", count: sessions.filter((s) => s.status === "complete").length },
+              { key: "in_progress" as const, label: "In Progress", count: sessions.filter((s) => ["clarifying", "brief_review", "researching", "writing"].includes(s.status)).length },
+            ]).map((tab) => (
+              <button
+                key={tab.key}
+                type="button"
+                onClick={() => setFilter(tab.key)}
+                className={cn(
+                  "ll-transition rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest",
+                  filter === tab.key
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+                )}
+              >
+                {tab.label} ({tab.count})
+              </button>
+            ))}
           </div>
 
           {filteredSessions.length === 0 ? (
@@ -360,6 +359,7 @@ export default function ResearchHistoryPage() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+      </div>
     </div>
   );
 }

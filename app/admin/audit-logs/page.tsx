@@ -248,7 +248,7 @@ function AuditLogsContent() {
 
   if (loading) {
     return (
-      <div className="container max-w-6xl py-8 space-y-6">
+      <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
         <Skeleton className="h-8 w-48" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-96" />
@@ -261,7 +261,7 @@ function AuditLogsContent() {
 
   if (!isAdmin) {
     return (
-      <div className="container max-w-6xl py-8">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card className="max-w-lg mx-auto">
           <CardHeader>
             <CardTitle>Access Denied</CardTitle>
@@ -280,7 +280,7 @@ function AuditLogsContent() {
   }
 
   return (
-    <div className="container max-w-6xl py-8 space-y-6">
+    <div className="min-h-screen px-6 py-6 lg:px-12 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
         <Button variant="ghost" size="icon" asChild>
@@ -461,7 +461,7 @@ export default function AuditLogsPage() {
     <FeatureGate
       feature="audit_logs"
       fallback={
-        <div className="container max-w-6xl py-8">
+        <div className="min-h-screen px-6 py-6 lg:px-12">
           <Card className="max-w-lg mx-auto">
             <CardHeader>
               <CardTitle>Audit Logs</CardTitle>

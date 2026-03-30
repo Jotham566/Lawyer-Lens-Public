@@ -230,7 +230,7 @@ function AdminDashboardContent() {
 
   if (loading) {
     return (
-      <div className="container max-w-7xl py-8 space-y-8">
+      <div className="min-h-screen px-6 py-6 lg:px-12 space-y-8">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
           <Skeleton className="h-4 w-96" />
@@ -246,7 +246,7 @@ function AdminDashboardContent() {
 
   if (!isAdmin) {
     return (
-      <div className="container max-w-7xl py-8">
+      <div className="min-h-screen px-6 py-6 lg:px-12">
         <Card className="max-w-lg mx-auto">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
@@ -259,7 +259,7 @@ function AdminDashboardContent() {
           </CardHeader>
           <CardContent>
             <Button asChild>
-              <Link href="/dashboard">Go to Dashboard</Link>
+              <Link href="/chat">Go to Dashboard</Link>
             </Button>
           </CardContent>
         </Card>
@@ -270,16 +270,16 @@ function AdminDashboardContent() {
   const activeMembers = members.filter((m) => m.is_active).length;
 
   return (
-    <div className="container max-w-7xl py-8 space-y-8">
+    <div className="min-h-screen px-6 py-6 lg:px-12 space-y-8">
       {/* Header */}
-      <div className="rounded-hero border border-border/60 bg-surface-container px-6 py-7 shadow-soft sm:px-8">
+      <div className="rounded-xl border border-transparent bg-card px-6 py-7 shadow-soft dark:border-glass sm:px-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-start sm:justify-between">
           <div>
-            <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-secondary-foreground/80">
+            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
               Administration
             </p>
-            <h1 className="mt-3 font-serif text-4xl font-semibold tracking-[-0.03em] text-foreground">Admin Console</h1>
-            <p className="mt-3 text-sm leading-7 text-muted-foreground">
+            <h1 className="mt-2 text-2xl font-extrabold tracking-tight lg:text-3xl">Admin Console</h1>
+            <p className="mt-2 text-sm text-muted-foreground">
               Manage your organization: {organization?.name}
             </p>
           </div>
@@ -480,7 +480,7 @@ export default function AdminDashboardPage() {
     <FeatureGate
       feature="team_management"
       fallback={
-        <div className="container max-w-7xl py-8">
+        <div className="min-h-screen px-6 py-6 lg:px-12">
           <Card className="max-w-lg mx-auto">
             <CardHeader>
               <CardTitle>Admin Console</CardTitle>
