@@ -33,6 +33,9 @@ RUN pnpm install --frozen-lockfile
 COPY packages/ui/ /app/packages/ui/
 COPY frontend-public/ ./
 
+# Cache buster — change this to force a fresh build
+ARG CACHE_BUST=2026-03-30-v2
+
 # Set build-time environment variables
 # Note: NEXT_PUBLIC_API_URL must include /api/v1 as the api-client uses it as the base URL
 ARG NEXT_PUBLIC_API_URL=https://api.lawlens.io/api/v1
