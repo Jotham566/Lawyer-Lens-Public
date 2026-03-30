@@ -14,7 +14,12 @@ const getApiBase = () => {
     return process.env.INTERNAL_API_URL;
   }
   // Client-side or fallback: use NEXT_PUBLIC_API_URL or default
-  return process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+  const url = process.env.NEXT_PUBLIC_API_URL || "http://localhost:8003/api/v1";
+  // Ensure production URLs always use HTTPS
+  if (typeof window !== "undefined" && url.startsWith("http://") && !url.includes("localhost")) {
+    return url.replace("http://", "https://");
+  }
+  return url;
 };
 
 const API_BASE = getApiBase();
