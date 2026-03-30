@@ -5,7 +5,7 @@ import { getAuthHeader } from "../_auth";
 const ADMIN_API_URL =
   process.env.ADMIN_API_URL ||
   (process.env.NODE_ENV === "production"
-    ? "https://api.ug.lawlens.io"
+    ? "https://api.lawlens.io"
     : "http://localhost:8003");
 
 export async function GET(request: NextRequest) {

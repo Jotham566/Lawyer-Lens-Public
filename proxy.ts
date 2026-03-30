@@ -79,12 +79,9 @@ export function proxy(request: NextRequest) {
       return response;
     }
 
-    // Unknown paths on root domain → redirect to UG portal
-    const ugUrl = new URL(
-      pathname + request.nextUrl.search,
-      process.env.NEXT_PUBLIC_UG_URL || "https://ug.lawlens.io"
-    );
-    return NextResponse.redirect(ugUrl, 302);
+    // Unknown paths on root domain — no redirect needed since
+    // app and landing are on the same domain (lawlens.io)
+    return NextResponse.next();
   }
 
   // ── Product domain (ug.lawlens.io, localhost) ──

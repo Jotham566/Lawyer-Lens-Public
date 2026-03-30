@@ -57,42 +57,52 @@ const jetbrainsMono = localFont({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3001"),
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || "https://lawlens.io"),
   title: {
-    default: "Law Lens Uganda - Uganda Legal Intelligence Platform",
+    default: "Law Lens Uganda — Legal Intelligence Platform",
     template: "%s | Law Lens Uganda",
   },
   description:
-    "Access Uganda's laws, judgments, and regulations. Search, browse, and get instant answers with citations to authoritative sources.",
+    "Legal intelligence platform for institutions. Automate legal research, get citation-backed answers, and stay ahead of compliance obligations and regulatory change.",
   keywords: [
-    "Uganda law",
-    "legal documents",
-    "acts",
-    "judgments",
-    "regulations",
-    "constitution",
-    "legal research",
-    "legal assistant",
+    "Uganda legal research",
+    "legal intelligence platform",
+    "Uganda judgments",
+    "Uganda acts of parliament",
+    "citation-backed legal answers",
+    "compliance monitoring Uganda",
+    "contract analysis",
+    "regulatory change monitoring",
+    "legal research automation",
+    "AI legal research Uganda",
   ],
-  authors: [{ name: "Law Lens Uganda Team" }],
-  creator: "Law Lens Uganda",
+  authors: [{ name: "Law Lens" }],
+  creator: "Law Lens",
+  publisher: "Law Lens",
   openGraph: {
     type: "website",
     locale: "en_UG",
     siteName: "Law Lens Uganda",
-    title: "Law Lens Uganda - Uganda Legal Intelligence Platform",
+    title: "Law Lens Uganda — Legal Intelligence Platform",
     description:
-      "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
+      "Automate legal research, get citation-backed answers, and stay ahead of compliance obligations and regulatory change.",
   },
   twitter: {
     card: "summary_large_image",
-    title: "Law Lens Uganda - Uganda Legal Intelligence Platform",
+    title: "Law Lens Uganda — Legal Intelligence Platform",
     description:
-      "Access Uganda's laws, judgments, and regulations. Find answers faster with intelligent search.",
+      "Legal intelligence platform for institutions. Citation-backed legal research, compliance monitoring, and internal knowledge intelligence.",
   },
   robots: {
     index: true,
     follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+    },
   },
   icons: {
     icon: [
