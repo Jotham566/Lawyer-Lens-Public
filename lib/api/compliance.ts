@@ -6,7 +6,7 @@
  * tasks, alerts, and compliance actions.
  */
 
-import { apiGet, apiPost } from "./client";
+import { apiGet, apiPost, apiFetch } from "./client";
 
 // =============================================================================
 // Types
@@ -155,11 +155,41 @@ export interface AlertListResponse {
   offset: number;
 }
 
+export interface ComplianceProfileResponse {
+  id: string;
+  organization_id: string;
+  sectors: string[];
+  regulators: string[];
+  operating_jurisdictions: string[];
+  risk_appetite: string;
+  products_and_services: string[];
+  business_activities: string[];
+  materiality_thresholds: Record<string, unknown>;
+  reporting_calendar: Record<string, unknown>;
+  compliance_contacts: Record<string, unknown>[];
+  alert_preferences: Record<string, unknown>;
+  digest_preferences: Record<string, unknown>;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 // =============================================================================
 // API Functions
 // =============================================================================
 
 export const complianceApi = {
+  /** Get the organization's compliance profile (auto-creates if missing). */
+  getProfile: () =>
+    apiGet<ComplianceProfileResponse>("/compliance/profile"),
+
+  /** Update the compliance profile. */
+  updateProfile: (data: Partial<ComplianceProfileResponse>) =>
+    apiFetch<ComplianceProfileResponse>("/compliance/profile", {
+      method: "PATCH",
+      body: JSON.stringify(data),
+    }),
+
   /** Get aggregated dashboard statistics. */
   getDashboardSummary: () =>
     apiGet<ComplianceDashboardSummary>("/compliance/dashboard/summary"),

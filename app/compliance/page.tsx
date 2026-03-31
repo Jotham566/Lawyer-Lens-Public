@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -16,6 +17,7 @@ import {
   CheckCircle2,
   Loader2,
   Lock,
+  Settings,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/components/providers";
@@ -75,19 +77,28 @@ export default function CompliancePage() {
     <div className="min-h-screen">
       {/* Page Header */}
       <div className="px-6 pt-6 pb-4 lg:px-10">
-        <div className="flex items-center gap-4">
-          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
-            <ShieldCheck className="h-6 w-6 text-brand-gold" />
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
+              <ShieldCheck className="h-6 w-6 text-brand-gold" />
+            </div>
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">
+                Regulatory Compliance
+              </h1>
+              <p className="mt-0.5 text-sm text-muted-foreground">
+                Monitor regulatory developments, track obligations, and manage
+                compliance workflows.
+              </p>
+            </div>
           </div>
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">
-              Regulatory Compliance
-            </h1>
-            <p className="mt-0.5 text-sm text-muted-foreground">
-              Monitor regulatory developments, track obligations, and manage
-              compliance workflows.
-            </p>
-          </div>
+          <Link
+            href="/compliance/settings"
+            className="inline-flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+          >
+            <Settings className="h-4 w-4" />
+            Settings
+          </Link>
         </div>
       </div>
 
@@ -468,12 +479,17 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
           developments that affect your business.
         </p>
         <div className="mt-4 flex flex-wrap gap-3">
-          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+          <Link
+            href="/compliance/settings"
+            className="flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground transition-colors group"
+          >
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-gold/20 text-[10px] font-bold text-brand-gold">
               1
             </span>
-            Configure your compliance profile
-          </div>
+            <span className="text-brand-gold hover:underline">
+              Configure your compliance profile
+            </span>
+          </Link>
           <div className="flex items-center gap-2 text-sm text-muted-foreground">
             <span className="flex h-6 w-6 items-center justify-center rounded-full bg-brand-gold/20 text-[10px] font-bold text-brand-gold">
               2
