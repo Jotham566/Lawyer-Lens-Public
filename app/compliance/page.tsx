@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import ReactMarkdown from "react-markdown";
 import {
   ShieldCheck,
   AlertTriangle,
@@ -707,9 +708,9 @@ function FindingsTab() {
                 )}
               </div>
               {f.explanation && (
-                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">
-                  {f.explanation}
-                </p>
+                <div className="mt-3 prose prose-sm dark:prose-invert max-w-none text-muted-foreground [&_p]:leading-relaxed [&_ul]:mt-1 [&_li]:mt-0.5 [&_strong]:text-foreground [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold">
+                  <ReactMarkdown>{f.explanation}</ReactMarkdown>
+                </div>
               )}
               {f.remediation_guidance && (
                 <div className="mt-3 rounded-lg bg-muted/50 p-3">
