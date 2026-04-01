@@ -293,7 +293,7 @@ function SettingsTab() {
               resetForm();
               setShowForm(true);
             }}
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-gold/90"
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110"
           >
             <Plus className="h-4 w-4" />
             Add Connector
@@ -529,7 +529,7 @@ function SettingsTab() {
                 type="button"
                 onClick={handleSubmit}
                 disabled={submitting || !formName.trim() || !formUrl.trim()}
-                className="inline-flex items-center gap-2 rounded-lg bg-brand-gold px-5 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-gold/90 disabled:opacity-50"
+                className="inline-flex items-center gap-2 rounded-lg bg-primary px-5 py-2 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110 disabled:opacity-50"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
                 {editingId ? "Save Changes" : "Create Connector"}
@@ -779,7 +779,7 @@ export default function KnowledgeBasePage() {
             </div>
             <Link
               href="/pricing"
-              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-gold/90"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-primary px-6 py-2.5 text-sm font-semibold text-primary-foreground transition-colors hover:brightness-110"
             >
               Upgrade to Enterprise
             </Link>

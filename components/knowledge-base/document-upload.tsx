@@ -395,7 +395,7 @@ export function DocumentUpload({ onUploadComplete }: DocumentUploadProps) {
               "w-full flex items-center justify-center gap-2 rounded-lg px-4 py-2.5 text-sm font-semibold transition-colors",
               uploading
                 ? "bg-muted text-muted-foreground cursor-not-allowed"
-                : "bg-brand-gold text-white hover:bg-brand-gold/90",
+                : "bg-primary text-primary-foreground hover:brightness-110",
             )}
           >
             {uploading ? (

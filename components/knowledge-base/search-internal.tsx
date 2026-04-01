@@ -134,7 +134,7 @@ export function SearchInternal() {
               "absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors",
               searching || !query.trim()
                 ? "bg-muted text-muted-foreground cursor-not-allowed"
-                : "bg-brand-gold text-white hover:bg-brand-gold/90",
+                : "bg-primary text-primary-foreground hover:brightness-110",
             )}
           >
             {searching ? (
