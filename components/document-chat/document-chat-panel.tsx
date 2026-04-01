@@ -282,7 +282,6 @@ function MessageBubble({
               aria-label="Edit message"
               className="w-full min-h-[80px] resize-y rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
               rows={Math.max(Math.min(editContent.split("\n").length + 1, 8), 2)}
-              // eslint-disable-next-line jsx-a11y/no-autofocus
               autoFocus
             />
             <div className="flex justify-end gap-2">
