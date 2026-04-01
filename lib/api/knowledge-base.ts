@@ -102,7 +102,8 @@ export async function uploadDocument(
   file: File,
   title: string,
   description?: string,
-  tags?: string[]
+  tags?: string[],
+  category?: string,
 ): Promise<DocumentUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -112,6 +113,9 @@ export async function uploadDocument(
   }
   if (tags && tags.length > 0) {
     formData.append("tags", tags.join(","));
+  }
+  if (category) {
+    formData.append("category", category);
   }
 
   // Use apiFetch with FormData - don't set Content-Type, let browser set it
@@ -214,4 +218,103 @@ export function formatFileSize(bytes: number): string {
  */
 export function getStatusColor(status: DocumentStatus): string {
   return getToneStyles(getDocumentStatusTone(status)).surface;
+}
+
+/**
+ * Trigger compliance classification for a document.
+ */
+export async function classifyDocument(
+  documentId: string,
+): Promise<{ status: string; classification: Record<string, unknown> }> {
+  return apiPost<{ status: string; classification: Record<string, unknown> }>(
+    `/knowledge-base/documents/${documentId}/classify`,
+  );
+}
+
+/**
+ * Get knowledge base connector status.
+ */
+export async function getConnectorStatus(): Promise<{
+  mode: string;
+  connector: Record<string, unknown> | null;
+  message?: string;
+}> {
+  return apiGet<{
+    mode: string;
+    connector: Record<string, unknown> | null;
+    message?: string;
+  }>("/knowledge-base/connector/status");
+}
+
+// =============================================================================
+// Connector Management
+// =============================================================================
+
+export interface Connector {
+  id: string;
+  connector_type: string;
+  source_name: string;
+  source_url: string;
+  status: string;
+  config: Record<string, unknown>;
+  fetch_interval_minutes: number;
+  last_fetch_at: string | null;
+  next_fetch_at: string | null;
+  error_count: number;
+  last_error: string | null;
+  created_at: string | null;
+}
+
+/**
+ * List all connectors for the organization.
+ */
+export async function listConnectors(): Promise<{ connectors: Connector[]; total: number }> {
+  return apiGet("/knowledge-base/connectors");
+}
+
+/**
+ * Create a new connector.
+ */
+export async function createConnector(data: {
+  connector_type: string;
+  source_name: string;
+  source_url: string;
+  config?: Record<string, unknown>;
+  fetch_interval_minutes?: number;
+}): Promise<{ id: string; status: string }> {
+  return apiPost("/knowledge-base/connectors", data);
+}
+
+/**
+ * Update an existing connector.
+ */
+export async function updateConnector(
+  id: string,
+  data: Partial<{
+    source_name: string;
+    source_url: string;
+    config: Record<string, unknown>;
+    status: string;
+    fetch_interval_minutes: number;
+  }>
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/knowledge-base/connectors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/**
+ * Delete a connector.
+ */
+export async function deleteConnector(id: string): Promise<{ status: string }> {
+  return apiFetch(`/knowledge-base/connectors/${id}`, { method: "DELETE" });
+}
+
+/**
+ * Test connector connectivity.
+ */
+export async function testConnector(id: string): Promise<{ healthy: boolean; status_code?: number; error?: string }> {
+  return apiPost(`/knowledge-base/connectors/${id}/test`);
 }

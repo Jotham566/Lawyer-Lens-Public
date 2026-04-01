@@ -2,16 +2,84 @@
 
 import { useState } from "react";
 import { Search, FileText, Loader2 } from "lucide-react";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
 import { useAuth } from "@/components/providers";
 import {
   searchKnowledgeBase,
   type DocumentSearchResult,
 } from "@/lib/api/knowledge-base";
 import { toast } from "sonner";
+
+/* ─────────────────────────────────────────────────────
+   Constants
+   ───────────────────────────────────────────────────── */
+
+const CATEGORY_COLORS: Record<string, string> = {
+  contract: "bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400",
+  policy: "bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400",
+  sop: "bg-teal-100 text-teal-800 dark:bg-teal-900/30 dark:text-teal-400",
+  employee_agreement: "bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400",
+  governance: "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400",
+  compliance_record: "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400",
+  license: "bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400",
+  financial: "bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400",
+  correspondence: "bg-cyan-100 text-cyan-800 dark:bg-cyan-900/30 dark:text-cyan-400",
+  other: "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+};
+
+/* ─────────────────────────────────────────────────────
+   Helpers
+   ───────────────────────────────────────────────────── */
+
+function highlightText(text: string, query: string) {
+  if (!query) return text;
+  try {
+    const parts = text.split(new RegExp(`(${query})`, "gi"));
+    return (
+      <>
+        {parts.map((part, i) =>
+          part.toLowerCase() === query.toLowerCase() ? (
+            <mark
+              key={i}
+              className="rounded bg-brand-gold/20 px-0.5 text-foreground"
+            >
+              {part}
+            </mark>
+          ) : (
+            part
+          ),
+        )}
+      </>
+    );
+  } catch {
+    return text;
+  }
+}
+
+function ScoreBadge({ score }: { score: number }) {
+  const pct = Math.round(score * 100);
+  const color =
+    pct >= 80
+      ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+      : pct >= 60
+        ? "bg-amber-100 text-amber-800 dark:bg-amber-900/30 dark:text-amber-400"
+        : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400";
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold",
+        color,
+      )}
+    >
+      {pct}% match
+    </span>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
+   Component
+   ───────────────────────────────────────────────────── */
 
 export function SearchInternal() {
   const { isAuthenticated } = useAuth();
@@ -22,14 +90,11 @@ export function SearchInternal() {
 
   const handleSearch = async () => {
     if (!isAuthenticated || !query.trim()) return;
-
     setSearching(true);
     setHasSearched(true);
-
     try {
       const response = await searchKnowledgeBase(query.trim());
       setResults(response.results);
-
       if (response.results.length === 0) {
         toast.info("No results found", {
           description: "Try different search terms",
@@ -44,139 +109,134 @@ export function SearchInternal() {
     }
   };
 
-  const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter") {
-      handleSearch();
-    }
-  };
-
-  const highlightText = (text: string, query: string) => {
-    if (!query) return text;
-
-    const parts = text.split(new RegExp(`(${query})`, "gi"));
-    return (
-      <>
-        {parts.map((part, i) =>
-          part.toLowerCase() === query.toLowerCase() ? (
-            <mark key={i} className="rounded bg-primary/18 px-0.5 text-foreground dark:bg-primary/24">
-              {part}
-            </mark>
-          ) : (
-            part
-          )
-        )}
-      </>
-    );
-  };
-
-  const getScoreColor = (score: number) => {
-    if (score >= 0.8) return "border border-primary/15 bg-primary/10 text-secondary-foreground";
-    if (score >= 0.6) return "border border-secondary/15 bg-secondary/15 text-foreground";
-    return "border border-border/60 bg-muted text-muted-foreground";
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleSearch();
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Search className="h-5 w-5" />
-          Search Internal Documents
-        </CardTitle>
-      </CardHeader>
-      <CardContent className="space-y-6">
-        {/* Search Input */}
-        <div className="flex gap-2">
-          <div className="relative flex-1">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-            <Input
-              placeholder="Search your organization's documents..."
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              onKeyPress={handleKeyPress}
-              className="pl-10"
-            />
-          </div>
-          <Button onClick={handleSearch} disabled={searching || !query.trim()}>
+    <div className="space-y-6">
+      {/* Centered Search Bar */}
+      <div className="mx-auto max-w-2xl">
+        <div className="relative">
+          <Search className="absolute left-4 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
+          <Input
+            placeholder="Search your organization's documents..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={handleKeyDown}
+            className="h-12 pl-12 pr-24 text-base rounded-xl border-border/60 shadow-soft"
+          />
+          <button
+            type="button"
+            onClick={handleSearch}
+            disabled={searching || !query.trim()}
+            className={cn(
+              "absolute right-2 top-1/2 -translate-y-1/2 inline-flex items-center gap-2 rounded-lg px-4 py-1.5 text-sm font-semibold transition-colors",
+              searching || !query.trim()
+                ? "bg-muted text-muted-foreground cursor-not-allowed"
+                : "bg-primary text-primary-foreground hover:brightness-110",
+            )}
+          >
             {searching ? (
               <Loader2 className="h-4 w-4 animate-spin" />
             ) : (
               "Search"
             )}
-          </Button>
+          </button>
         </div>
+      </div>
 
-        {/* Results */}
-        {hasSearched && (
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <p className="text-sm text-muted-foreground">
-                {results.length} result{results.length !== 1 ? "s" : ""} found
+      {/* Results */}
+      {hasSearched && (
+        <div className="space-y-4">
+          <p className="text-sm text-muted-foreground">
+            {results.length} result{results.length !== 1 ? "s" : ""} found
+          </p>
+
+          {results.length === 0 ? (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container">
+                <Search className="h-8 w-8 text-muted-foreground/40" />
+              </div>
+              <h3 className="mt-4 text-lg font-bold">No results found</h3>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                Try different search terms or check your documents
               </p>
             </div>
+          ) : (
+            <div className="space-y-3">
+              {results.map((result) => {
+                const resultAny = result as unknown as Record<string, unknown>;
+                const category = resultAny.category as string | undefined;
 
-            {results.length === 0 ? (
-              <div className="text-center py-8">
-                <Search className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
-                <p className="text-lg font-medium">No results found</p>
-                <p className="text-sm text-muted-foreground">
-                  Try different search terms or check your documents
-                </p>
-              </div>
-            ) : (
-              <div className="space-y-4">
-                {results.map((result) => (
-                  <Card key={result.chunk_id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="pt-4">
-                      <div className="flex items-start justify-between gap-4">
-                        <div className="flex items-start gap-3 flex-1">
-                          <FileText className="h-5 w-5 text-primary mt-0.5" />
-                          <div className="flex-1 min-w-0">
-                            <div className="flex items-center gap-2 mb-1">
-                              <h4 className="font-medium">
-                                {result.document_title}
-                              </h4>
-                              <Badge className={getScoreColor(result.score)}>
-                                {Math.round(result.score * 100)}% match
-                              </Badge>
-                            </div>
-
-                            {(result.section_heading || result.page_number) && (
-                              <p className="text-xs text-muted-foreground mb-2">
-                                {result.section_heading && (
-                                  <span className="mr-2">
-                                    Section: {result.section_heading}
-                                  </span>
-                                )}
-                                {result.page_number && (
-                                  <span>Page {result.page_number}</span>
-                                )}
-                              </p>
-                            )}
-
-                            <p className="text-sm text-muted-foreground line-clamp-3">
-                              {highlightText(result.chunk_text, query)}
-                            </p>
-                          </div>
-                        </div>
+                return (
+                  <div
+                    key={result.chunk_id}
+                    className="rounded-xl border border-transparent bg-card p-5 shadow-soft transition-all hover:-translate-y-0.5 hover:shadow-floating dark:border-glass"
+                  >
+                    <div className="flex items-start gap-4">
+                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-brand-gold/10">
+                        <FileText className="h-5 w-5 text-brand-gold" />
                       </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
-            )}
-          </div>
-        )}
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center gap-2 flex-wrap mb-1">
+                          <h4 className="font-semibold">
+                            {result.document_title}
+                          </h4>
+                          <ScoreBadge score={result.score} />
+                          {category && (
+                            <span
+                              className={cn(
+                                "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize",
+                                CATEGORY_COLORS[category] ??
+                                  "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-300",
+                              )}
+                            >
+                              {category.replace(/_/g, " ")}
+                            </span>
+                          )}
+                        </div>
 
-        {!hasSearched && (
-          <div className="text-center py-8 text-muted-foreground">
-            <Search className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>
-              Enter a search query to find relevant content in your
-              organization&apos;s documents
-            </p>
+                        {(result.section_heading || result.page_number) && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {result.section_heading && (
+                              <span className="mr-3">
+                                Section: {result.section_heading}
+                              </span>
+                            )}
+                            {result.page_number && (
+                              <span>Page {result.page_number}</span>
+                            )}
+                          </p>
+                        )}
+
+                        <p className="text-sm text-muted-foreground line-clamp-3">
+                          {highlightText(result.chunk_text, query)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      )}
+
+      {!hasSearched && (
+        <div className="flex flex-col items-center justify-center py-16 text-center">
+          <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gold/10">
+            <Search className="h-8 w-8 text-brand-gold/60" />
           </div>
-        )}
-      </CardContent>
-    </Card>
+          <h3 className="mt-4 text-lg font-bold">
+            Search Internal Documents
+          </h3>
+          <p className="mt-2 max-w-md text-sm text-muted-foreground">
+            Enter a search query to find relevant content in your
+            organization&apos;s documents
+          </p>
+        </div>
+      )}
+    </div>
   );
 }
