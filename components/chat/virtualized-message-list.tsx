@@ -216,7 +216,7 @@ export function VirtualizedMessageList({
     return (
       <div
         ref={parentRef}
-        className="h-full overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+        className="h-full overflow-auto outline-none"
         onScroll={handleScroll}
         onKeyDown={handleKeyScroll}
         onMouseDown={() => parentRef.current?.focus()}
@@ -273,7 +273,7 @@ export function VirtualizedMessageList({
   return (
     <div
       ref={parentRef}
-      className="h-full overflow-auto outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset"
+      className="h-full overflow-auto outline-none"
       onScroll={handleScroll}
       onKeyDown={handleKeyScroll}
       onMouseDown={() => parentRef.current?.focus()}
