@@ -102,7 +102,8 @@ export async function uploadDocument(
   file: File,
   title: string,
   description?: string,
-  tags?: string[]
+  tags?: string[],
+  category?: string,
 ): Promise<DocumentUploadResponse> {
   const formData = new FormData();
   formData.append("file", file);
@@ -112,6 +113,9 @@ export async function uploadDocument(
   }
   if (tags && tags.length > 0) {
     formData.append("tags", tags.join(","));
+  }
+  if (category) {
+    formData.append("category", category);
   }
 
   // Use apiFetch with FormData - don't set Content-Type, let browser set it
@@ -214,4 +218,30 @@ export function formatFileSize(bytes: number): string {
  */
 export function getStatusColor(status: DocumentStatus): string {
   return getToneStyles(getDocumentStatusTone(status)).surface;
+}
+
+/**
+ * Trigger compliance classification for a document.
+ */
+export async function classifyDocument(
+  documentId: string,
+): Promise<{ status: string; classification: Record<string, unknown> }> {
+  return apiPost<{ status: string; classification: Record<string, unknown> }>(
+    `/knowledge-base/documents/${documentId}/classify`,
+  );
+}
+
+/**
+ * Get knowledge base connector status.
+ */
+export async function getConnectorStatus(): Promise<{
+  mode: string;
+  connector: Record<string, unknown> | null;
+  message?: string;
+}> {
+  return apiGet<{
+    mode: string;
+    connector: Record<string, unknown> | null;
+    message?: string;
+  }>("/knowledge-base/connector/status");
 }

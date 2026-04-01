@@ -9,61 +9,176 @@ import {
   Upload,
   BarChart3,
   HardDrive,
-  ArrowLeft,
+  Settings,
+  Lock,
+  Plug,
+  CheckCircle2,
+  AlertTriangle,
 } from "lucide-react";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
+import { PageLoading } from "@/components/common";
 import { DocumentUpload } from "@/components/knowledge-base/document-upload";
 import { DocumentList } from "@/components/knowledge-base/document-list";
 import { SearchInternal } from "@/components/knowledge-base/search-internal";
 import {
   getKnowledgeBaseStats,
+  getConnectorStatus,
   formatFileSize,
   type KnowledgeBaseStats,
 } from "@/lib/api/knowledge-base";
 
-function StatCard({
-  title,
-  value,
-  icon: Icon,
-  description,
+/* ═══════════════════════════════════════════════════════════
+   Knowledge Base Dashboard
+   ═══════════════════════════════════════════════════════════ */
+
+const tabs = [
+  { id: "documents", label: "Documents", icon: FileText },
+  { id: "search", label: "Search", icon: Search },
+  { id: "upload", label: "Upload", icon: Upload },
+  { id: "settings", label: "Settings", icon: Settings },
+] as const;
+
+type TabId = (typeof tabs)[number]["id"];
+
+/* ─────────────────────────────────────────────────────
+   Shared helpers
+   ───────────────────────────────────────────────────── */
+
+function CardShell({
+  children,
+  className,
 }: {
-  title: string;
-  value: string | number;
-  icon: React.ElementType;
-  description?: string;
+  children: React.ReactNode;
+  className?: string;
 }) {
   return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground">
-          {title}
-        </CardTitle>
-        <Icon className="h-4 w-4 text-muted-foreground" />
-      </CardHeader>
-      <CardContent>
-        <div className="text-2xl font-bold">{value}</div>
-        {description && (
-          <p className="text-xs text-muted-foreground mt-1">{description}</p>
-        )}
-      </CardContent>
-    </Card>
+    <div
+      className={cn(
+        "rounded-xl border border-transparent bg-card shadow-soft dark:border-glass",
+        className,
+      )}
+    >
+      {children}
+    </div>
   );
 }
+
+/* ─────────────────────────────────────────────────────
+   Settings Tab
+   ───────────────────────────────────────────────────── */
+
+function SettingsTab() {
+  const [connector, setConnector] = useState<{
+    mode: string;
+    connector: Record<string, unknown> | null;
+    message?: string;
+  } | null>(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    getConnectorStatus()
+      .then(setConnector)
+      .catch(() => setConnector(null))
+      .finally(() => setLoading(false));
+  }, []);
+
+  return (
+    <div className="space-y-6">
+      {/* Connector Status */}
+      <CardShell className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gold/10">
+            <Plug className="h-4 w-4 text-brand-gold" />
+          </div>
+          <h2 className="text-lg font-bold tracking-tight">
+            Connector Status
+          </h2>
+        </div>
+        {loading ? (
+          <div className="space-y-3">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-64" />
+          </div>
+        ) : connector ? (
+          <div className="space-y-3">
+            <div className="flex items-center gap-2">
+              <span className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Mode
+              </span>
+              <span
+                className={cn(
+                  "inline-flex items-center rounded-full px-2 py-0.5 text-[11px] font-semibold capitalize",
+                  connector.mode === "active"
+                    ? "bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400"
+                    : "bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400",
+                )}
+              >
+                {connector.mode}
+              </span>
+            </div>
+            {connector.message && (
+              <p className="text-sm text-muted-foreground">
+                {connector.message}
+              </p>
+            )}
+            {connector.connector && (
+              <div className="flex items-center gap-2 text-sm text-green-600 dark:text-green-400">
+                <CheckCircle2 className="h-4 w-4" />
+                Connector configured and active
+              </div>
+            )}
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 text-sm text-muted-foreground">
+            <AlertTriangle className="h-4 w-4" />
+            Unable to fetch connector status
+          </div>
+        )}
+      </CardShell>
+
+      {/* Compliance Profile Link */}
+      <CardShell className="p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-gold/10">
+            <Settings className="h-4 w-4 text-brand-gold" />
+          </div>
+          <h2 className="text-lg font-bold tracking-tight">
+            Compliance Profile
+          </h2>
+        </div>
+        <p className="text-sm text-muted-foreground mb-4">
+          Configure your compliance profile to enable automatic document
+          classification and regulatory mapping.
+        </p>
+        <Link
+          href="/compliance/settings"
+          className="inline-flex items-center gap-2 rounded-lg border border-border/60 px-4 py-2 text-sm font-medium text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
+        >
+          <Settings className="h-4 w-4" />
+          Compliance Settings
+        </Link>
+      </CardShell>
+    </div>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
+   Main Content
+   ───────────────────────────────────────────────────── */
 
 function KnowledgeBaseContent() {
   const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState<KnowledgeBaseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
+  const [activeTab, setActiveTab] = useState<TabId>("documents");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const loadStats = useCallback(async () => {
     if (!isAuthenticated) return;
-
     try {
       const data = await getKnowledgeBaseStats();
       setStats(data);
@@ -82,144 +197,180 @@ function KnowledgeBaseContent() {
     setRefreshTrigger((t) => t + 1);
   };
 
+  const summaryCards = [
+    {
+      label: "Total Documents",
+      value: String(stats?.total_documents ?? 0),
+      icon: FileText,
+      color: "text-brand-gold",
+    },
+    {
+      label: "Ready for Search",
+      value: String(stats?.ready_documents ?? 0),
+      icon: Search,
+      color: "text-green-500",
+    },
+    {
+      label: "Total Chunks",
+      value: String(stats?.total_chunks ?? 0),
+      icon: BarChart3,
+      color: "text-blue-500",
+    },
+    {
+      label: "Storage Used",
+      value: formatFileSize(stats?.total_storage_bytes ?? 0),
+      icon: HardDrive,
+      color: "text-orange-500",
+    },
+  ];
+
   return (
-    <div className="container max-w-7xl py-8 space-y-8">
-      {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+    <div className="min-h-screen">
+      {/* Page Header */}
+      <div className="px-6 pt-6 pb-4 lg:px-10">
         <div className="flex items-center gap-4">
-          <Button variant="ghost" size="icon" asChild>
-            <Link href="/admin">
-              <ArrowLeft className="h-4 w-4" />
-            </Link>
-          </Button>
+          <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-brand-gold/10">
+            <Database className="h-6 w-6 text-brand-gold" />
+          </div>
           <div>
-            <h1 className="text-3xl font-bold flex items-center gap-2">
-              <Database className="h-8 w-8 text-primary" />
-              Knowledge Base
+            <h1 className="text-2xl font-bold tracking-tight">
+              Internal Knowledge Base
             </h1>
-            <p className="text-muted-foreground mt-1">
-              Upload and search your organization&apos;s internal documents
+            <p className="mt-0.5 text-sm text-muted-foreground">
+              Upload, manage, search, and analyze your organization&apos;s
+              internal documents for compliance purposes.
             </p>
           </div>
         </div>
       </div>
 
-      {/* Stats */}
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {loading ? (
-          <>
-            {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-24" />
-            ))}
-          </>
-        ) : (
-          <>
-            <StatCard
-              title="Total Documents"
-              value={stats?.total_documents || 0}
-              icon={FileText}
-              description="Uploaded to knowledge base"
-            />
-            <StatCard
-              title="Ready for Search"
-              value={stats?.ready_documents || 0}
-              icon={Search}
-              description={`${stats?.processing_documents || 0} processing`}
-            />
-            <StatCard
-              title="Total Chunks"
-              value={stats?.total_chunks || 0}
-              icon={BarChart3}
-              description="Searchable segments"
-            />
-            <StatCard
-              title="Storage Used"
-              value={formatFileSize(stats?.total_storage_bytes || 0)}
-              icon={HardDrive}
-              description="Document storage"
-            />
-          </>
-        )}
+      {/* Stats Cards */}
+      <div className="px-6 pb-4 lg:px-10">
+        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          {loading
+            ? [1, 2, 3, 4].map((i) => (
+                <Skeleton key={i} className="h-[88px] rounded-xl" />
+              ))
+            : summaryCards.map((card) => (
+                <div
+                  key={card.label}
+                  className="rounded-xl border border-transparent bg-card p-5 shadow-soft dark:border-glass"
+                >
+                  <div className="flex items-center justify-between">
+                    <card.icon className={cn("h-5 w-5", card.color)} />
+                    <span className="text-2xl font-extrabold tracking-tight">
+                      {card.value}
+                    </span>
+                  </div>
+                  <p className="mt-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    {card.label}
+                  </p>
+                </div>
+              ))}
+        </div>
       </div>
 
-      {/* Main Content Tabs */}
-      <Tabs defaultValue="documents" className="space-y-6">
-        <TabsList>
-          <TabsTrigger value="documents" className="flex items-center gap-2">
-            <FileText className="h-4 w-4" />
-            Documents
-          </TabsTrigger>
-          <TabsTrigger value="search" className="flex items-center gap-2">
-            <Search className="h-4 w-4" />
-            Search
-          </TabsTrigger>
-          <TabsTrigger value="upload" className="flex items-center gap-2">
-            <Upload className="h-4 w-4" />
-            Upload
-          </TabsTrigger>
-        </TabsList>
+      {/* Tab Navigation */}
+      <div className="border-b border-border/40 px-6 lg:px-10">
+        <nav className="-mb-px flex gap-1 overflow-x-auto">
+          {tabs.map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveTab(tab.id)}
+              className={cn(
+                "flex shrink-0 items-center gap-2 border-b-2 px-4 py-3 text-sm font-semibold transition-colors",
+                activeTab === tab.id
+                  ? "border-primary text-primary"
+                  : "border-transparent text-muted-foreground hover:border-border hover:text-foreground",
+              )}
+            >
+              <tab.icon className="h-4 w-4" />
+              {tab.label}
+              {tab.id === "documents" && stats && (
+                <span className="ml-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-muted px-1.5 text-[10px] font-bold text-muted-foreground">
+                  {stats.total_documents}
+                </span>
+              )}
+            </button>
+          ))}
+        </nav>
+      </div>
 
-        <TabsContent value="documents">
-          <DocumentList refreshTrigger={refreshTrigger} />
-        </TabsContent>
-
-        <TabsContent value="search">
-          <SearchInternal />
-        </TabsContent>
-
-        <TabsContent value="upload">
+      {/* Tab Content */}
+      <div className="px-6 py-6 lg:px-10">
+        {activeTab === "documents" && (
+          <DocumentList
+            refreshTrigger={refreshTrigger}
+            categoryFilter={categoryFilter}
+            onCategoryFilterChange={setCategoryFilter}
+          />
+        )}
+        {activeTab === "search" && <SearchInternal />}
+        {activeTab === "upload" && (
           <DocumentUpload onUploadComplete={handleUploadComplete} />
-        </TabsContent>
-      </Tabs>
+        )}
+        {activeTab === "settings" && <SettingsTab />}
+      </div>
     </div>
   );
 }
 
+/* ─────────────────────────────────────────────────────
+   Page Export
+   ───────────────────────────────────────────────────── */
+
 export default function KnowledgeBasePage() {
   const { canShowContent } = useRequireAuth();
 
-  // Show loading while checking auth or redirecting
-  if (!canShowContent) {
-    return (
-      <div className="container max-w-7xl py-8">
-        <Skeleton className="h-8 w-48 mb-8" />
-        <Skeleton className="h-64 w-full" />
-      </div>
-    );
-  }
+  if (!canShowContent) return <PageLoading />;
 
   return (
     <FeatureGate
       feature="custom_integrations"
       fallback={
-        <div className="container max-w-7xl py-8">
-          <Card className="max-w-lg mx-auto">
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Database className="h-5 w-5" />
-                Knowledge Base
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <p className="text-muted-foreground">
-                The Organization Knowledge Base is an Enterprise feature that
-                allows you to upload, manage, and search your own internal
-                documents using AI-powered semantic search.
+        <div className="min-h-screen">
+          <div className="flex flex-col items-center justify-center py-24 text-center px-6">
+            <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-gold/10">
+              <Lock className="h-8 w-8 text-brand-gold" />
+            </div>
+            <h3 className="mt-4 text-lg font-bold">Enterprise Feature</h3>
+            <p className="mt-2 max-w-md text-sm text-muted-foreground">
+              The Internal Knowledge Base is available on Enterprise plans.
+              Upload, manage, and search your organization&apos;s internal
+              documents with AI-powered semantic search and compliance
+              classification.
+            </p>
+            <div className="mt-4 space-y-2 text-left max-w-sm">
+              <p className="text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                Features include
               </p>
-              <div className="space-y-2">
-                <h4 className="font-medium">Features include:</h4>
-                <ul className="list-disc list-inside text-sm text-muted-foreground space-y-1">
-                  <li>Upload PDF, DOCX, and TXT documents</li>
-                  <li>Automatic text extraction and chunking</li>
-                  <li>AI-powered semantic search</li>
-                  <li>Integration with legal research chat</li>
-                </ul>
-              </div>
-              <Button asChild>
-                <Link href="/pricing">Upgrade to Enterprise</Link>
-              </Button>
-            </CardContent>
-          </Card>
+              <ul className="space-y-1.5 text-sm text-muted-foreground">
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Upload PDF, DOCX, and TXT documents
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Automatic text extraction and chunking
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  AI-powered semantic search
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle2 className="h-3.5 w-3.5 text-brand-gold" />
+                  Compliance classification and metadata
+                </li>
+              </ul>
+            </div>
+            <Link
+              href="/pricing"
+              className="mt-6 inline-flex items-center gap-2 rounded-lg bg-brand-gold px-6 py-2.5 text-sm font-semibold text-white transition-colors hover:bg-brand-gold/90"
+            >
+              Upgrade to Enterprise
+            </Link>
+          </div>
         </div>
       }
     >
