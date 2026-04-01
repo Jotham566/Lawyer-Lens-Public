@@ -14,11 +14,11 @@ interface AnimatedSectionProps {
 /* Visible-first: content is never fully hidden, just slightly muted.
    Static renders and full-page captures see ~70% opacity, not blank space. */
 const hiddenStyles: Record<string, string> = {
-  "fade-up": "opacity-70 translate-y-2",
-  "fade-in": "opacity-70",
-  "fade-left": "opacity-70 -translate-x-2",
-  "fade-right": "opacity-70 translate-x-2",
-  "scale-in": "opacity-70 scale-[0.99]",
+  "fade-up": "opacity-80 translate-y-2",
+  "fade-in": "opacity-80",
+  "fade-left": "opacity-80 -translate-x-2",
+  "fade-right": "opacity-80 translate-x-2",
+  "scale-in": "opacity-80 scale-[0.99]",
 };
 
 const visibleStyles = "opacity-100 translate-y-0 translate-x-0 scale-100";

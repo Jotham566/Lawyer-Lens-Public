@@ -35,7 +35,10 @@ export function useScrollAnimation<T extends HTMLElement = HTMLDivElement>(
 
   useEffect(() => {
     const el = ref.current;
-    if (!el || hasSetup.current) return;
+    if (!el) return;
+
+    // Prevent double-setup on the same mount cycle
+    if (hasSetup.current) return;
     hasSetup.current = true;
 
     // Respect reduced motion — keep everything visible
@@ -68,7 +71,12 @@ export function useScrollAnimation<T extends HTMLElement = HTMLDivElement>(
     );
 
     observer.observe(el);
-    return () => observer.disconnect();
+    return () => {
+      observer.disconnect();
+      // Reset setup flag on cleanup so re-mounts work correctly
+      // (e.g., navigating away and back via client-side routing)
+      hasSetup.current = false;
+    };
   }, [threshold, once, rootMargin, reveal, hide]);
 
   return [ref, isVisible];
