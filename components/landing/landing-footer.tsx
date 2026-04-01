@@ -75,15 +75,15 @@ export function LandingFooter() {
           {/* Link Columns */}
           {Object.entries(footerLinks).map(([heading, links]) => (
             <div key={heading}>
-              <h3 className="text-[11px] font-bold uppercase tracking-[0.15em] text-muted-foreground">
+              <h3 className="text-xs font-bold uppercase tracking-[0.15em] text-muted-foreground">
                 {heading}
               </h3>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="mt-4 space-y-1">
                 {links.map((link) => (
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="text-sm text-foreground/80 transition-colors hover:text-foreground"
+                      className="inline-block py-1.5 text-sm text-foreground/80 transition-colors hover:text-foreground"
                     >
                       {link.label}
                     </Link>
@@ -100,10 +100,10 @@ export function LandingFooter() {
             © {new Date().getFullYear()} Law Lens. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="text-xs text-muted-foreground hover:text-foreground">
+            <Link href="/privacy" className="py-2 text-xs text-muted-foreground hover:text-foreground">
               Privacy
             </Link>
-            <Link href="/terms" className="text-xs text-muted-foreground hover:text-foreground">
+            <Link href="/terms" className="py-2 text-xs text-muted-foreground hover:text-foreground">
               Terms
             </Link>
           </div>

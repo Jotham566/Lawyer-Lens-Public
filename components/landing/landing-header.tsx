@@ -72,7 +72,7 @@ export function LandingHeader() {
               <Link
                 key={link.label}
                 href={link.href}
-                className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                className="py-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
               >
                 {link.label}
               </Link>
@@ -80,7 +80,7 @@ export function LandingHeader() {
             <button
               type="button"
               onClick={() => setShowContactModal(true)}
-              className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+              className="py-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
             >
               Contact
             </button>
@@ -163,14 +163,14 @@ export function LandingHeader() {
                 <button
                   type="button"
                   onClick={handleLogin}
-                  className="text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
+                  className="py-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Log In
                 </button>
                 <button
                   type="button"
                   onClick={() => setShowDemoModal(true)}
-                  className="inline-flex h-9 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                  className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   Request Demo
                 </button>
