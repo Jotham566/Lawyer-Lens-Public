@@ -245,3 +245,76 @@ export async function getConnectorStatus(): Promise<{
     message?: string;
   }>("/knowledge-base/connector/status");
 }
+
+// =============================================================================
+// Connector Management
+// =============================================================================
+
+export interface Connector {
+  id: string;
+  connector_type: string;
+  source_name: string;
+  source_url: string;
+  status: string;
+  config: Record<string, unknown>;
+  fetch_interval_minutes: number;
+  last_fetch_at: string | null;
+  next_fetch_at: string | null;
+  error_count: number;
+  last_error: string | null;
+  created_at: string | null;
+}
+
+/**
+ * List all connectors for the organization.
+ */
+export async function listConnectors(): Promise<{ connectors: Connector[]; total: number }> {
+  return apiGet("/knowledge-base/connectors");
+}
+
+/**
+ * Create a new connector.
+ */
+export async function createConnector(data: {
+  connector_type: string;
+  source_name: string;
+  source_url: string;
+  config?: Record<string, unknown>;
+  fetch_interval_minutes?: number;
+}): Promise<{ id: string; status: string }> {
+  return apiPost("/knowledge-base/connectors", data);
+}
+
+/**
+ * Update an existing connector.
+ */
+export async function updateConnector(
+  id: string,
+  data: Partial<{
+    source_name: string;
+    source_url: string;
+    config: Record<string, unknown>;
+    status: string;
+    fetch_interval_minutes: number;
+  }>
+): Promise<{ id: string; status: string }> {
+  return apiFetch(`/knowledge-base/connectors/${id}`, {
+    method: "PUT",
+    body: JSON.stringify(data),
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/**
+ * Delete a connector.
+ */
+export async function deleteConnector(id: string): Promise<{ status: string }> {
+  return apiFetch(`/knowledge-base/connectors/${id}`, { method: "DELETE" });
+}
+
+/**
+ * Test connector connectivity.
+ */
+export async function testConnector(id: string): Promise<{ healthy: boolean; status_code?: number; error?: string }> {
+  return apiPost(`/knowledge-base/connectors/${id}/test`);
+}
