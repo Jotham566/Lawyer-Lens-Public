@@ -60,7 +60,7 @@ export const collectionsApi = {
      * Get all collections for the current user
      */
     getAll: async (): Promise<Collection[]> => {
-        return apiGet<Collection[]>("/collections");
+        return apiGet<Collection[]>("/collections/");
     },
 
     /**
@@ -74,7 +74,7 @@ export const collectionsApi = {
      * Create a new collection
      */
     create: async (data: CreateCollectionRequest): Promise<Collection> => {
-        return apiPost<Collection>("/collections", data);
+        return apiPost<Collection>("/collections/", data);
     },
 
     /**
