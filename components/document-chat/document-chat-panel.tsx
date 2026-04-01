@@ -9,6 +9,8 @@ import {
   Copy,
   FileText,
   MessageSquare,
+  Pencil,
+  Plus,
   RefreshCw,
   Send,
   Square,
@@ -53,6 +55,8 @@ interface DocumentChatPanelProps {
     reason?: string;
     timestamp: string;
   }) => Promise<void>;
+  onEditSubmit?: (messageIndex: number, newContent: string) => Promise<void>;
+  onNewChat?: () => void;
   onSelectCitation?: (citation: ChatSource) => void;
   onSelectFollowup?: (question: string) => void;
   onClose?: () => void;
@@ -95,6 +99,7 @@ function MessageBubble({
   onCopy,
   onRegenerate,
   onFeedback,
+  onEditSubmit,
   onSelectCitation,
   onSelectFollowup,
 }: {
@@ -110,6 +115,7 @@ function MessageBubble({
     reason?: string;
     timestamp: string;
   }) => Promise<void>;
+  onEditSubmit?: (messageIndex: number, newContent: string) => Promise<void>;
   onSelectCitation?: (citation: ChatSource) => void;
   onSelectFollowup?: (question: string) => void;
 }) {
@@ -117,6 +123,8 @@ function MessageBubble({
   const [showTrustDetails, setShowTrustDetails] = useState(
     message.verification?.level === "unverified"
   );
+  const [isEditing, setIsEditing] = useState(false);
+  const [editContent, setEditContent] = useState(message.content);
   const copyKey = message.id || `${message.role}-${index}`;
 
   return (
@@ -254,6 +262,54 @@ function MessageBubble({
               </div>
             )}
           </div>
+        ) : isEditing ? (
+          <div className="w-full space-y-2">
+            <textarea
+              value={editContent}
+              onChange={(e) => setEditContent(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  if (editContent.trim()) {
+                    setIsEditing(false);
+                    void onEditSubmit?.(index, editContent);
+                  }
+                } else if (e.key === "Escape") {
+                  setIsEditing(false);
+                  setEditContent(message.content);
+                }
+              }}
+              aria-label="Edit message"
+              className="w-full min-h-[80px] resize-y rounded-xl border bg-background px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              rows={Math.max(Math.min(editContent.split("\n").length + 1, 8), 2)}
+              // eslint-disable-next-line jsx-a11y/no-autofocus
+              autoFocus
+            />
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => {
+                  setIsEditing(false);
+                  setEditContent(message.content);
+                }}
+              >
+                <X className="mr-1 h-3 w-3" />
+                Cancel
+              </Button>
+              <Button
+                size="sm"
+                onClick={() => {
+                  setIsEditing(false);
+                  void onEditSubmit?.(index, editContent);
+                }}
+                disabled={!editContent.trim()}
+              >
+                <Send className="mr-1 h-3 w-3" />
+                Submit
+              </Button>
+            </div>
+          </div>
         ) : (
           <div className="space-y-2">
             <div className="inline-block rounded-3xl bg-surface-container-high px-5 py-3.5 text-sm text-foreground shadow-sm">
@@ -262,7 +318,7 @@ function MessageBubble({
               </p>
             </div>
             {message.content && (
-              <div className="flex justify-end px-2">
+              <div className="flex justify-end gap-1 px-2">
                 <Button
                   type="button"
                   variant="ghost"
@@ -276,6 +332,20 @@ function MessageBubble({
                     <Copy className="h-3.5 w-3.5" />
                   )}
                 </Button>
+                {onEditSubmit && (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    className={cn("h-7 w-7 opacity-60 transition-opacity hover:opacity-100 group-hover:opacity-100", surfaceClasses.iconButton)}
+                    onClick={() => {
+                      setEditContent(message.content);
+                      setIsEditing(true);
+                    }}
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                  </Button>
+                )}
               </div>
             )}
           </div>
@@ -301,6 +371,8 @@ export function DocumentChatPanel({
   onCopy,
   onRegenerate,
   onFeedback,
+  onEditSubmit,
+  onNewChat,
   onSelectCitation,
   onSelectFollowup,
   onClose,
@@ -344,6 +416,17 @@ export function DocumentChatPanel({
             </div>
           </div>
           <div className="flex items-center gap-2">
+            {onNewChat && messages.length > 0 ? (
+              <Button
+                variant="outline"
+                size="icon"
+                className={cn("h-8 w-8", surfaceClasses.iconButton)}
+                onClick={onNewChat}
+                title="New chat"
+              >
+                <Plus className="h-4 w-4" />
+              </Button>
+            ) : null}
             {conversationId ? (
               <Button variant="outline" size="sm" className="h-8 px-2.5 text-xs" asChild>
                 <Link href={`/chat?conversation=${encodeURIComponent(conversationId)}`}>
@@ -405,6 +488,7 @@ export function DocumentChatPanel({
                   onCopy={onCopy}
                   onRegenerate={onRegenerate}
                   onFeedback={onFeedback}
+                  onEditSubmit={onEditSubmit}
                   onSelectCitation={onSelectCitation}
                   onSelectFollowup={onSelectFollowup}
                 />

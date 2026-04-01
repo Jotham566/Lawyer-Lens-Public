@@ -1283,6 +1283,8 @@ function DocumentContent({ id }: { id: string }) {
                     onCopy={documentChat.copyMessage}
                     onRegenerate={documentChat.regenerateMessage}
                     onFeedback={documentChat.submitFeedback}
+                    onEditSubmit={documentChat.editAndResubmit}
+                    onNewChat={documentChat.startNewChat}
                     onSelectCitation={(citation) =>
                       handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
                     }
@@ -1323,6 +1325,8 @@ function DocumentContent({ id }: { id: string }) {
                     onCopy={documentChat.copyMessage}
                     onRegenerate={documentChat.regenerateMessage}
                     onFeedback={documentChat.submitFeedback}
+                    onEditSubmit={documentChat.editAndResubmit}
+                    onNewChat={documentChat.startNewChat}
                     onSelectCitation={(citation) =>
                       handleSelectChatCitation(citation.section_id || citation.chunk_id || null)
                     }

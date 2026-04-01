@@ -170,7 +170,7 @@ export function useDocumentChat(document: Document | null) {
   }, [document?.id, hydrateConversation]);
 
   const runDocumentScopedStream = useCallback(
-    async (text: string, visibleMessages: ChatMessage[]) => {
+    async (text: string, visibleMessages: ChatMessage[], truncateFrom?: number) => {
       if (!document) return;
 
       const assistantPlaceholder = createAssistantPlaceholder();
@@ -209,6 +209,7 @@ export function useDocumentChat(document: Document | null) {
             search_mode: "hybrid",
             max_context_chunks: 10,
             temperature: 0.3,
+            truncate_from: truncateFrom,
           },
           {},
           controller.signal
@@ -359,11 +360,50 @@ export function useDocumentChat(document: Document | null) {
       if (!assistantMessage || assistantMessage.role !== "assistant") return;
       if (!userMessage || userMessage.role !== "user") return;
 
+      // Truncate from the user message index so backend deletes old user+assistant pair
+      const userMessageIndex = assistantIndex - 1;
       const retainedMessages = messages.slice(0, assistantIndex);
-      await runDocumentScopedStream(userMessage.content, retainedMessages);
+      await runDocumentScopedStream(userMessage.content, retainedMessages, userMessageIndex);
     },
     [isLoading, messages, runDocumentScopedStream]
   );
+
+  const editAndResubmit = useCallback(
+    async (messageIndex: number, newContent: string) => {
+      if (isLoading || !newContent.trim()) return;
+
+      const originalMessage = messages[messageIndex];
+      if (!originalMessage || originalMessage.role !== "user") return;
+
+      const trimmed = newContent.trim();
+      if (trimmed === originalMessage.content) return;
+
+      // Keep messages before the edited one, then add the edited user message
+      const messagesBefore = messages.slice(0, messageIndex);
+      const editedUser: ChatMessage = {
+        id: `user-${Date.now()}`,
+        role: "user",
+        content: trimmed,
+        timestamp: new Date().toISOString(),
+      };
+
+      // Truncate from the edited message index so backend deletes old messages
+      await runDocumentScopedStream(trimmed, [...messagesBefore, editedUser], messageIndex);
+    },
+    [isLoading, messages, runDocumentScopedStream]
+  );
+
+  const startNewChat = useCallback(() => {
+    abortControllerRef.current?.abort();
+    abortControllerRef.current = null;
+    setInput("");
+    setMessages([]);
+    setConversationId(null);
+    setIsLoading(false);
+    setIsGenerating(false);
+    setError(null);
+    setCopiedId(null);
+  }, []);
 
   const copyMessage = useCallback(async (messageId: string, content: string) => {
     await navigator.clipboard.writeText(content);
@@ -412,6 +452,8 @@ export function useDocumentChat(document: Document | null) {
     starterPrompts,
     sendMessage,
     regenerateMessage,
+    editAndResubmit,
+    startNewChat,
     copyMessage,
     submitFeedback,
     stop,
