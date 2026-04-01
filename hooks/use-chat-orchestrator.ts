@@ -376,7 +376,7 @@ export function useChatOrchestrator() {
 
     // 1. Core Streaming Logic
     const streamResponse = useCallback(
-        async (text: string, activeConvId: string, conversationHistory: { role: string; content: string }[]) => {
+        async (text: string, activeConvId: string, conversationHistory: { role: string; content: string }[], truncateFrom?: number) => {
             setLoading(true);
             setError(null);
             setIsGenerating(true);
@@ -418,6 +418,7 @@ export function useChatOrchestrator() {
                         search_mode: "hybrid",
                         max_context_chunks: 10,
                         temperature: 0.3,
+                        truncate_from: truncateFrom,
                     },
                     {},
                     controller.signal
@@ -912,7 +913,7 @@ export function useChatOrchestrator() {
 
     // 4. Regenerate / Edit Wrappers
     const regenerateForMessage = useCallback(
-        async (userContent: string, activeConvId: string, messagesBeforeUser: ChatMessageType[]) => {
+        async (userContent: string, activeConvId: string, messagesBeforeUser: ChatMessageType[], truncateFrom?: number) => {
             // Re-add the user message to local store (it was removed by handleRegenerate)
             const userMessage: ChatMessageType = {
                 role: "user",
@@ -928,7 +929,7 @@ export function useChatOrchestrator() {
                 })),
                 { role: "user", content: userContent },
             ];
-            await streamResponse(userContent, activeConvId, conversationHistory);
+            await streamResponse(userContent, activeConvId, conversationHistory, truncateFrom);
         },
         [streamResponse, addMessage]
     );
@@ -958,8 +959,11 @@ export function useChatOrchestrator() {
             { role: "user", content: trimmedContent, timestamp: new Date().toISOString() },
         ];
 
+        // Truncate from the edited message index in the backend too
+        const truncateFrom = index;
+
         setTimeout(() => {
-            regenerateForMessage(trimmedContent, convId, messagesIncludingEditedUser);
+            regenerateForMessage(trimmedContent, convId, messagesIncludingEditedUser, truncateFrom);
         }, 100);
     }, [isLoading, currentConversationId, currentConversation, editMessageAndTruncate, regenerateForMessage]);
 
@@ -982,8 +986,11 @@ export function useChatOrchestrator() {
         // Remove both the user message AND assistant message to avoid duplicates
         removeMessagesFrom(convId, userMessageIndex);
 
+        // Pass truncate_from so the backend also deletes the old messages from DB
+        const truncateFrom = userMessageIndex;
+
         setTimeout(() => {
-            regenerateForMessage(userContent, convId, messagesBeforeUser);
+            regenerateForMessage(userContent, convId, messagesBeforeUser, truncateFrom);
         }, 100);
     }, [isLoading, currentConversationId, currentConversation, removeMessagesFrom, regenerateForMessage]);
 

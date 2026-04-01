@@ -275,6 +275,27 @@ const createMarkdownComponents = (
   ),
 
   // Links
+  // react-markdown renders unresolved [n] references as linkReference nodes (not <a> tags).
+  // Convert these back to interactive source citations.
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  linkReference: ({ children, node }: { children?: React.ReactNode; node?: any }) => {
+    // Extract the label from the node (the text inside brackets)
+    const label = node?.label || node?.identifier || "";
+    if (/^\d+(?:\s*,\s*\d+)*$/.test(label)) {
+      return <>{withCitations(`[${label}]`)}</>;
+    }
+    // Fallback: try to extract from children
+    const text = React.Children.toArray(children)
+      .map((child) => (typeof child === "string" || typeof child === "number" ? String(child) : ""))
+      .join("")
+      .trim();
+    if (/^\d+(?:\s*,\s*\d+)*$/.test(text)) {
+      return <>{withCitations(`[${text}]`)}</>;
+    }
+    // Not a citation reference — render as plain text with brackets
+    return <>[{children}]</>;
+  },
+
   a: ({ href, children }: { href?: string; children?: React.ReactNode }) => (
     (() => {
       // react-markdown can parse bracketed numeric references like [1] as links in some cases.
@@ -474,6 +495,82 @@ function renderMathInElement(
 }
 
 /**
+ * Build a remapping from original citation numbers to sequential 1-based numbers.
+ *
+ * Scans the content for all [n] patterns, assigns sequential display numbers
+ * based on order of first appearance, and builds a remapped sources array.
+ *
+ * Example: content has [1], [7], [3] → remapped to [1], [2], [3]
+ *          remappedSources[0] = originalSources[0]  (was [1])
+ *          remappedSources[1] = originalSources[6]  (was [7])
+ *          remappedSources[2] = originalSources[2]  (was [3])
+ */
+function buildCitationRemap(
+  content: string,
+  sources: ChatSource[]
+): {
+  remappedContent: string;
+  remappedSources: ChatSource[];
+  originalToNew: Map<number, number>;
+} {
+  // Find all citation numbers in order of first appearance
+  const citationPattern = /\[(\d+(?:\s*,\s*\d+)*)\]/g;
+  const seenOriginals: number[] = [];
+  let match;
+
+  while ((match = citationPattern.exec(content)) !== null) {
+    const nums = match[1].split(/\s*,\s*/).map((n) => parseInt(n, 10));
+    for (const num of nums) {
+      if (!seenOriginals.includes(num)) {
+        seenOriginals.push(num);
+      }
+    }
+  }
+
+  // If citations are already sequential starting from 1, no remap needed
+  const isAlreadySequential = seenOriginals.every((num, idx) => num === idx + 1);
+  if (isAlreadySequential || seenOriginals.length === 0) {
+    return { remappedContent: content, remappedSources: sources, originalToNew: new Map() };
+  }
+
+  // Build mapping: original number → new sequential number
+  const originalToNew = new Map<number, number>();
+  seenOriginals.forEach((origNum, idx) => {
+    originalToNew.set(origNum, idx + 1);
+  });
+
+  // Build remapped sources array: new index → original source
+  const remappedSources: ChatSource[] = [];
+  for (const origNum of seenOriginals) {
+    const source = sources[origNum - 1]; // original is 1-indexed
+    if (source) {
+      remappedSources.push(source);
+    } else {
+      // Source doesn't exist for this citation — push a placeholder to keep indices aligned
+      // The SourceCitation component handles missing sources gracefully
+      remappedSources.push(undefined as unknown as ChatSource);
+    }
+  }
+
+  // Rewrite content: replace [original] with [new]
+  // Handle both single [7] and multi [1, 7] patterns
+  const remappedContent = content.replace(
+    /\[(\d+(?:\s*,\s*\d+)*)\]/g,
+    (_match, nums: string) => {
+      const newNums = nums
+        .split(/\s*,\s*/)
+        .map((n: string) => {
+          const orig = parseInt(n, 10);
+          return originalToNew.get(orig) ?? orig;
+        });
+      return `[${newNums.join(", ")}]`;
+    }
+  );
+
+  return { remappedContent, remappedSources, originalToNew };
+}
+
+/**
  * Process text to find and render source citations like [1], [2, 3]
  */
 function renderTextWithCitations(
@@ -561,6 +658,12 @@ function MarkdownRendererInner({
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     React.useState<((...args: any[]) => any) | null>(null);
 
+  // Remap citation numbers to sequential order based on first appearance
+  const { remappedContent, remappedSources } = React.useMemo(
+    () => buildCitationRemap(content, sources),
+    [content, sources]
+  );
+
   React.useEffect(() => {
     let cancelled = false;
     void (async () => {
@@ -580,7 +683,7 @@ function MarkdownRendererInner({
 
   // Process math expressions after render, but only when not streaming
   React.useEffect(() => {
-    if (!isStreaming && containerRef.current && content.includes("$")) {
+    if (!isStreaming && containerRef.current && remappedContent.includes("$")) {
       let cancelled = false;
       const timer = setTimeout(() => {
         void (async () => {
@@ -595,15 +698,15 @@ function MarkdownRendererInner({
         clearTimeout(timer);
       };
     }
-  }, [content, isStreaming]);
+  }, [remappedContent, isStreaming]);
 
   // Helper to process children with citation detection
   const withCitations = React.useCallback((children: React.ReactNode) => {
-    if (!enableCitationPreviews || sources.length === 0) {
+    if (!enableCitationPreviews || remappedSources.length === 0) {
       return children;
     }
-    return processChildren(children, sources, true);
-  }, [enableCitationPreviews, sources]);
+    return processChildren(children, remappedSources, true);
+  }, [enableCitationPreviews, remappedSources]);
 
   // Memoize components to avoid recreation on each render
   const components = React.useMemo(
@@ -615,7 +718,7 @@ function MarkdownRendererInner({
     return (
       <div ref={containerRef} className={cn("markdown-body", className)}>
         <p className="text-[15px] leading-7 text-foreground whitespace-pre-wrap">
-          {content}
+          {remappedContent}
         </p>
       </div>
     );
@@ -626,7 +729,7 @@ function MarkdownRendererInner({
   return (
     <div ref={containerRef} className={cn("markdown-body", className)}>
       <Markdown remarkPlugins={[remarkGfmPlugin]} components={components}>
-        {content}
+        {remappedContent}
       </Markdown>
     </div>
   );

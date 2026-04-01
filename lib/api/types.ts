@@ -283,6 +283,8 @@ export interface ChatRequest {
   search_mode?: "keyword" | "semantic" | "hybrid";
   max_context_chunks?: number;
   temperature?: number;
+  /** For regeneration: 0-based message index to truncate from in backend DB */
+  truncate_from?: number;
 }
 
 /**
