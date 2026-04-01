@@ -576,12 +576,17 @@ function SettingsTab() {
    Main Content
    ───────────────────────────────────────────────────── */
 
-function KnowledgeBaseContent() {
+function KnowledgeBaseContent({
+  activeTab,
+  setActiveTab,
+}: {
+  activeTab: TabId;
+  setActiveTab: (tab: TabId) => void;
+}) {
   const { isAuthenticated } = useAuth();
   const [stats, setStats] = useState<KnowledgeBaseStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
-  const [activeTab, setActiveTab] = useState<TabId>("documents");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
 
   const loadStats = useCallback(async () => {
@@ -729,6 +734,7 @@ function KnowledgeBaseContent() {
 
 export default function KnowledgeBasePage() {
   const { canShowContent } = useRequireAuth();
+  const [activeTab, setActiveTab] = useState<TabId>("documents");
 
   if (!canShowContent) return <PageLoading />;
 
@@ -781,7 +787,7 @@ export default function KnowledgeBasePage() {
         </div>
       }
     >
-      <KnowledgeBaseContent />
+      <KnowledgeBaseContent activeTab={activeTab} setActiveTab={setActiveTab} />
     </FeatureGate>
   );
 }
