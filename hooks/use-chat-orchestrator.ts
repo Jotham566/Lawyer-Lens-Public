@@ -912,14 +912,25 @@ export function useChatOrchestrator() {
 
     // 4. Regenerate / Edit Wrappers
     const regenerateForMessage = useCallback(
-        async (userContent: string, activeConvId: string, messagesIncludingUser: ChatMessageType[]) => {
-            const conversationHistory = messagesIncludingUser.map((msg) => ({
-                role: msg.role,
-                content: msg.content,
-            }));
+        async (userContent: string, activeConvId: string, messagesBeforeUser: ChatMessageType[]) => {
+            // Re-add the user message to local store (it was removed by handleRegenerate)
+            const userMessage: ChatMessageType = {
+                role: "user",
+                content: userContent,
+                timestamp: new Date().toISOString(),
+            };
+            addMessage(activeConvId, userMessage);
+
+            const conversationHistory = [
+                ...messagesBeforeUser.map((msg) => ({
+                    role: msg.role,
+                    content: msg.content,
+                })),
+                { role: "user", content: userContent },
+            ];
             await streamResponse(userContent, activeConvId, conversationHistory);
         },
-        [streamResponse]
+        [streamResponse, addMessage]
     );
 
     const handleEditSubmit = useCallback((index: number, content: string) => {
@@ -963,13 +974,16 @@ export function useChatOrchestrator() {
         if (userMessage.role !== "user") return;
 
         const userContent = userMessage.content;
-        const messagesIncludingUser = currentConversation.messages.slice(0, userMessageIndex + 1);
+        // Keep messages BEFORE the user message (not including it)
+        // streamResponse will re-add both the user message and assistant response
+        const messagesBeforeUser = currentConversation.messages.slice(0, userMessageIndex);
         const convId = currentConversationId;
 
-        removeMessagesFrom(convId, messageIndex);
+        // Remove both the user message AND assistant message to avoid duplicates
+        removeMessagesFrom(convId, userMessageIndex);
 
         setTimeout(() => {
-            regenerateForMessage(userContent, convId, messagesIncludingUser);
+            regenerateForMessage(userContent, convId, messagesBeforeUser);
         }, 100);
     }, [isLoading, currentConversationId, currentConversation, removeMessagesFrom, regenerateForMessage]);
 
