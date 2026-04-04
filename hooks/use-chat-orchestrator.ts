@@ -491,9 +491,13 @@ export function useChatOrchestrator() {
                     setError(err instanceof Error ? err.message : "Failed to get response");
                 }
             } finally {
+                // Only refetch conversation list (sidebar) — NOT the active conversation.
+                // The active conversation's messages are already up-to-date from the stream.
+                // Refetching the active conversation causes a race condition: the server
+                // response replaces local state, briefly duplicating the user message on
+                // edit/regenerate before React reconciles.
                 if (!controller.signal.aborted && conversationIdPatternRef.current.test(activeConvId)) {
-                    void fetchConversation(activeConvId);
-                    void fetchConversations();
+                    void fetchConversations(); // Refresh sidebar (title, order)
                 }
                 abortControllerRef.current = null;
                 setIsGenerating(false);

@@ -138,7 +138,9 @@ export function VirtualizedMessageList({
     getItemKey: (index) => {
       if (index >= messages.length) return "error-item";
       const message = messages[index];
-      return `${message.timestamp}-${index}`;
+      // Prefer stable message ID (server-assigned UUID) over timestamp+index
+      // to prevent React key collisions during edit/regenerate hydration
+      return message.id || `${message.timestamp}-${index}`;
     },
   });
 
@@ -227,7 +229,7 @@ export function VirtualizedMessageList({
           <div className="space-y-6">
             {messages.map((message, index) => (
               <ChatMessage
-                key={`${message.timestamp}-${index}`}
+                key={message.id || `${message.timestamp}-${index}`}
                 message={message}
                 index={index}
                 isEditing={editingIndex === index}
