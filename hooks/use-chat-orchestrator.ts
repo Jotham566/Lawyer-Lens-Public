@@ -917,14 +917,18 @@ export function useChatOrchestrator() {
 
     // 4. Regenerate / Edit Wrappers
     const regenerateForMessage = useCallback(
-        async (userContent: string, activeConvId: string, messagesBeforeUser: ChatMessageType[], truncateFrom?: number) => {
-            // Re-add the user message to local store (it was removed by handleRegenerate)
-            const userMessage: ChatMessageType = {
-                role: "user",
-                content: userContent,
-                timestamp: new Date().toISOString(),
-            };
-            addMessage(activeConvId, userMessage);
+        async (userContent: string, activeConvId: string, messagesBeforeUser: ChatMessageType[], truncateFrom?: number, skipAddUser?: boolean) => {
+            if (!skipAddUser) {
+                // Re-add the user message to local store (it was removed by handleRegenerate).
+                // Skip when called from handleEditSubmit — editMessageAndTruncate already
+                // placed the edited user message, so adding again would duplicate it.
+                const userMessage: ChatMessageType = {
+                    role: "user",
+                    content: userContent,
+                    timestamp: new Date().toISOString(),
+                };
+                addMessage(activeConvId, userMessage);
+            }
 
             const conversationHistory = [
                 ...messagesBeforeUser.map((msg) => ({
@@ -967,7 +971,8 @@ export function useChatOrchestrator() {
         const truncateFrom = index;
 
         setTimeout(() => {
-            regenerateForMessage(trimmedContent, convId, messagesIncludingEditedUser, truncateFrom);
+            // skipAddUser=true: editMessageAndTruncate already placed the user message
+            regenerateForMessage(trimmedContent, convId, messagesIncludingEditedUser, truncateFrom, true);
         }, 100);
     }, [isLoading, currentConversationId, currentConversation, editMessageAndTruncate, regenerateForMessage]);
 
