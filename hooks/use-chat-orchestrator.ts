@@ -512,7 +512,6 @@ export function useChatOrchestrator() {
             setError,
             refreshEntitlements,
             replaceConversationId,
-            fetchConversation,
             fetchConversations,
         ]
     );
