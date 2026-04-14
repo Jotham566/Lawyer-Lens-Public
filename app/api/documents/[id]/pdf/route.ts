@@ -2,6 +2,25 @@ import { NextRequest, NextResponse } from "next/server";
 
 const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003/api/v1";
 
+/**
+ * Public PDF download route.
+ *
+ * Backend returns a 307 whose `Location` points at either CloudFront (prod)
+ * or a presigned S3 URL (fallback / dev). We forward that redirect to the
+ * browser AS-IS so the browser fetches the PDF bytes directly. Earlier
+ * versions of this route manually followed the redirect server-side and
+ * proxied the body, which made every byte hop Uganda → us-east-1 (Next.js)
+ * → S3 → back through Next.js → browser, and bypassed CloudFront edge
+ * caching entirely.
+ *
+ * Viewer → CloudFront is unauthenticated by design (OAC only governs the
+ * CloudFront → S3 hop; our distribution has TrustedKeyGroups/Signers
+ * disabled). Viewer → S3 via presigned URL is time-limited but public.
+ * Either way the browser can load it directly.
+ *
+ * Streaming (non-redirect) responses from the backend are still proxied —
+ * used in local dev where the backend serves PDFs directly from MinIO.
+ */
 export async function GET(
   _request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -9,62 +28,27 @@ export async function GET(
   const { id } = await context.params;
 
   try {
-    // Use redirect: "manual" so we can handle 307 redirects ourselves.
-    // The backend returns 307 → CloudFront/S3 presigned URL for production PDFs.
-    // If we let fetch() auto-follow the redirect, the request to CloudFront/S3
-    // may fail with 403 due to OAC restrictions or missing auth headers.
-    // Instead, we fetch the redirect target server-side and stream the PDF back.
     const upstream = await fetch(`${BACKEND_URL}/public/documents/${id}/pdf`, {
       method: "GET",
       cache: "no-store",
       redirect: "manual",
     });
 
-    // Handle 307/302 redirects — fetch the PDF from the redirect target server-side
+    // Forward the backend's redirect to the browser so it can fetch the
+    // PDF directly from CloudFront/S3 (edge-cached, zero server-side
+    // double-hop through Next.js).
     if (upstream.status === 307 || upstream.status === 302 || upstream.status === 301) {
-      const redirectUrl = upstream.headers.get("Location");
-      if (!redirectUrl) {
+      const location = upstream.headers.get("Location");
+      if (!location) {
         return NextResponse.json(
-          { error: "Redirect without Location header" },
+          { error: "Upstream redirect missing Location header" },
           { status: 502 }
         );
       }
-
-      // Fetch the actual PDF from the redirect target (CloudFront/S3)
-      const pdfResponse = await fetch(redirectUrl, {
-        method: "GET",
-        cache: "no-store",
-      });
-
-      if (!pdfResponse.ok || !pdfResponse.body) {
-        console.error(
-          `PDF fetch from redirect target failed: ${pdfResponse.status} ${pdfResponse.statusText} (url: ${redirectUrl.substring(0, 100)}...)`
-        );
-        return NextResponse.json(
-          { error: `PDF storage returned ${pdfResponse.status}` },
-          { status: pdfResponse.status || 502 }
-        );
-      }
-
-      const headers = new Headers();
-      headers.set("Content-Type", pdfResponse.headers.get("Content-Type") || "application/pdf");
-      headers.set(
-        "Content-Disposition",
-        pdfResponse.headers.get("Content-Disposition") || 'inline; filename="document.pdf"'
-      );
-      headers.set("Cache-Control", "public, max-age=300");
-      const contentLength = pdfResponse.headers.get("Content-Length");
-      if (contentLength) {
-        headers.set("Content-Length", contentLength);
-      }
-
-      return new NextResponse(pdfResponse.body, {
-        status: 200,
-        headers,
-      });
+      return NextResponse.redirect(location, upstream.status as 301 | 302 | 307);
     }
 
-    // Non-redirect responses (local MinIO streaming, errors)
+    // Non-redirect: backend is streaming bytes directly (local MinIO in dev).
     if (!upstream.ok || !upstream.body) {
       return NextResponse.json(
         { error: "Failed to fetch PDF" },
