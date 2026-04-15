@@ -34,6 +34,7 @@ import {
   SheetTrigger,
 } from "@/components/ui/sheet";
 import { cn } from "@/lib/utils";
+import { safeInternalPath } from "@/lib/utils/safe-redirect";
 import { surfaceClasses } from "@/lib/design-system";
 import { useAllDocumentsByType, useDocument } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
@@ -278,7 +279,15 @@ function DocumentContent({ id }: { id: string }) {
   const { data: typedDocuments } = useAllDocumentsByType(document?.document_type || "act");
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
-  const returnTo = searchParams.get("returnTo");
+  // Narrow returnTo to a same-origin path before any downstream use.
+  // searchParams.get("returnTo") is fully user-controlled via URL; without
+  // this narrowing, `router.push(returnTo)` or `<Link href={returnTo}>`
+  // would happily navigate to //evil.com or https://phish.example, and
+  // the browser would carry the user's authenticated session cookies
+  // along for the first same-site request back. safeInternalPath returns
+  // null/fallback for absolute, protocol-relative, or control-char input.
+  const rawReturnTo = searchParams.get("returnTo");
+  const returnTo = rawReturnTo ? safeInternalPath(rawReturnTo, "") || null : null;
   const initialSectionId = searchParams.get("section");
 
   const [copied, setCopied] = useState(false);

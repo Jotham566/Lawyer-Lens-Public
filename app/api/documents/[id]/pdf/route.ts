@@ -3,6 +3,47 @@ import { NextRequest, NextResponse } from "next/server";
 const BACKEND_URL = process.env.INTERNAL_API_URL || "http://localhost:8003/api/v1";
 
 /**
+ * Hosts the backend is allowed to redirect the browser to. The backend
+ * returns either a CloudFront URL (prod) or a presigned S3 URL (envs with
+ * S3 configured). Forwarding an arbitrary Location header as a 307 turns
+ * any misconfiguration or compromised upstream into a same-origin open
+ * redirect, so we validate the host before propagating the redirect.
+ *
+ * Extra hosts can be added via env (comma-separated), e.g. when staging
+ * uses a different CloudFront distribution.
+ */
+const PDF_REDIRECT_ALLOWED_HOSTS = (() => {
+  const defaults = [
+    "docs.lawlens.io",
+    // CloudFront default hostnames for existing/legacy distributions.
+    // Match on suffix below so per-distribution subdomains work.
+    "cloudfront.net",
+    // S3 presigned URLs come off any regional s3.amazonaws.com hostname.
+    "s3.amazonaws.com",
+    "s3.us-east-1.amazonaws.com",
+  ];
+  const extras = (process.env.PDF_REDIRECT_ALLOWED_HOSTS ?? "")
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean);
+  return [...defaults, ...extras];
+})();
+
+function isAllowedPdfRedirectTarget(target: string): boolean {
+  let u: URL;
+  try {
+    u = new URL(target);
+  } catch {
+    return false;
+  }
+  if (u.protocol !== "https:" && u.protocol !== "http:") return false;
+  const host = u.hostname.toLowerCase();
+  return PDF_REDIRECT_ALLOWED_HOSTS.some(
+    (allowed) => host === allowed || host.endsWith("." + allowed),
+  );
+}
+
+/**
  * In production we want to FORWARD the backend's 307 to the browser so the
  * browser fetches the PDF directly from CloudFront — that hits the edge cache
  * and avoids the Uganda ↔ us-east-1 ↔ S3 ↔ us-east-1 ↔ Uganda double-hop.
@@ -50,6 +91,26 @@ export async function GET(
         return NextResponse.json(
           { error: "Upstream redirect missing Location header" },
           { status: 502 }
+        );
+      }
+
+      // Allow-list the redirect target before propagating. Forwarding an
+      // arbitrary backend Location header as a 307 would turn this route
+      // into a same-origin open redirect — useful to attackers for
+      // phishing (any link to lawlens.io/api/documents/.../pdf could land
+      // the user on evil.com with our origin's tab focus) and for
+      // exfil-chaining through CSP bypasses. In local dev the backend
+      // may hand back a MinIO docker-internal hostname, which fails the
+      // check — that path uses LOCAL_PROXY_REDIRECTS below to stream the
+      // body server-side instead of redirecting.
+      if (!LOCAL_PROXY_REDIRECTS && !isAllowedPdfRedirectTarget(location)) {
+        console.warn(
+          "PDF proxy: refusing unsafe redirect target from backend",
+          new URL(location).hostname,
+        );
+        return NextResponse.json(
+          { error: "Upstream redirect target is not allow-listed" },
+          { status: 502 },
         );
       }
 

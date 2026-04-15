@@ -4,6 +4,7 @@ import { createContext, useContext, useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import dynamic from "next/dynamic";
 import type { AuthView } from "./auth-modal";
+import { safeInternalPath } from "@/lib/utils/safe-redirect";
 
 const AuthModal = dynamic(
   () => import("./auth-modal").then((mod) => mod.AuthModal),
@@ -120,8 +121,17 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
       sessionStorage.removeItem(DEFAULT_VIEW_KEY);
     }
 
-    if (returnUrl && returnUrl !== "/" && returnUrl !== "/login" && returnUrl !== "/register") {
-      router.push(returnUrl);
+    // Narrow returnUrl to a same-origin path. openLogin() callers supply it
+    // from searchParams / pathname, both of which are URL-driven and
+    // attacker-influenced. Without this narrowing, a phish link like
+    //   https://lawlens.io/login?returnUrl=https://evil.com
+    // would trampoline the user straight to evil.com after a valid login.
+    const safeReturnUrl =
+      returnUrl && returnUrl !== "/login" && returnUrl !== "/register"
+        ? safeInternalPath(returnUrl, "")
+        : "";
+    if (safeReturnUrl && safeReturnUrl !== "/") {
+      router.push(safeReturnUrl);
     } else {
       // Default redirect to chat for chat-first experience
       router.push("/chat");
