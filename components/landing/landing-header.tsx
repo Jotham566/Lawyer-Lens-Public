@@ -95,7 +95,7 @@ export function LandingHeader() {
               <>
                 <Link
                   href="/chat"
-                  className="group inline-flex h-9 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                  className="group inline-flex h-11 items-center gap-2 rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
                 >
                   Go to Dashboard
                   <ArrowRight className="h-3.5 w-3.5 transition-transform group-hover:translate-x-0.5" />
@@ -105,7 +105,7 @@ export function LandingHeader() {
                   <button
                     type="button"
                     onClick={() => setUserMenuOpen(!userMenuOpen)}
-                    className="flex items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-surface-container-high"
+                    className="flex h-11 items-center gap-1.5 rounded-full py-1 pl-1 pr-2 transition-colors hover:bg-surface-container-high"
                     title={user?.full_name || user?.email || "Account"}
                   >
                     <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-gold/20 text-xs font-bold text-brand-gold">

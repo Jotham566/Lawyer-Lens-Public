@@ -92,14 +92,14 @@ export function BetaAnnouncementBanner({ onJoinClick }: BetaAnnouncementBannerPr
               onClick={onJoinClick}
               size="sm"
               variant="default"
-              className="text-xs sm:text-sm"
+              className="h-11 text-xs sm:text-sm"
             >
               Join Waitlist
             </Button>
             <Button
               variant="ghost"
               size="icon"
-              className="h-6 w-6 shrink-0"
+              className="h-11 w-11 shrink-0"
               onClick={handleDismiss}
               aria-label="Dismiss banner"
             >

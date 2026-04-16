@@ -7,11 +7,14 @@ interface FooterLink {
   href: string;
 }
 
+// "Browse Documents" used to live under Product but pointed at
+// `/browse`, which is behind auth. Anonymous visitors clicked
+// through from the footer and hit a login wall, which makes the
+// link look broken. Removed until we have a public browse surface.
 const footerLinks: Record<string, FooterLink[]> = {
   Product: [
     { label: "Features", href: "/landing#features" },
     { label: "Pricing", href: "/pricing" },
-    { label: "Browse Documents", href: "/browse" },
   ],
   Company: [
     { label: "About", href: "/about" },
@@ -55,7 +58,7 @@ export function LandingFooter() {
                 <Phone className="h-4 w-4 shrink-0 text-brand-gold/70" />
                 <a
                   href="tel:+256750990718"
-                  className="transition-colors hover:text-foreground"
+                  className="inline-flex min-h-[44px] items-center transition-colors hover:text-foreground"
                 >
                   +256 750 990 718
                 </a>
@@ -64,7 +67,7 @@ export function LandingFooter() {
                 <Mail className="h-4 w-4 shrink-0 text-brand-gold/70" />
                 <a
                   href="mailto:info@lawlens.io"
-                  className="transition-colors hover:text-foreground"
+                  className="inline-flex min-h-[44px] items-center transition-colors hover:text-foreground"
                 >
                   info@lawlens.io
                 </a>
@@ -83,7 +86,7 @@ export function LandingFooter() {
                   <li key={link.label}>
                     <Link
                       href={link.href}
-                      className="inline-block py-1.5 text-sm text-foreground/80 transition-colors hover:text-foreground"
+                      className="inline-flex min-h-[44px] items-center text-sm text-foreground/80 transition-colors hover:text-foreground"
                     >
                       {link.label}
                     </Link>
@@ -100,10 +103,10 @@ export function LandingFooter() {
             © {new Date().getFullYear()} Law Lens. All rights reserved.
           </p>
           <div className="flex items-center gap-6">
-            <Link href="/privacy" className="py-2 text-xs text-muted-foreground hover:text-foreground">
+            <Link href="/privacy" className="inline-flex min-h-[44px] items-center text-xs text-muted-foreground hover:text-foreground">
               Privacy
             </Link>
-            <Link href="/terms" className="py-2 text-xs text-muted-foreground hover:text-foreground">
+            <Link href="/terms" className="inline-flex min-h-[44px] items-center text-xs text-muted-foreground hover:text-foreground">
               Terms
             </Link>
           </div>
