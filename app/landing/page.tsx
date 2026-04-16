@@ -66,7 +66,13 @@ export default function LandingPage() {
                   <br className="hidden sm:block" />
                   Understand Risk.{" "}
                   <br className="hidden sm:block" />
-                  <span className="text-brand-gold">Stay Ahead of Change.</span>
+                  {/* Editorial accent on the closing phrase — the
+                      project already ships Newsreader as the serif
+                      voice; previously it was never rendered. Using
+                      it here differentiates us from the sans-serif
+                      SaaS sea and nods at legal-publication
+                      typography. */}
+                  <span className="font-serif font-semibold italic text-brand-gold">Stay Ahead of Change.</span>
                 </h1>
                 <p className="mt-6 max-w-lg text-[17px] leading-relaxed text-muted-foreground">
                   Law Lens helps institutions automate legal research, unlock
