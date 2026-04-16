@@ -134,13 +134,20 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const headersList = await headers();
-  // Trust only the x-ll-domain marker set by proxy.ts — it is refreshed
-  // on every request based on the real incoming pathname. The previous
-  // `x-next-url`/`x-invoke-path` fallback carried the internal rewritten
-  // path in production, so a soft-navigation from landing (`/`) to `/chat`
-  // kept `x-next-url` pointing at `/landing`, which made AppShell be
-  // skipped on the dashboard render until a hard refresh.
-  const isLanding = headersList.get("x-ll-domain") === "landing";
+  // We ALWAYS wrap children in <AppShell>. The previous approach of
+  // conditionally skipping AppShell at the root-layout level (based on
+  // incoming headers) had a subtle-but-fatal bug: Next.js root layouts
+  // don't re-execute on client-side navigation. The "skip AppShell"
+  // decision made at initial render (e.g. when landing on `/`) stuck
+  // for the entire session, so a soft-nav to `/chat` rendered raw —
+  // DashboardShell never wrapped the chat page until a hard refresh.
+  //
+  // The accurate shell-routing logic lives inside <AppShell> which
+  // reacts to usePathname(). We just forward the initial landing-domain
+  // signal so it can classify pathname="/" on the root domain as a
+  // landing page (which it can't infer from pathname alone — internal
+  // rewrites keep the external URL as "/").
+  const isLandingDomain = headersList.get("x-ll-domain") === "landing";
 
   const umamiHost = process.env.NEXT_PUBLIC_UMAMI_HOST?.replace(/\/+$/, "");
   const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID_PUBLIC;
@@ -160,7 +167,7 @@ export default async function RootLayout({
       >
         <Providers>
           <ThemeFavicon />
-          {isLanding ? children : <AppShell>{children}</AppShell>}
+          <AppShell initialIsLandingDomain={isLandingDomain}>{children}</AppShell>
           <Toaster richColors position="top-right" />
         </Providers>
         {umamiScript}

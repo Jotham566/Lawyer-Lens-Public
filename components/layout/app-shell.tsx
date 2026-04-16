@@ -7,6 +7,17 @@ import { useAuth } from "@/components/providers";
 
 interface AppShellProps {
   children: React.ReactNode;
+  /**
+   * Whether the initial page load came from the landing domain
+   * (lawlens.io / www.lawlens.io). Forwarded by the server root layout
+   * from the `x-ll-domain` header set by the middleware.
+   *
+   * Only affects how we classify pathname="/" — a bare "/" on the
+   * landing domain is the marketing home (rendered raw), whereas "/"
+   * on the product domain is the app root (goes through the shell).
+   * All other paths are classified by pathname alone.
+   */
+  initialIsLandingDomain?: boolean;
 }
 
 // Routes that bypass the shell entirely (they have their own layout)
@@ -33,7 +44,7 @@ const PUBLIC_CONTENT_ROUTES = [
  * 2. **DashboardShell** (sidebar + topbar) for authenticated users on app routes
  * 3. **Redirect to /login** for unauthenticated users on protected routes
  */
-export function AppShell({ children }: AppShellProps) {
+export function AppShell({ children, initialIsLandingDomain = false }: AppShellProps) {
   const pathname = usePathname();
   const { isAuthenticated, isLoading } = useAuth();
 
@@ -43,8 +54,18 @@ export function AppShell({ children }: AppShellProps) {
     return <>{children}</>;
   }
 
-  // Landing routes — no shell (landing layout handles these)
-  const isLandingPage = pathname.startsWith(LANDING_PREFIX) || LANDING_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/"));
+  // Landing routes — no shell (landing layout handles these).
+  //   - `/landing/*`: direct URL visits to the rewritten route group
+  //   - one of the explicit LANDING_PAGES (e.g. /pricing, /terms)
+  //   - pathname "/" when the request originally hit the landing
+  //     domain (lawlens.io/). We can't detect this from pathname alone
+  //     because middleware rewrites `/` → `/landing` *internally*, so
+  //     usePathname() still sees "/". The server root layout forwards
+  //     the domain-origin signal via initialIsLandingDomain.
+  const isLandingPage =
+    pathname.startsWith(LANDING_PREFIX) ||
+    LANDING_PAGES.some((p) => pathname === p || pathname.startsWith(p + "/")) ||
+    (initialIsLandingDomain && pathname === "/");
   if (isLandingPage) {
     return <>{children}</>;
   }

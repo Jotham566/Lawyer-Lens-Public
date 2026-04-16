@@ -79,12 +79,13 @@ export function proxy(request: NextRequest) {
       return response;
     }
 
-    // Direct /landing/* URLs (and already-rewritten internal paths) also
-    // need the landing marker so app/layout.tsx skips AppShell on the
-    // server render. Without this, soft-navigation away from landing
-    // can leave the internal rewritten path in x-next-url and cause the
-    // layout's fallback path check to wrongly treat /chat as landing
-    // (which dropped DashboardShell until a hard refresh).
+    // Direct visits to the /landing/* route group also need the
+    // landing marker forwarded to the server root layout so it can
+    // classify the initial render as a landing-domain request. The
+    // marker propagates into <AppShell initialIsLandingDomain> and
+    // lets it treat pathname="/" (on root-domain landing) as a
+    // landing page without assuming AppShell should be skipped for
+    // every subsequent soft navigation.
     if (pathname.startsWith("/landing")) {
       const response = applySecurityHeaders(request);
       response.headers.set("x-ll-domain", "landing");
