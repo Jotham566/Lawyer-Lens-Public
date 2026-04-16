@@ -17,8 +17,12 @@ export function LandingBetaBanner() {
     getPublicBetaMode()
       .then((res) => setBetaEnabled(res.enabled))
       .catch(() => {
-        // Fallback: show banner anyway for landing page
-        setBetaEnabled(true);
+        // Fail-closed: if we can't confirm beta is on, assume it's
+        // off. The old behavior was to fall back to showing the
+        // "Private Beta — Join Waitlist" banner on ANY fetch error,
+        // which meant one flaky API call resurrects the beta UI for
+        // every subsequent visitor — long after beta has ended.
+        setBetaEnabled(false);
       });
   }, []);
 
