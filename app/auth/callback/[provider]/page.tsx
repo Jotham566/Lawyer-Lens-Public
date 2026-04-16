@@ -87,11 +87,14 @@ export default function OAuthCallbackPage() {
 
         setState("success");
 
-        // Redirect to return URL or dashboard after brief success state
+        // Redirect to return URL or /chat after brief success state.
+        // The email auth flow lands users on /chat; OAuth was going
+        // to /dashboard, which then redirects to /chat, adding an
+        // extra frame of spinner. Unified on /chat.
         setTimeout(() => {
           const destination = returnUrl && returnUrl !== "/" && returnUrl !== "/login" && returnUrl !== "/register"
             ? returnUrl
-            : "/dashboard";
+            : "/chat";
           router.push(destination);
         }, 1500);
       } catch (err) {
