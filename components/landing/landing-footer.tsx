@@ -7,14 +7,16 @@ interface FooterLink {
   href: string;
 }
 
-// "Browse Documents" used to live under Product but pointed at
-// `/browse`, which is behind auth. Anonymous visitors clicked
-// through from the footer and hit a login wall, which makes the
-// link look broken. Removed until we have a public browse surface.
+// `/browse` is public (AppShell classifies it under
+// PUBLIC_CONTENT_ROUTES), so anonymous visitors clicking from the
+// footer land on the discovery hub rather than a login wall. The
+// link was temporarily removed; restored now that we've verified
+// the public path works end-to-end.
 const footerLinks: Record<string, FooterLink[]> = {
   Product: [
     { label: "Features", href: "/landing#features" },
     { label: "Pricing", href: "/pricing" },
+    { label: "Browse Documents", href: "/browse" },
   ],
   Company: [
     { label: "About", href: "/about" },
