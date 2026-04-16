@@ -33,6 +33,7 @@ import { useAuth } from "@/components/providers";
 import { useAuthModal } from "./auth-modal-provider";
 import { useResendVerification } from "@/lib/hooks";
 import { forgotPassword, getOAuthProviders, initiateOAuth, OAuthProvider } from "@/lib/api/auth";
+import { getPublicBetaMode } from "@/lib/api/beta";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
 import { BetaAccessModal } from "@/components/beta";
@@ -78,10 +79,17 @@ interface SocialLoginButtonsProps {
 
 function SocialLoginButtons({ mode, disabled, invitationToken, onError }: SocialLoginButtonsProps) {
   const [loading, setLoading] = useState<OAuthProvider | null>(null);
+  // Pessimistic default. Buttons only light up once we've confirmed
+  // the provider is configured on the backend. The old optimistic
+  // default ({google:true, microsoft:true}) meant that a failed
+  // /auth/oauth/providers probe left the buttons clickable, users
+  // pressed Google, and got a confusing dead-end — the exact
+  // "I was unable to sign up using my Google account" complaint.
   const [providersEnabled, setProvidersEnabled] = useState<Record<OAuthProvider, boolean>>({
-    google: true,
-    microsoft: true,
+    google: false,
+    microsoft: false,
   });
+  const [providersLoaded, setProvidersLoaded] = useState(false);
   const loadedProvidersRef = useRef(false);
 
   useEffect(() => {
@@ -102,8 +110,11 @@ function SocialLoginButtons({ mode, disabled, invitationToken, onError }: Social
         }
         loadedProvidersRef.current = true;
         setProvidersEnabled(nextState);
+        setProvidersLoaded(true);
       } catch {
-        // Keep optimistic defaults; endpoint may be unavailable during partial deploys.
+        // Probe failed. Stay pessimistic — rendering broken social
+        // buttons is worse than hiding them. Email auth still works.
+        if (mounted) setProvidersLoaded(true);
       }
     };
 
@@ -134,6 +145,18 @@ function SocialLoginButtons({ mode, disabled, invitationToken, onError }: Social
 
   const actionText = mode === "login" ? "Sign in" : "Sign up";
   const hasAnyProvider = providersEnabled.google || providersEnabled.microsoft;
+
+  // While the provider probe is in flight, render a pair of
+  // placeholder rows at the same height as the real buttons so the
+  // modal doesn't jump when they resolve.
+  if (!providersLoaded) {
+    return (
+      <div className="space-y-3">
+        <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+        <div className="h-10 w-full animate-pulse rounded-md bg-muted" />
+      </div>
+    );
+  }
 
   if (!hasAnyProvider) {
     return (
@@ -575,9 +598,31 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           err.errorCode === "beta_access_required" ||
           err.message?.toLowerCase().includes("invite-only")
         ) {
-          // Show beta access modal instead of error
-          setShowBetaModal(true);
-          setError(null);
+          // Backend rejected this signup as invite-only. Cross-check
+          // /beta/mode before we show the waitlist modal — if public
+          // beta is supposed to be off, the 403 is a backend config
+          // bug, not a user-facing "join the waitlist" event.
+          // Showing the waitlist UI anyway is what produced the
+          // reported "I was redirected to join the waitlist and had
+          // to sign up again" UX after beta ended.
+          try {
+            const { enabled } = await getPublicBetaMode();
+            if (enabled) {
+              setShowBetaModal(true);
+              setError(null);
+            } else {
+              setError(
+                "Sign-up is temporarily unavailable. Please try again in a few minutes or contact support."
+              );
+            }
+          } catch {
+            // Probe failed too. Fail closed on the waitlist surface —
+            // don't drag visitors into a waitlist we can't confirm
+            // still exists.
+            setError(
+              "Sign-up is temporarily unavailable. Please try again in a few minutes or contact support."
+            );
+          }
         } else {
           setError(err.getUserMessage("Registration failed. Please try again."));
         }
