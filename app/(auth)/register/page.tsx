@@ -1,38 +1,32 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
-import Link from "next/link";
+import { Suspense, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, UserPlus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { useAuth, useAuthModal } from "@/components/providers";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { RegisterView, type AuthView } from "@/components/auth/auth-modal";
+import { safeInternalPath } from "@/lib/utils/safe-redirect";
 
 /**
- * Register route ( /register ).
+ * /register — first-class auth route.
  *
- * Renders inside the (auth) layout — minimal header + centered
- * content — so a direct visit or deep link (e.g. /register?invite=…)
- * lands on a page that looks like an auth surface, not a flash of
- * the marketing landing page (the previous behavior). Preserves the
- * `invite` param via the auth modal provider.
- *
- * The signup flow is still a modal, so this page auto-opens it on
- * mount. If the user dismisses the modal they see a clean "Create
- * your account" card with a button to reopen it.
+ * Renders the RegisterView form directly on the page (no modal).
+ * Preserves invite= tokens from the URL through the shared
+ * AuthModalProvider storage so the form picks them up the same way
+ * it does inside the modal.
  */
 function RegisterContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useAuth();
-  const { openRegister, setReturnUrl, isOpen } = useAuthModal();
+  const {
+    setReturnUrl,
+    getReturnUrl,
+    clearReturnUrl,
+    setInvitationToken,
+    clearInvitationToken,
+  } = useAuthModal();
 
   const returnUrl = searchParams.get("returnUrl");
   const inviteToken = searchParams.get("invite");
@@ -49,17 +43,36 @@ function RegisterContent() {
     if (returnUrl) {
       setReturnUrl(decodeURIComponent(returnUrl));
     }
-
-    openRegister(undefined, inviteToken || undefined);
+    if (inviteToken) {
+      setInvitationToken(inviteToken);
+    }
   }, [
     isLoading,
     isAuthenticated,
-    openRegister,
     returnUrl,
     inviteToken,
     setReturnUrl,
+    setInvitationToken,
     router,
   ]);
+
+  const handleSwitchView = useCallback(
+    (view: AuthView) => {
+      if (view === "login") router.push("/login");
+    },
+    [router]
+  );
+
+  const handleSuccess = useCallback(() => {
+    const stored = getReturnUrl();
+    clearReturnUrl();
+    clearInvitationToken();
+    const safe =
+      stored && stored !== "/login" && stored !== "/register"
+        ? safeInternalPath(stored, "")
+        : "";
+    router.push(safe && safe !== "/" ? safe : "/chat");
+  }, [getReturnUrl, clearReturnUrl, clearInvitationToken, router]);
 
   if (isLoading) {
     return (
@@ -70,35 +83,13 @@ function RegisterContent() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <UserPlus className="h-5 w-5 text-primary" />
-        </div>
-        <CardTitle>Create your account</CardTitle>
-        <CardDescription>
-          Get started with Law Lens Uganda for free.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Button
-          className="w-full"
-          onClick={() => openRegister(undefined, inviteToken || undefined)}
-          disabled={isOpen}
-        >
-          {isOpen ? "Sign up open…" : "Sign up"}
-        </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            href="/login"
-            className="font-medium text-primary transition-colors hover:underline"
-          >
-            Sign in
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+    <div className="w-full rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+      <RegisterView
+        headerVariant="page"
+        onSwitchView={handleSwitchView}
+        onSuccess={handleSuccess}
+      />
+    </div>
   );
 }
 

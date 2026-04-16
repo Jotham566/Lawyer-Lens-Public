@@ -254,6 +254,46 @@ type RegisterFormData = z.infer<typeof registerSchema>;
 type ForgotPasswordFormData = z.infer<typeof forgotPasswordSchema>;
 
 // ============================================================================
+// Shared Header (renders as Dialog primitives inside the modal, or as
+// semantic HTML when a View is used as a standalone page).
+// ============================================================================
+
+export type HeaderVariant = "dialog" | "page";
+
+function AuthHeader({
+  variant,
+  title,
+  description,
+  className,
+  icon,
+}: {
+  variant: HeaderVariant;
+  title: React.ReactNode;
+  description: React.ReactNode;
+  className?: string;
+  icon?: React.ReactNode;
+}) {
+  if (variant === "page") {
+    return (
+      <div className={cn("space-y-2 pb-4 text-center", className)}>
+        {icon}
+        <h1 className="text-xl font-semibold leading-none tracking-tight text-foreground">
+          {title}
+        </h1>
+        <p className="text-sm leading-6 text-muted-foreground">{description}</p>
+      </div>
+    );
+  }
+  return (
+    <DialogHeader className={cn("space-y-2 pb-4", className)}>
+      {icon}
+      <DialogTitle className="text-xl">{title}</DialogTitle>
+      <DialogDescription>{description}</DialogDescription>
+    </DialogHeader>
+  );
+}
+
+// ============================================================================
 // Password Strength Indicator
 // ============================================================================
 
@@ -297,12 +337,14 @@ function PasswordStrength({ password }: { password: string | undefined }) {
 // Login View
 // ============================================================================
 
-interface LoginViewProps {
+export interface LoginViewProps {
   onSwitchView: (view: AuthView) => void;
   onSuccess: () => void;
+  /** Which primitives to render the header with. Defaults to "dialog". */
+  headerVariant?: HeaderVariant;
 }
 
-function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
+export function LoginView({ onSwitchView, onSuccess, headerVariant = "dialog" }: LoginViewProps) {
   const { login, isAuthenticated } = useAuth();
 
   const [showPassword, setShowPassword] = useState(false);
@@ -369,12 +411,11 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
   if (needsVerification) {
     return (
       <>
-        <DialogHeader className="space-y-2 pb-4">
-          <DialogTitle className="text-xl">Verify your email</DialogTitle>
-          <DialogDescription>
-            You&apos;re signed in, but you need to verify your email to unlock all features.
-          </DialogDescription>
-        </DialogHeader>
+        <AuthHeader
+          variant={headerVariant}
+          title="Verify your email"
+          description="You're signed in, but you need to verify your email to unlock all features."
+        />
 
         <div className="space-y-4">
           <AlertBanner
@@ -410,12 +451,11 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
 
   return (
     <>
-      <DialogHeader className="space-y-2 pb-4">
-        <DialogTitle className="text-xl">Welcome back</DialogTitle>
-        <DialogDescription>
-          Sign in to your Law Lens Uganda account to continue
-        </DialogDescription>
-      </DialogHeader>
+      <AuthHeader
+        variant={headerVariant}
+        title="Welcome back"
+        description="Sign in to your Law Lens Uganda account to continue"
+      />
 
       <div className="space-y-4">
         {error && (
@@ -538,12 +578,14 @@ function LoginView({ onSwitchView, onSuccess }: LoginViewProps) {
 // Register View
 // ============================================================================
 
-interface RegisterViewProps {
+export interface RegisterViewProps {
   onSwitchView: (view: AuthView) => void;
   onSuccess: () => void;
+  /** Which primitives to render the header with. Defaults to "dialog". */
+  headerVariant?: HeaderVariant;
 }
 
-function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
+export function RegisterView({ onSwitchView, onSuccess, headerVariant = "dialog" }: RegisterViewProps) {
   const router = useRouter();
   const { register: registerUser } = useAuth();
   const { getInvitationToken, openWaitlist } = useAuthModal();
@@ -632,12 +674,11 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
 
   return (
     <>
-      <DialogHeader className="space-y-2 pb-4">
-        <DialogTitle className="text-xl">Create an account</DialogTitle>
-        <DialogDescription>
-          Get started with Law Lens Uganda for free
-        </DialogDescription>
-      </DialogHeader>
+      <AuthHeader
+        variant={headerVariant}
+        title="Create an account"
+        description="Get started with Law Lens Uganda for free"
+      />
 
       {hasInvitation && (
         <div className="flex items-center gap-2 rounded-xl border border-border/60 bg-secondary/50 p-3">
@@ -804,11 +845,13 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
 // Forgot Password View
 // ============================================================================
 
-interface ForgotPasswordViewProps {
+export interface ForgotPasswordViewProps {
   onSwitchView: (view: AuthView) => void;
+  /** Which primitives to render the header with. Defaults to "dialog". */
+  headerVariant?: HeaderVariant;
 }
 
-function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
+export function ForgotPasswordView({ onSwitchView, headerVariant = "dialog" }: ForgotPasswordViewProps) {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [submittedEmail, setSubmittedEmail] = useState("");
@@ -844,16 +887,22 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
   if (success) {
     return (
       <>
-        <DialogHeader className="space-y-2 pb-4 text-center">
-          <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-            <CheckCircle2 className="h-6 w-6 text-primary" />
-          </div>
-          <DialogTitle className="text-xl">Check your email</DialogTitle>
-          <DialogDescription>
-            If an account exists for <span className="font-medium">{submittedEmail}</span>,
-            you will receive a password reset link shortly.
-          </DialogDescription>
-        </DialogHeader>
+        <AuthHeader
+          variant={headerVariant}
+          icon={
+            <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
+              <CheckCircle2 className="h-6 w-6 text-primary" />
+            </div>
+          }
+          title="Check your email"
+          description={
+            <>
+              If an account exists for{" "}
+              <span className="font-medium">{submittedEmail}</span>, you will receive a password
+              reset link shortly.
+            </>
+          }
+        />
 
         <div className="space-y-4">
           <div className="rounded-lg bg-muted p-4 text-sm">
@@ -891,12 +940,11 @@ function ForgotPasswordView({ onSwitchView }: ForgotPasswordViewProps) {
 
   return (
     <>
-      <DialogHeader className="space-y-2 pb-4">
-        <DialogTitle className="text-xl">Forgot password?</DialogTitle>
-        <DialogDescription>
-          Enter your email and we&apos;ll send you a reset link.
-        </DialogDescription>
-      </DialogHeader>
+      <AuthHeader
+        variant={headerVariant}
+        title="Forgot password?"
+        description="Enter your email and we'll send you a reset link."
+      />
 
       <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
         {error && (

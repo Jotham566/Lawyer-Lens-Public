@@ -1,38 +1,27 @@
 "use client";
 
-import { useEffect, Suspense } from "react";
-import Link from "next/link";
+import { Suspense, useCallback, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Loader2, LogIn } from "lucide-react";
+import { Loader2 } from "lucide-react";
 
 import { useAuth, useAuthModal } from "@/components/providers";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { LoginView, type AuthView } from "@/components/auth/auth-modal";
+import { safeInternalPath } from "@/lib/utils/safe-redirect";
 
 /**
- * Login route ( /login ).
+ * /login — first-class auth route.
  *
- * Renders inside the (auth) layout — minimal header + centered
- * content — so a direct visit or deep link lands on a page that
- * actually looks like an auth surface instead of flashing the
- * marketing landing before opening a modal (the previous behavior).
- *
- * The existing auth flow is still a modal, so this page auto-opens
- * it on mount. If the user dismisses the modal they see a clean
- * "Welcome back" card with a button to reopen it, not a spinner
- * and not the landing page.
+ * Renders the LoginView form directly on the page (no modal, no
+ * overlay, no marketing-page flash behind it). The same underlying
+ * form component is still used inside <AuthModal>; we opt into the
+ * page-variant header via headerVariant="page" so it renders
+ * semantic <h1>/<p> instead of DialogTitle/DialogDescription.
  */
 function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { isAuthenticated, isLoading } = useAuth();
-  const { openLogin, setReturnUrl, isOpen } = useAuthModal();
+  const { setReturnUrl, getReturnUrl, clearReturnUrl } = useAuthModal();
 
   const returnUrl = searchParams.get("returnUrl");
 
@@ -48,12 +37,29 @@ function LoginContent() {
     if (returnUrl) {
       setReturnUrl(decodeURIComponent(returnUrl));
     }
+  }, [isLoading, isAuthenticated, returnUrl, setReturnUrl, router]);
 
-    // Auto-open the modal the first time we land. We intentionally
-    // don't navigate away; this URL stays /login so deep-link and
-    // browser-back behavior stay predictable.
-    openLogin();
-  }, [isLoading, isAuthenticated, openLogin, returnUrl, setReturnUrl, router]);
+  const handleSwitchView = useCallback(
+    (view: AuthView) => {
+      if (view === "register") router.push("/register");
+      else if (view === "forgot-password") router.push("/forgot-password");
+    },
+    [router]
+  );
+
+  // Mirrors AuthModalProvider.handleAuthSuccess — narrow returnUrl to
+  // a same-origin path so a phish link like
+  //   https://lawlens.io/login?returnUrl=https://evil.com
+  // can't bounce us off-site after a valid login.
+  const handleSuccess = useCallback(() => {
+    const stored = getReturnUrl();
+    clearReturnUrl();
+    const safe =
+      stored && stored !== "/login" && stored !== "/register"
+        ? safeInternalPath(stored, "")
+        : "";
+    router.push(safe && safe !== "/" ? safe : "/chat");
+  }, [getReturnUrl, clearReturnUrl, router]);
 
   if (isLoading) {
     return (
@@ -64,31 +70,13 @@ function LoginContent() {
   }
 
   return (
-    <Card className="w-full">
-      <CardHeader className="text-center">
-        <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
-          <LogIn className="h-5 w-5 text-primary" />
-        </div>
-        <CardTitle>Welcome back</CardTitle>
-        <CardDescription>
-          Sign in to your Law Lens account to continue.
-        </CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-3">
-        <Button className="w-full" onClick={() => openLogin()} disabled={isOpen}>
-          {isOpen ? "Sign in open…" : "Sign in"}
-        </Button>
-        <p className="text-center text-sm text-muted-foreground">
-          Don&apos;t have an account?{" "}
-          <Link
-            href="/register"
-            className="font-medium text-primary transition-colors hover:underline"
-          >
-            Create one
-          </Link>
-        </p>
-      </CardContent>
-    </Card>
+    <div className="w-full rounded-2xl border border-border/60 bg-card p-6 shadow-sm sm:p-8">
+      <LoginView
+        headerVariant="page"
+        onSwitchView={handleSwitchView}
+        onSuccess={handleSuccess}
+      />
+    </div>
   );
 }
 
