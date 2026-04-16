@@ -395,7 +395,15 @@ export default function LandingPage() {
                   Citation-Backed Legal Research
                 </p>
                 <h2 className="mt-3 text-2xl font-extrabold tracking-tight lg:text-3xl">
-                  Every answer grounded in verifiable legal text
+                  Every answer grounded in{" "}
+                  {/* Serif accent on the truth claim — differentiates
+                      this header from the rest of the page and nods at
+                      legal-publication typography. Same restraint as
+                      the hero closing phrase: one italic phrase per
+                      section, not a general rule. */}
+                  <span className="font-serif font-semibold italic text-brand-gold">
+                    verifiable legal text
+                  </span>
                 </h2>
                 <p className="mt-5 text-[15px] leading-[1.75] text-muted-foreground">
                   Search judgments, statutes, and regulations in plain language.
