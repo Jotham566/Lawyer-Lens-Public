@@ -106,12 +106,17 @@ export function PricingTierCard({
     <Card
       className={cn(
         "relative flex flex-col",
-        isPopular && "border-border/40 shadow-lg scale-105",
+        // Pre-fix the "popular" card and its neighbors read as
+        // near-peers — a subtle border + shadow didn't pull the eye.
+        // Stronger anchor: gold border + gold ring + brighter shadow
+        // + slightly deeper scale step. The price stays honest; the
+        // visual weight finally tells the user where to start.
+        isPopular && "border-brand-gold/70 shadow-2xl scale-[1.06] ring-1 ring-brand-gold/30",
         isCurrent && "ring-2 ring-primary"
       )}
     >
       {isPopular && (
-        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2">
+        <Badge className="absolute -top-3 left-1/2 -translate-x-1/2 bg-brand-gold text-white hover:bg-brand-gold/90">
           Most Popular
         </Badge>
       )}
