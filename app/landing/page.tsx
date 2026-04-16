@@ -74,20 +74,26 @@ export default function LandingPage() {
                   obligations and regulatory change.
                 </p>
                 <div className="mt-10 flex flex-wrap items-center gap-4">
-                  <button
-                    type="button"
-                    onClick={() => setShowDemoModal(true)}
-                    className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110"
-                  >
-                    Request a Demo
-                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
-                  </button>
+                  {/* Primary: self-serve path — lets a visitor start
+                      using the product without booking a demo.
+                      Competitors route straight to their query surface;
+                      we route to register → /chat, which is the
+                      closest equivalent without skipping auth. */}
                   <button
                     type="button"
                     onClick={handleGetStarted}
+                    className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110"
+                  >
+                    Start Chatting Free
+                    <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                  </button>
+                  {/* Secondary: enterprise / evaluation path. */}
+                  <button
+                    type="button"
+                    onClick={() => setShowDemoModal(true)}
                     className="inline-flex h-12 items-center rounded-full border border-border/60 bg-card/80 px-8 text-sm font-bold text-foreground backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] hover:border-border hover:bg-card hover:shadow-soft"
                   >
-                    Get Started
+                    Request a Demo
                   </button>
                 </div>
 
@@ -473,14 +479,21 @@ export default function LandingPage() {
                 Faster research, grounded answers, and clearer visibility into
                 legal risk, compliance, and regulatory change.
               </p>
-              <div className="mt-8">
+              <div className="mt-8 flex flex-wrap items-center justify-center gap-4">
+                <button
+                  type="button"
+                  onClick={handleGetStarted}
+                  className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110"
+                >
+                  Start Chatting Free
+                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+                </button>
                 <button
                   type="button"
                   onClick={() => setShowDemoModal(true)}
-                  className="group inline-flex h-12 items-center gap-2.5 rounded-full bg-primary px-8 text-sm font-bold text-primary-foreground transition-colors hover:brightness-110"
+                  className="inline-flex h-12 items-center rounded-full border border-border/60 bg-card/80 px-8 text-sm font-bold text-foreground backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] hover:border-border hover:bg-card hover:shadow-soft"
                 >
                   Request a Demo
-                  <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
                 </button>
               </div>
             </div>

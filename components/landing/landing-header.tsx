@@ -7,6 +7,8 @@ import { cn } from "@/lib/utils";
 import { Logo } from "@/components/layout/logo";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { useGetStarted } from "@/hooks/use-get-started";
+import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import { DemoRequestModal } from "./demo-request-modal";
 import { ContactModal } from "./contact-modal";
 
@@ -24,6 +26,7 @@ export function LandingHeader() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { openLogin } = useAuthModal();
   const { isAuthenticated, user, logout } = useAuth();
+  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -170,9 +173,20 @@ export function LandingHeader() {
                 <button
                   type="button"
                   onClick={() => setShowDemoModal(true)}
-                  className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                  className="py-3 text-sm font-semibold text-muted-foreground transition-colors hover:text-foreground"
                 >
                   Request Demo
+                </button>
+                {/* Primary CTA — self-serve. Everything else in the
+                    nav is evaluation/sales. Users who just want to
+                    try the product should have a one-click path
+                    from here into register/chat. */}
+                <button
+                  type="button"
+                  onClick={handleGetStarted}
+                  className="inline-flex h-11 items-center rounded-full bg-primary px-5 text-sm font-bold text-primary-foreground transition-opacity hover:opacity-90"
+                >
+                  Start Free
                 </button>
               </>
             )}
@@ -260,9 +274,19 @@ export function LandingHeader() {
                       setMobileOpen(false);
                       setShowDemoModal(true);
                     }}
-                    className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                    className="rounded-lg px-3 py-2.5 text-left text-base font-semibold text-muted-foreground"
                   >
                     Request Demo
+                  </button>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      setMobileOpen(false);
+                      handleGetStarted(e);
+                    }}
+                    className="mt-1 inline-flex items-center justify-center rounded-full bg-primary px-5 py-2.5 text-sm font-bold text-primary-foreground"
+                  >
+                    Start Free
                   </button>
                 </>
               )}
@@ -273,6 +297,9 @@ export function LandingHeader() {
 
       <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
       <ContactModal open={showContactModal} onOpenChange={setShowContactModal} />
+      {/* Opened by handleGetStarted when beta mode is still on. No-op
+          once backend /beta/mode returns { enabled: false }. */}
+      <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
     </>
   );
 }
