@@ -134,10 +134,13 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const headersList = await headers();
-  const isLandingDomain = headersList.get("x-ll-domain") === "landing";
-  // Also detect /landing path directly (for dev testing on localhost)
-  const pathname = headersList.get("x-next-url") || headersList.get("x-invoke-path") || "";
-  const isLanding = isLandingDomain || pathname.startsWith("/landing");
+  // Trust only the x-ll-domain marker set by proxy.ts — it is refreshed
+  // on every request based on the real incoming pathname. The previous
+  // `x-next-url`/`x-invoke-path` fallback carried the internal rewritten
+  // path in production, so a soft-navigation from landing (`/`) to `/chat`
+  // kept `x-next-url` pointing at `/landing`, which made AppShell be
+  // skipped on the dashboard render until a hard refresh.
+  const isLanding = headersList.get("x-ll-domain") === "landing";
 
   const umamiHost = process.env.NEXT_PUBLIC_UMAMI_HOST?.replace(/\/+$/, "");
   const umamiWebsiteId = process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID_PUBLIC;
