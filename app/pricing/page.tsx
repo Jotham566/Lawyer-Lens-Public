@@ -9,13 +9,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { fetchSubscription } from "@/lib/api/billing";
 import { useAuth } from "@/components/providers";
 import { DemoRequestModal } from "@/components/landing/demo-request-modal";
-import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import { useGetStarted } from "@/hooks/use-get-started";
 
 export default function PricingPage() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
+  const { handleGetStarted } = useGetStarted();
   const [billingCycle, setBillingCycle] = useState<"monthly" | "annual">("monthly");
   const [tiers, setTiers] = useState<PricingTier[]>([]);
   const [loading, setLoading] = useState(true);
@@ -506,7 +505,6 @@ export default function PricingPage() {
       </section>
 
       <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
-      <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
     </main>
   );
 }

@@ -9,18 +9,20 @@ import { getPublicBetaMode } from "@/lib/api";
 /**
  * Unified "Get Started" action across the UI.
  *
- * - Authenticated → navigate to dashboard
- * - Not authenticated + Beta on → show waitlist callback
- * - Not authenticated + Beta off → open register modal
+ * - Authenticated → navigate to /chat
+ * - Not authenticated + beta ON  → open the waitlist modal
+ * - Not authenticated + beta OFF → open the register modal
  *
- * Returns { handleGetStarted, betaEnabled, showWaitlist, setShowWaitlist }
+ * The waitlist + register modals are both owned by AuthModalProvider,
+ * so this hook no longer manages any local modal state. Call sites
+ * used to also render their own <BetaAccessModal>; they should now
+ * remove that — the provider renders it once at the root.
  */
 export function useGetStarted() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
-  const { openRegister } = useAuthModal();
+  const { openRegister, openWaitlist } = useAuthModal();
   const [betaEnabled, setBetaEnabled] = useState(false);
-  const [showWaitlist, setShowWaitlist] = useState(false);
 
   useEffect(() => {
     getPublicBetaMode()
@@ -38,13 +40,13 @@ export function useGetStarted() {
       }
 
       if (betaEnabled) {
-        setShowWaitlist(true);
+        openWaitlist();
       } else {
         openRegister(redirectAfter);
       }
     },
-    [isAuthenticated, betaEnabled, openRegister, router]
+    [isAuthenticated, betaEnabled, openRegister, openWaitlist, router]
   );
 
-  return { handleGetStarted, betaEnabled, showWaitlist, setShowWaitlist };
+  return { handleGetStarted, betaEnabled };
 }

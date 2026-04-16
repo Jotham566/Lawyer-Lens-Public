@@ -16,7 +16,6 @@ import Image from "next/image";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/landing";
 import { getRepositoryStats } from "@/lib/api";
-import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import { DemoRequestModal } from "@/components/landing/demo-request-modal";
 import { useGetStarted } from "@/hooks/use-get-started";
 
@@ -26,7 +25,7 @@ import { useGetStarted } from "@/hooks/use-get-started";
    stronger typography, more restraint, more proof.
    ═══════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
+  const { handleGetStarted } = useGetStarted();
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   // Force scroll to top on mount/refresh
@@ -507,8 +506,8 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* Modals */}
-      <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
+      {/* Modals. The beta-waitlist modal is owned by
+          AuthModalProvider and opened via useGetStarted(). */}
       <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
     </>
   );

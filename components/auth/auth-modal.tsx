@@ -36,7 +36,6 @@ import { forgotPassword, getOAuthProviders, initiateOAuth, OAuthProvider } from 
 import { getPublicBetaMode } from "@/lib/api/beta";
 import { APIError } from "@/lib/api/client";
 import { AlertBanner } from "@/components/common";
-import { BetaAccessModal } from "@/components/beta";
 import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 
@@ -547,12 +546,11 @@ interface RegisterViewProps {
 function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
   const router = useRouter();
   const { register: registerUser } = useAuth();
-  const { getInvitationToken } = useAuthModal();
+  const { getInvitationToken, openWaitlist } = useAuthModal();
 
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showBetaModal, setShowBetaModal] = useState(false);
 
   // Check if invitation token is present
   const invitationToken = getInvitationToken();
@@ -608,7 +606,7 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           try {
             const { enabled } = await getPublicBetaMode();
             if (enabled) {
-              setShowBetaModal(true);
+              openWaitlist();
               setError(null);
             } else {
               setError(
@@ -798,8 +796,6 @@ function RegisterView({ onSwitchView, onSuccess }: RegisterViewProps) {
           </button>
         </p>
       </form>
-
-      <BetaAccessModal open={showBetaModal} onOpenChange={setShowBetaModal} />
     </>
   );
 }

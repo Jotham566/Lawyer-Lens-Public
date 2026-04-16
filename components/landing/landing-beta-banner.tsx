@@ -2,15 +2,18 @@
 
 import { useState, useEffect } from "react";
 import { BetaAnnouncementBanner } from "@/components/beta/beta-announcement-banner";
-import { BetaAccessModal } from "@/components/beta/beta-access-modal";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { getPublicBetaMode } from "@/lib/api";
 
 /**
- * Landing-page wrapper for the beta waitlist banner + modal.
- * Handles beta mode detection and modal state.
+ * Landing-page wrapper for the beta waitlist banner.
+ *
+ * The waitlist MODAL itself is owned by AuthModalProvider so there
+ * is exactly one instance mounted across the app — we just open it
+ * from here when someone clicks the banner CTA.
  */
 export function LandingBetaBanner() {
-  const [showModal, setShowModal] = useState(false);
+  const { openWaitlist } = useAuthModal();
   const [betaEnabled, setBetaEnabled] = useState(false);
 
   useEffect(() => {
@@ -28,13 +31,5 @@ export function LandingBetaBanner() {
 
   if (!betaEnabled) return null;
 
-  return (
-    <>
-      <BetaAnnouncementBanner onJoinClick={() => setShowModal(true)} />
-      <BetaAccessModal
-        open={showModal}
-        onOpenChange={setShowModal}
-      />
-    </>
-  );
+  return <BetaAnnouncementBanner onJoinClick={openWaitlist} />;
 }

@@ -15,7 +15,6 @@ import {
 
 import { Button } from "@/components/ui/button";
 import { useGetStarted } from "@/hooks/use-get-started";
-import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -32,7 +31,7 @@ export function UserMenu() {
   const { user, isAuthenticated, isLoading, logout } = useAuth();
   const { openLogin } = useAuthModal();
   const { entitlements } = useEntitlements();
-  const { handleGetStarted: onGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
+  const { handleGetStarted: onGetStarted } = useGetStarted();
   const isFreeTier = !entitlements || entitlements.tier === "free";
   const isTeamOrEnterprise = entitlements?.tier === "team" || entitlements?.tier === "enterprise";
 
@@ -61,7 +60,6 @@ export function UserMenu() {
         <Button size="sm" onClick={() => onGetStarted()} className="rounded-full">
           Get Started
         </Button>
-        <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
       </div>
     );
   }

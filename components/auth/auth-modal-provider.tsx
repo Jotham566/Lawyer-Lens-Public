@@ -11,6 +11,16 @@ const AuthModal = dynamic(
   { ssr: false }
 );
 
+// The waitlist modal is only mounted if someone calls openWaitlist().
+// Lazy-loaded so the marketing pages don't ship it by default.
+const BetaAccessModal = dynamic(
+  () =>
+    import("@/components/beta/beta-access-modal").then(
+      (mod) => mod.BetaAccessModal
+    ),
+  { ssr: false }
+);
+
 // Storage keys
 const RETURN_URL_KEY = "auth_return_url";
 const INVITATION_TOKEN_KEY = "auth_invitation_token";
@@ -29,6 +39,14 @@ interface AuthModalContextType {
   setInvitationToken: (token: string) => void;
   getInvitationToken: () => string | null;
   clearInvitationToken: () => void;
+  // Single source of truth for the private-beta waitlist modal.
+  // Previously every page that called useGetStarted re-instantiated
+  // its own <BetaAccessModal/> with local showWaitlist state; five
+  // separate copies drifted over time. Centralized here so we only
+  // render and maintain one.
+  openWaitlist: () => void;
+  closeWaitlist: () => void;
+  isWaitlistOpen: boolean;
 }
 
 const AuthModalContext = createContext<AuthModalContextType | undefined>(undefined);
@@ -36,6 +54,7 @@ const AuthModalContext = createContext<AuthModalContextType | undefined>(undefin
 export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
+  const [isWaitlistOpen, setIsWaitlistOpen] = useState(false);
 
   // Initialize defaultView from sessionStorage if present
   const [defaultView, setDefaultView] = useState<AuthView>(() => {
@@ -109,6 +128,9 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
   }, [openAuthModal, setInvitationToken]);
   const openForgotPassword = useCallback(() => openAuthModal("forgot-password"), [openAuthModal]);
 
+  const openWaitlist = useCallback(() => setIsWaitlistOpen(true), []);
+  const closeWaitlist = useCallback(() => setIsWaitlistOpen(false), []);
+
   // Handle successful authentication
   const handleAuthSuccess = useCallback(() => {
     setIsOpen(false);
@@ -153,6 +175,9 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
         setInvitationToken,
         getInvitationToken,
         clearInvitationToken,
+        openWaitlist,
+        closeWaitlist,
+        isWaitlistOpen,
       }}
     >
       {children}
@@ -163,6 +188,9 @@ export function AuthModalProvider({ children }: { children: React.ReactNode }) {
           defaultView={defaultView}
           onSuccess={handleAuthSuccess}
         />
+      ) : null}
+      {isWaitlistOpen ? (
+        <BetaAccessModal open={isWaitlistOpen} onOpenChange={setIsWaitlistOpen} />
       ) : null}
     </AuthModalContext.Provider>
   );

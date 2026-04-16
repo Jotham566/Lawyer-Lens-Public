@@ -8,7 +8,6 @@ import { Logo } from "@/components/layout/logo";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
 import { useGetStarted } from "@/hooks/use-get-started";
-import { BetaAccessModal } from "@/components/beta/beta-access-modal";
 import { DemoRequestModal } from "./demo-request-modal";
 import { ContactModal } from "./contact-modal";
 
@@ -26,7 +25,7 @@ export function LandingHeader() {
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { openLogin } = useAuthModal();
   const { isAuthenticated, user, logout } = useAuth();
-  const { handleGetStarted, showWaitlist, setShowWaitlist } = useGetStarted();
+  const { handleGetStarted } = useGetStarted();
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -297,9 +296,6 @@ export function LandingHeader() {
 
       <DemoRequestModal open={showDemoModal} onOpenChange={setShowDemoModal} />
       <ContactModal open={showContactModal} onOpenChange={setShowContactModal} />
-      {/* Opened by handleGetStarted when beta mode is still on. No-op
-          once backend /beta/mode returns { enabled: false }. */}
-      <BetaAccessModal open={showWaitlist} onOpenChange={setShowWaitlist} />
     </>
   );
 }
