@@ -380,53 +380,47 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
         ))}
       </div>
 
-      {/* Findings Breakdown by Severity */}
+      {/* At-a-glance severity strip + overdue callouts.
+          Previously two separate card grids (5-card severity grid +
+          3-card overdue stats). Collapsed into a single inline strip
+          so the Overview tab stops looking like a dashboard-card
+          mosaic. */}
       {summary && totalFindings > 0 && (
         <CardShell className="p-6">
-          <h2 className="text-lg font-bold tracking-tight">Findings by Severity</h2>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+          <div className="flex flex-wrap items-center justify-between gap-4">
+            <h2 className="text-lg font-bold tracking-tight">Findings by severity</h2>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+              <span>
+                Overdue tasks:{" "}
+                <span className={cn("text-sm font-bold", summary.overdue_tasks > 0 ? "text-red-600 dark:text-red-400" : "text-foreground")}>
+                  {summary.overdue_tasks}
+                </span>
+              </span>
+              <span>
+                Overdue obligations:{" "}
+                <span className={cn("text-sm font-bold", summary.overdue_obligations > 0 ? "text-red-600 dark:text-red-400" : "text-foreground")}>
+                  {summary.overdue_obligations}
+                </span>
+              </span>
+              <span>
+                Total assessments:{" "}
+                <span className="text-sm font-bold text-foreground">{summary.total_assessments}</span>
+              </span>
+            </div>
+          </div>
+          <ul className="mt-5 flex flex-wrap gap-x-6 gap-y-3">
             {(["critical", "high", "medium", "low", "informational"] as const).map(
               (sev) => (
-                <div key={sev} className="flex items-center justify-between rounded-lg bg-muted/50 p-3">
+                <li key={sev} className="flex items-center gap-2">
                   <Badge label={sev} colorMap={SEVERITY_COLORS} />
-                  <span className="text-lg font-bold">
+                  <span className="text-lg font-bold tabular-nums">
                     {summary.findings_by_severity[sev] ?? 0}
                   </span>
-                </div>
+                </li>
               )
             )}
-          </div>
+          </ul>
         </CardShell>
-      )}
-
-      {/* Quick Stats Row */}
-      {summary && (
-        <div className="grid gap-4 sm:grid-cols-3">
-          <CardShell className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Overdue Tasks
-            </p>
-            <p className="mt-1 text-2xl font-extrabold text-red-600 dark:text-red-400">
-              {summary.overdue_tasks}
-            </p>
-          </CardShell>
-          <CardShell className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Overdue Obligations
-            </p>
-            <p className="mt-1 text-2xl font-extrabold text-red-600 dark:text-red-400">
-              {summary.overdue_obligations}
-            </p>
-          </CardShell>
-          <CardShell className="p-5">
-            <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
-              Total Assessments
-            </p>
-            <p className="mt-1 text-2xl font-extrabold">
-              {summary.total_assessments}
-            </p>
-          </CardShell>
-        </div>
       )}
 
       {/* Quick Actions */}
