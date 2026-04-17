@@ -57,13 +57,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
     isAuthenticated: false,
   });
 
-  // Refresh session - returns true if successful
+  // Refresh session - returns true if successful.
+  //   issueCsrfToken() — pre-refresh, supplies CSRF for the refresh POST
+  //   apiRefreshToken() — rotates the session cookie
+  //   [getCurrentUser, issueCsrfToken] — both depend on the refreshed
+  //                                     session but are independent of
+  //                                     each other, so parallelize the
+  //                                     post-refresh pair.
   const refreshSession = useCallback(async (): Promise<boolean> => {
     try {
       await issueCsrfToken();
       await apiRefreshToken();
-      const user = await getCurrentUser();
-      await issueCsrfToken();
+      const [user] = await Promise.all([
+        getCurrentUser(),
+        issueCsrfToken(),
+      ]);
 
       setState({
         user,
@@ -91,12 +99,17 @@ export function AuthProvider({ children }: AuthProviderProps) {
     }
   }, []);
 
-  // Initialize auth state on mount
+  // Initialize auth state on mount. getCurrentUser() + issueCsrfToken()
+  // were serialized before — two independent RTTs on every /chat mount.
+  // Run them in parallel so we gate on the slower of the two instead
+  // of their sum.
   useEffect(() => {
     async function initAuth() {
       try {
-        const user = await getCurrentUser();
-        await issueCsrfToken();
+        const [user] = await Promise.all([
+          getCurrentUser(),
+          issueCsrfToken(),
+        ]);
         setState({
           user,
           isLoading: false,
