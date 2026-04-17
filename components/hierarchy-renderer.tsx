@@ -6,6 +6,9 @@ import { surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import type { HierarchicalNode, TextFragment } from "@/lib/api/types";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
+// KaTeX stylesheet — scoped to the component that renders math so it
+// doesn't ship globally on every route.
+import "katex/dist/katex.min.css";
 
 
 interface HierarchyRendererProps {

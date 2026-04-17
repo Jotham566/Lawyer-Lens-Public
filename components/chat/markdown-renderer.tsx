@@ -9,6 +9,9 @@ import {
   parseSourceCitations,
 } from "@/components/citations";
 import type { ChatSource } from "@/lib/api/types";
+// KaTeX stylesheet — required by katex.render() output below. Imported
+// at the point of use so it doesn't ship on non-chat routes.
+import "katex/dist/katex.min.css";
 
 // Common languages to support
 const SUPPORTED_LANGUAGES = new Set([

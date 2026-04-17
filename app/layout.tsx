@@ -3,7 +3,10 @@ import localFont from "next/font/local";
 import Script from "next/script";
 import { headers } from "next/headers";
 import "./globals.css";
-import "katex/dist/katex.min.css";
+// KaTeX CSS previously imported here — now scoped to the components
+// that actually render math (components/chat/markdown-renderer.tsx
+// and components/hierarchy-renderer.tsx) so it doesn't ship on every
+// route.
 import { Providers } from "@/components/providers";
 import { AppShell } from "@/components/layout";
 import { Toaster } from "sonner";
