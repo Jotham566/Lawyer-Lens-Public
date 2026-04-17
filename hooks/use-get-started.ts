@@ -1,10 +1,10 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers";
 import { useAuthModal } from "@/components/auth/auth-modal-provider";
-import { getPublicBetaMode } from "@/lib/api";
+import { useBetaMode } from "./use-beta-mode";
 
 /**
  * Unified "Get Started" action across the UI.
@@ -22,13 +22,7 @@ export function useGetStarted() {
   const router = useRouter();
   const { isAuthenticated } = useAuth();
   const { openRegister, openWaitlist } = useAuthModal();
-  const [betaEnabled, setBetaEnabled] = useState(false);
-
-  useEffect(() => {
-    getPublicBetaMode()
-      .then((res) => setBetaEnabled(res.enabled))
-      .catch(() => {});
-  }, []);
+  const { betaEnabled } = useBetaMode();
 
   const handleGetStarted = useCallback(
     (e?: React.MouseEvent, redirectAfter?: string) => {
