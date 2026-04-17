@@ -345,6 +345,19 @@
     cursor: pointer;
   }
 
+  /* Every [role="button"] and every link that doesn't already paint its
+     own focus state gets a visible keyboard-focus ring. We scope on
+     `:not([class*="focus"])` and `:not([class*="ll-"])` so components
+     that intentionally paint their own focus (the button primitive, the
+     ll-field inputs, ll-menu-item, ll-sidebar-nav-button, ll-chip-button,
+     etc.) keep their designed look. */
+  [role="button"]:not([class*="focus"]):not([class*="ll-"]):focus-visible,
+  summary:focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
+    border-radius: var(--radius-md);
+  }
+
   h1,
   h2,
   h3,
