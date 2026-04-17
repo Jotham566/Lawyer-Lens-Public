@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -18,6 +18,19 @@ interface LogoProps {
 const LOGO_WIDTH = 1000;
 const LOGO_HEIGHT = 280;
 
+// SSR-safe "mounted on client" flag. useSyncExternalStore with a no-op
+// subscribe lets us hand React a different value on the server (false)
+// vs. in the browser (true) without calling setState from an effect —
+// the react-hooks/set-state-in-effect lint rule flags the effect-based
+// version because it triggers a cascading render.
+const EMPTY_SUBSCRIBE = () => () => {};
+const useHasMounted = () =>
+  useSyncExternalStore(
+    EMPTY_SUBSCRIBE,
+    () => true,
+    () => false
+  );
+
 // Previously rendered both the light and dark variants with CSS-driven
 // display toggling — which meant the browser fetched BOTH SVGs on every
 // page load regardless of active theme. We now pick one src after mount
@@ -27,11 +40,7 @@ const LOGO_HEIGHT = 280;
 // the *moment* of theme change is imperceptible for a cached SVG.
 export function Logo({ collapsed = false, className, height = 48, href = "/" }: LogoProps) {
   const { resolvedTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
+  const mounted = useHasMounted();
 
   const isDark = mounted && resolvedTheme === "dark";
   const width = Math.round(height * (LOGO_WIDTH / LOGO_HEIGHT));
