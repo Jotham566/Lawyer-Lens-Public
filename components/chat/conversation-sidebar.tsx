@@ -146,6 +146,13 @@ export function ConversationList({
   const [editTitle, setEditTitle] = useState("");
   // Archived section expanded state
   const [archivedExpanded, setArchivedExpanded] = useState(false);
+  // Progressive-disclosure cap for the active (unarchived) list. Keeps the
+  // initial DOM bounded regardless of history size; "Show more" expands
+  // in chunks. Avoids the complexity of a full virtualizer for this
+  // date-grouped + pinned + archived structure.
+  const INITIAL_VISIBLE = 40;
+  const PAGE_SIZE = 40;
+  const [visibleLimit, setVisibleLimit] = useState(INITIAL_VISIBLE);
 
   const handleStartEdit = (conv: Conversation, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -204,7 +211,16 @@ export function ConversationList({
   const starredConversations = conversations.filter(conv => conv.isStarred);
   const unstarredConversations = conversations.filter(conv => !conv.isStarred);
 
-  // Group non-starred conversations by date
+  // Progressive disclosure: pinned items always render in full (they're
+  // intentionally prioritized), then fill the remaining budget with
+  // unstarred items in their natural chronological order. Overflow goes
+  // behind a "Show more" button.
+  const pinnedVisible = starredConversations;
+  const unstarredBudget = Math.max(0, visibleLimit - pinnedVisible.length);
+  const unstarredVisible = unstarredConversations.slice(0, unstarredBudget);
+  const hiddenCount = unstarredConversations.length - unstarredVisible.length;
+
+  // Group VISIBLE unstarred conversations by date
   const groups: Record<string, Conversation[]> = {
     "Today": [],
     "Yesterday": [],
@@ -212,7 +228,7 @@ export function ConversationList({
     "Older": []
   };
 
-  unstarredConversations.forEach(conv => {
+  unstarredVisible.forEach(conv => {
     const date = new Date(conv.updatedAt || conv.createdAt || new Date());
     const label = getDayLabel(date);
     groups[label].push(conv);
@@ -424,6 +440,19 @@ export function ConversationList({
             </div>
           </div>
         ))}
+
+        {/* Show-more cap for large histories. Hidden in collapsed mode —
+            the icon-rail doesn't have room for a text button and it's
+            not useful there anyway. */}
+        {!collapsed && hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={() => setVisibleLimit(visibleLimit + PAGE_SIZE)}
+            className="ll-text-link w-full px-2 py-1 text-xs font-medium"
+          >
+            Show {Math.min(hiddenCount, PAGE_SIZE)} more ({hiddenCount} hidden)
+          </button>
+        )}
 
         {/* Archived Section */}
         {archivedConversations.length > 0 && !collapsed && (
