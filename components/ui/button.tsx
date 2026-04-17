@@ -28,12 +28,16 @@ const buttonVariants = cva(
         link: "ll-text-link underline-offset-4 disabled:text-muted-foreground",
       },
       size: {
-        default: "h-10 px-4 py-2.5 has-[>svg]:px-3.5",
+        // Default bumped from h-10 (40px) to h-11 (44px) to meet the
+        // WCAG 2.5.5 / Apple HIG / Material Design touch-target minimum.
+        // Sizes below 44px are still available for dense toolbars where
+        // the tradeoff is intentional.
+        default: "h-11 px-5 py-2.5 has-[>svg]:px-4",
         sm: "h-9 gap-1.5 px-3.5 text-xs has-[>svg]:px-3",
-        lg: "h-11 px-6 text-sm has-[>svg]:px-4.5",
-        icon: "size-10",
+        lg: "h-12 px-6 text-sm has-[>svg]:px-4.5",
+        icon: "size-11",
         "icon-sm": "size-9",
-        "icon-lg": "size-11",
+        "icon-lg": "size-12",
       },
     },
     defaultVariants: {
