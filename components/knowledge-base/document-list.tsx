@@ -314,11 +314,13 @@ export function DocumentList({
           <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-surface-container">
             <FileText className="h-8 w-8 text-muted-foreground/40" />
           </div>
-          <h3 className="mt-4 text-lg font-bold">No documents found</h3>
+          <h3 className="mt-4 text-lg font-bold">
+            {searchQuery ? "No matches for that search" : "Your knowledge base is ready"}
+          </h3>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
             {searchQuery
-              ? "Try adjusting your search query"
-              : "Upload your first document to get started"}
+              ? "Try a different keyword, or clear the search to see every document."
+              : "Upload contracts, policies, or memos and Ask Ben will cite them in answers."}
           </p>
         </div>
       ) : (

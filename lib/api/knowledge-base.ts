@@ -206,7 +206,10 @@ export async function getKnowledgeBaseStats(): Promise<KnowledgeBaseStats> {
  * Format file size for display.
  */
 export function formatFileSize(bytes: number): string {
-  if (bytes === 0) return "0 Bytes";
+  // Zero-byte state reads "—" in stat cards rather than the debug-y
+  // "0 Bytes". Call sites that actually want the literal should pass
+  // through to the main branch.
+  if (bytes === 0) return "—";
   const k = 1024;
   const sizes = ["Bytes", "KB", "MB", "GB"];
   const i = Math.floor(Math.log(bytes) / Math.log(k));
