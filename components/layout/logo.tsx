@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import Image from "next/image";
+import { useTheme } from "next-themes";
+import { useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 
 interface LogoProps {
@@ -16,8 +18,33 @@ interface LogoProps {
 const LOGO_WIDTH = 1000;
 const LOGO_HEIGHT = 280;
 
+// Previously rendered both the light and dark variants with CSS-driven
+// display toggling — which meant the browser fetched BOTH SVGs on every
+// page load regardless of active theme. We now pick one src after mount
+// using next-themes' resolvedTheme, which matches the rest of the app's
+// theme-aware rendering (see ThemeFavicon). On first paint before mount
+// we render the light variant to avoid hydration mismatch; any flash at
+// the *moment* of theme change is imperceptible for a cached SVG.
 export function Logo({ collapsed = false, className, height = 48, href = "/" }: LogoProps) {
+  const { resolvedTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const isDark = mounted && resolvedTheme === "dark";
   const width = Math.round(height * (LOGO_WIDTH / LOGO_HEIGHT));
+
+  const src = collapsed
+    ? isDark ? "/logos/dm-white-icon.svg" : "/logos/lm-black-icon.svg"
+    : isDark ? "/logos/dm-lawlens-logo.svg" : "/logos/lm-lawlens-logo.svg";
+
+  const imgWidth = collapsed ? height : LOGO_WIDTH;
+  const imgHeight = collapsed ? height : LOGO_HEIGHT;
+  const style = collapsed
+    ? { width: height, height }
+    : { width, height: "auto" as const, maxWidth: "100%" };
 
   return (
     <Link
@@ -27,54 +54,16 @@ export function Logo({ collapsed = false, className, height = 48, href = "/" }: 
         className
       )}
     >
-      {collapsed ? (
-        // Show icon only when collapsed
-        <>
-          {/* Light mode icon */}
-          <Image
-            src="/logos/lm-black-icon.svg"
-            alt="Law Lens Uganda"
-            width={height}
-            height={height}
-            className="dark:hidden"
-            style={{ width: height, height: height }}
-            loading="eager"
-          />
-          {/* Dark mode icon */}
-          <Image
-            src="/logos/dm-white-icon.svg"
-            alt="Law Lens Uganda"
-            width={height}
-            height={height}
-            className="hidden dark:block"
-            style={{ width: height, height: height }}
-            loading="eager"
-          />
-        </>
-      ) : (
-        <>
-          {/* Light mode logo */}
-          <Image
-            src="/logos/lm-lawlens-logo.svg"
-            alt="Law Lens Uganda"
-            width={LOGO_WIDTH}
-            height={LOGO_HEIGHT}
-            className="dark:hidden max-w-full h-auto"
-            style={{ width, height: "auto", maxWidth: "100%" }}
-            loading="eager"
-          />
-          {/* Dark mode logo */}
-          <Image
-            src="/logos/dm-lawlens-logo.svg"
-            alt="Law Lens Uganda"
-            width={LOGO_WIDTH}
-            height={LOGO_HEIGHT}
-            className="hidden dark:block max-w-full h-auto"
-            style={{ width, height: "auto", maxWidth: "100%" }}
-            loading="eager"
-          />
-        </>
-      )}
+      <Image
+        key={src}
+        src={src}
+        alt="Law Lens Uganda"
+        width={imgWidth}
+        height={imgHeight}
+        className={cn(!collapsed && "max-w-full h-auto")}
+        style={style}
+        loading="eager"
+      />
     </Link>
   );
 }
