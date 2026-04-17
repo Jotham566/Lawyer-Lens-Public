@@ -51,7 +51,10 @@ export function DashboardTopBar({ onMobileMenuToggle }: DashboardTopBarProps) {
           <Menu className="h-5 w-5" />
         </Button>
 
-        <h1 className="text-sm font-semibold text-foreground">{breadcrumb}</h1>
+        {/* Breadcrumb label is visual chrome, NOT the page's semantic heading.
+            Each page owns its own <h1>. Keeping this as <h1> on every route
+            caused duplicate H1s (topbar + page hero). */}
+        <p className="text-sm font-semibold text-foreground">{breadcrumb}</p>
       </div>
 
       {/* Right: Search, theme, user */}

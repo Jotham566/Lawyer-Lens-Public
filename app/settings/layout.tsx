@@ -77,10 +77,11 @@ export default function SettingsLayout({
   return (
     <div className="min-h-screen bg-background">
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6">
-        {/* Page header */}
+        {/* Section label for the settings tab nav. Each child page owns
+            its own <h1> via PageHeader. */}
         <div className="mb-6 flex items-center gap-2">
           <Settings className="h-5 w-5 text-muted-foreground" />
-          <h1 className="text-lg font-semibold text-foreground">Settings</h1>
+          <p className="text-lg font-semibold text-foreground">Settings</p>
         </div>
 
         {/* Horizontal tab navigation */}

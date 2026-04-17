@@ -139,7 +139,9 @@ function ChatContent() {
             <div className="flex items-center justify-between border-b px-3 py-2 md:hidden">
               <div className="flex items-center gap-2">
                 <Sparkles className="h-4 w-4 text-primary" />
-                <h1 className="text-sm font-semibold">Legal Assistant</h1>
+                {/* Eyebrow label, not the page's semantic heading —
+                    EmptyState owns the <h1>. */}
+                <span className="text-sm font-semibold">Legal Assistant</span>
               </div>
               <div className="flex items-center gap-1">
                 <Button

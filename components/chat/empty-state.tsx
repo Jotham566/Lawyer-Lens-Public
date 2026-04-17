@@ -51,9 +51,9 @@ export function EmptyState({
             <span className="text-lg font-medium">{currentMode.eyebrow}</span>
           </div>
 
-          <h2 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground md:text-5xl">
             {currentMode.title}
-          </h2>
+          </h1>
 
           <p className="mx-auto mt-4 max-w-2xl text-sm text-muted-foreground md:text-base">
             {getToolEmptyStateDescription(selectedTool)}
