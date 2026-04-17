@@ -2,7 +2,17 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import ReactMarkdown from "react-markdown";
+import dynamic from "next/dynamic";
+
+// react-markdown is only rendered inside expanded Finding detail
+// panels (see usage further down). Static import pulls it into the
+// top-level compliance bundle on every visit. Dynamic import keeps
+// the initial /compliance bundle lean — the parser lands only when
+// a user opens a finding.
+const ReactMarkdown = dynamic(() => import("react-markdown"), {
+  ssr: false,
+  loading: () => null,
+});
 import {
   ShieldCheck,
   AlertTriangle,
