@@ -1339,10 +1339,19 @@
     color: color-mix(in srgb, var(--sidebar-foreground) 60%, transparent);
   }
 
-  .ll-sidebar-nav-button:hover,
+  .ll-sidebar-nav-button:hover {
+    background: var(--sidebar-accent);
+    color: var(--sidebar-accent-foreground);
+  }
+
+  /* Keyboard-focused state gets a visible ring distinct from hover —
+     hover alone used the accent bg, which was indistinguishable from
+     keyboard focus to a keyboard-only user. */
   .ll-sidebar-nav-button:focus-visible {
     background: var(--sidebar-accent);
     color: var(--sidebar-accent-foreground);
+    outline: 2px solid var(--sidebar-ring);
+    outline-offset: 2px;
   }
 
   .ll-sidebar-nav-button-active {
@@ -1355,13 +1364,21 @@
     @apply inline-flex items-center rounded-full border border-border/60 bg-surface-container-low px-2.5 py-1 text-xs font-medium text-foreground transition-[background-color,border-color,box-shadow,transform,color] duration-200;
   }
 
-  .ll-chip-button:hover,
-  .ll-chip-button:focus-visible {
+  .ll-chip-button:hover {
     transform: translateY(-1px);
     background: var(--interactive-hover-surface);
     border-color: var(--interactive-hover-border);
     color: var(--interactive-hover-foreground);
     box-shadow: var(--shadow-soft);
+  }
+
+  .ll-chip-button:focus-visible {
+    transform: translateY(-1px);
+    background: var(--interactive-hover-surface);
+    border-color: var(--interactive-hover-border);
+    color: var(--interactive-hover-foreground);
+    box-shadow: var(--shadow-soft), 0 0 0 3px color-mix(in srgb, var(--ring) 55%, transparent);
+    outline: none;
   }
 
   .ll-chip-button-active {
