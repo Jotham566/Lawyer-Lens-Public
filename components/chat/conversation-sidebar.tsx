@@ -242,29 +242,31 @@ export function ConversationList({
     onUnarchive(conv.id);
   };
 
-  // Render a single conversation item
-  const renderConversationItem = (conv: Conversation, isPinned: boolean = false) => (
-    <TooltipProvider key={conv.id} delayDuration={0}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div
-            role="button"
-            tabIndex={0}
-            onClick={() => onSelect(conv.id)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" || e.key === " ") {
-                e.preventDefault();
-                onSelect(conv.id);
-              }
-            }}
-            className={cn(
-              "group relative flex cursor-pointer items-center rounded-lg py-2",
-              collapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-2",
-              currentConversationId === conv.id
-                ? surfaceClasses.rowInteractiveActive
-                : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
-            )}
-          >
+  // Render a single conversation row. The row is the same regardless of
+  // sidebar state; only the collapsed variant wraps in <Tooltip>. The
+  // TooltipProvider is hoisted to the list root so we don't spin up one
+  // React context per conversation (the old layout mounted N providers
+  // even when no tooltips were rendered, i.e. the expanded state).
+  const renderConversationRow = (conv: Conversation, isPinned: boolean = false) => {
+    const row = (
+      <div
+        role="button"
+        tabIndex={0}
+        onClick={() => onSelect(conv.id)}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            onSelect(conv.id);
+          }
+        }}
+        className={cn(
+          "group relative flex cursor-pointer items-center rounded-lg py-2",
+          collapsed ? "justify-center px-0 h-10 w-10 mx-auto" : "px-2",
+          currentConversationId === conv.id
+            ? surfaceClasses.rowInteractiveActive
+            : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
+        )}
+      >
             {/* Icon: Star for pinned, MessageSquare for regular */}
             {isPinned && !collapsed ? (
               <Star className="h-4 w-4 shrink-0 mr-3 fill-primary text-primary" />
@@ -371,129 +373,135 @@ export function ConversationList({
               </>
             )}
           </div>
-        </TooltipTrigger>
-        {collapsed && (
-          <TooltipContent side="right" className="flex items-center gap-4">
-            {isPinned && <Star className="h-3 w-3 fill-primary text-primary" />}
-            {stripMarkdownFromTitle(conv.title)}
-          </TooltipContent>
-        )}
+    );
+
+    if (!collapsed) {
+      // Expanded sidebar already shows the title — no tooltip needed.
+      return <div key={conv.id}>{row}</div>;
+    }
+
+    return (
+      <Tooltip key={conv.id}>
+        <TooltipTrigger asChild>{row}</TooltipTrigger>
+        <TooltipContent side="right" className="flex items-center gap-4">
+          {isPinned && <Star className="h-3 w-3 fill-primary text-primary" />}
+          {stripMarkdownFromTitle(conv.title)}
+        </TooltipContent>
       </Tooltip>
-    </TooltipProvider>
-  );
+    );
+  };
+
+  const renderConversationItem = renderConversationRow;
 
   return (
-    <div className="space-y-4">
-      {/* Pinned Section */}
-      {starredConversations.length > 0 && (
-        <div>
-          {!collapsed && (
-            <h3 className="mb-2 px-2 text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
-              <Star className="h-3 w-3 fill-current" />
-              Pinned
-            </h3>
-          )}
-          <div className="space-y-0.5">
-            {starredConversations.map((conv) => renderConversationItem(conv, true))}
-          </div>
-        </div>
-      )}
-
-      {/* Date-grouped sections */}
-      {nonEmptyGroups.map(([label, groupConvs]) => (
-        <div key={label}>
-          {!collapsed && (
-            <h3 className="mb-2 px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
-              {label}
-            </h3>
-          )}
-          <div className="space-y-0.5">
-            {groupConvs.map((conv) => renderConversationItem(conv, false))}
-          </div>
-        </div>
-      ))}
-
-      {/* Archived Section */}
-      {archivedConversations.length > 0 && !collapsed && (
-        <div className="mt-4 pt-4 border-t border-border/50">
-          <button
-            type="button"
-            onClick={() => setArchivedExpanded(!archivedExpanded)}
-            className="ll-text-link flex w-full items-center gap-1 px-2 mb-2 text-xs font-medium uppercase tracking-wider"
-          >
-            {archivedExpanded ? (
-              <ChevronDown className="h-3 w-3" />
-            ) : (
-              <ChevronRight className="h-3 w-3" />
+    <TooltipProvider delayDuration={0}>
+      <div className="space-y-4">
+        {/* Pinned Section */}
+        {starredConversations.length > 0 && (
+          <div>
+            {!collapsed && (
+              <h3 className="mb-2 px-2 text-xs font-medium text-primary uppercase tracking-wider flex items-center gap-1">
+                <Star className="h-3 w-3 fill-current" />
+                Pinned
+              </h3>
             )}
-            <Archive className="h-3 w-3" />
-            Archived ({archivedConversations.length})
-          </button>
-          {archivedExpanded && (
             <div className="space-y-0.5">
-              {archivedConversations.map((conv) => (
-                <TooltipProvider key={conv.id} delayDuration={0}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <div
-                        role="button"
-                        tabIndex={0}
-                        onClick={() => onSelect(conv.id)}
-                        onKeyDown={(e) => {
-                          if (e.key === "Enter" || e.key === " ") {
-                            e.preventDefault();
-                            onSelect(conv.id);
-                          }
-                        }}
-                        className={cn(
-                          "group relative flex cursor-pointer items-center rounded-lg py-2 px-2",
-                          currentConversationId === conv.id
-                            ? surfaceClasses.rowInteractiveActive
-                            : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
-                        )}
-                      >
-                        <Archive className="ll-icon-muted h-4 w-4 shrink-0 mr-3 text-muted-foreground/50" />
-                        <div className="min-w-0 flex-1 overflow-hidden">
-                          <p className="truncate text-sm font-medium leading-none opacity-70">
-                            {stripMarkdownFromTitle(conv.title)}
-                          </p>
-                          <p className="truncate text-[10px] text-muted-foreground/60 mt-0.5">
-                            {formatRelativeTime(conv.updatedAt || conv.createdAt)}
-                          </p>
-                        </div>
-                        <div className="ml-auto flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            type="button"
-                            className="ll-icon-button h-6 w-6"
-                            onClick={(e) => handleUnarchive(conv, e)}
-                            title="Restore from archive"
-                          >
-                            <ArchiveRestore className="h-3 w-3" />
-                            <span className="sr-only">Unarchive</span>
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            type="button"
-                            className="ll-icon-button ll-icon-button-danger h-6 w-6"
-                            onClick={(e) => onDelete(conv.id, e)}
-                          >
-                            <Trash2 className="h-3 w-3" />
-                            <span className="sr-only">Delete</span>
-                          </Button>
-                        </div>
-                      </div>
-                    </TooltipTrigger>
-                  </Tooltip>
-                </TooltipProvider>
-              ))}
+              {starredConversations.map((conv) => renderConversationItem(conv, true))}
             </div>
-          )}
-        </div>
-      )}
-    </div>
+          </div>
+        )}
+
+        {/* Date-grouped sections */}
+        {nonEmptyGroups.map(([label, groupConvs]) => (
+          <div key={label}>
+            {!collapsed && (
+              <h3 className="mb-2 px-2 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider">
+                {label}
+              </h3>
+            )}
+            <div className="space-y-0.5">
+              {groupConvs.map((conv) => renderConversationItem(conv, false))}
+            </div>
+          </div>
+        ))}
+
+        {/* Archived Section */}
+        {archivedConversations.length > 0 && !collapsed && (
+          <div className="mt-4 pt-4 border-t border-border/50">
+            <button
+              type="button"
+              onClick={() => setArchivedExpanded(!archivedExpanded)}
+              className="ll-text-link flex w-full items-center gap-1 px-2 mb-2 text-xs font-medium uppercase tracking-wider"
+            >
+              {archivedExpanded ? (
+                <ChevronDown className="h-3 w-3" />
+              ) : (
+                <ChevronRight className="h-3 w-3" />
+              )}
+              <Archive className="h-3 w-3" />
+              Archived ({archivedConversations.length})
+            </button>
+            {archivedExpanded && (
+              <div className="space-y-0.5">
+                {archivedConversations.map((conv) => (
+                  <div
+                    key={conv.id}
+                    role="button"
+                    tabIndex={0}
+                    onClick={() => onSelect(conv.id)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" || e.key === " ") {
+                        e.preventDefault();
+                        onSelect(conv.id);
+                      }
+                    }}
+                    className={cn(
+                      "group relative flex cursor-pointer items-center rounded-lg py-2 px-2",
+                      currentConversationId === conv.id
+                        ? surfaceClasses.rowInteractiveActive
+                        : cn(surfaceClasses.rowInteractive, "text-muted-foreground")
+                    )}
+                  >
+                    <Archive className="ll-icon-muted h-4 w-4 shrink-0 mr-3 text-muted-foreground/50" />
+                    <div className="min-w-0 flex-1 overflow-hidden">
+                      <p className="truncate text-sm font-medium leading-none opacity-70">
+                        {stripMarkdownFromTitle(conv.title)}
+                      </p>
+                      <p className="truncate text-[10px] text-muted-foreground/60 mt-0.5">
+                        {formatRelativeTime(conv.updatedAt || conv.createdAt)}
+                      </p>
+                    </div>
+                    <div className="ml-auto flex gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        className="ll-icon-button h-6 w-6"
+                        onClick={(e) => handleUnarchive(conv, e)}
+                        title="Restore from archive"
+                      >
+                        <ArchiveRestore className="h-3 w-3" />
+                        <span className="sr-only">Unarchive</span>
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        type="button"
+                        className="ll-icon-button ll-icon-button-danger h-6 w-6"
+                        onClick={(e) => onDelete(conv.id, e)}
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        <span className="sr-only">Delete</span>
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+        )}
+      </div>
+    </TooltipProvider>
   );
 }
 
