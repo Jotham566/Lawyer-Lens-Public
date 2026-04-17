@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, createContext, useContext, useRef } from "react";
+import { useState, useCallback, createContext, useContext, useRef } from "react";
 
 export type SubscriptionTier = "free" | "professional" | "team" | "enterprise";
 
@@ -254,9 +254,12 @@ export function useEntitlementsProvider(): EntitlementsContextValue {
     }
   }, []);
 
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
+  // The owning EntitlementsProvider drives refresh explicitly when
+  // isAuthenticated flips. The previous unconditional mount-time
+  // refresh() here caused a duplicate /api/billing/entitlements call
+  // that fired BEFORE auth settled — it would resolve in a handful of
+  // ms against an unauthenticated session (or hit a cached 401 path)
+  // and get immediately superseded by the auth-gated refresh. Drop it.
 
   const hasFeature = useCallback(
     (featureKey: string): boolean => {
