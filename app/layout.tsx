@@ -12,28 +12,28 @@ import { ThemeFavicon } from "@/components/theme-favicon";
 const manrope = localFont({
   src: [
     {
-      path: "../public/fonts/manrope/Manrope-Variable.ttf",
+      path: "../public/fonts/manrope/Manrope-Variable.woff2",
       weight: "200 800",
       style: "normal",
     },
   ],
   variable: "--font-manrope",
   display: "swap",
-  preload: false,
+  preload: true,
   fallback: ["system-ui", "-apple-system", "BlinkMacSystemFont", "Segoe UI", "Roboto", "sans-serif"],
 });
 
 const newsreader = localFont({
   src: [
     {
-      path: "../public/fonts/newsreader/Newsreader-Variable.ttf",
+      path: "../public/fonts/newsreader/Newsreader-Variable.woff2",
       weight: "300 800",
       style: "normal",
     },
   ],
   variable: "--font-newsreader",
   display: "swap",
-  preload: false,
+  preload: true,
   fallback: ["Georgia", "Times New Roman", "serif"],
 });
 
