@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Suspense } from "react";
+import dynamic from "next/dynamic";
 import { Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -20,21 +21,43 @@ import {
 import { PageErrorBoundary } from "@/components/error-boundary";
 import {
   ConversationSidebar,
-  MobileHistorySheet,
   ChatInput,
   EmptyState,
   type ToolMode,
-  VirtualizedMessageList,
-  KeyboardShortcutsDialog,
-  ExportDialog,
 } from "@/components/chat";
-import { CitationProvider, ResponsiveSourceView } from "@/components/citations";
+import { CitationProvider } from "@/components/citations";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
-import {
-  UpgradeRequiredModal,
-} from "@/components/entitlements/upgrade-required-modal";
 import { useChatOrchestrator } from "@/hooks/use-chat-orchestrator";
+
+// Heavy components that only mount on a user action (open a conversation
+// with messages, hit export, open shortcuts, toggle mobile history, hit
+// an upgrade gate, click a citation). Dynamic-import so they don't land
+// in the initial /chat bundle.
+const VirtualizedMessageList = dynamic(
+  () => import("@/components/chat/virtualized-message-list").then(m => ({ default: m.VirtualizedMessageList })),
+  { ssr: false, loading: () => null }
+);
+const MobileHistorySheet = dynamic(
+  () => import("@/components/chat/conversation-sidebar").then(m => ({ default: m.MobileHistorySheet })),
+  { ssr: false, loading: () => null }
+);
+const KeyboardShortcutsDialog = dynamic(
+  () => import("@/components/chat/keyboard-shortcuts-dialog").then(m => ({ default: m.KeyboardShortcutsDialog })),
+  { ssr: false, loading: () => null }
+);
+const ExportDialog = dynamic(
+  () => import("@/components/chat/export-dialog").then(m => ({ default: m.ExportDialog })),
+  { ssr: false, loading: () => null }
+);
+const UpgradeRequiredModal = dynamic(
+  () => import("@/components/entitlements/upgrade-required-modal").then(m => ({ default: m.UpgradeRequiredModal })),
+  { ssr: false, loading: () => null }
+);
+const ResponsiveSourceView = dynamic(
+  () => import("@/components/citations").then(m => ({ default: m.ResponsiveSourceView })),
+  { ssr: false, loading: () => null }
+);
 
 function EmptyChatSurface({
   input,
