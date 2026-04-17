@@ -350,8 +350,8 @@ export default function ComplianceSettingsPage() {
             className={cn(
               "inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors",
               saveMutation.isPending
-                ? "bg-[#002344]/60 cursor-not-allowed"
-                : "bg-[#002344] hover:bg-[#002344]/90"
+                ? "bg-primary/60 cursor-not-allowed"
+                : "bg-primary hover:bg-primary/90"
             )}
           >
             {saveMutation.isPending ? (
@@ -400,7 +400,7 @@ export default function ComplianceSettingsPage() {
                   className={cn(
                     "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
                     sectors.includes(sector)
-                      ? "border-[#c5a059] bg-[#c5a059]/10 text-foreground"
+                      ? "border-brand-gold bg-brand-gold/10 text-foreground"
                       : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
@@ -414,7 +414,7 @@ export default function ComplianceSettingsPage() {
                     className={cn(
                       "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                       sectors.includes(sector)
-                        ? "border-[#c5a059] bg-[#c5a059] text-white"
+                        ? "border-brand-gold bg-brand-gold text-white"
                         : "border-muted-foreground/30"
                     )}
                   >
@@ -441,7 +441,7 @@ export default function ComplianceSettingsPage() {
                   className={cn(
                     "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
                     jurisdictions.includes(j.code)
-                      ? "border-[#c5a059] bg-[#c5a059]/10 text-foreground"
+                      ? "border-brand-gold bg-brand-gold/10 text-foreground"
                       : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
                   )}
                 >
@@ -455,7 +455,7 @@ export default function ComplianceSettingsPage() {
                     className={cn(
                       "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                       jurisdictions.includes(j.code)
-                        ? "border-[#c5a059] bg-[#c5a059] text-white"
+                        ? "border-brand-gold bg-brand-gold text-white"
                         : "border-muted-foreground/30"
                     )}
                   >
@@ -482,7 +482,7 @@ export default function ComplianceSettingsPage() {
                   className={cn(
                     "flex cursor-pointer flex-col rounded-lg border px-4 py-3 transition-colors",
                     riskAppetite === ra.value
-                      ? "border-[#002344] bg-[#002344]/5"
+                      ? "border-primary bg-primary/5"
                       : "border-border/60 hover:border-border"
                   )}
                 >
@@ -493,7 +493,7 @@ export default function ComplianceSettingsPage() {
                       value={ra.value}
                       checked={riskAppetite === ra.value}
                       onChange={() => setRiskAppetite(ra.value)}
-                      className="accent-[#002344]"
+                      className="accent-primary"
                     />
                     <span className="text-sm font-semibold">{ra.label}</span>
                   </div>
@@ -519,7 +519,7 @@ export default function ComplianceSettingsPage() {
                 className={cn(
                   "flex cursor-pointer items-center gap-3 rounded-lg border px-4 py-3 text-sm transition-colors",
                   regulators.includes(reg.code)
-                    ? "border-[#c5a059] bg-[#c5a059]/10 text-foreground"
+                    ? "border-brand-gold bg-brand-gold/10 text-foreground"
                     : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
                 )}
               >
@@ -533,7 +533,7 @@ export default function ComplianceSettingsPage() {
                   className={cn(
                     "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                     regulators.includes(reg.code)
-                      ? "border-[#c5a059] bg-[#c5a059] text-white"
+                      ? "border-brand-gold bg-brand-gold text-white"
                       : "border-muted-foreground/30"
                   )}
                 >
@@ -560,13 +560,13 @@ export default function ComplianceSettingsPage() {
             {activities.map((activity) => (
               <span
                 key={activity}
-                className="inline-flex items-center gap-1.5 rounded-full border border-[#c5a059]/30 bg-[#c5a059]/10 px-3 py-1 text-sm"
+                className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/30 bg-brand-gold/10 px-3 py-1 text-sm"
               >
                 {activity}
                 <button
                   type="button"
                   onClick={() => removeActivity(activity)}
-                  className="ml-0.5 rounded-full p-0.5 hover:bg-[#c5a059]/20 transition-colors"
+                  className="ml-0.5 rounded-full p-0.5 hover:bg-brand-gold/20 transition-colors"
                 >
                   <X className="h-3 w-3" />
                 </button>
@@ -582,7 +582,7 @@ export default function ComplianceSettingsPage() {
               onChange={(e) => setActivityInput(e.target.value)}
               onKeyDown={handleActivityKeyDown}
               placeholder="Type an activity and press Enter..."
-              className="flex-1 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:border-[#002344] focus:outline-none focus:ring-1 focus:ring-[#002344]"
+              className="flex-1 rounded-lg border border-border/60 bg-background px-3 py-2 text-sm placeholder:text-muted-foreground/60 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
             />
             <button
               type="button"
@@ -606,7 +606,7 @@ export default function ComplianceSettingsPage() {
                       key={suggestion}
                       type="button"
                       onClick={() => addActivity(suggestion)}
-                      className="rounded-full border border-dashed border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-[#c5a059] hover:text-foreground"
+                      className="rounded-full border border-dashed border-border/60 px-2.5 py-1 text-xs text-muted-foreground transition-colors hover:border-brand-gold hover:text-foreground"
                     >
                       + {suggestion}
                     </button>
@@ -640,7 +640,7 @@ export default function ComplianceSettingsPage() {
                       className={cn(
                         "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
                         alertPrefs[`${level}_channel`] === opt.value
-                          ? "border-[#002344] bg-[#002344]/5 text-[#002344] dark:text-blue-300"
+                          ? "border-primary bg-primary/5 text-primary dark:text-blue-300"
                           : "border-border/60 text-muted-foreground hover:border-border"
                       )}
                     >
@@ -672,7 +672,7 @@ export default function ComplianceSettingsPage() {
                     type="checkbox"
                     checked={quietHoursEnabled}
                     onChange={(e) => setQuietHoursEnabled(e.target.checked)}
-                    className="accent-[#002344]"
+                    className="accent-primary"
                   />
                   <span className="text-sm font-semibold">Quiet Hours</span>
                 </label>
@@ -686,14 +686,14 @@ export default function ComplianceSettingsPage() {
                     type="time"
                     value={quietHoursStart}
                     onChange={(e) => setQuietHoursStart(e.target.value)}
-                    className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-[#002344] focus:outline-none focus:ring-1 focus:ring-[#002344]"
+                    className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                   <span className="text-sm text-muted-foreground">to</span>
                   <input
                     type="time"
                     value={quietHoursEnd}
                     onChange={(e) => setQuietHoursEnd(e.target.value)}
-                    className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-[#002344] focus:outline-none focus:ring-1 focus:ring-[#002344]"
+                    className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                   />
                 </div>
               )}
@@ -719,7 +719,7 @@ export default function ComplianceSettingsPage() {
                     className={cn(
                       "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
                       digestFrequency === freq.value
-                        ? "border-[#002344] bg-[#002344]/5 text-[#002344] dark:text-blue-300"
+                        ? "border-primary bg-primary/5 text-primary dark:text-blue-300"
                         : "border-border/60 text-muted-foreground hover:border-border"
                     )}
                   >
@@ -744,7 +744,7 @@ export default function ComplianceSettingsPage() {
                 <select
                   value={digestDay}
                   onChange={(e) => setDigestDay(e.target.value)}
-                  className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-[#002344] focus:outline-none focus:ring-1 focus:ring-[#002344]"
+                  className="rounded-lg border border-border/60 bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary"
                 >
                   {DIGEST_DAYS.map((d) => (
                     <option key={d.value} value={d.value}>
@@ -767,7 +767,7 @@ export default function ComplianceSettingsPage() {
                     className={cn(
                       "inline-flex cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm transition-colors",
                       digestSections.includes(section.key)
-                        ? "border-[#c5a059] bg-[#c5a059]/10 text-foreground"
+                        ? "border-brand-gold bg-brand-gold/10 text-foreground"
                         : "border-border/60 text-muted-foreground hover:border-border hover:text-foreground"
                     )}
                   >
@@ -781,7 +781,7 @@ export default function ComplianceSettingsPage() {
                       className={cn(
                         "flex h-4 w-4 shrink-0 items-center justify-center rounded border",
                         digestSections.includes(section.key)
-                          ? "border-[#c5a059] bg-[#c5a059] text-white"
+                          ? "border-brand-gold bg-brand-gold text-white"
                           : "border-muted-foreground/30"
                       )}
                     >
@@ -806,8 +806,8 @@ export default function ComplianceSettingsPage() {
             className={cn(
               "inline-flex items-center gap-2 rounded-lg px-6 py-2.5 text-sm font-semibold text-white transition-colors",
               saveMutation.isPending
-                ? "bg-[#002344]/60 cursor-not-allowed"
-                : "bg-[#002344] hover:bg-[#002344]/90"
+                ? "bg-primary/60 cursor-not-allowed"
+                : "bg-primary hover:bg-primary/90"
             )}
           >
             {saveMutation.isPending ? (
