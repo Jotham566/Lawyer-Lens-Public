@@ -51,6 +51,7 @@ import {
   saveResearchBrief,
   getResearchReport,
   getResearchDownloadUrl,
+  resetResearchToStage,
   saveResearchReport,
   resumeResearchSession,
   type ResearchSession,
@@ -67,6 +68,7 @@ import { EditableDocumentCanvas } from "@/components/canvas/editable-document-ca
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { LiveProgressShell, LiveProgressStat } from "@/components/canvas/live-progress-shell";
 import { ResearchStageStepper } from "@/components/research/research-stage-stepper";
+import { StageRollbackDialog } from "@/components/research/stage-rollback-dialog";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
 import { WeakResearchBanner } from "@/components/research/weak-research-banner";
@@ -1232,6 +1234,62 @@ function ResearchContent() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [initialQuery]);
 
+  // Stage rollback (clickable stepper). stageRollbackTarget holds the
+  // pending target while the confirm modal is open; null means "no
+  // rollback pending". confirmStageRollback fires the API call and
+  // clears the modal on success. requestStageRollback is the handler
+  // bound to the stepper itself.
+  const [stageRollbackTarget, setStageRollbackTarget] = useState<
+    "clarifying" | "brief_review" | null
+  >(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
+  const requestStageRollback = useCallback(
+    (target: "clarifying" | "brief_review") => {
+      setStageRollbackTarget(target);
+    },
+    [],
+  );
+
+  const confirmStageRollback = useCallback(async () => {
+    const target = stageRollbackTarget;
+    if (!target || !session?.session_id) return;
+    setIsRollingBack(true);
+    try {
+      const refreshed = await resetResearchToStage(session.session_id, target);
+      setSession(refreshed);
+      setReport(null);
+      setError(null);
+      // Clear staged report edits so the next render shows the
+      // refreshed brief/clarification state cleanly. Without this
+      // a user who edited the report and then rolled back would
+      // see stale section content briefly flicker.
+      setEditedReportTitle("");
+      setEditedExecutiveSummary("");
+      setEditedExecutiveSummaryRich("");
+      setEditedReportSections({});
+      setEditedReportSectionsRich({});
+      setEditedReportSectionTitles({});
+      setStageRollbackTarget(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not reset stage";
+      setError(message);
+    } finally {
+      setIsRollingBack(false);
+    }
+  }, [
+    session?.session_id,
+    stageRollbackTarget,
+    setSession,
+    setReport,
+    setError,
+    setEditedReportTitle,
+    setEditedExecutiveSummary,
+    setEditedExecutiveSummaryRich,
+    setEditedReportSections,
+    setEditedReportSectionsRich,
+    setEditedReportSectionTitles,
+  ]);
+
   const handleStartResearch = async () => {
     if (!query.trim()) return;
 
@@ -1810,7 +1868,11 @@ function ResearchContent() {
           titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
           headerMeta={
             <div className="flex items-center gap-3">
-              <ResearchStageStepper status={session.status} compact />
+              <ResearchStageStepper
+                status={session.status}
+                compact
+                onStageClick={requestStageRollback}
+              />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
                 {briefSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
@@ -1982,6 +2044,12 @@ function ResearchContent() {
             )}
           </div>
         </DocumentWorkspaceShell>
+        <StageRollbackDialog
+          target={stageRollbackTarget}
+          loading={isRollingBack}
+          onConfirm={confirmStageRollback}
+          onCancel={() => setStageRollbackTarget(null)}
+        />
       </TooltipProvider>
     );
   }
@@ -2198,7 +2266,11 @@ function ResearchContent() {
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerMeta={
             <div className="flex items-center gap-3">
-              <ResearchStageStepper status={session.status} compact />
+              <ResearchStageStepper
+                status={session.status}
+                compact
+                onStageClick={requestStageRollback}
+              />
               <div className="mr-2 flex items-center gap-2 text-xs text-muted-foreground">
                 {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
                 {reportSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
@@ -2359,6 +2431,12 @@ function ResearchContent() {
             </DocumentPanel>
           </div>
         </DocumentWorkspaceShell>
+        <StageRollbackDialog
+          target={stageRollbackTarget}
+          loading={isRollingBack}
+          onConfirm={confirmStageRollback}
+          onCancel={() => setStageRollbackTarget(null)}
+        />
       </TooltipProvider>
     );
   }

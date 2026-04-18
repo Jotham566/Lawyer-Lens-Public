@@ -65,6 +65,7 @@ export {
   getResearchDownloadUrl,
   getMyResearchSessions,
   deleteResearchSession,
+  resetResearchToStage,
   streamResearchProgress,
   type ResearchSessionListItem,
   type ResearchStatus,

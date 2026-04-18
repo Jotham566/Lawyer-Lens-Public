@@ -470,6 +470,26 @@ export function getResearchDownloadUrl(
 }
 
 /**
+ * Reset a session backwards to an earlier stage (clarifying or
+ * brief_review). Backend enforces the state-machine guards: only
+ * allowed from BRIEF_REVIEW / COMPLETE / ERROR, and never while a
+ * worker is actively touching the session (RESEARCHING / WRITING).
+ *
+ * Use this to power the clickable stepper — clicking a previous
+ * stage on a completed report drops the user back into that
+ * stage's view so they can refine and re-run instead of
+ * starting from scratch.
+ */
+export async function resetResearchToStage(
+  sessionId: string,
+  targetStage: "clarifying" | "brief_review",
+): Promise<ResearchSession> {
+  return apiPost<ResearchSession>(`/research/${sessionId}/reset-to-stage`, {
+    target_stage: targetStage,
+  });
+}
+
+/**
  * Submit answers to clarifying questions
  */
 export async function submitClarifyingAnswers(
