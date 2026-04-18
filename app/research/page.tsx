@@ -587,18 +587,24 @@ function buildBriefDocumentHtml(
 }
 
 function buildResearchKickoffDocumentHtml(query: string): string {
+  // Chrome (header, section heading, footer) is contenteditable="false"
+  // so users only type in the body div. Without this, the canvas read
+  // as one big editable surface where every heading and helper line
+  // looked like it could be changed — UX audit 2026-04-19.
+  const bodyHtml = query ? ensureRichHtml(query) : "";
   return sanitizeRichHtml(`
-    <header data-report-part="header">
+    <header data-report-part="header" contenteditable="false">
       <h1>Research Brief</h1>
       <p>Shape the opening instruction the agent will use to draft the plan.</p>
     </header>
     <section id="research-objective" data-section-anchor="research-objective" data-report-part="section" data-section-id="research-objective">
-      <h2>Research Objective</h2>
-      <div data-report-body="true">${ensureRichHtml(
-        query || "Describe the legal and commercial question you want answered, the jurisdiction, and the outcome you need."
-      )}</div>
+      <div data-report-chrome="true" contenteditable="false">
+        <h2>Research Objective</h2>
+        <p>Describe the legal and commercial question you want answered, the jurisdiction, and the outcome you need. The brief should read like an instruction memo, not a chat prompt fragment.</p>
+      </div>
+      <div data-report-body="true" data-placeholder="Type your research brief here…">${bodyHtml}</div>
     </section>
-    <section id="research-notes" data-section-anchor="research-notes" data-report-part="section" data-section-id="research-notes" contenteditable="false">
+    <section data-report-part="footer" contenteditable="false">
       <h2>What happens next</h2>
       <p>The system will turn this brief into a research plan, ask clarifying questions if needed, then generate a cited report in the document canvas.</p>
     </section>

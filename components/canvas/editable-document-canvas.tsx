@@ -150,6 +150,29 @@ export function EditableDocumentCanvas({
           "[&_[data-report-part='endnotes']_summary]:px-1",
           "[&_[data-report-part='endnotes']_summary]:py-1",
           "[&_[data-contract-part='signature-block']]:mt-10 [&_[data-contract-part='signature-block']]:border-t [&_[data-contract-part='signature-block']]:border-border/40 [&_[data-contract-part='signature-block']]:pt-8",
+          // Read-only chrome on kickoff briefs (header, section labels,
+          // "what happens next" footer). Different visual weight from
+          // the editable body so users can see at a glance what they
+          // can change.
+          "[&_[data-report-part='header']]:rounded-2xl [&_[data-report-part='header']]:bg-muted/40 [&_[data-report-part='header']]:px-6 [&_[data-report-part='header']]:py-5",
+          "[&_[data-contract-part='header']]:rounded-2xl [&_[data-contract-part='header']]:bg-muted/40 [&_[data-contract-part='header']]:px-6 [&_[data-contract-part='header']]:py-5",
+          "[&_[data-report-part='footer']]:mt-12 [&_[data-report-part='footer']]:rounded-2xl [&_[data-report-part='footer']]:border [&_[data-report-part='footer']]:border-border/40 [&_[data-report-part='footer']]:bg-muted/30 [&_[data-report-part='footer']]:px-6 [&_[data-report-part='footer']]:py-5 [&_[data-report-part='footer']_h2]:text-base [&_[data-report-part='footer']_h2]:font-semibold [&_[data-report-part='footer']_p]:text-sm [&_[data-report-part='footer']_p]:text-muted-foreground",
+          "[&_[data-contract-part='footer']]:mt-12 [&_[data-contract-part='footer']]:rounded-2xl [&_[data-contract-part='footer']]:border [&_[data-contract-part='footer']]:border-border/40 [&_[data-contract-part='footer']]:bg-muted/30 [&_[data-contract-part='footer']]:px-6 [&_[data-contract-part='footer']]:py-5 [&_[data-contract-part='footer']_h2]:text-base [&_[data-contract-part='footer']_h2]:font-semibold [&_[data-contract-part='footer']_p]:text-sm [&_[data-contract-part='footer']_p]:text-muted-foreground",
+          // Section-heading chrome above the editable body. Styled like
+          // a form-field label + helper text so it reads as guidance,
+          // not as part of the brief itself.
+          "[&_[data-report-chrome='true']]:mb-3 [&_[data-report-chrome='true']_h2]:text-xs [&_[data-report-chrome='true']_h2]:font-semibold [&_[data-report-chrome='true']_h2]:uppercase [&_[data-report-chrome='true']_h2]:tracking-[0.18em] [&_[data-report-chrome='true']_h2]:text-muted-foreground [&_[data-report-chrome='true']_h2]:mb-1.5 [&_[data-report-chrome='true']_p]:text-sm [&_[data-report-chrome='true']_p]:text-muted-foreground [&_[data-report-chrome='true']_p]:mb-0",
+          "[&_[data-contract-chrome='true']]:mb-3 [&_[data-contract-chrome='true']_h2]:text-xs [&_[data-contract-chrome='true']_h2]:font-semibold [&_[data-contract-chrome='true']_h2]:uppercase [&_[data-contract-chrome='true']_h2]:tracking-[0.18em] [&_[data-contract-chrome='true']_h2]:text-muted-foreground [&_[data-contract-chrome='true']_h2]:mb-1.5 [&_[data-contract-chrome='true']_p]:text-sm [&_[data-contract-chrome='true']_p]:text-muted-foreground [&_[data-contract-chrome='true']_p]:mb-0",
+          // The actual editable input zone. Subtle border + background
+          // tint signals "this is the field you fill in"; focus ring
+          // matches the rest of the design system. CSS placeholder
+          // shows when the body is empty and disappears on focus.
+          "[&_[data-report-body='true']]:min-h-[180px] [&_[data-report-body='true']]:rounded-2xl [&_[data-report-body='true']]:border [&_[data-report-body='true']]:border-border/60 [&_[data-report-body='true']]:bg-card [&_[data-report-body='true']]:px-6 [&_[data-report-body='true']]:py-5 [&_[data-report-body='true']]:shadow-soft [&_[data-report-body='true']]:transition-shadow",
+          "focus-within:[&_[data-report-body='true']]:border-primary/40 focus-within:[&_[data-report-body='true']]:ring-2 focus-within:[&_[data-report-body='true']]:ring-primary/20",
+          "[&_[data-report-body='true']:empty]:before:content-[attr(data-placeholder)] [&_[data-report-body='true']:empty]:before:text-muted-foreground [&_[data-report-body='true']:empty]:before:italic [&_[data-report-body='true']:empty]:before:pointer-events-none",
+          "[&_[data-contract-body='true']]:min-h-[180px] [&_[data-contract-body='true']]:rounded-2xl [&_[data-contract-body='true']]:border [&_[data-contract-body='true']]:border-border/60 [&_[data-contract-body='true']]:bg-card [&_[data-contract-body='true']]:px-6 [&_[data-contract-body='true']]:py-5 [&_[data-contract-body='true']]:shadow-soft [&_[data-contract-body='true']]:transition-shadow",
+          "focus-within:[&_[data-contract-body='true']]:border-primary/40 focus-within:[&_[data-contract-body='true']]:ring-2 focus-within:[&_[data-contract-body='true']]:ring-primary/20",
+          "[&_[data-contract-body='true']:empty]:before:content-[attr(data-placeholder)] [&_[data-contract-body='true']:empty]:before:text-muted-foreground [&_[data-contract-body='true']:empty]:before:italic [&_[data-contract-body='true']:empty]:before:pointer-events-none",
           !readOnly && "cursor-text",
           surfaceClassName
         )}

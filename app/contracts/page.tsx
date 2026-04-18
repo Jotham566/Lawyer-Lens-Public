@@ -182,18 +182,25 @@ function parseContractDocumentHtml(
 }
 
 function buildContractKickoffDocumentHtml(description: string): string {
+  // Chrome (header, section heading, footer) is contenteditable="false"
+  // so users only type in the body div. Mirrors the research kickoff
+  // restructure shipped on 2026-04-19. Without this, the canvas read
+  // as one big editable surface where every heading and helper line
+  // looked like it could be changed.
+  const bodyHtml = description ? ensureRichHtml(description) : "";
   return sanitizeRichHtml(`
-    <header data-contract-part="header">
+    <header data-contract-part="header" contenteditable="false">
       <h1>Contract Brief</h1>
       <p>Draft the commercial instruction for the contract you want generated.</p>
     </header>
     <section id="contract-objective" data-section-anchor="contract-objective" data-contract-part="section" data-section-id="contract-objective">
-      <h2>Instruction</h2>
-      <div data-contract-body="true">${ensureRichHtml(
-        description || "Describe the contract type, the parties, the commercial deal, and any clauses or risks that must be addressed."
-      )}</div>
+      <div data-contract-chrome="true" contenteditable="false">
+        <h2>Instruction</h2>
+        <p>Describe the contract type, the parties, the commercial deal, and any clauses or risks that must be addressed. Write it like a briefing note, not a chat prompt fragment.</p>
+      </div>
+      <div data-contract-body="true" data-placeholder="Type your contract brief here…">${bodyHtml}</div>
     </section>
-    <section id="contract-notes" data-section-anchor="contract-notes" data-contract-part="section" data-section-id="contract-notes" contenteditable="false">
+    <section data-contract-part="footer" contenteditable="false">
       <h2>What happens next</h2>
       <p>The system will gather the key requirements, draft the contract in the document canvas, then let you revise and approve the full draft.</p>
     </section>
