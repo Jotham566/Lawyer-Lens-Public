@@ -408,6 +408,55 @@ export async function getResearchSession(
 }
 
 /**
+ * Slim list-row for the /research/history view. Sized to what the
+ * history surface needs (title, query, status, timestamps) without the
+ * heavy nested report / brief payloads carried by ResearchSession.
+ * Source of truth is the server (defense-in-depth: scoped by both
+ * organization_id and user_id), so users keep their history across
+ * browsers, devices, and localStorage clears.
+ */
+export interface ResearchSessionListItem {
+  session_id: string;
+  title: string | null;
+  query: string;
+  status: ResearchStatus;
+  phase: ResearchPhase;
+  created_at: string;
+  updated_at?: string | null;
+  completed_at?: string | null;
+  progress_percent: number;
+  has_report: boolean;
+}
+
+/**
+ * List the calling user's research sessions, newest first.
+ *
+ * Replaces the old localStorage-only history (lib/stores/research-store.ts)
+ * which lost data on browser switch / cookie clear / second device.
+ */
+export async function getMyResearchSessions(
+  options?: { status?: string; limit?: number; offset?: number }
+): Promise<ResearchSessionListItem[]> {
+  const params = new URLSearchParams();
+  if (options?.status) params.append("status_filter", options.status);
+  if (options?.limit) params.append("limit", options.limit.toString());
+  if (options?.offset) params.append("offset", options.offset.toString());
+
+  const query = params.toString();
+  return apiGet<ResearchSessionListItem[]>(
+    `/research/my-sessions${query ? `?${query}` : ""}`
+  );
+}
+
+/**
+ * Delete a research session from the server (also removes it from the
+ * /research/history view since the list is server-backed).
+ */
+export async function deleteResearchSession(sessionId: string): Promise<void> {
+  await apiFetch(`/research/${sessionId}`, { method: "DELETE" });
+}
+
+/**
  * Submit answers to clarifying questions
  */
 export async function submitClarifyingAnswers(
