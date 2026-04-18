@@ -251,14 +251,24 @@ function buildContractRequirementsDocumentHtml(
     })
     .join("");
 
+  // Same chrome-locked / body-bordered pattern as the brief kickoff.
+  // Only the Drafting Instruction body is editable; everything else
+  // (Parties, Scope, Open Variables) is a live mirror of the left-rail
+  // form inputs. The user fills the form on the left and sees the
+  // memo update on the right; the only thing to type into is the
+  // Drafting Instruction body.
+  const bodyHtml = ensureRichHtml(description || session.description || "");
   return sanitizeRichHtml(`
-    <header data-contract-part="header">
+    <header data-contract-part="header" contenteditable="false">
       <h1>Contract Requirements</h1>
-      <p>Refine the drafting memo while the left rail captures structured variables.</p>
+      <p>The left rail captures structured variables (parties, jurisdiction, terms). Only the drafting instruction below is editable here.</p>
     </header>
     <section id="contract-instruction" data-section-anchor="contract-instruction" data-contract-part="section" data-section-id="contract-instruction">
-      <h2>Drafting Instruction</h2>
-      <div data-contract-body="true">${ensureRichHtml(description || session.description || "")}</div>
+      <div data-contract-chrome="true" contenteditable="false">
+        <h2>Drafting Instruction</h2>
+        <p>Refine the commercial brief that will guide clause generation. The structured fields stay in the left rail.</p>
+      </div>
+      <div data-contract-body="true" data-placeholder="Refine the drafting instruction here…">${bodyHtml}</div>
     </section>
     <section id="contract-parties" data-section-anchor="contract-parties" data-contract-part="section" data-section-id="contract-parties" contenteditable="false">
       <h2>Parties</h2>
@@ -276,7 +286,7 @@ function buildContractRequirementsDocumentHtml(
       ${
         questionRows
           ? `<table><thead><tr><th>Variable</th><th>Current input</th></tr></thead><tbody>${questionRows}</tbody></table>`
-          : "<p>The contract is ready for generation.</p>"
+          : "<p>All variables are filled. Click <strong>Generate Draft</strong> when ready.</p>"
       }
     </section>
   `);
@@ -995,6 +1005,16 @@ function ContractsContent() {
           sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-8 p-4">
+                {/* Orientation block. Without this users land on the
+                    requirements view and see two surfaces (memo on the
+                    right, form on the left) without knowing which one
+                    is the input. Spell it out. */}
+                <div className="rounded-2xl border border-primary/20 bg-primary/5 px-4 py-3 text-xs leading-relaxed text-foreground">
+                  <p className="font-semibold">Fill these structured fields.</p>
+                  <p className="mt-1 text-muted-foreground">
+                    The memo on the right updates live. When everything looks right, click <strong>Generate Draft</strong> at the top.
+                  </p>
+                </div>
                 {/* Parties Section */}
                 <div>
                   <div className="flex items-center justify-between mb-4">
@@ -1003,7 +1023,7 @@ function ContractsContent() {
                       <Plus className="h-3 w-3 mr-1" /> Add
                     </Button>
                   </div>
-                  
+
                   <div className="space-y-4">
                     {parties.map((party, index) => (
                       <div key={index} className="bg-background rounded-xl p-3 border shadow-sm space-y-3 relative group">

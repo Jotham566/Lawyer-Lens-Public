@@ -577,8 +577,12 @@ function buildBriefDocumentHtml(
     )
     .join("");
 
+  // Header (title + the user's original query as a quote) is locked —
+  // it's reference chrome, not editable input. Topic blocks below
+  // remain editable so the user can rename, refine descriptions, and
+  // adjust keywords before approving.
   return sanitizeRichHtml(`
-    <header data-brief-part="header">
+    <header data-brief-part="header" contenteditable="false">
       <h1>Research Plan</h1>
       <blockquote>${originalQuery}</blockquote>
     </header>
