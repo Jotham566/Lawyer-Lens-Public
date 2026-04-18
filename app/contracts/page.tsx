@@ -60,6 +60,7 @@ import {
 import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
+import { ContractTrustBanner } from "@/components/contracts/contract-trust-banner";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
@@ -1567,6 +1568,13 @@ function ContractsContent() {
                 <div>Connection restored. Re-syncing the contract canvas.</div>
               </div>
             )}
+
+            {(session.draft.warnings?.length ?? 0) > 0 || (session.draft.compliance_notes?.length ?? 0) > 0 ? (
+              <ContractTrustBanner
+                warningCount={session.draft.warnings?.length ?? 0}
+                complianceCount={session.draft.compliance_notes?.length ?? 0}
+              />
+            ) : null}
 
             <div className="space-y-12">
               <DocumentPanel
