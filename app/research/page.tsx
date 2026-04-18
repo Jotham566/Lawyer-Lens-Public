@@ -50,6 +50,7 @@ import {
   approveResearchBrief,
   saveResearchBrief,
   getResearchReport,
+  getResearchDownloadUrl,
   saveResearchReport,
   resumeResearchSession,
   type ResearchSession,
@@ -74,7 +75,6 @@ import { useEntitlements } from "@/hooks/use-entitlements";
 import { formatDateOnly } from "@/lib/utils/date-formatter";
 import { useOnlineStatus } from "@/lib/hooks";
 import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
-import { exportResearchReportToWord } from "@/lib/utils/word-export";
 import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
 
 // Map backend status values to UI labels
@@ -1377,18 +1377,6 @@ function ResearchContent() {
     }
   };
 
-  const handleExportWord = useCallback(() => {
-    if (!report) return;
-    exportResearchReportToWord(
-      report,
-      editedReportTitle || report.title,
-      editedExecutiveSummary,
-      editedReportSections,
-      editedExecutiveSummaryRich,
-      editedReportSectionsRich,
-    );
-  }, [editedExecutiveSummary, editedExecutiveSummaryRich, editedReportSections, editedReportSectionsRich, editedReportTitle, report]);
-
   // Polling fallback for when SSE fails
   const pollingRef = useRef<NodeJS.Timeout | null>(null);
 
@@ -2376,9 +2364,11 @@ function ResearchContent() {
               titleIcon={<FileText className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Contents</Badge>}
               actions={
-                <Button variant="outline" size="sm" onClick={handleExportWord} className="rounded-full">
-                  <Download className="mr-2 h-4 w-4" />
-                  Export to Word
+                <Button variant="outline" size="sm" asChild className="rounded-full">
+                  <a href={getResearchDownloadUrl(session.session_id)} download>
+                    <Download className="mr-2 h-4 w-4" />
+                    Export to Word
+                  </a>
                 </Button>
               }
               toolbar={<RichTextToolbar editor={reportEditor} disabled={!reportEditor && !activeReportSection} />}

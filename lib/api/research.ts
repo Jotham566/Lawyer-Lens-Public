@@ -457,6 +457,19 @@ export async function deleteResearchSession(sessionId: string): Promise<void> {
 }
 
 /**
+ * Get the server-rendered Word (.docx) export URL for a completed
+ * research session. Mirrors getContractDownloadUrl. Replaces the old
+ * client-side Office-flavoured .doc generator that opened with
+ * unpredictable rendering in non-Word editors.
+ */
+export function getResearchDownloadUrl(
+  sessionId: string,
+  format: "docx" = "docx"
+): string {
+  return `${getApiBaseUrl()}/research/${sessionId}/export?format=${format}`;
+}
+
+/**
  * Submit answers to clarifying questions
  */
 export async function submitClarifyingAnswers(
