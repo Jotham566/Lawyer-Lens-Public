@@ -9,6 +9,7 @@ import {
   Loader2,
   CheckCircle2,
   AlertCircle,
+  Clock,
   Download,
   Plus,
   BookOpen,
@@ -800,6 +801,12 @@ function ContractsContent() {
         <DocumentWorkspaceShell
           title="Contract Workspace"
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
+          headerMeta={
+            <Link href="/contracts/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <Clock className="h-4 w-4" />
+              View History
+            </Link>
+          }
           headerActions={
             <Button
               onClick={handleStartContract}
