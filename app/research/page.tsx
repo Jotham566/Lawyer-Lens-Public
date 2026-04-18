@@ -2301,12 +2301,6 @@ function ResearchContent() {
               {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
             </div>
           }
-          headerActions={
-            <Button variant="outline" size="sm" onClick={handleExportWord} className="gap-2 rounded-full px-4">
-              <Download className="h-4 w-4" />
-              Share & Export
-            </Button>
-          }
           sidebarClassName="workspace-sidebar-surface w-64"
           sidebar={
             <div className="space-y-4 p-4">
@@ -2434,7 +2428,7 @@ function ResearchContent() {
               actions={
                 <Button variant="outline" size="sm" onClick={handleExportWord} className="rounded-full">
                   <Download className="mr-2 h-4 w-4" />
-                  Share & Export
+                  Export to Word
                 </Button>
               }
               toolbar={<RichTextToolbar editor={reportEditor} disabled={!reportEditor && !activeReportSection} />}
