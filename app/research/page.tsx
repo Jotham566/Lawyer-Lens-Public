@@ -12,7 +12,6 @@ import {
   CheckCircle2,
   FileText,
   AlertCircle,
-  ChevronRight,
   Download,
   BookOpen,
   Clock,
@@ -32,10 +31,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import {
-  Tooltip,
-  TooltipContent,
   TooltipProvider,
-  TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
   Select,
@@ -68,6 +64,7 @@ import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
+import { ResearchStageStepper } from "@/components/research/research-stage-stepper";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
 import { WeakResearchBanner } from "@/components/research/weak-research-banner";
@@ -81,33 +78,6 @@ import { exportResearchReportToWord } from "@/lib/utils/word-export";
 import { ensureRichHtml, richHtmlToPlainText, sanitizeRichHtml } from "@/lib/utils/rich-text";
 
 // Map backend status values to UI labels
-const statusLabels: Record<string, { label: string; description: string }> = {
-  clarifying: {
-    label: "Clarification",
-    description: "Help us understand your research needs",
-  },
-  brief_review: {
-    label: "Review Brief",
-    description: "Review and approve research plan",
-  },
-  researching: {
-    label: "Researching",
-    description: "Searching and analyzing legal sources",
-  },
-  writing: {
-    label: "Writing",
-    description: "Creating your comprehensive report",
-  },
-  complete: {
-    label: "Complete",
-    description: "Your research report is ready",
-  },
-  error: {
-    label: "Failed",
-    description: "An error occurred during research",
-  },
-};
-
 const activeResearchSessionKey = (userId: string | null | undefined) =>
   `law-lens-active-research-session:${userId || "anonymous"}`;
 const researchReportDraftKey = (userId: string | null | undefined, sessionId: string) =>
@@ -1557,53 +1527,9 @@ function ResearchContent() {
     };
   }, [refreshEntitlements, startPolling, stopPolling, updateStoredSession]);
 
-  const renderPhaseIndicator = () => {
-    if (!session) return null;
-
-    // Use status values from backend
-    const statuses = ["clarifying", "brief_review", "researching", "writing", "complete"];
-    const currentIndex = statuses.indexOf(session.status);
-
-    return (
-      <div className="flex items-center gap-2 mb-6">
-        {statuses.slice(0, -1).map((status, index) => {
-          const isComplete = index < currentIndex;
-          const isCurrent = index === currentIndex;
-          const info = statusLabels[status] || { label: status, description: "" };
-
-          return (
-            <div key={status} className="flex items-center">
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <div
-                    className={cn(
-                      "flex h-8 w-8 items-center justify-center rounded-full border-2 transition-colors",
-                      isComplete && "border-primary bg-primary text-primary-foreground",
-                      isCurrent && "border-primary bg-primary/10 text-primary",
-                      !isComplete && !isCurrent && "border-muted text-muted-foreground"
-                    )}
-                  >
-                    {isComplete ? (
-                      <CheckCircle2 className="h-4 w-4" />
-                    ) : (
-                      <span className="text-xs font-medium">{index + 1}</span>
-                    )}
-                  </div>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p className="font-medium">{info.label}</p>
-                  <p className="text-xs text-muted-foreground">{info.description}</p>
-                </TooltipContent>
-              </Tooltip>
-              {index < statuses.length - 2 && (
-                <ChevronRight className="h-4 w-4 mx-1 text-muted-foreground" />
-              )}
-            </div>
-          );
-        })}
-      </div>
-    );
-  };
+  // Phase stepper: same component used across every workspace view so
+  // the user always knows where they are in the multi-step flow.
+  // Lives in components/research/research-stage-stepper.tsx.
 
   // Initial query input
   if (!session && !sessionIdParam) {
@@ -1728,7 +1654,7 @@ function ResearchContent() {
         <DocumentWorkspaceShell
           title="Research Intake Canvas"
           titleIcon={<Search className="h-4 w-4 text-primary" />}
-          headerActions={<div className="flex items-center gap-3">{renderPhaseIndicator()}</div>}
+          headerActions={<ResearchStageStepper status={session?.status} compact />}
           sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <div className="space-y-8 p-5">
@@ -1890,11 +1816,14 @@ function ResearchContent() {
           title="Research Plan Canvas"
           titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
           headerMeta={
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
-              {briefSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-              {briefSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
-              {briefSaveState === "error" && <span className="text-destructive">Save failed</span>}
+            <div className="flex items-center gap-3">
+              <ResearchStageStepper status={session.status} compact />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {briefSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin"/> Saving...</>}
+                {briefSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+                {briefSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
+                {briefSaveState === "error" && <span className="text-destructive">Save failed</span>}
+              </div>
             </div>
           }
           headerActions={
@@ -2080,6 +2009,7 @@ function ResearchContent() {
         <DocumentWorkspaceShell
           title={session.status === "researching" ? "Researching..." : "Writing Report..."}
           titleIcon={<Loader2 className="h-4 w-4 animate-spin text-primary" />}
+          headerMeta={<ResearchStageStepper status={session.status} compact />}
           headerActions={
             <div className="flex items-center gap-3">
               <Badge variant="outline" className="animate-pulse border-border/60 bg-primary/10 text-primary">
@@ -2307,11 +2237,14 @@ function ResearchContent() {
           title={editedReportTitle || report.title}
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerMeta={
-            <div className="mr-2 flex items-center gap-2 text-xs text-muted-foreground">
-              {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
-              {reportSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-              {reportSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
-              {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
+            <div className="flex items-center gap-3">
+              <ResearchStageStepper status={session.status} compact />
+              <div className="mr-2 flex items-center gap-2 text-xs text-muted-foreground">
+                {reportSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
+                {reportSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+                {reportSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
+                {reportSaveState === "error" && <span className="text-destructive">Save failed</span>}
+              </div>
             </div>
           }
           sidebarClassName="workspace-sidebar-surface w-64"
