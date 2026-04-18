@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Search,
   FileText,
@@ -75,6 +76,10 @@ export interface ContractResult {
     content: string;
   }>;
   download_url?: string;
+  /** When the chat orchestrator created a real ContractSession upstream,
+   * carry the id forward so the inline result card can offer a one-click
+   * "open in Contract workspace" handoff. */
+  session_id?: string;
 }
 
 export interface ToolMessageProps {
@@ -358,6 +363,28 @@ export function ToolMessage({
                 )}
               </div>
             </CollapsibleContent>
+
+            {/* Always-visible bridge to the full workspace.
+                Outside the collapsible so users see it whether the
+                inline result is expanded or not — addresses the audit
+                gap where Quick Research/Draft results inside chat had
+                no obvious "open as a real session" affordance. */}
+            {(isResearch && researchResult.id) || (!isResearch && contractResult.session_id) ? (
+              <div className="mt-4 flex items-center justify-end border-t pt-3">
+                <Button size="sm" variant="outline" asChild>
+                  <Link
+                    href={
+                      isResearch
+                        ? `/research?session=${researchResult.id}`
+                        : `/contracts?session=${contractResult.session_id}`
+                    }
+                  >
+                    {isResearch ? "Open in Deep Research workspace" : "Open in Contract workspace"}
+                    <ExternalLink className="ml-2 h-3 w-3" />
+                  </Link>
+                </Button>
+              </div>
+            ) : null}
           </CardContent>
         </Collapsible>
       </Card>
