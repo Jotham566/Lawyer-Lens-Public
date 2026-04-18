@@ -1394,21 +1394,9 @@ function ContractsContent() {
                 )}
               </Button>
             ) : (
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" asChild>
-                  <a href={getContractDownloadUrl(session.session_id, "docx")} download>
-                    <Download className="mr-2 h-4 w-4" /> Word
-                  </a>
-                </Button>
-                <Button variant="outline" size="sm" asChild>
-                  <a href={getContractDownloadUrl(session.session_id, "pdf")} download>
-                    <Download className="mr-2 h-4 w-4" /> PDF
-                  </a>
-                </Button>
-                <Button variant="default" size="sm" onClick={() => setShowSaveAsTemplate(true)}>
-                  <Save className="mr-2 h-4 w-4" /> Save Template
-                </Button>
-              </div>
+              <Button variant="default" size="sm" onClick={() => setShowSaveAsTemplate(true)}>
+                <Save className="mr-2 h-4 w-4" /> Save Template
+              </Button>
             )
           }
           sidebarClassName="workspace-sidebar-surface w-80"
