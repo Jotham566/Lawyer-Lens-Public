@@ -67,6 +67,7 @@ import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
 import { WeakResearchBanner } from "@/components/research/weak-research-banner";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
@@ -2416,6 +2417,16 @@ function ResearchContent() {
                 weakTopicCount={report.weak_topics.length}
               />
             )}
+            {/* Phase B/2 (2026-04-18): claim-verification badge. Shows
+                the aggregate NLI entailment verdict — how many report
+                claims the model could back against the cited evidence.
+                Rendered compactly above the document so it reads as
+                part of the report metadata rather than a warning. */}
+            {report.claim_verification ? (
+              <div className="mb-3 flex">
+                <ClaimVerificationBadge summary={report.claim_verification} />
+              </div>
+            ) : null}
             <DocumentPanel
               title={editedReportTitle || report.title}
               titleIcon={<FileText className="h-4 w-4 text-primary" />}

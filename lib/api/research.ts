@@ -121,6 +121,10 @@ export interface ResearchReport {
   // section's topic_ids. Frontend renders an inline banner above
   // each section in this list.
   weak_sections?: string[];
+  // Phase B/2 (2026-04-18) aggregate claim-level NLI verification
+  // verdict. Frontend shows a "X% of claims verified" badge on the
+  // report header when present. null means verifier didn't run.
+  claim_verification?: ClaimVerificationSummary | null;
   research_audit?: ResearchAudit | null;
   execution_trace?: ResearchExecutionTraceEntry[] | null;
   execution_plan?: ResearchExecutionPlan | null;
@@ -258,6 +262,26 @@ export interface ResearchReportClaim {
   text: string;
   evidence_ids: string[];
   citation_ids: string[];
+  // Phase B/2 (2026-04-18) per-claim NLI verification verdict.
+  // `entailment_label` is "entailment" | "contradiction" | "neutral"
+  // | "unverified". "unverified" is the default when the verifier
+  // didn't run against this specific claim (no LLM, rate limit,
+  // beyond max_claims cap).
+  entailment_label?: "entailment" | "contradiction" | "neutral" | "unverified";
+  support_confidence?: number;
+  verifying_evidence_id?: string | null;
+  verification_reasoning?: string;
+}
+
+export interface ClaimVerificationSummary {
+  total_claims: number;
+  verified_claims: number;
+  unsupported_claims: number;
+  contradicted_claims: number;
+  verification_rate: number;
+  overall_confidence: number;
+  skipped: boolean;
+  skipped_reason: string;
 }
 
 export interface ResearchSectionProvenance {
