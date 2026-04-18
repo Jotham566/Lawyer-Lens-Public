@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import {
   BookMarked,
@@ -17,6 +17,8 @@ import {
   Users,
   Zap,
   Activity,
+  Loader2,
+  Scale,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Badge } from "@/components/ui/badge";
@@ -25,9 +27,45 @@ import { Progress } from "@/components/ui/progress";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { PageLoading } from "@/components/common";
-import { useRecentResearchSessions, useSavedDocuments } from "@/lib/stores";
+import { useSavedDocuments } from "@/lib/stores";
+import { getMyResearchSessions, type ResearchSessionListItem } from "@/lib/api/research";
+import { getMyContracts, type ContractListItem } from "@/lib/api/contracts";
 import { surfaceClasses } from "@/lib/design-system";
 import { formatDistanceToNow } from "date-fns";
+
+type RecentRun =
+  | { kind: "research"; id: string; title: string; subtitle: string; status: string; href: string; ts: string }
+  | { kind: "contract"; id: string; title: string; subtitle: string; status: string; href: string; ts: string };
+
+function toResearchRun(item: ResearchSessionListItem): RecentRun {
+  const title = item.title?.trim() || item.query.slice(0, 80) || "Untitled research";
+  return {
+    kind: "research",
+    id: item.session_id,
+    title,
+    subtitle: item.query,
+    status: item.status,
+    href: `/research?session=${item.session_id}`,
+    ts: item.completed_at || item.updated_at || item.created_at,
+  };
+}
+
+function toContractRun(item: ContractListItem): RecentRun {
+  const title = item.title?.trim() || `Untitled ${item.contract_type || "contract"}`;
+  const partySummary = item.parties.length
+    ? item.parties.slice(0, 2).join(" · ") +
+      (item.parties.length > 2 ? ` +${item.parties.length - 2}` : "")
+    : item.contract_type;
+  return {
+    kind: "contract",
+    id: item.session_id,
+    title,
+    subtitle: partySummary,
+    status: item.phase,
+    href: `/contracts?session=${item.session_id}`,
+    ts: item.updated_at || item.created_at,
+  };
+}
 
 /* ────────────────────────────────────────────────────────────
    Tier display configuration
@@ -84,12 +122,42 @@ export default function WorkspacePage() {
     getUsage,
     refresh: refreshEntitlements,
   } = useEntitlements();
-  const recentSessions = useRecentResearchSessions(5);
   const savedDocuments = useSavedDocuments();
+  const [recentRuns, setRecentRuns] = useState<RecentRun[]>([]);
+  const [recentLoading, setRecentLoading] = useState(true);
 
   useEffect(() => {
     refreshEntitlements();
   }, [refreshEntitlements]);
+
+  // Server-backed recent runs across BOTH tools (research + contracts).
+  // Replaces the prior research-only localStorage view that left a
+  // blank "Recent Activity" panel for any user who'd only used contracts.
+  useEffect(() => {
+    let cancelled = false;
+    setRecentLoading(true);
+    Promise.allSettled([
+      getMyResearchSessions({ limit: 8 }),
+      getMyContracts({ limit: 8 }),
+    ])
+      .then(([researchResult, contractResult]) => {
+        if (cancelled) return;
+        const research =
+          researchResult.status === "fulfilled" ? researchResult.value.map(toResearchRun) : [];
+        const contracts =
+          contractResult.status === "fulfilled" ? contractResult.value.map(toContractRun) : [];
+        const merged = [...research, ...contracts]
+          .sort((a, b) => new Date(b.ts).getTime() - new Date(a.ts).getTime())
+          .slice(0, 8);
+        setRecentRuns(merged);
+      })
+      .finally(() => {
+        if (!cancelled) setRecentLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   if (!canShowContent || entitlementsLoading) return <PageLoading />;
 
@@ -164,34 +232,46 @@ export default function WorkspacePage() {
               </Link>
             </div>
 
-            {recentSessions.length > 0 ? (
+            {recentLoading ? (
+              <div className="flex items-center justify-center py-10 text-sm text-muted-foreground">
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Loading recent runs…
+              </div>
+            ) : recentRuns.length > 0 ? (
               <div className="space-y-1">
-                {recentSessions.map((session, i) => (
-                  <Link
-                    key={session.id}
-                    href={`/research?session=${session.id}`}
-                    className={cn(
-                      "group flex items-center gap-3 rounded-lg p-3",
-                      surfaceClasses.rowInteractive
-                    )}
-                  >
-                    <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-sm font-medium text-muted-foreground">
-                      {i + 1}
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium">
-                        {session.title}
-                      </p>
-                      <p className="flex items-center gap-1 text-xs text-muted-foreground">
-                        <Clock className="h-3 w-3" />
-                        {formatDistanceToNow(new Date(session.createdAt), {
-                          addSuffix: true,
-                        })}
-                      </p>
-                    </div>
-                    <ChevronRight className="h-4 w-4 text-muted-foreground/40 opacity-0 ll-transition group-hover:opacity-100" />
-                  </Link>
-                ))}
+                {recentRuns.map((run) => {
+                  const Icon = run.kind === "research" ? FlaskConical : Scale;
+                  const kindLabel = run.kind === "research" ? "Research" : "Contract";
+                  return (
+                    <Link
+                      key={`${run.kind}:${run.id}`}
+                      href={run.href}
+                      className={cn(
+                        "group flex items-center gap-3 rounded-lg p-3",
+                        surfaceClasses.rowInteractive
+                      )}
+                    >
+                      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-surface-container-high text-primary">
+                        <Icon className="h-4 w-4" aria-hidden="true" />
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <div className="flex items-center gap-2">
+                          <Badge variant="outline" className="h-4 px-1.5 text-[10px] uppercase tracking-wide">
+                            {kindLabel}
+                          </Badge>
+                          <p className="truncate text-sm font-medium">{run.title}</p>
+                        </div>
+                        <p className="flex items-center gap-1 text-xs text-muted-foreground">
+                          <Clock className="h-3 w-3" aria-hidden="true" />
+                          {formatDistanceToNow(new Date(run.ts), { addSuffix: true })}
+                          <span aria-hidden="true">·</span>
+                          <span className="capitalize">{run.status.replace(/_/g, " ")}</span>
+                        </p>
+                      </div>
+                      <ChevronRight className="h-4 w-4 text-muted-foreground/40 opacity-0 ll-transition group-hover:opacity-100" />
+                    </Link>
+                  );
+                })}
               </div>
             ) : (
               <div className="py-10 text-center">
@@ -200,7 +280,7 @@ export default function WorkspacePage() {
                   No activity yet
                 </p>
                 <p className="mt-1 text-xs text-muted-foreground/70">
-                  Start by asking a question or searching documents
+                  Start a deep research run, draft a contract, or ask a question.
                 </p>
                 <Button size="sm" variant="brand" asChild className="mt-4">
                   <Link href="/chat">
