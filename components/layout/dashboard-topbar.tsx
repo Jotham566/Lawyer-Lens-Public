@@ -11,7 +11,13 @@ interface DashboardTopBarProps {
   onMobileMenuToggle?: () => void;
 }
 
-/** Maps pathname prefixes to human-readable breadcrumb labels. */
+/** Maps pathname prefixes to human-readable breadcrumb labels.
+ *
+ * Order matters: more specific routes must precede their parents
+ * (e.g., /research/history before /research). The workspace pages
+ * /research and /contracts have their own DocumentWorkspaceShell
+ * that overrides this topbar entirely, so the labels here only
+ * surface for the surrounding history / index views. */
 function getBreadcrumb(pathname: string): string {
   if (pathname.startsWith("/chat")) return "Ask Ben";
   if (pathname.startsWith("/legislation")) return "Laws of Uganda";
@@ -22,7 +28,9 @@ function getBreadcrumb(pathname: string): string {
   if (pathname.startsWith("/settings")) return "Settings";
   if (pathname.startsWith("/help")) return "Help & Support";
   if (pathname.startsWith("/search")) return "Search";
+  if (pathname.startsWith("/research/history")) return "Deep Research › History";
   if (pathname.startsWith("/research")) return "Deep Research";
+  if (pathname.startsWith("/contracts/history")) return "Contract Drafting › History";
   if (pathname.startsWith("/contracts")) return "Contract Drafting";
   if (pathname.startsWith("/dashboard")) return "Dashboard";
   if (pathname.startsWith("/billing")) return "Billing";
