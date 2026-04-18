@@ -16,12 +16,11 @@ interface ProgressAnnouncementArgs {
 }
 
 /**
- * Hook variant: imperatively maintains body-level sr-only live regions
- * for long-running async work. Implemented as a hook (not a JSX
- * component) because the parent surfaces have many conditional return
- * paths and we'd otherwise need to thread the announcer through every
- * branch. Hooks run on every render regardless of which JSX path is
- * returned.
+ * Imperatively maintains body-level sr-only live regions for long-
+ * running async work. Implemented as a hook (not a JSX component)
+ * because the parent surfaces have many conditional return paths and
+ * we'd otherwise need to thread the announcer through every branch.
+ * Hooks run on every render regardless of which JSX path is returned.
  *
  * Two channels so progress noise never drowns out important transitions:
  *

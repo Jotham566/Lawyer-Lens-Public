@@ -11,7 +11,7 @@
  * - Completion / error overrides phase channel and always announces.
  */
 import { renderHook } from "@testing-library/react";
-import { useProgressAnnouncement } from "@/components/a11y/progress-announcer";
+import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 
 function getPhaseEl(): HTMLElement | null {
   return document.querySelector("[data-a11y='phase-announcer']");

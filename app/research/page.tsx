@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageErrorBoundary } from "@/components/error-boundary";
-import { useProgressAnnouncement } from "@/components/a11y/progress-announcer";
+import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import {
   Search,
   ArrowLeft,
@@ -45,6 +45,7 @@ import {
 } from "@/components/ui/select";
 import { cn } from "@/lib/utils";
 import { APIError } from "@/lib/api/client";
+import { subscribeToResearchProgress } from "@/lib/api/research-progress-stream";
 import {
   createResearchSession,
   getResearchSession,
@@ -54,7 +55,6 @@ import {
   getResearchReport,
   saveResearchReport,
   resumeResearchSession,
-  streamResearchProgress,
   type ResearchSession,
   type ResearchReport,
   type ResearchGraphCheckpoint,
@@ -1504,53 +1504,22 @@ function ResearchContent() {
   }, [progress?.progress, refreshEntitlements, session?.progress_percent, session?.status, stopPolling, updateStoredSession]);
 
   const startProgressStream = useCallback((sessionId: string, streamToken?: string | null) => {
-    let sseCleanup: (() => void) | null = null;
-    let usePolling = false;
-    // Cancellation token for the async ensureToken closure. If the parent
-    // unmounts (or restarts the stream) before ensureToken resolves, the
-    // .then below would otherwise create an EventSource that has no
-    // cleanup hook attached — a real socket+timer leak. The cancelled
-    // flag closes the gap.
-    let cancelled = false;
-
-    // Set initial progress message
-    setProgress({
-      phase: "researching",
-      message: "Connecting to research stream...",
-      progress: 0,
-    });
-
-    // The stream endpoint requires a short-lived signed token. If the
-    // caller already has one in scope (from a prior session GET), use
-    // it directly. Otherwise, fetch the session to mint one — most
-    // POST endpoints (approve, resume) return the session without a
-    // fresh token, so a follow-up GET is the canonical path.
-    const ensureToken = async (): Promise<string | null> => {
-      if (streamToken) return streamToken;
-      try {
-        const fresh = await getResearchSession(sessionId);
-        return fresh.stream_token ?? null;
-      } catch {
-        return null;
-      }
-    };
-
-    void ensureToken().then((token) => {
-      if (cancelled) return;
-      if (!token) {
-        // Couldn't mint a token — fall back to polling so the UI still
-        // surfaces progress (worker keeps running on the server).
-        usePolling = true;
-        startPolling(sessionId);
-        return;
-      }
-      sseCleanup = streamResearchProgress(
-        sessionId,
-        token,
-        (progressData) => {
-          setProgress(progressData);
-        },
-        async () => {
+    // Orchestration (token mint + SSE open + fallback decision) lives
+    // in lib/api/research-progress-stream.ts as a pure function so it
+    // can be unit-tested without rendering this page. This callback
+    // wires the React state setters into its callbacks.
+    const handle = subscribeToResearchProgress({
+      sessionId,
+      streamToken,
+      callbacks: {
+        onConnecting: () =>
+          setProgress({
+            phase: "researching",
+            message: "Connecting to research stream...",
+            progress: 0,
+          }),
+        onProgress: (p) => setProgress(p),
+        onComplete: async () => {
           stopPolling();
           try {
             const reportData = await getResearchReport(sessionId);
@@ -1567,25 +1536,18 @@ function ResearchContent() {
             setError(err instanceof Error ? err.message : "Failed to load report");
           }
         },
-        () => {
-          // SSE failed twice (initial + reconnect) - fall back to polling
-          // instead of surfacing the error; the worker keeps running.
-          if (!usePolling) {
-            usePolling = true;
-            setProgress({
-              phase: "researching",
-              message: "Research in progress...",
-              progress: 5,
-            });
-            startPolling(sessionId);
-          }
-        }
-      );
+        onFallbackNeeded: () => {
+          setProgress({
+            phase: "researching",
+            message: "Research in progress...",
+            progress: 5,
+          });
+          startPolling(sessionId);
+        },
+      },
     });
-
     return () => {
-      cancelled = true;
-      if (sseCleanup) sseCleanup();
+      handle.stop();
       stopPolling();
     };
   }, [refreshEntitlements, startPolling, stopPolling, updateStoredSession]);

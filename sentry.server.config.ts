@@ -7,27 +7,12 @@
 
 import * as Sentry from "@sentry/nextjs";
 
+import { scrubUrl } from "@/lib/security/scrub-url";
+
 const SENTRY_DSN = process.env.SENTRY_DSN || process.env.NEXT_PUBLIC_SENTRY_DSN;
 
-/** Server-side identifier scrubber (same patterns as the client). */
-function scrubPathIds(url: string): string {
-  try {
-    const parsed = new URL(url);
-    parsed.pathname = parsed.pathname
-      .replace(
-        /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
-        "/:id",
-      )
-      .replace(/\/[A-Za-z0-9]+(-[A-Za-z0-9]+){2,}/g, "/:hri")
-      .replace(/\/[A-Za-z0-9_-]{24,}/g, "/:token");
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
-
 function scrubIdentifiers<T extends { request?: { url?: string } }>(event: T): T {
-  if (event.request?.url) event.request.url = scrubPathIds(event.request.url);
+  if (event.request?.url) event.request.url = scrubUrl(event.request.url);
   return event;
 }
 

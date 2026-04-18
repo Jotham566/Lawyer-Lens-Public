@@ -11,13 +11,12 @@ import {
   LayoutDashboard,
   Settings,
   HelpCircle,
-  FlaskConical,
-  PenTool,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
+import { ProBadge } from "@/components/ui/pro-badge";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { trackFeatureEntry, type ToolKey } from "@/lib/analytics/track";
+import { toolsNav } from "@/lib/navigation/tools-nav";
 import { Logo } from "./logo";
 
 interface NavItem {
@@ -44,27 +43,17 @@ const primaryNav: NavItem[] = [
   { label: "My Workspace", href: "/workspace", icon: LayoutDashboard, matchPrefix: true },
 ];
 
-// Premium "Tools" section. These are real features users keep missing
-// because they only appear in the chat composer dropdown — making them
-// first-class nav entries closes the discoverability gap. Kept in their
-// own section so a free-tier user sees the Pro badge without confusion
-// about which items are gated.
-const toolsNav: NavItem[] = [
-  {
-    label: "Deep Research",
-    href: "/research",
-    icon: FlaskConical,
-    matchPrefix: true,
-    featureKey: "deep_research",
-  },
-  {
-    label: "Contract Drafting",
-    href: "/contracts",
-    icon: PenTool,
-    matchPrefix: true,
-    featureKey: "contract_drafting",
-  },
-];
+// Tools section pulls from the shared toolsNav config so desktop and
+// mobile drawer never drift. Sidebar always wants prefix-matching for
+// active state (e.g. /research/history highlights "Deep Research"), so
+// we set matchPrefix=true here at the consumer site.
+const sidebarToolsNav: NavItem[] = toolsNav.map((tool) => ({
+  label: tool.label,
+  href: tool.href,
+  icon: tool.icon,
+  matchPrefix: true,
+  featureKey: tool.featureKey,
+}));
 
 const secondaryNav: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings, matchPrefix: true },
@@ -116,14 +105,7 @@ export function DashboardSidebar() {
           <span className="flex items-center gap-3">
             <Icon className="h-[18px] w-[18px] shrink-0" />
             <span className="flex-1">{item.label}</span>
-            {locked && (
-              <Badge
-                variant="outline"
-                className="h-5 shrink-0 rounded-full border-brand-gold/50 bg-brand-gold/10 px-2 text-[10px] font-semibold uppercase tracking-wider text-brand-gold"
-              >
-                Pro
-              </Badge>
-            )}
+            {locked && <ProBadge />}
           </span>
         </Link>
       </li>
@@ -147,7 +129,7 @@ export function DashboardSidebar() {
           <p className="mb-2 px-3 text-[10px] font-semibold uppercase tracking-widest text-muted-foreground/80">
             Tools
           </p>
-          <ul className="space-y-1">{toolsNav.map(renderNavItem)}</ul>
+          <ul className="space-y-1">{sidebarToolsNav.map(renderNavItem)}</ul>
         </div>
       </nav>
 

@@ -88,7 +88,7 @@ test.describe("Discoverability — mobile drawer Tools section", () => {
 });
 
 test.describe("Accessibility — research history filter tabs", () => {
-  test("filter tabs implement role=tablist with keyboard navigation", async ({ page }) => {
+  test("filter tabs implement role=tablist with full WAI-ARIA keyboard nav", async ({ page }) => {
     await loginAsTeamUser(page);
     await page.goto("/research/history", { waitUntil: "domcontentloaded" });
     // The tablist may not render if there are zero sessions; skip gracefully.
@@ -99,14 +99,38 @@ test.describe("Accessibility — research history filter tabs", () => {
     }
     const allTab = tablist.getByRole("tab", { name: /All/i });
     const completeTab = tablist.getByRole("tab", { name: /Complete/i });
+    const inProgressTab = tablist.getByRole("tab", { name: /In Progress/i });
+
+    // Initial state: All selected, others not. Roving tabIndex: selected=0, others=-1.
     await expect(allTab).toHaveAttribute("aria-selected", "true");
     await expect(completeTab).toHaveAttribute("aria-selected", "false");
+    await expect(inProgressTab).toHaveAttribute("aria-selected", "false");
+    await expect(allTab).toHaveAttribute("tabindex", "0");
+    await expect(completeTab).toHaveAttribute("tabindex", "-1");
+    await expect(inProgressTab).toHaveAttribute("tabindex", "-1");
 
-    // ArrowRight moves focus + selection to the next tab.
+    // ArrowRight: All → Complete → InProgress → wraps to All.
     await allTab.focus();
     await page.keyboard.press("ArrowRight");
     await expect(completeTab).toHaveAttribute("aria-selected", "true");
-    await expect(allTab).toHaveAttribute("aria-selected", "false");
+    await expect(completeTab).toHaveAttribute("tabindex", "0");
+    await expect(allTab).toHaveAttribute("tabindex", "-1");
+
+    await page.keyboard.press("ArrowRight");
+    await expect(inProgressTab).toHaveAttribute("aria-selected", "true");
+
+    await page.keyboard.press("ArrowRight"); // wrap
+    await expect(allTab).toHaveAttribute("aria-selected", "true");
+
+    // ArrowLeft from first wraps to last.
+    await page.keyboard.press("ArrowLeft");
+    await expect(inProgressTab).toHaveAttribute("aria-selected", "true");
+
+    // Home jumps to first; End jumps to last.
+    await page.keyboard.press("Home");
+    await expect(allTab).toHaveAttribute("aria-selected", "true");
+    await page.keyboard.press("End");
+    await expect(inProgressTab).toHaveAttribute("aria-selected", "true");
   });
 
   test("research history page has no critical axe violations", async ({ page }) => {

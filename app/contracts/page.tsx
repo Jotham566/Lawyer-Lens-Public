@@ -56,7 +56,7 @@ import {
   type EnhancedTemplate,
   type ContractListItem,
 } from "@/lib/api";
-import { useProgressAnnouncement } from "@/components/a11y/progress-announcer";
+import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";

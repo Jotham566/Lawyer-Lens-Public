@@ -7,37 +7,9 @@
 
 import * as Sentry from "@sentry/nextjs";
 
-const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
+import { scrubUrl } from "@/lib/security/scrub-url";
 
-/**
- * Replace UUIDs, human-readable document ids (AKN/HRI pattern like
- * "FooAct-1997-6"), and long hex/base64 ids in URL paths with `:id`.
- * Applied to event.request.url and any breadcrumb URL before upload.
- *
- * Sentry events otherwise carry full paths which, for a legal-
- * document app, frequently embed tenant-owned identifiers
- * (contract session ids, chat sessions, document uuids). Keeping
- * them out of the Sentry backend is a no-cost hygiene win.
- */
-function scrubPathIds(url: string): string {
-  try {
-    const parsed = new URL(url);
-    parsed.pathname = parsed.pathname
-      // UUID v1-v5
-      .replace(
-        /\/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/gi,
-        "/:id",
-      )
-      // AKN-style human-readable id: letters/digits separated by hyphens
-      // with at least two segments, e.g. "Income-Tax-Act-1997-11".
-      .replace(/\/[A-Za-z0-9]+(-[A-Za-z0-9]+){2,}/g, "/:hri")
-      // Long hex / base64url tokens (>=24 chars).
-      .replace(/\/[A-Za-z0-9_-]{24,}/g, "/:token");
-    return parsed.toString();
-  } catch {
-    return url;
-  }
-}
+const SENTRY_DSN = process.env.NEXT_PUBLIC_SENTRY_DSN;
 
 /**
  * Generic identifier-scrubber applicable to both ErrorEvent and
@@ -50,13 +22,13 @@ function scrubIdentifiers<T extends { request?: { url?: string }; breadcrumbs?: 
   event: T,
 ): T {
   if (event.request?.url) {
-    event.request.url = scrubPathIds(event.request.url);
+    event.request.url = scrubUrl(event.request.url);
   }
   if (Array.isArray(event.breadcrumbs)) {
     for (const crumb of event.breadcrumbs) {
       const data = (crumb as { data?: { url?: unknown } } | undefined)?.data;
       if (data && typeof data.url === "string") {
-        data.url = scrubPathIds(data.url);
+        data.url = scrubUrl(data.url);
       }
     }
   }
