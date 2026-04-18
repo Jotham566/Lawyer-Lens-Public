@@ -67,6 +67,8 @@ import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
+import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
 import { WeakResearchBanner } from "@/components/research/weak-research-banner";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
@@ -1671,6 +1673,17 @@ function ResearchContent() {
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
+            )}
+            {!query.trim() && (
+              <StarterPromptChips
+                label="Start with an example"
+                ariaActionLabel="Use research prompt"
+                prompts={getToolSuggestedQuestions("deep-research")}
+                onSelect={(prompt) => {
+                  setQuery(prompt);
+                  setResearchKickoffHtml(buildResearchKickoffDocumentHtml(prompt));
+                }}
+              />
             )}
             <DocumentPanel
               title="Deep Legal Research"

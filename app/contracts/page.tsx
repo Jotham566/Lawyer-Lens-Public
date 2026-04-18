@@ -59,6 +59,8 @@ import {
 } from "@/lib/api";
 import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
+import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import {
@@ -893,6 +895,17 @@ function ContractsContent() {
                 <AlertCircle className="h-4 w-4" />
                 {error}
               </div>
+            )}
+            {!description.trim() && (
+              <StarterPromptChips
+                label="Start with an example"
+                ariaActionLabel="Use contract prompt"
+                prompts={getToolSuggestedQuestions("draft-contract")}
+                onSelect={(prompt) => {
+                  setDescription(prompt);
+                  setContractKickoffHtml(buildContractKickoffDocumentHtml(prompt));
+                }}
+              />
             )}
             <DocumentPanel
               title="Contract Drafting"
