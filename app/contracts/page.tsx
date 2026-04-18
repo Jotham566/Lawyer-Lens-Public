@@ -56,6 +56,7 @@ import {
   type EnhancedTemplate,
   type ContractListItem,
 } from "@/lib/api";
+import { useProgressAnnouncement } from "@/components/a11y/progress-announcer";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
@@ -314,6 +315,25 @@ function ContractsContent() {
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error" | "rate_limited">("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // sr-only live regions for screen-reader users. Phase channel is
+  // unthrottled (drafting → review → complete); progress is bucketed
+  // to 5%. Hook mounts at body level so it survives this component's
+  // many conditional return paths.
+  useProgressAnnouncement({
+    phase: session?.phase ?? session?.status,
+    message: error ?? null,
+    percent: session?.progress_percent ?? null,
+    completionMessage:
+      session?.phase === "complete"
+        ? "Contract draft complete. Ready to download."
+        : null,
+    errorMessage:
+      session?.phase === "failed"
+        ? error || session?.error || "Contract drafting failed."
+        : null,
+  });
+
   const sectionRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const draftSaveTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const draftingResumeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -1694,21 +1714,28 @@ export default function ContractsPage() {
   }
 
   return (
-    <Suspense
-      fallback={
-        <div className="container mx-auto max-w-3xl px-4 py-8">
-          <Skeleton className="h-8 w-48 mb-8" />
-          <Skeleton className="h-64 w-full" />
-        </div>
-      }
-    >
-      <FeatureGate
-        feature="contract_drafting"
-        requiredTier="professional"
-        featureName="Contract Drafting"
+    <>
+      {/* Page-level H1 — sr-only because the visible hierarchy already
+          uses h1s for phase-specific surfaces (Contract Brief,
+          Requirements, Draft title). The dashboard topbar renders its
+          breadcrumb as <p>, so this is the only landmark h1. */}
+      <h1 className="sr-only">Contract Drafting</h1>
+      <Suspense
+        fallback={
+          <div className="container mx-auto max-w-3xl px-4 py-8">
+            <Skeleton className="h-8 w-48 mb-8" />
+            <Skeleton className="h-64 w-full" />
+          </div>
+        }
       >
-        <ContractsContent />
-      </FeatureGate>
-    </Suspense>
+        <FeatureGate
+          feature="contract_drafting"
+          requiredTier="professional"
+          featureName="Contract Drafting"
+        >
+          <ContractsContent />
+        </FeatureGate>
+      </Suspense>
+    </>
   );
 }

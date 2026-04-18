@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useRef, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   Search,
@@ -66,7 +67,6 @@ function SessionCard({
   onDelete: (id: string) => void;
   onRename: (id: string, title: string) => void;
 }) {
-  const router = useRouter();
   const [isEditing, setIsEditing] = useState(false);
   const [editTitle, setEditTitle] = useState(session.title);
   const config = statusConfig[session.status] || statusConfig.created;
@@ -91,37 +91,37 @@ function SessionCard({
     }
   };
 
+  // Card is now an anchor: keyboard-focusable + screen-reader announces
+  // it as a link instead of a div with an onClick. Edit/delete buttons
+  // sit alongside the link (not nested inside it — nesting interactive
+  // elements is invalid HTML and breaks AT focus order).
   return (
-    <Card
-      className={cn("group cursor-pointer", surfaceClasses.pagePanelInteractive)}
-      onClick={() => router.push(`/research?session=${session.id}`)}
-    >
+    <Card className={cn("group", surfaceClasses.pagePanelInteractive)}>
       <CardContent className="p-4">
         <div className="flex items-start gap-4">
           <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 dark:bg-primary/15">
-            <FileText className="h-5 w-5 text-primary" />
+            <FileText className="h-5 w-5 text-primary" aria-hidden="true" />
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
               {isEditing ? (
-                <div
-                  className="flex items-center gap-1 flex-1"
-                  onClick={(e) => e.stopPropagation()}
-                >
+                <div className="flex items-center gap-1 flex-1">
                   <Input
                     value={editTitle}
                     onChange={(e) => setEditTitle(e.target.value)}
                     onKeyDown={handleKeyDown}
                     className="h-7 text-sm"
                     autoFocus
+                    aria-label={`Rename session: ${session.title}`}
                   />
                   <Button
                     variant="ghost"
                     size="icon"
                     className="h-7 w-7"
                     onClick={handleSaveTitle}
+                    aria-label="Save title"
                   >
-                    <Check className="h-4 w-4" />
+                    <Check className="h-4 w-4" aria-hidden="true" />
                   </Button>
                   <Button
                     variant="ghost"
@@ -131,23 +131,28 @@ function SessionCard({
                       setEditTitle(session.title);
                       setIsEditing(false);
                     }}
+                    aria-label="Cancel rename"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-4 w-4" aria-hidden="true" />
                   </Button>
                 </div>
               ) : (
                 <>
-                  <h3 className="font-medium text-sm truncate">{session.title}</h3>
+                  <Link
+                    href={`/research?session=${session.id}`}
+                    className="font-medium text-sm truncate hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring rounded"
+                    aria-label={`Open research session: ${session.title}`}
+                  >
+                    {session.title}
+                  </Link>
                   <Button
                     variant="ghost"
                     size="icon"
-                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setIsEditing(true);
-                    }}
+                    className="h-6 w-6 shrink-0 opacity-0 group-hover:opacity-100 focus-visible:opacity-100"
+                    onClick={() => setIsEditing(true)}
+                    aria-label={`Rename session: ${session.title}`}
                   >
-                    <Edit2 className="h-3 w-3" />
+                    <Edit2 className="h-3 w-3" aria-hidden="true" />
                   </Button>
                 </>
               )}
@@ -158,14 +163,13 @@ function SessionCard({
             <div className="flex items-center gap-3 text-xs text-muted-foreground">
               <Badge variant={config.variant} className="h-5 px-2 text-xs">
                 <StatusIcon
-                  className={`h-3 w-3 mr-1 ${
-                    isActive ? "animate-spin" : ""
-                  }`}
+                  className={`h-3 w-3 mr-1 ${isActive ? "animate-spin" : ""}`}
+                  aria-hidden="true"
                 />
                 {config.label}
               </Badge>
               <span className="flex items-center gap-1">
-                <Clock className="h-3 w-3" />
+                <Clock className="h-3 w-3" aria-hidden="true" />
                 {formatDistanceToNow(new Date(session.createdAt), {
                   addSuffix: true,
                 })}
@@ -177,14 +181,12 @@ function SessionCard({
               variant="ghost"
               size="icon"
               className="ll-icon-button ll-icon-button-danger h-8 w-8"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete(session.id);
-              }}
+              onClick={() => onDelete(session.id)}
+              aria-label={`Delete session: ${session.title}`}
             >
-              <Trash2 className="h-4 w-4" />
+              <Trash2 className="h-4 w-4" aria-hidden="true" />
             </Button>
-            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+            <ChevronRight className="h-4 w-4 text-muted-foreground" aria-hidden="true" />
           </div>
         </div>
       </CardContent>
@@ -192,13 +194,20 @@ function SessionCard({
   );
 }
 
+type FilterKey = "all" | "complete" | "in_progress";
+
 export default function ResearchHistoryPage() {
   const router = useRouter();
   const { sessions, removeSession, renameSession, clearSessions } =
     useResearchSessionsStore();
   const [deleteId, setDeleteId] = useState<string | null>(null);
   const [showClearDialog, setShowClearDialog] = useState(false);
-  const [filter, setFilter] = useState<"all" | "complete" | "in_progress">("all");
+  const [filter, setFilter] = useState<FilterKey>("all");
+  const tabRefs = useRef<Record<FilterKey, HTMLButtonElement | null>>({
+    all: null,
+    complete: null,
+    in_progress: null,
+  });
 
   const filteredSessions = sessions.filter((s) => {
     if (filter === "complete") return s.status === "complete";
@@ -208,6 +217,24 @@ export default function ResearchHistoryPage() {
       );
     return true;
   });
+
+  const tabKeys: FilterKey[] = ["all", "complete", "in_progress"];
+
+  // ARIA Authoring Practices: tablist supports arrow-key navigation.
+  // Left/Right wrap horizontally; Home/End jump to ends.
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLButtonElement>) => {
+    const idx = tabKeys.indexOf(filter);
+    let next = idx;
+    if (e.key === "ArrowRight") next = (idx + 1) % tabKeys.length;
+    else if (e.key === "ArrowLeft") next = (idx - 1 + tabKeys.length) % tabKeys.length;
+    else if (e.key === "Home") next = 0;
+    else if (e.key === "End") next = tabKeys.length - 1;
+    else return;
+    e.preventDefault();
+    const nextKey = tabKeys[next]!;
+    setFilter(nextKey);
+    tabRefs.current[nextKey]?.focus();
+  };
 
   const handleDelete = (id: string) => {
     setDeleteId(id);
@@ -270,27 +297,43 @@ export default function ResearchHistoryPage() {
         </div>
       ) : (
         <>
-          {/* Filter Tabs */}
-          <div className="flex flex-wrap items-center gap-2 mb-6 mt-6">
+          {/* Filter Tabs — full ARIA tablist semantics: role="tablist"
+              with role="tab" + aria-selected on each, plus arrow-key
+              navigation per WAI-ARIA Authoring Practices. */}
+          <div
+            role="tablist"
+            aria-label="Filter research sessions"
+            className="flex flex-wrap items-center gap-2 mb-6 mt-6"
+          >
             {([
               { key: "all" as const, label: "All", count: sessions.length },
               { key: "complete" as const, label: "Complete", count: sessions.filter((s) => s.status === "complete").length },
               { key: "in_progress" as const, label: "In Progress", count: sessions.filter((s) => ["clarifying", "brief_review", "researching", "writing"].includes(s.status)).length },
-            ]).map((tab) => (
-              <button
-                key={tab.key}
-                type="button"
-                onClick={() => setFilter(tab.key)}
-                className={cn(
-                  "ll-transition rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest",
-                  filter === tab.key
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
-                )}
-              >
-                {tab.label} ({tab.count})
-              </button>
-            ))}
+            ]).map((tab) => {
+              const selected = filter === tab.key;
+              return (
+                <button
+                  key={tab.key}
+                  ref={(el) => {
+                    tabRefs.current[tab.key] = el;
+                  }}
+                  type="button"
+                  role="tab"
+                  aria-selected={selected}
+                  tabIndex={selected ? 0 : -1}
+                  onClick={() => setFilter(tab.key)}
+                  onKeyDown={handleTabKeyDown}
+                  className={cn(
+                    "ll-transition rounded-full px-4 py-2 text-xs font-bold uppercase tracking-widest",
+                    selected
+                      ? "bg-primary text-primary-foreground"
+                      : "bg-surface-container-high text-foreground hover:bg-surface-container-highest"
+                  )}
+                >
+                  {tab.label} ({tab.count})
+                </button>
+              );
+            })}
           </div>
 
           {filteredSessions.length === 0 ? (

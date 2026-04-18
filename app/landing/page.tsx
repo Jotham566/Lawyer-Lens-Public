@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import {
   Search,
   Shield,
@@ -11,13 +11,19 @@ import {
   Scale,
   Building2,
   Globe,
+  FlaskConical,
+  PenTool,
 } from "lucide-react";
 import Image from "next/image";
+import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
 import { AnimatedSection } from "@/components/landing";
 import { getRepositoryStats } from "@/lib/api";
 import { DemoRequestModal } from "@/components/landing/demo-request-modal";
 import { useGetStarted } from "@/hooks/use-get-started";
+import { useAuth } from "@/components/providers";
+import { useAuthModal } from "@/components/auth/auth-modal-provider";
+import { trackFeatureEntry, type ToolKey } from "@/lib/analytics/track";
 
 /* ═══════════════════════════════════════════════════════════
    LANDING PAGE
@@ -25,7 +31,10 @@ import { useGetStarted } from "@/hooks/use-get-started";
    stronger typography, more restraint, more proof.
    ═══════════════════════════════════════════════════════════ */
 export default function LandingPage() {
-  const { handleGetStarted } = useGetStarted();
+  const { handleGetStarted, betaEnabled } = useGetStarted();
+  const router = useRouter();
+  const { isAuthenticated } = useAuth();
+  const { openRegister, openWaitlist } = useAuthModal();
   const [showDemoModal, setShowDemoModal] = useState(false);
 
   // Force scroll to top on mount/refresh
@@ -40,6 +49,45 @@ export default function LandingPage() {
   });
 
   const totalDocuments = stats?.total_documents;
+
+  /**
+   * Tool-specific entry CTA. Three paths:
+   * - Authenticated → push directly to /research or /contracts with the
+   *   intent param (used for analytics + future deep-link memory).
+   * - Unauthenticated + beta mode ON → open the waitlist modal. Mirrors
+   *   the canonical handleGetStarted gate; the new tool CTAs must NOT
+   *   create a second entry path that ignores the beta gate.
+   * - Unauthenticated + beta mode OFF → open the register modal carrying
+   *   the feature path as redirectAfter. After signup, the auth flow
+   *   lands them on the feature page; entitlement is whatever
+   *   BetaAccessService granted (we deliberately do NOT add a parallel
+   *   trial flag — Codex correctly flagged that as a ghost-trial /
+   *   leakage risk).
+   */
+  const handleToolCTA = useCallback(
+    (
+      tool: ToolKey,
+      surface: "landing_hero_cta" | "landing_final_cta"
+    ) => {
+      trackFeatureEntry(surface, tool);
+      const path = tool === "deep_research" ? "/research" : "/contracts";
+      const intent = tool === "deep_research" ? "research" : "contract";
+      const dest = `${path}?intent=${intent}`;
+      if (isAuthenticated) {
+        router.push(dest);
+        return;
+      }
+      if (betaEnabled) {
+        // Beta-gate parity: anonymous visitors flow through the waitlist
+        // even on tool CTAs; otherwise these new buttons would be a
+        // backdoor around the invite-only registration.
+        openWaitlist();
+        return;
+      }
+      openRegister(dest);
+    },
+    [betaEnabled, isAuthenticated, openRegister, openWaitlist, router]
+  );
 
   return (
     <>
@@ -99,6 +147,32 @@ export default function LandingPage() {
                     className="inline-flex h-12 items-center rounded-full border border-border/60 bg-card/80 px-8 text-sm font-bold text-foreground backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] hover:border-border hover:bg-card hover:shadow-soft"
                   >
                     Request a Demo
+                  </button>
+                </div>
+
+                {/* Direct paths to the two premium tools. Until now these
+                    were only reachable from the in-app sidebar; without a
+                    landing-page entry, cold visitors had no way to
+                    discover them. The intent= param is the analytics hook
+                    (see lib/analytics/track) so we can measure which CTA
+                    actually converts and gate Phase 2/3 on the data. */}
+                <div className="mt-6 flex flex-wrap items-center gap-3 text-xs">
+                  <span className="text-muted-foreground/70">Or jump straight to a tool:</span>
+                  <button
+                    type="button"
+                    onClick={() => handleToolCTA("deep_research", "landing_hero_cta")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition-colors hover:bg-brand-gold/15"
+                  >
+                    <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
+                    Try Deep Research
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleToolCTA("contract_drafting", "landing_hero_cta")}
+                    className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition-colors hover:bg-brand-gold/15"
+                  >
+                    <PenTool className="h-3.5 w-3.5" aria-hidden="true" />
+                    Draft a Contract
                   </button>
                 </div>
 
@@ -507,6 +581,28 @@ export default function LandingPage() {
                   className="inline-flex h-12 items-center rounded-full border border-border/60 bg-card/80 px-8 text-sm font-bold text-foreground backdrop-blur-sm transition-[color,border-color,background-color,box-shadow] hover:border-border hover:bg-card hover:shadow-soft"
                 >
                   Request a Demo
+                </button>
+              </div>
+
+              {/* Tool-specific deep links — second pass at the bottom of
+                  the page after the visitor has seen the proof sections. */}
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3 text-xs">
+                <span className="text-muted-foreground/70">Or jump straight to a tool:</span>
+                <button
+                  type="button"
+                  onClick={() => handleToolCTA("deep_research", "landing_final_cta")}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition-colors hover:bg-brand-gold/15"
+                >
+                  <FlaskConical className="h-3.5 w-3.5" aria-hidden="true" />
+                  Try Deep Research
+                </button>
+                <button
+                  type="button"
+                  onClick={() => handleToolCTA("contract_drafting", "landing_final_cta")}
+                  className="inline-flex items-center gap-1.5 rounded-full border border-brand-gold/40 bg-brand-gold/10 px-3 py-1.5 text-xs font-semibold text-brand-gold transition-colors hover:bg-brand-gold/15"
+                >
+                  <PenTool className="h-3.5 w-3.5" aria-hidden="true" />
+                  Draft a Contract
                 </button>
               </div>
             </div>

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback, useRef, Suspense, useMemo } from "rea
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageErrorBoundary } from "@/components/error-boundary";
+import { useProgressAnnouncement } from "@/components/a11y/progress-announcer";
 import {
   Search,
   ArrowLeft,
@@ -837,6 +838,21 @@ function ResearchContent() {
   const [progress, setProgress] = useState<StreamProgress | null>(null);
   const [isResuming, setIsResuming] = useState(false);
 
+  // sr-only live regions for screen-reader users. Two channels: phase
+  // transitions (always announced) and percent (5%-bucketed throttle).
+  // The hook mounts at body level so it survives the many conditional
+  // returns in this component without us needing to thread JSX through
+  // each branch.
+  useProgressAnnouncement({
+    phase: progress?.phase ?? session?.status,
+    message: progress?.message ?? session?.current_step ?? null,
+    percent: progress?.progress ?? session?.progress_percent ?? null,
+    completionMessage:
+      session?.status === "complete" ? "Research complete. Report ready." : null,
+    errorMessage:
+      session?.status === "error" ? session.error || "Research failed." : null,
+  });
+
   // Research sessions store for persistence
   const { addSession, updateSession: updateStoredSession } = useResearchSessionsStore();
 
@@ -1203,7 +1219,7 @@ function ResearchContent() {
         refreshEntitlements();
       } else if (["researching", "writing"].includes(sessionData.status)) {
         setSession(sessionData);
-        startProgressStream(sessionId);
+        startProgressStream(sessionId, sessionData.stream_token);
       } else {
         setSession(sessionData);
       }
@@ -1468,15 +1484,34 @@ function ResearchContent() {
           }, RATE_LIMIT_BACKOFF_MS);
           return;
         }
+        // Auth errors are NOT transient: a 401/403 means the user logged
+        // out, the session was revoked, or the org was deactivated.
+        // Continuing to poll every 3s would hammer the API forever from
+        // hidden tabs and trigger rate-limit / abuse alarms. Stop and
+        // surface a hard error so the parent shell can re-auth.
+        if (
+          err instanceof APIError &&
+          (err.status === 401 || err.status === 403)
+        ) {
+          stopPolling();
+          setError("Your session has expired. Please sign in again.");
+          return;
+        }
         console.error("Polling error:", err);
         // Don't stop polling on transient errors
       }
     }, 3000);
   }, [progress?.progress, refreshEntitlements, session?.progress_percent, session?.status, stopPolling, updateStoredSession]);
 
-  const startProgressStream = useCallback((sessionId: string) => {
+  const startProgressStream = useCallback((sessionId: string, streamToken?: string | null) => {
     let sseCleanup: (() => void) | null = null;
     let usePolling = false;
+    // Cancellation token for the async ensureToken closure. If the parent
+    // unmounts (or restarts the stream) before ensureToken resolves, the
+    // .then below would otherwise create an EventSource that has no
+    // cleanup hook attached — a real socket+timer leak. The cancelled
+    // flag closes the gap.
+    let cancelled = false;
 
     // Set initial progress message
     setProgress({
@@ -1485,48 +1520,71 @@ function ResearchContent() {
       progress: 0,
     });
 
-    sseCleanup = streamResearchProgress(
-      sessionId,
-      (progressData) => {
-        setProgress(progressData);
-      },
-      async () => {
-        // On complete, fetch the report
-        stopPolling();
-        try {
-          const reportData = await getResearchReport(sessionId);
-          setReport(reportData);
-          const sessionData = await getResearchSession(sessionId);
-          setSession(sessionData);
-
-          // Update stored session with completion status
-          updateStoredSession(sessionId, {
-            status: "complete",
-            title: reportData.title,
-            reportReady: true,
-          });
-
-          // Refresh entitlements to update usage counts
-          refreshEntitlements();
-        } catch (err) {
-          setError(err instanceof Error ? err.message : "Failed to load report");
-        }
-      },
-      () => {
-        // SSE failed - fall back to polling instead of showing error
-        if (!usePolling) {
-          usePolling = true;
-          setProgress({
-            phase: "researching",
-            message: "Research in progress...",
-            progress: 5,
-          });
-          startPolling(sessionId);
-        }
+    // The stream endpoint requires a short-lived signed token. If the
+    // caller already has one in scope (from a prior session GET), use
+    // it directly. Otherwise, fetch the session to mint one — most
+    // POST endpoints (approve, resume) return the session without a
+    // fresh token, so a follow-up GET is the canonical path.
+    const ensureToken = async (): Promise<string | null> => {
+      if (streamToken) return streamToken;
+      try {
+        const fresh = await getResearchSession(sessionId);
+        return fresh.stream_token ?? null;
+      } catch {
+        return null;
       }
-    );
+    };
+
+    void ensureToken().then((token) => {
+      if (cancelled) return;
+      if (!token) {
+        // Couldn't mint a token — fall back to polling so the UI still
+        // surfaces progress (worker keeps running on the server).
+        usePolling = true;
+        startPolling(sessionId);
+        return;
+      }
+      sseCleanup = streamResearchProgress(
+        sessionId,
+        token,
+        (progressData) => {
+          setProgress(progressData);
+        },
+        async () => {
+          stopPolling();
+          try {
+            const reportData = await getResearchReport(sessionId);
+            setReport(reportData);
+            const sessionData = await getResearchSession(sessionId);
+            setSession(sessionData);
+            updateStoredSession(sessionId, {
+              status: "complete",
+              title: reportData.title,
+              reportReady: true,
+            });
+            refreshEntitlements();
+          } catch (err) {
+            setError(err instanceof Error ? err.message : "Failed to load report");
+          }
+        },
+        () => {
+          // SSE failed twice (initial + reconnect) - fall back to polling
+          // instead of surfacing the error; the worker keeps running.
+          if (!usePolling) {
+            usePolling = true;
+            setProgress({
+              phase: "researching",
+              message: "Research in progress...",
+              progress: 5,
+            });
+            startPolling(sessionId);
+          }
+        }
+      );
+    });
 
     return () => {
+      cancelled = true;
       if (sseCleanup) sseCleanup();
       stopPolling();
     };
@@ -2513,6 +2571,13 @@ export default function ResearchPage() {
 
   return (
     <PageErrorBoundary fallback="generic">
+      {/* Page-level H1. Visible UI hierarchy keeps its existing
+          phase-specific h1s ("Clarification Notes", "Research Plan",
+          report title); this sr-only h1 gives screen-reader users a
+          stable landmark to orient on. The dashboard topbar already
+          renders the breadcrumb as <p>, so this is the only h1 on the
+          route. */}
+      <h1 className="sr-only">Deep Research</h1>
       <Suspense
         fallback={
           <div className="container mx-auto max-w-3xl px-4 py-8">

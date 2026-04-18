@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Menu, Bell, Sparkles } from "lucide-react";
+import { Menu, Bell, Sparkles, FlaskConical, PenTool } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
 import { ThemeToggle } from "./theme-toggle";
 import { SearchBar } from "./search-bar";
 import { useUIStore } from "@/lib/stores";
+import { trackFeatureEntry } from "@/lib/analytics/track";
 
 interface HeaderProps {
   className?: string;
@@ -85,11 +86,31 @@ export function Header({ className }: HeaderProps) {
               Quick Links
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end" className="w-48">
+          <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuItem asChild>
               <Link href="/chat" className="flex items-center">
                 <Sparkles className="mr-2 h-4 w-4 text-primary transition-colors group-hover:text-current" />
                 Ask in Plain English
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href="/research"
+                className="flex items-center"
+                onClick={() => trackFeatureEntry("header_quicklinks", "deep_research")}
+              >
+                <FlaskConical className="mr-2 h-4 w-4 text-primary transition-colors group-hover:text-current" />
+                Deep Research
+              </Link>
+            </DropdownMenuItem>
+            <DropdownMenuItem asChild>
+              <Link
+                href="/contracts"
+                className="flex items-center"
+                onClick={() => trackFeatureEntry("header_quicklinks", "contract_drafting")}
+              >
+                <PenTool className="mr-2 h-4 w-4 text-primary transition-colors group-hover:text-current" />
+                Contract Drafting
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />

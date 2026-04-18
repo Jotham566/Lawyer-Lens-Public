@@ -34,19 +34,24 @@ interface Tool {
   color: string;
 }
 
+// In-chat "Quick" variants of the dedicated /research and /contracts
+// pages. Same backend, lighter UI: a single chat turn with an inline
+// summary and a link to open the full session. The naming distinction
+// (Quick vs the standalone "Deep Research" / "Contract Drafting" pages)
+// signals "single-shot in chat" vs "multi-step session".
 const tools: Tool[] = [
   {
     id: "deep-research",
-    name: "Deep Research",
-    description: "Comprehensive multi-step legal research with citations",
+    name: "Quick Research",
+    description: "Single-turn research summary in chat — open as a full Deep Research session anytime",
     icon: Search,
     badge: "Experimental",
     color: "text-primary",
   },
   {
     id: "draft-contract",
-    name: "Draft Contract",
-    description: "Generate contracts with templates and compliance review",
+    name: "Quick Draft",
+    description: "Start a contract from the chat — continue in the full Contract Drafting workspace",
     icon: FileText,
     badge: "Experimental",
     color: "text-secondary-foreground",

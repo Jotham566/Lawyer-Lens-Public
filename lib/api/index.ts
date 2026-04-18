@@ -86,15 +86,12 @@ export {
 
 // Contracts API
 export {
-  getContractTemplates,
-  getContractTemplate,
   createContractSession,
   getContractSession,
   submitContractRequirements,
   submitContractReview,
   saveContractDraft,
   getContractDownloadUrl,
-  streamContractProgress,
   getMyContracts,
   getEnhancedTemplates,
   saveContractAsTemplate,

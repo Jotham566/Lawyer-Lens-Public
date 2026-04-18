@@ -77,6 +77,11 @@ export interface ResearchSession {
   current_step?: string;
   tokens_used?: number;
   error?: string | null;
+  // Short-lived signed token for the SSE /stream endpoint. The browser
+  // appends it as ?stream_token=<jwt>. Refreshed on every session GET;
+  // if the EventSource errors mid-stream, callers should re-fetch the
+  // session to pick up a fresh token and reconnect.
+  stream_token?: string | null;
 }
 
 export interface CreateResearchRequest {
@@ -425,79 +430,123 @@ export async function saveResearchReport(
 }
 
 /**
- * Stream research progress via SSE
+ * Stream research progress via SSE.
  *
- * Backend sends named events: "progress", "complete", "error"
- * We need to use addEventListener for named events, not onmessage
+ * Backend sends named events: "progress", "complete", "error".
+ * EventSource cannot send Authorization headers, so a short-lived
+ * audience-scoped token is passed as `?stream_token=<jwt>`. The token
+ * is obtained from the session GET response.
+ *
+ * Reconnection: on EventSource error this function closes the stream
+ * and re-fetches the session ONCE to pick up a fresh token, then
+ * reopens. If the second attempt also errors, `onError` is invoked.
+ * The worker keeps running on the server regardless of stream state.
  */
 export function streamResearchProgress(
   sessionId: string,
+  streamToken: string,
   onProgress: (progress: StreamProgress) => void,
   onComplete: () => void,
   onError: (error: string) => void
 ): () => void {
-  const url = `${getApiBaseUrl()}/research/${sessionId}/stream`;
-  const eventSource = new EventSource(url, { withCredentials: true });
+  let activeSource: EventSource | null = null;
+  let cancelled = false;
+  let retried = false;
 
-  // Listen for named "progress" events from backend
-  // Backend sends: event: progress\ndata: {...}
-  eventSource.addEventListener("progress", (event) => {
-    try {
-      const messageEvent = event as MessageEvent;
-      const data = JSON.parse(messageEvent.data);
-      // Transform backend format to frontend StreamProgress format
-      const progress: StreamProgress = {
-        phase: data.phase || "researching",
-        message: data.message || "Processing...",
-        progress: data.progress_percent || 0,
-        details: data.data,
-      };
-      onProgress(progress);
-    } catch (err) {
-      console.error("Failed to parse SSE progress message:", event, err);
+  const open = (token: string) => {
+    if (cancelled) return;
+    const url = `${getApiBaseUrl()}/research/${sessionId}/stream?stream_token=${encodeURIComponent(token)}`;
+    const es = new EventSource(url, { withCredentials: true });
+    activeSource = es;
+    wireEvents(es);
+  };
+
+  const reconnectWithFreshToken = async () => {
+    if (cancelled || retried) {
+      onError("Research stream connection error");
+      return;
     }
-  });
-
-  // Also handle unnamed events as fallback
-  eventSource.onmessage = (event) => {
+    retried = true;
     try {
-      const data = JSON.parse(event.data);
-      const progress: StreamProgress = {
-        phase: data.phase || "researching",
-        message: data.message || "Processing...",
-        progress: data.progress_percent || 0,
-        details: data.data,
-      };
-      onProgress(progress);
+      const fresh = await getResearchSession(sessionId);
+      if (!fresh.stream_token) {
+        onError("Research stream connection error");
+        return;
+      }
+      open(fresh.stream_token);
     } catch {
-      console.error("Failed to parse SSE message:", event.data);
+      onError("Research stream connection error");
     }
   };
 
-  eventSource.addEventListener("complete", () => {
-    onComplete();
-    eventSource.close();
-  });
+  function wireEvents(es: EventSource) {
+    es.addEventListener("progress", (event) => {
+      try {
+        const messageEvent = event as MessageEvent;
+        const data = JSON.parse(messageEvent.data);
+        const progress: StreamProgress = {
+          phase: data.phase || "researching",
+          message: data.message || "Processing...",
+          progress: data.progress_percent || 0,
+          details: data.data,
+        };
+        onProgress(progress);
+      } catch (err) {
+        // Never log the raw event — its currentTarget is the EventSource
+        // whose `url` contains `?stream_token=<jwt>`. Sentry's default
+        // consoleIntegration captures console.* args as breadcrumbs and
+        // would exfiltrate the token in any errored session uploaded
+        // via Replay. Log only the parse-error context.
+        const messageEvent = event as MessageEvent;
+        const dataLength =
+          typeof messageEvent.data === "string" ? messageEvent.data.length : -1;
+        console.error("Failed to parse SSE progress message", {
+          dataLength,
+          err: err instanceof Error ? err.message : String(err),
+        });
+      }
+    });
 
-  eventSource.addEventListener("error", () => {
-    // Check if it's a real error or just the connection closing
-    if (eventSource.readyState === EventSource.CLOSED) {
-      return;
-    }
-    onError("Research stream connection error");
-    eventSource.close();
-  });
+    es.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        const progress: StreamProgress = {
+          phase: data.phase || "researching",
+          message: data.message || "Processing...",
+          progress: data.progress_percent || 0,
+          details: data.data,
+        };
+        onProgress(progress);
+      } catch {
+        // Same reasoning as above: don't pass the raw event payload to
+        // console; only the length is useful for triage.
+        const dataLength =
+          typeof event.data === "string" ? event.data.length : -1;
+        console.error("Failed to parse SSE message", { dataLength });
+      }
+    };
 
-  eventSource.onerror = () => {
-    if (eventSource.readyState === EventSource.CLOSED) {
-      return;
-    }
-    onError("Research stream connection error");
-    eventSource.close();
-  };
+    es.addEventListener("complete", () => {
+      onComplete();
+      es.close();
+    });
 
-  // Return cleanup function
+    const handleError = () => {
+      if (es.readyState === EventSource.CLOSED) return;
+      es.close();
+      // Token may have expired or session ownership shifted. Re-fetch
+      // session once to pick up a fresh token, then reopen. If the
+      // second attempt also fails, surface to the caller.
+      void reconnectWithFreshToken();
+    };
+    es.addEventListener("error", handleError);
+    es.onerror = handleError;
+  }
+
+  open(streamToken);
+
   return () => {
-    eventSource.close();
+    cancelled = true;
+    if (activeSource) activeSource.close();
   };
 }

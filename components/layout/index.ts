@@ -4,7 +4,6 @@
 
 export { Header } from "./header";
 export { HeaderRedesign } from "./header-redesign";
-export { Sidebar } from "./sidebar";
 export { Logo } from "./logo";
 export { ThemeToggle } from "./theme-toggle";
 export { SearchBar } from "./search-bar";

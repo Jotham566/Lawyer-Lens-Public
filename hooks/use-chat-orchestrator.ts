@@ -618,7 +618,7 @@ export function useChatOrchestrator() {
                                 });
                                 const assistantMessage: ChatMessageType = {
                                     role: "assistant",
-                                    content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}) to continue this contract.`,
+                                    content: `This looks like a contract drafting request. **[Open in the Contract Drafting workspace →](/contracts?session=${contractSession.session_id})** to continue with the full multi-step flow (templates, parties, clauses, download).`,
                                     timestamp: new Date().toISOString(),
                                 };
                                 addMessage(activeConvId, assistantMessage);
@@ -638,7 +638,7 @@ export function useChatOrchestrator() {
                             } catch (contractErr) {
                                 const assistantMessage: ChatMessageType = {
                                     role: "assistant",
-                                    content: `This query appears to be about contract drafting. Visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}) for a guided contract creation experience.`,
+                                    content: `This looks like a contract drafting request. **[Open in the Contract Drafting workspace →](/contracts?q=${encodeURIComponent(text)})** for the full guided flow (templates, parties, clauses, download).`,
                                     timestamp: new Date().toISOString(),
                                 };
                                 addMessage(activeConvId, assistantMessage);
@@ -668,7 +668,7 @@ export function useChatOrchestrator() {
 
                         const assistantMessage: ChatMessageType = {
                             role: "assistant",
-                            content: `I've started a deep research session for your query. The research requires a multi-step process.\n\n**Query:** ${text}\n\n**Status:** ${session.status}\n\nFor the full research experience with clarifying questions and detailed reports, visit the [Research page](/research?session=${session.session_id}).`,
+                            content: `I've started a Deep Research session for you.\n\n**Query:** ${text}\n**Status:** ${session.status}\n\n**[Open in the Deep Research workspace →](/research?session=${session.session_id})** to handle clarifying questions, review the brief, and download the final report.`,
                             timestamp: new Date().toISOString(),
                         };
                         addMessage(activeConvId, assistantMessage);
@@ -760,7 +760,7 @@ export function useChatOrchestrator() {
                         });
                         const assistantMessage: ChatMessageType = {
                             role: "assistant",
-                            content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo continue this contract, visit the [Contract Drafting page](/contracts?session=${contractSession.session_id}).`,
+                            content: `I've started a contract draft for you.\n\n**Your request:** ${text}\n\n**[Open in the Contract Drafting workspace →](/contracts?session=${contractSession.session_id})** to fill in parties, customise clauses, and download the final document.`,
                             timestamp: new Date().toISOString(),
                         };
                         addMessage(activeConvId, assistantMessage);
@@ -788,7 +788,7 @@ export function useChatOrchestrator() {
                         }
                         const assistantMessage: ChatMessageType = {
                             role: "assistant",
-                            content: `I can help you draft a contract. Contract drafting requires gathering specific details about the parties and terms.\n\n**Your request:** ${text}\n\nTo create your contract with a guided process, visit the [Contract Drafting page](/contracts?q=${encodeURIComponent(text)}).`,
+                            content: `I can help you draft this contract.\n\n**Your request:** ${text}\n\n**[Open in the Contract Drafting workspace →](/contracts?q=${encodeURIComponent(text)})** to use the guided multi-step flow with templates, parties, and download.`,
                             timestamp: new Date().toISOString(),
                         };
                         activeConvId = await persistToolMessage(activeConvId, {

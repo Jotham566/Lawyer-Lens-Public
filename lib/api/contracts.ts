@@ -201,22 +201,6 @@ export interface SectionEdit {
 }
 
 /**
- * Get available contract templates
- */
-export async function getContractTemplates(): Promise<ContractTemplate[]> {
-  return apiGet<ContractTemplate[]>("/contracts/templates");
-}
-
-/**
- * Get a specific template by ID
- */
-export async function getContractTemplate(
-  templateId: string
-): Promise<ContractTemplate> {
-  return apiGet<ContractTemplate>(`/contracts/templates/${templateId}`);
-}
-
-/**
  * Create a new contract session
  */
 export async function createContractSession(
@@ -272,46 +256,6 @@ export function getContractDownloadUrl(
   format: "pdf" | "docx" = "pdf"
 ): string {
   return `${getApiBaseUrl()}/contracts/${sessionId}/download?format=${format}`;
-}
-
-/**
- * Stream contract generation progress via SSE
- */
-export function streamContractProgress(
-  sessionId: string,
-  onProgress: (progress: { phase: string; message: string; progress?: number }) => void,
-  onComplete: () => void,
-  onError: (error: string) => void
-): () => void {
-  const url = `${getApiBaseUrl()}/contracts/${sessionId}/stream`;
-  const eventSource = new EventSource(url, { withCredentials: true });
-
-  eventSource.onmessage = (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      onProgress(data);
-    } catch {
-      console.error("Failed to parse SSE message:", event.data);
-    }
-  };
-
-  eventSource.addEventListener("complete", () => {
-    onComplete();
-    eventSource.close();
-  });
-
-  eventSource.onerror = () => {
-    if (eventSource.readyState === EventSource.CLOSED) {
-      return;
-    }
-    onError("Contract stream connection error");
-    eventSource.close();
-  };
-
-  // Return cleanup function
-  return () => {
-    eventSource.close();
-  };
 }
 
 /**
