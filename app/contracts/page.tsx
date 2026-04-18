@@ -61,6 +61,7 @@ import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { ContractTrustBanner } from "@/components/contracts/contract-trust-banner";
+import { LiveProgressShell } from "@/components/canvas/live-progress-shell";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
@@ -1239,56 +1240,40 @@ function ContractsContent() {
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
           sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
-            <div className="space-y-6 p-6">
-                <div>
-                  <h3 className="font-semibold text-lg flex items-center gap-2">
-                    <Loader2 className="h-5 w-5 animate-spin text-primary" />
-                    Generating Draft
-                  </h3>
-                  <p className="text-sm text-muted-foreground mt-2">
-                    {getProgressStep(progress)}
-                  </p>
-                </div>
-
-                <div className="space-y-2 pt-4">
-                  <div className="flex justify-between text-xs text-muted-foreground font-medium">
-                    <span>Progress</span>
-                    <span>{progress}%</span>
-                  </div>
-                  <div className="h-2 w-full bg-muted rounded-full overflow-hidden">
+            <LiveProgressShell
+              title="Generating Draft"
+              statusMessage={getProgressStep(progress)}
+              progressPercent={progress}
+              isOnline={isOnline}
+              isHydrated={isHydrated}
+              wasOffline={wasOffline}
+            >
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Drafting Stages</h3>
+                <div className="space-y-2">
+                  {draftingStages.map((stage, index) => (
                     <div
-                      className="h-full bg-primary transition-all duration-500 ease-out"
-                      style={{ width: `${progress}%` }}
-                    />
-                  </div>
-                </div>
-
-                <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Drafting Stages</h3>
-                  <div className="space-y-2">
-                    {draftingStages.map((stage, index) => (
-                      <div
-                        key={stage.id}
-                        className={cn(
-                          "rounded-2xl border px-4 py-3 text-sm transition-colors",
-                          stage.status === "completed" && "border-primary/20 bg-primary/10",
-                          stage.status === "in_progress" && "border-primary/30 bg-primary/10",
-                          stage.status === "pending" && "surface-inset"
-                        )}
-                      >
-                        <div className="flex items-start justify-between gap-3">
-                          <div className="min-w-0">
-                            <div className="text-xs text-muted-foreground">{index + 1}</div>
-                            <div className="font-medium text-foreground">{stage.title}</div>
-                          </div>
-                          {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 text-primary shrink-0" />}
-                          {stage.status === "in_progress" && <Loader2 className="h-4 w-4 animate-spin text-primary shrink-0" />}
+                      key={stage.id}
+                      className={cn(
+                        "rounded-2xl border px-4 py-3 text-sm transition-colors",
+                        stage.status === "completed" && "border-primary/20 bg-primary/10",
+                        stage.status === "in_progress" && "border-primary/30 bg-primary/10",
+                        stage.status === "pending" && "surface-inset"
+                      )}
+                    >
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <div className="text-xs text-muted-foreground">{index + 1}</div>
+                          <div className="font-medium text-foreground">{stage.title}</div>
                         </div>
+                        {stage.status === "completed" && <CheckCircle2 className="h-4 w-4 shrink-0 text-primary" />}
+                        {stage.status === "in_progress" && <Loader2 className="h-4 w-4 shrink-0 animate-spin text-primary" />}
                       </div>
-                    ))}
-                  </div>
+                    </div>
+                  ))}
                 </div>
-            </div>
+              </div>
+            </LiveProgressShell>
           }
           mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >

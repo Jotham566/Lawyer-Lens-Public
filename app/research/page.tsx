@@ -65,6 +65,7 @@ import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
+import { LiveProgressShell, LiveProgressStat } from "@/components/canvas/live-progress-shell";
 import { ResearchStageStepper } from "@/components/research/research-stage-stepper";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
@@ -2012,107 +2013,74 @@ function ResearchContent() {
           }
           sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
-            <div className="space-y-6 p-5">
+            <LiveProgressShell
+              title="Live Progress"
+              statusMessage={progressMessage}
+              progressPercent={progressPercent}
+              progressMeta={`${completedTopics}/${liveTopics.length || 0} topics closed`}
+              statsGrid={
+                <>
+                  <LiveProgressStat label="Active topics" value={activeTopics} />
+                  <LiveProgressStat
+                    label="Checkpoints"
+                    value={session.graph_checkpoints?.length || 0}
+                  />
+                </>
+              }
+              isOnline={isOnline}
+              isHydrated={isHydrated}
+              wasOffline={wasOffline}
+            >
+              {liveTopics.length > 0 && (
                 <div>
-                  <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Live Progress</h3>
-                  <div className="mt-4 space-y-4">
-                    <p className="text-sm font-medium leading-relaxed text-foreground">{progressMessage}</p>
-
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs font-medium text-muted-foreground">
-                        <span>{progressPercent}% complete</span>
-                        <span>{completedTopics}/{liveTopics.length || 0} topics closed</span>
-                      </div>
-                      <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                  <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Research Topics</h3>
+                  <div className="space-y-2">
+                    {liveTopics.map((topic, index) => {
+                      const topicStatus = liveTopicStatuses[topic.id] || "pending";
+                      return (
                         <div
-                          className="h-full bg-primary transition-all duration-500 ease-out"
-                          style={{ width: `${Math.max(progressPercent, 5)}%` }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="grid grid-cols-2 gap-3 text-xs">
-                      <div className="surface-inset px-3 py-3">
-                        <div className="text-muted-foreground">Active topics</div>
-                        <div className="mt-1 text-lg font-semibold text-foreground">{activeTopics}</div>
-                      </div>
-                      <div className="surface-inset px-3 py-3">
-                        <div className="text-muted-foreground">Checkpoints</div>
-                        <div className="mt-1 text-lg font-semibold text-foreground">{session.graph_checkpoints?.length || 0}</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                {(!isOnline && isHydrated) && (
-                  <div className="rounded-lg border border-border/60 bg-primary/10 p-3 text-xs text-foreground flex items-start gap-2">
-                    <WifiOff className="h-4 w-4 shrink-0 mt-0.5" />
-                    <div>Offline. Run continues in background.</div>
-                  </div>
-                )}
-                
-                {wasOffline && (
-                  <div className="rounded-lg border border-border/60 bg-primary/10 p-3 text-xs text-foreground flex items-start gap-2">
-                    <RefreshCcw className="h-4 w-4 shrink-0 mt-0.5" />
-                    <div>Connection restored. Re-syncing...</div>
-                  </div>
-                )}
-
-                <div className="h-px bg-border my-4" />
-
-                {liveTopics.length > 0 && (
-                  <div>
-                    <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Research Topics</h3>
-                    <div className="space-y-2">
-                      {liveTopics.map((topic, index) => {
-                        const topicStatus = liveTopicStatuses[topic.id] || "pending";
-                        return (
-                          <div
-                            key={topic.id}
-                            className={cn(
-                              "rounded-2xl border px-3 py-3 text-sm transition-colors",
-                              topicStatus === "completed" && "border-primary/20 bg-primary/10",
-                              topicStatus === "in_progress" && "border-primary/20 bg-primary/10",
-                              topicStatus === "pending" && "surface-inset"
-                            )}
-                          >
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="text-xs text-muted-foreground">{index + 1}</div>
-                                <div className="truncate font-medium text-foreground" title={topic.title}>{topic.title}</div>
-                              </div>
-                              <Badge
-                                variant="outline"
-                                className={cn(
-                                  "rounded-full text-[10px]",
-                                  topicStatus === "completed" && "border-primary/30 text-primary",
-                                  topicStatus === "in_progress" && "border-primary/30 text-primary"
-                                )}
-                              >
-                                {topicStatus.replace("_", " ")}
-                              </Badge>
+                          key={topic.id}
+                          className={cn(
+                            "rounded-2xl border px-3 py-3 text-sm transition-colors",
+                            topicStatus === "completed" && "border-primary/20 bg-primary/10",
+                            topicStatus === "in_progress" && "border-primary/20 bg-primary/10",
+                            topicStatus === "pending" && "surface-inset"
+                          )}
+                        >
+                          <div className="flex items-start justify-between gap-3">
+                            <div className="min-w-0">
+                              <div className="text-xs text-muted-foreground">{index + 1}</div>
+                              <div className="truncate font-medium text-foreground" title={topic.title}>{topic.title}</div>
                             </div>
+                            <Badge
+                              variant="outline"
+                              className={cn(
+                                "rounded-full text-[10px]",
+                                topicStatus === "completed" && "border-primary/30 text-primary",
+                                topicStatus === "in_progress" && "border-primary/30 text-primary"
+                              )}
+                            >
+                              {topicStatus.replace("_", " ")}
+                            </Badge>
                           </div>
-                        );
-                      })}
-                    </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              <div>
+                <h3 className="mb-3 text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Execution Trace</h3>
+                {latestCheckpoint && (
+                  <div className="mb-3 rounded-2xl border border-border/60 bg-primary/10 px-3 py-3 text-xs">
+                    <span className="text-muted-foreground">Current node: </span>
+                    <span className="font-medium">{latestCheckpoint.node}</span>
                   </div>
                 )}
-
-                <div>
-                   <h3 className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground mb-3">Execution Trace</h3>
-                   {latestCheckpoint && (
-                     <div className="mb-3 rounded-2xl border border-border/60 bg-primary/10 px-3 py-3 text-xs">
-                       <span className="text-muted-foreground">Current node: </span>
-                       <span className="font-medium">{latestCheckpoint.node}</span>
-                     </div>
-                   )}
-                   <div className="relative">
-                     {/* Using the existing renderCheckpointList which renders a vertical timeline */}
-                     {renderCheckpointList(session.graph_checkpoints)}
-                   </div>
-                </div>
-            </div>
+                <div className="relative">{renderCheckpointList(session.graph_checkpoints)}</div>
+              </div>
+            </LiveProgressShell>
           }
           mainClassName="workspace-main-surface p-5 md:p-8 lg:p-10"
         >
