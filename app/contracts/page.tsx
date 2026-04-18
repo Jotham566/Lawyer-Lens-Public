@@ -1388,14 +1388,12 @@ function ContractsContent() {
             ) : undefined
           }
           headerMeta={
-            !isComplete ? (
-              <>
-                {draftSaveState === "saving" && <span className="hidden animate-pulse text-xs text-muted-foreground sm:inline-block">Saving...</span>}
-                {draftSaveState === "saved" && <span className="hidden text-xs text-muted-foreground sm:inline-block">Saved to cloud</span>}
-                {draftSaveState === "rate_limited" && <span className="hidden text-xs text-muted-foreground sm:inline-block">Autosave paused briefly</span>}
-                {draftSaveState === "error" && <span className="hidden text-xs text-destructive sm:inline-block">Save failed</span>}
-              </>
-            ) : null
+            <div className="flex items-center gap-2 text-xs text-muted-foreground">
+              {draftSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
+              {draftSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+              {draftSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
+              {draftSaveState === "error" && <span className="text-destructive">Save failed</span>}
+            </div>
           }
           headerActions={
             !isComplete ? (
@@ -1598,14 +1596,11 @@ function ContractsContent() {
                   ) : undefined
                 }
                 toolbar={
-                  !isComplete ? (
-                    <RichTextToolbar editor={contractEditor} disabled={!contractEditor && !activeSection} />
-                  ) : undefined
+                  <RichTextToolbar editor={contractEditor} disabled={!contractEditor && !activeSection} />
                 }
               >
                 <EditableDocumentCanvas
                   html={contractDocumentHtml}
-                  readOnly={isComplete}
                   onEditorReady={setContractEditor}
                   onSectionFocus={setActiveSection}
                   onChange={(html) => {
