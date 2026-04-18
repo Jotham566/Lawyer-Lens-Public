@@ -2455,15 +2455,24 @@ function ResearchContent() {
     );
   }
 
-  // Complete status but report still loading
+  // Status is complete on the server but the report payload hasn't
+  // arrived yet (or its fetch failed silently from the polling/SSE
+  // path). Give the user real escape hatches: retry the fetch, jump to
+  // history, or back to chat. Without these the page can sit on a
+  // spinner forever if getResearchReport throws after status flipped.
   if (session?.status === "complete" && !report) {
     return (
       <TooltipProvider>
         <div className="container mx-auto max-w-3xl px-4 py-8">
-          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground mb-6">
-            <ArrowLeft className="h-4 w-4" />
-            Back to Chat
-          </Link>
+          <div className="mb-6 flex items-center justify-between gap-4">
+            <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              <ArrowLeft className="h-4 w-4" />
+              Back to Chat
+            </Link>
+            <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+              View History
+            </Link>
+          </div>
 
           <Card>
             <CardContent className="pt-6">
@@ -2471,9 +2480,31 @@ function ResearchContent() {
                 <div className="flex h-16 w-16 items-center justify-center rounded-full bg-primary/10">
                   <Loader2 className="h-8 w-8 text-primary animate-spin" />
                 </div>
-                <h3 className="mt-4 font-semibold text-lg">Loading Report...</h3>
-                <p className="mt-2 text-sm text-muted-foreground max-w-md">
-                  Your research is complete. Loading the report...
+                <h3 className="mt-4 font-semibold text-lg">Finalising your report</h3>
+                <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                  Research is finished. Putting the report together for the editor.
+                  This usually takes a few seconds.
+                </p>
+                <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                  <Button
+                    variant="default"
+                    size="sm"
+                    onClick={() => sessionIdParam && loadSession(sessionIdParam)}
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <><Loader2 className="mr-2 h-4 w-4 animate-spin" /> Retrying</>
+                    ) : (
+                      <><RefreshCcw className="mr-2 h-4 w-4" /> Retry now</>
+                    )}
+                  </Button>
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href="/research/history">Open history</Link>
+                  </Button>
+                </div>
+                <p className="mt-4 text-xs text-muted-foreground">
+                  Stuck for more than a minute? Use Retry now or Open history.
+                  Your work is saved on the server.
                 </p>
               </div>
             </CardContent>
