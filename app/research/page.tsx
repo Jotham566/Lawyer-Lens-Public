@@ -1637,6 +1637,10 @@ function ResearchContent() {
   if (isLoading && !session) {
     return (
       <div className="container mx-auto max-w-3xl px-4 py-8">
+        <Link href="/chat" className="mb-6 inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+          <ArrowLeft className="h-4 w-4" />
+          Back to Chat
+        </Link>
         <Skeleton className="h-8 w-48 mb-8" />
         <Skeleton className="h-64 w-full" />
       </div>
