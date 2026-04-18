@@ -111,6 +111,16 @@ export interface ResearchReport {
   publisher_payload?: ResearchPublisherPayload | null;
   generated_at: string;
   total_tokens_used: number;
+  // Phase A/4 (2026-04-18): insufficient-info transparency. Topic IDs
+  // for which the supervisor's coverage evaluation could not produce
+  // useful results (zero hits, all rejected, or LLM evaluator crashed
+  // and fell back). Frontend renders a yellow banner so users know
+  // NOT to act on those sections without independent verification.
+  weak_topics?: string[];
+  // Section IDs derived from weak_topics by joining against each
+  // section's topic_ids. Frontend renders an inline banner above
+  // each section in this list.
+  weak_sections?: string[];
   research_audit?: ResearchAudit | null;
   execution_trace?: ResearchExecutionTraceEntry[] | null;
   execution_plan?: ResearchExecutionPlan | null;
@@ -199,6 +209,10 @@ export interface ResearchSection {
   citations: string[];
   evidence_ids?: string[];
   claim_ids?: string[];
+  // Phase A/5 (2026-04-18): topic IDs the section covers, preserved
+  // from the planning stage. Lets the UI map weak_topics onto specific
+  // sections for the inline banner.
+  topic_ids?: string[];
   order: number;
 }
 

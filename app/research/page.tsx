@@ -22,6 +22,7 @@ import {
   WifiOff,
   RefreshCcw,
   Info,
+  AlertTriangle,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -66,6 +67,7 @@ import { useResearchSessionsStore } from "@/lib/stores";
 import { FeatureGate } from "@/components/entitlements/feature-gate";
 import { useAuth, useRequireAuth } from "@/components/providers";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
+import { WeakResearchBanner } from "@/components/research/weak-research-banner";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
 import { RichTextToolbar } from "@/components/canvas/rich-text-toolbar";
 import { useEntitlements } from "@/hooks/use-entitlements";
@@ -2320,21 +2322,47 @@ function ResearchContent() {
                   >
                     Executive Summary
                   </button>
-                  {report.sections.map((section, index) => (
-                    <button
-                      key={section.id}
-                      onClick={() => scrollToSection(section.id)}
-                      className={cn(
-                        "truncate",
-                        activeReportSection === section.id
-                          ? surfaceClasses.sidebarNavButtonActive
-                          : surfaceClasses.sidebarNavButton
-                      )}
-                      title={editedReportSectionTitles[section.id] ?? section.title}
-                    >
-                      {index + 1}. {editedReportSectionTitles[section.id] ?? section.title}
-                    </button>
-                  ))}
+                  {report.sections.map((section, index) => {
+                    // Phase A/4 (2026-04-18): mark sections the supervisor
+                    // flagged as having insufficient authority. The screen-
+                    // reader-friendly aria-label spells out the reason so
+                    // the warning isn't only a visual cue.
+                    const isWeak = (report.weak_sections ?? []).includes(section.id);
+                    return (
+                      <button
+                        key={section.id}
+                        onClick={() => scrollToSection(section.id)}
+                        className={cn(
+                          "truncate",
+                          activeReportSection === section.id
+                            ? surfaceClasses.sidebarNavButtonActive
+                            : surfaceClasses.sidebarNavButton
+                        )}
+                        title={
+                          isWeak
+                            ? `${editedReportSectionTitles[section.id] ?? section.title} — limited authority`
+                            : editedReportSectionTitles[section.id] ?? section.title
+                        }
+                        aria-label={
+                          isWeak
+                            ? `${editedReportSectionTitles[section.id] ?? section.title} (limited authority)`
+                            : undefined
+                        }
+                      >
+                        <span className="inline-flex items-center gap-1.5">
+                          {isWeak && (
+                            <AlertTriangle
+                              className="h-3 w-3 shrink-0 text-warning-fg"
+                              aria-hidden="true"
+                            />
+                          )}
+                          <span>
+                            {index + 1}. {editedReportSectionTitles[section.id] ?? section.title}
+                          </span>
+                        </span>
+                      </button>
+                    );
+                  })}
                   <button
                     onClick={() => scrollToSection("sources-endnotes")}
                     className={cn(
@@ -2376,6 +2404,17 @@ function ResearchContent() {
                 <WifiOff className="mt-0.5 h-5 w-5 shrink-0" />
                 <div>You are offline. Your report edits are cached locally and will sync when reconnected.</div>
               </div>
+            )}
+            {/* Phase A/4 (2026-04-18): report-level transparency banner.
+                Renders only when the supervisor flagged at least one
+                topic as having insufficient supporting authority. The
+                banner sits ABOVE the document so users see it before
+                acting on the report content. */}
+            {report.weak_topics && report.weak_topics.length > 0 && (
+              <WeakResearchBanner
+                variant="report"
+                weakTopicCount={report.weak_topics.length}
+              />
             )}
             <DocumentPanel
               title={editedReportTitle || report.title}
