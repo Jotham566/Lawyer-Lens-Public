@@ -80,36 +80,6 @@ const tierConfig: Record<
   enterprise: { label: "Enterprise", color: "text-primary", icon: Crown },
 };
 
-/* ────────────────────────────────────────────────────────────
-   Quick-access tools
-   ──────────────────────────────────────────────────────────── */
-const tools = [
-  {
-    title: "My Library",
-    description: "Saved documents & bookmarks",
-    href: "/library",
-    icon: BookMarked,
-  },
-  {
-    title: "Deep Research",
-    description: "AI-powered research sessions",
-    href: "/research",
-    icon: FlaskConical,
-  },
-  {
-    title: "Contract Drafting",
-    description: "Draft and manage contracts",
-    href: "/contracts",
-    icon: PenTool,
-  },
-  {
-    title: "Activity Log",
-    description: "Your recent actions & history",
-    href: "/settings/activity",
-    icon: Clock,
-  },
-];
-
 /* ════════════════════════════════════════════════════════════
    PAGE COMPONENT
    ════════════════════════════════════════════════════════════ */
@@ -134,8 +104,10 @@ export default function WorkspacePage() {
   // Replaces the prior research-only localStorage view that left a
   // blank "Recent Activity" panel for any user who'd only used contracts.
   useEffect(() => {
+    // Initial loading state defaults to true via useState; no need to
+    // re-set it here. ESLint react-you-might-not-need-an-effect rule
+    // flags the synchronous setState as a cascading-render risk.
     let cancelled = false;
-    setRecentLoading(true);
     Promise.allSettled([
       getMyResearchSessions({ limit: 8 }),
       getMyContracts({ limit: 8 }),
@@ -177,7 +149,7 @@ export default function WorkspacePage() {
         <div>
           <h1 className="ll-heading-xl">My Workspace</h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            Your research, documents, and usage — all in one place.
+            Recent runs, saved legislation, and usage — all in one place.
           </p>
         </div>
         <Badge
@@ -189,32 +161,13 @@ export default function WorkspacePage() {
         </Badge>
       </div>
 
-      {/* ── Quick Tools Grid ── */}
-      <div className="mb-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        {tools.map((tool) => (
-          <Link key={tool.href} href={tool.href} className="group">
-            <div
-              className={cn(
-                "flex items-start gap-4 rounded-xl border border-transparent bg-card p-5 shadow-soft ll-transition hover:-translate-y-0.5 hover:shadow-floating dark:border-glass",
-                "hover:border-brand-gold/30"
-              )}
-            >
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-surface-container-high text-primary">
-                <tool.icon className="h-5 w-5" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <h3 className="text-sm font-semibold">{tool.title}</h3>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  {tool.description}
-                </p>
-              </div>
-              <ChevronRight className="mt-0.5 h-4 w-4 text-muted-foreground/40 ll-transition group-hover:text-brand-gold" />
-            </div>
-          </Link>
-        ))}
-      </div>
-
-      {/* ── Two Column Layout ── */}
+      {/* ── Two Column Layout ──
+          Used to lead with a 4-tile quick-access grid (My Library /
+          Deep Research / Contract Drafting / Activity Log). The tiles
+          duplicated the sidebar nav AND the same destinations are one
+          click away in the Recent Activity feed below, so they were
+          taking up ~120px of vertical real estate without adding
+          information. Dropped per the 2026-04-19 walkthrough audit. */}
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Recent Activity — 2 cols */}
         <div className="lg:col-span-2">
@@ -404,12 +357,20 @@ export default function WorkspacePage() {
             )}
           </div>
 
-          {/* Saved Documents */}
+          {/* Saved Legislation
+              Honest naming. The "library" only holds bookmarks of
+              legislation sections (added via the bookmark icon in
+              the Laws of Uganda hierarchy renderer). It does NOT
+              store research reports or contract drafts — those live
+              in their own /research/history and /contracts/history
+              surfaces. The previous "Saved Documents" title implied
+              the library was the home for everything, which was
+              misleading. */}
           <div className="rounded-xl border border-transparent bg-card p-5 shadow-soft dark:border-glass">
             <div className="mb-3 flex items-center justify-between">
               <h3 className="flex items-center gap-2 text-sm font-semibold">
                 <BookMarked className="h-4 w-4 text-muted-foreground" />
-                Saved Documents
+                Saved Legislation
               </h3>
               {savedDocuments.length > 0 && (
                 <Badge variant="secondary" className="text-xs">
@@ -438,7 +399,7 @@ export default function WorkspacePage() {
                     href="/library"
                     className="flex items-center justify-center gap-1 p-2 text-xs text-brand-gold ll-transition hover:text-brand-gold-soft"
                   >
-                    View all {savedDocuments.length} documents
+                    View all {savedDocuments.length} bookmarks
                     <ChevronRight className="h-3 w-3" />
                   </Link>
                 )}
@@ -447,13 +408,16 @@ export default function WorkspacePage() {
               <div className="py-6 text-center">
                 <BookMarked className="mx-auto h-6 w-6 text-muted-foreground/30" />
                 <p className="mt-2 text-xs text-muted-foreground">
-                  No saved documents
+                  No bookmarks yet
+                </p>
+                <p className="mt-1 px-2 text-[11px] leading-snug text-muted-foreground/80">
+                  Browse the Laws of Uganda and bookmark sections you reference often.
                 </p>
                 <Link
                   href="/legislation"
-                  className="mt-1 inline-block text-xs text-brand-gold ll-transition hover:text-brand-gold-soft"
+                  className="mt-2 inline-block text-xs text-brand-gold ll-transition hover:text-brand-gold-soft"
                 >
-                  Browse documents
+                  Browse legislation
                 </Link>
               </div>
             )}

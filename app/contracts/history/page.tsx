@@ -120,8 +120,9 @@ export default function ContractHistoryPage() {
   });
 
   useEffect(() => {
+    // Initial isLoading state defaults to true via useState; no need
+    // to re-set it here (avoids the cascading-render lint warning).
     let cancelled = false;
-    setIsLoading(true);
     getMyContracts({ limit: 100 })
       .then((items) => {
         if (cancelled) return;

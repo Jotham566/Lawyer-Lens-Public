@@ -1617,10 +1617,18 @@ function ResearchContent() {
           title="Research Workspace"
           titleIcon={<LayoutPanelLeft className="h-4 w-4 text-primary" />}
           headerMeta={
-            <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <Clock className="h-4 w-4" />
-              View History
-            </Link>
+            <div className="flex items-center gap-3">
+              {/* Pre-session render: stepper points at the first stage so
+                  users see the full flow ahead of them. Mirrors the
+                  contracts kickoff which surfaces phase="intake" the
+                  same way. Without this, /research and /contracts
+                  kickoffs were visually asymmetric. */}
+              <ResearchStageStepper status="clarifying" compact />
+              <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <Clock className="h-4 w-4" />
+                View History
+              </Link>
+            </div>
           }
           headerActions={
             <Button
