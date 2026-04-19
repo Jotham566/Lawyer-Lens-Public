@@ -34,10 +34,31 @@ import {
 import { cn } from "@/lib/utils";
 import { useAuth, useAuthModal } from "@/components/providers";
 
-interface SaveToCollectionButtonProps {
-    documentId: string;
-    sectionId?: string | null;
-    itemType: "document" | "section" | "excerpt";
+/**
+ * The button can save either a document bookmark (legislation
+ * section) OR a research-report bookmark (a completed Deep Research
+ * session). Callers pass exactly one of `documentId` /
+ * `researchSessionId` — TypeScript-side enforcement lives in the
+ * exported union type.
+ */
+type SaveToCollectionButtonProps = SharedProps &
+    (
+        | {
+              documentId: string;
+              researchSessionId?: undefined;
+              sectionId?: string | null;
+              itemType: "document" | "section" | "excerpt";
+          }
+        | {
+              documentId?: undefined;
+              researchSessionId: string;
+              sectionId?: undefined;
+              /** Always "research_report" for this branch — fixed by backend. */
+              itemType?: "research_report";
+          }
+    );
+
+interface SharedProps {
     meta?: CollectionItemMeta;
     trigger?: React.ReactNode;
     variant?: "default" | "outline" | "ghost" | "secondary";
@@ -48,6 +69,7 @@ interface SaveToCollectionButtonProps {
 
 export function SaveToCollectionButton({
     documentId,
+    researchSessionId,
     sectionId,
     itemType,
     meta,
@@ -117,8 +139,12 @@ export function SaveToCollectionButton({
 
             await collectionsApi.addItem(targetCollectionId, {
                 document_id: documentId,
+                research_session_id: researchSessionId,
                 section_id: sectionId || undefined,
-                item_type: itemType,
+                // Backend will overwrite to "research_report" when
+                // research_session_id is set, but we send the
+                // accurate type explicitly for the document path.
+                item_type: itemType ?? (researchSessionId ? "research_report" : "document"),
                 notes: notes.trim() || undefined,
                 meta: meta,
             });

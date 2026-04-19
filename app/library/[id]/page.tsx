@@ -13,7 +13,8 @@ import {
     Loader2,
     BookOpen,
     ScrollText,
-    Gavel
+    Gavel,
+    FlaskConical,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
@@ -217,16 +218,24 @@ export default function CollectionDetailPage(props: PageProps) {
                     </div>
                 ) : (
                     collection.items?.map((item) => {
-                        const Icon = getIconForType(item.meta?.document_type);
-                        // Construct target URL with focus on section if available
-                        const href = `/document/${item.document_id}${item.section_id ? `?section=${item.section_id}` : ''}`;
+                        // Two item kinds live in the same list: legislation
+                        // bookmarks (document_id set) and saved research
+                        // reports (research_session_id set, item_type ===
+                        // "research_report"). Pick icon, link target, and
+                        // type label per kind so the user can tell them apart.
+                        const isResearch = item.item_type === "research_report";
+                        const Icon = isResearch ? FlaskConical : getIconForType(item.meta?.document_type);
+                        const href = isResearch
+                            ? `/research?session=${item.meta?.session_id ?? ""}`
+                            : `/document/${item.document_id}${item.section_id ? `?section=${item.section_id}` : ''}`;
+                        const typeLabel = isResearch ? "Research report" : item.item_type;
 
                         return (
                             <Card key={item.id} className={cn("group", surfaceClasses.pagePanelInteractive)}>
                                 <div className="flex items-start p-6">
                                     <div className="flex-shrink-0 mr-4 mt-1">
                                         <div className="flex h-10 w-10 items-center justify-center rounded-lg border border-glass bg-surface-container-high">
-                                            <Icon className="ll-icon-muted h-5 w-5" />
+                                            <Icon className={cn("h-5 w-5", isResearch ? "text-primary" : "ll-icon-muted")} />
                                         </div>
                                     </div>
                                     <div className="flex-1 min-w-0">
@@ -235,16 +244,21 @@ export default function CollectionDetailPage(props: PageProps) {
                                                 <Link href={href} className="block">
                                                     <h3 className="font-semibold leading-tight">
                                                         {/* Use snippet_label if available (includes doc + section path), otherwise fall back to title */}
-                                                        {item.meta?.snippet_label || item.meta?.title || "Untitled Document"}
+                                                        {item.meta?.snippet_label || item.meta?.title || (isResearch ? "Untitled research" : "Untitled Document")}
                                                     </h3>
                                                 </Link>
                                                 <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                                                    <Badge variant="outline" className="text-xs capitalize">
-                                                        {item.item_type}
+                                                    <Badge variant="outline" className="text-xs">
+                                                        {typeLabel}
                                                     </Badge>
                                                     <span>•</span>
                                                     <span>Added {formatDistanceToNow(new Date(item.created_at), { addSuffix: true })}</span>
                                                 </div>
+                                                {isResearch && typeof item.meta?.session_query === "string" && item.meta.session_query && (
+                                                    <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">
+                                                        {item.meta.session_query}
+                                                    </p>
+                                                )}
                                                 {item.notes && (
                                                     <div className="mt-3 text-sm text-muted-foreground bg-muted/50 p-3 rounded-md italic">
                                                         &quot;{item.notes}&quot;

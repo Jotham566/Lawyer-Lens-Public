@@ -69,6 +69,7 @@ import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { LiveProgressShell, LiveProgressStat } from "@/components/canvas/live-progress-shell";
 import { ResearchStageStepper } from "@/components/research/research-stage-stepper";
 import { StageRollbackDialog } from "@/components/research/stage-rollback-dialog";
+import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
 import { WeakResearchBanner } from "@/components/research/weak-research-banner";
@@ -2443,12 +2444,25 @@ function ResearchContent() {
               titleIcon={<FileText className="h-4 w-4 text-primary" />}
               badge={<Badge variant="secondary" className="rounded-full">Contents</Badge>}
               actions={
-                <Button variant="outline" size="sm" asChild className="rounded-full">
-                  <a href={getResearchDownloadUrl(session.session_id)} download>
-                    <Download className="mr-2 h-4 w-4" />
-                    Export to Word
-                  </a>
-                </Button>
+                <div className="flex items-center gap-2">
+                  <SaveToCollectionButton
+                    researchSessionId={session.session_id}
+                    meta={{
+                      title: editedReportTitle || report.title,
+                      session_query: session.research_brief?.original_query || session.query,
+                    }}
+                    variant="outline"
+                    size="sm"
+                    className="rounded-full"
+                    showLabel
+                  />
+                  <Button variant="outline" size="sm" asChild className="rounded-full">
+                    <a href={getResearchDownloadUrl(session.session_id)} download>
+                      <Download className="mr-2 h-4 w-4" />
+                      Export to Word
+                    </a>
+                  </Button>
+                </div>
               }
               toolbar={<RichTextToolbar editor={reportEditor} disabled={!reportEditor && !activeReportSection} />}
             >

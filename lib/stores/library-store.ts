@@ -100,9 +100,13 @@ async function ensureDefaultCollection(): Promise<string | null> {
 }
 
 /**
- * Convert backend CollectionItem to local SavedDocument.
+ * Convert backend CollectionItem to local SavedDocument. Returns null
+ * for research-report items — those have no document_id and don't
+ * belong in the SavedDocument shape (they're handled by a separate
+ * /research/history surface). Filtering happens at the call site.
  */
-function collectionItemToSaved(item: CollectionItem): SavedDocument {
+function collectionItemToSaved(item: CollectionItem): SavedDocument | null {
+  if (!item.document_id) return null;
   return {
     id: item.document_id,
     humanReadableId: item.meta?.identifier || "",
@@ -184,12 +188,19 @@ export const useLibraryStore = create<LibraryState>()(
           const collection = await collectionsApi.get(collectionId);
           const backendItems = collection.items || [];
 
-          // Merge: backend items are authoritative for cross-device sync
+          // Merge: backend items are authoritative for cross-device sync.
+          // Filter to document items only — research-report items live
+          // in the same collection_items table now but are surfaced via
+          // /research/history, not SavedDocument.
           const localDocs = get().savedDocuments;
-          const backendDocIds = new Set(backendItems.map((i) => i.document_id));
+          const backendDocIds = new Set(
+            backendItems.map((i) => i.document_id).filter((id): id is string => Boolean(id))
+          );
 
-          // Convert backend items to SavedDocuments
-          const backendSaved = backendItems.map(collectionItemToSaved);
+          // Convert backend items to SavedDocuments (drops research items via the null filter)
+          const backendSaved = backendItems
+            .map(collectionItemToSaved)
+            .filter((doc): doc is SavedDocument => doc !== null);
 
           // Merge: keep backend items + local-only items
           const merged: SavedDocument[] = [...backendSaved];

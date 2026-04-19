@@ -14,9 +14,14 @@ export interface CollectionItemMeta {
 export interface CollectionItem {
     id: string;
     collection_id: string;
-    document_id: string;
+    /** Set when this item is a legislation bookmark. Mutually
+     * exclusive with research_session_id (DB-level CHECK constraint
+     * ck_collection_items_one_target). */
+    document_id: string | null;
+    /** Set when this item is a saved research-report bookmark. */
+    research_session_id: string | null;
     section_id: string | null;
-    item_type: "document" | "section" | "excerpt";
+    item_type: "document" | "section" | "excerpt" | "research_report";
     notes: string | null;
     meta: CollectionItemMeta;
     created_at: string;
@@ -48,9 +53,13 @@ export interface UpdateCollectionRequest {
 }
 
 export interface AddCollectionItemRequest {
-    document_id: string;
+    /** For legislation bookmarks. Mutually exclusive with
+     * research_session_id — backend rejects requests with both. */
+    document_id?: string;
+    /** For research-report bookmarks. */
+    research_session_id?: string;
     section_id?: string;
-    item_type: "document" | "section" | "excerpt";
+    item_type: "document" | "section" | "excerpt" | "research_report";
     notes?: string;
     meta?: CollectionItemMeta;
 }
