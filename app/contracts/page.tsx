@@ -50,6 +50,7 @@ import {
   submitContractReview,
   saveContractDraft,
   getContractDownloadUrl,
+  resetContractToStage,
   type ContractSession,
   type ContractRequirements,
   type ContractQuestion,
@@ -62,6 +63,7 @@ import { EditableDocumentCanvas } from "@/components/canvas/editable-document-ca
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { ContractTrustBanner } from "@/components/contracts/contract-trust-banner";
 import { ContractStageStepper } from "@/components/contracts/contract-stage-stepper";
+import { StageRollbackDialog as ContractStageRollbackDialog } from "@/components/contracts/stage-rollback-dialog";
 import { LiveProgressShell } from "@/components/canvas/live-progress-shell";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
@@ -341,6 +343,9 @@ function ContractsContent() {
   // 404/403 from /contracts/{id} → render a calm "not found" empty
   // state instead of the loud "Contract Generation Failed" pane.
   const [sessionNotFound, setSessionNotFound] = useState(false);
+  // Stage rollback (clickable stepper). target=null → modal closed.
+  const [stageRollbackTarget, setStageRollbackTarget] = useState<"requirements" | null>(null);
+  const [isRollingBack, setIsRollingBack] = useState(false);
 
   // sr-only live regions for screen-reader users. Phase channel is
   // unthrottled (drafting → review → complete); progress is bucketed
@@ -553,6 +558,35 @@ function ContractsContent() {
       setIsLoading(false);
     }
   }, [activeOrganizationId, initialDescription, router, user?.id]);
+
+  const requestStageRollback = useCallback((target: "requirements") => {
+    setStageRollbackTarget(target);
+  }, []);
+
+  const confirmStageRollback = useCallback(async () => {
+    const target = stageRollbackTarget;
+    if (!target || !session?.session_id) return;
+    setIsRollingBack(true);
+    try {
+      const refreshed = await resetContractToStage(session.session_id, target);
+      setSession(refreshed);
+      setError(null);
+      // Clear staged draft edits so the next render shows the
+      // refreshed requirements state cleanly. Without this a user who
+      // edited the draft and then rolled back would briefly see
+      // stale section content.
+      setDraftTitle("");
+      setSectionTitles({});
+      setSectionEdits({});
+      setSectionEditsRich({});
+      setStageRollbackTarget(null);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not reset stage";
+      setError(message);
+    } finally {
+      setIsRollingBack(false);
+    }
+  }, [session?.session_id, stageRollbackTarget]);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -1424,7 +1458,11 @@ function ContractsContent() {
           }
           headerMeta={
             <div className="flex items-center gap-3">
-              <ContractStageStepper phase={session.phase} compact />
+              <ContractStageStepper
+                phase={session.phase}
+                compact
+                onStageClick={requestStageRollback}
+              />
               <div className="flex items-center gap-2 text-xs text-muted-foreground">
                 {draftSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
                 {draftSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
@@ -1684,6 +1722,12 @@ function ContractsContent() {
             onSuccess={() => {}}
           />
         </DocumentWorkspaceShell>
+        <ContractStageRollbackDialog
+          target={stageRollbackTarget}
+          loading={isRollingBack}
+          onConfirm={confirmStageRollback}
+          onCancel={() => setStageRollbackTarget(null)}
+        />
       </TooltipProvider>
     );
   }

@@ -97,6 +97,7 @@ export {
   submitContractReview,
   saveContractDraft,
   getContractDownloadUrl,
+  resetContractToStage,
   getMyContracts,
   getEnhancedTemplates,
   saveContractAsTemplate,

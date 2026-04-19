@@ -259,6 +259,23 @@ export function getContractDownloadUrl(
 }
 
 /**
+ * Roll a contract session backwards to the requirements stage so the
+ * user can refine parties / jurisdiction / key terms and re-run draft
+ * generation without losing the brief or starting from scratch.
+ *
+ * Mirrors resetResearchToStage. Backend rejects (409) during
+ * drafting and (400) when already at or before requirements.
+ */
+export async function resetContractToStage(
+  sessionId: string,
+  targetStage: "requirements",
+): Promise<ContractSession> {
+  return apiPost<ContractSession>(`/contracts/${sessionId}/reset-to-stage`, {
+    target_stage: targetStage,
+  });
+}
+
+/**
  * Get user's past contracts for cloning
  */
 export async function getMyContracts(
