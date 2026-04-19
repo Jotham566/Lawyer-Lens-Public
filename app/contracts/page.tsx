@@ -338,6 +338,9 @@ function ContractsContent() {
   const [draftSaveState, setDraftSaveState] = useState<"idle" | "saving" | "saved" | "error" | "rate_limited">("idle");
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // 404/403 from /contracts/{id} → render a calm "not found" empty
+  // state instead of the loud "Contract Generation Failed" pane.
+  const [sessionNotFound, setSessionNotFound] = useState(false);
 
   // sr-only live regions for screen-reader users. Phase channel is
   // unthrottled (drafting → review → complete); progress is bucketed
@@ -507,6 +510,7 @@ function ContractsContent() {
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
     setError(null);
+    setSessionNotFound(false);
     try {
       const sessionData = await getContractSession(sessionId);
       autoResumedSessionIdRef.current = null;
@@ -535,7 +539,16 @@ function ContractsContent() {
           return;
         }
       }
-      setError(err instanceof Error ? err.message : "Failed to load session");
+      // Render the calm "session not found" empty-state for 404/403
+      // instead of the loud "Contract Generation Failed" pane that
+      // used to dump the raw API error string into the destructive
+      // card. Genuine failures (5xx, network, etc.) still go to that
+      // pane via setError.
+      if (isMissingOrForbidden) {
+        setSessionNotFound(true);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to load session");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -1692,6 +1705,55 @@ function ContractsContent() {
           </Card>
         </div>
       </TooltipProvider>
+    );
+  }
+
+  // 404/403 — session missing for this user (deleted, wrong account,
+  // stale link). Calm empty-state with proper escape hatches instead
+  // of the loud "Contract Generation Failed" destructive pane.
+  if (sessionNotFound) {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Chat
+          </Link>
+          <Link href="/contracts/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            View History
+          </Link>
+        </div>
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <FileText className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">Contract not found</h3>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                This contract may have been deleted, or it belongs to a different account.
+                Open your history to find an existing draft, or start a fresh one.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Button asChild>
+                  <Link href="/contracts/history">Open history</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSession(null);
+                    setError(null);
+                    setSessionNotFound(false);
+                    router.replace("/contracts");
+                  }}
+                >
+                  Start new contract
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 

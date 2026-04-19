@@ -25,6 +25,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { APIError } from "@/lib/api/client";
 import {
     collectionsApi,
     type Collection,
@@ -129,7 +130,20 @@ export function SaveToCollectionButton({
             setNewCollectionName("");
             setIsCreatingNew(false);
         } catch (error) {
-            toast.error("Failed to save item");
+            // Surface a useful reason instead of a generic toast.
+            // 404 here almost always means the referenced document
+            // isn't in the documents table — typically a stale link
+            // or a citation pointing at a deleted record. The
+            // generic "Failed to save item" left users guessing.
+            if (error instanceof APIError && error.status === 404) {
+                toast.error(
+                    "Couldn't save this item — the source document isn't available in your library."
+                );
+            } else if (error instanceof APIError && error.status === 403) {
+                toast.error("You don't have permission to add items to this collection.");
+            } else {
+                toast.error("Failed to save item. Please try again.");
+            }
             console.error(error);
         } finally {
             setSaving(false);

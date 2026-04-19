@@ -823,6 +823,11 @@ function ResearchContent() {
   const [clarifyAnswers, setClarifyAnswers] = useState<ClarifyAnswers>({});
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Distinct from `error`: a 404 from /research/{id} means the session
+  // doesn't exist for this user (deleted, wrong account, stale link).
+  // We render a calm empty-state for this case instead of the loud
+  // "Research Failed" pane that was scaring users.
+  const [sessionNotFound, setSessionNotFound] = useState(false);
   const [progress, setProgress] = useState<StreamProgress | null>(null);
   const [isResuming, setIsResuming] = useState(false);
 
@@ -1183,6 +1188,10 @@ function ResearchContent() {
 
   const loadSession = useCallback(async (sessionId: string) => {
     setIsLoading(true);
+    // Reset prior load errors so a retry doesn't carry forward the
+    // stale not-found / failure state from an earlier attempt.
+    setSessionNotFound(false);
+    setError(null);
     try {
       const sessionData = await getResearchSession(sessionId);
 
@@ -1222,7 +1231,19 @@ function ResearchContent() {
         reportReady: sessionData.status === "complete",
       });
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load session");
+      // Treat 404 as "session not found" rather than "research failed".
+      // The previous catch dumped the raw API error string (including a
+      // "[/research/<uuid>]" debug path appended by APIError) into the
+      // generic Research Failed pane, which scared users when their
+      // session was just deleted, on a different account, or pointed at
+      // by a stale link from before the localStorage→server history
+      // migration.
+      if (err instanceof APIError && err.status === 404) {
+        setSessionNotFound(true);
+        setError(null);
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to load session");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -2507,6 +2528,57 @@ function ResearchContent() {
           </Card>
         </div>
       </TooltipProvider>
+    );
+  }
+
+  // 404 — session missing for this user (deleted, wrong account,
+  // stale link). Render a calm empty-state with proper escape hatches
+  // instead of the loud "Research Failed" pane that the catch-all
+  // path used to dump for this case.
+  if (sessionNotFound) {
+    return (
+      <div className="container mx-auto max-w-3xl px-4 py-8">
+        <div className="mb-6 flex items-center justify-between gap-4">
+          <Link href="/chat" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            <ArrowLeft className="h-4 w-4" />
+            Back to Chat
+          </Link>
+          <Link href="/research/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+            View History
+          </Link>
+        </div>
+
+        <Card>
+          <CardContent className="pt-6">
+            <div className="flex flex-col items-center justify-center py-8 text-center">
+              <div className="flex h-16 w-16 items-center justify-center rounded-full bg-muted">
+                <Search className="h-8 w-8 text-muted-foreground" aria-hidden="true" />
+              </div>
+              <h3 className="mt-4 text-lg font-semibold">Research session not found</h3>
+              <p className="mt-2 max-w-md text-sm text-muted-foreground">
+                This session may have been deleted, or it belongs to a different account.
+                Open your history to find an existing session, or start a fresh one.
+              </p>
+              <div className="mt-6 flex flex-wrap items-center justify-center gap-3">
+                <Button asChild>
+                  <Link href="/research/history">Open history</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setSession(null);
+                    setError(null);
+                    setSessionNotFound(false);
+                    router.replace("/research");
+                  }}
+                >
+                  Start new research
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     );
   }
 
