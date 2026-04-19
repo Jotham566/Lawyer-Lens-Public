@@ -61,6 +61,7 @@ import { useProgressAnnouncement } from "@/hooks/use-progress-announcement";
 import { EditableDocumentCanvas } from "@/components/canvas/editable-document-canvas";
 import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { ContractTrustBanner } from "@/components/contracts/contract-trust-banner";
+import { ContractStageStepper } from "@/components/contracts/contract-stage-stepper";
 import { LiveProgressShell } from "@/components/canvas/live-progress-shell";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
@@ -823,10 +824,13 @@ function ContractsContent() {
           title="Contract Workspace"
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
           headerMeta={
-            <Link href="/contracts/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
-              <Clock className="h-4 w-4" />
-              View History
-            </Link>
+            <div className="flex items-center gap-3">
+              <ContractStageStepper phase="intake" compact />
+              <Link href="/contracts/history" className="inline-flex items-center gap-2 text-sm text-muted-foreground hover:text-foreground">
+                <Clock className="h-4 w-4" />
+                View History
+              </Link>
+            </div>
           }
           headerActions={
             <Button
@@ -982,6 +986,7 @@ function ContractsContent() {
         <DocumentWorkspaceShell
           title="Contract Requirements"
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
+          headerMeta={<ContractStageStepper phase={session.phase} compact />}
           headerActions={
             <Button
               onClick={handleSubmitRequirements}
@@ -1265,6 +1270,7 @@ function ContractsContent() {
         <DocumentWorkspaceShell
           title="Drafting Contract..."
           titleIcon={<FileText className="h-4 w-4 text-primary" />}
+          headerMeta={<ContractStageStepper phase={session.phase} compact />}
           sidebarClassName="workspace-sidebar-surface w-80"
           sidebar={
             <LiveProgressShell
@@ -1404,11 +1410,14 @@ function ContractsContent() {
             ) : undefined
           }
           headerMeta={
-            <div className="flex items-center gap-2 text-xs text-muted-foreground">
-              {draftSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
-              {draftSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
-              {draftSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
-              {draftSaveState === "error" && <span className="text-destructive">Save failed</span>}
+            <div className="flex items-center gap-3">
+              <ContractStageStepper phase={session.phase} compact />
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                {draftSaveState === "saving" && <><Loader2 className="h-3 w-3 animate-spin" /> Saving...</>}
+                {draftSaveState === "saved" && <span className="flex items-center gap-1 text-primary"><CheckCircle2 className="h-3 w-3" /> Saved</span>}
+                {draftSaveState === "rate_limited" && <span className="text-muted-foreground">Autosave paused briefly</span>}
+                {draftSaveState === "error" && <span className="text-destructive">Save failed</span>}
+              </div>
             </div>
           }
           headerActions={
