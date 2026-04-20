@@ -51,6 +51,7 @@ import {
   saveContractDraft,
   getContractDownloadUrl,
   resetContractToStage,
+  cancelContractSession,
   type ContractSession,
   type ContractRequirements,
   type ContractQuestion,
@@ -64,6 +65,7 @@ import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { ContractTrustBanner } from "@/components/contracts/contract-trust-banner";
 import { ContractStageStepper } from "@/components/contracts/contract-stage-stepper";
 import { StageRollbackDialog as ContractStageRollbackDialog } from "@/components/contracts/stage-rollback-dialog";
+import { CancelDraftDialog as ContractCancelDraftDialog } from "@/components/contracts/cancel-draft-dialog";
 import { LiveProgressShell } from "@/components/canvas/live-progress-shell";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { DocumentPanel, DocumentWorkspaceShell } from "@/components/canvas/document-workspace-shell";
@@ -346,6 +348,12 @@ function ContractsContent() {
   // Stage rollback (clickable stepper). target=null → modal closed.
   const [stageRollbackTarget, setStageRollbackTarget] = useState<"requirements" | null>(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  // Cancel-draft dialog state. Mounted once at the page root and opened
+  // by the Cancel button in the drafting view. Distinct from stage
+  // rollback (which targets COMPLETED sessions) — cancel targets a
+  // session that's actively DRAFTING.
+  const [showCancelDraftDialog, setShowCancelDraftDialog] = useState(false);
+  const [isCancellingDraft, setIsCancellingDraft] = useState(false);
 
   // sr-only live regions for screen-reader users. Phase channel is
   // unthrottled (drafting → review → complete); progress is bucketed
@@ -587,6 +595,29 @@ function ContractsContent() {
       setIsRollingBack(false);
     }
   }, [session?.session_id, stageRollbackTarget]);
+
+  const confirmCancelDraft = useCallback(async () => {
+    if (!session?.session_id) return;
+    setIsCancellingDraft(true);
+    try {
+      // Backend sets cancel_requested_at; the worker acks it within ~10s
+      // by rolling phase back to REQUIREMENTS. Polling effect picks up
+      // the new state — no need to optimistically update here.
+      await cancelContractSession(session.session_id);
+      setShowCancelDraftDialog(false);
+      // Drop draft-staging state so the user sees a clean requirements
+      // form once the worker acks.
+      setDraftTitle("");
+      setSectionTitles({});
+      setSectionEdits({});
+      setSectionEditsRich({});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not cancel draft";
+      setError(message);
+    } finally {
+      setIsCancellingDraft(false);
+    }
+  }, [session?.session_id]);
 
   // Load existing session if session ID provided
   useEffect(() => {
@@ -1380,14 +1411,28 @@ function ContractsContent() {
                           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current Activity</div>
                           <p className="mt-2 text-sm font-medium text-foreground">{getProgressStep(progress)}</p>
                         </div>
-                        <div className="min-w-[140px]">
-                          <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                            <span>Overall progress</span>
-                            <span>{progress}%</span>
+                        <div className="flex items-center gap-4">
+                          <div className="min-w-[140px]">
+                            <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                              <span>Overall progress</span>
+                              <span>{progress}%</span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                              <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progress, 5)}%` }} />
+                            </div>
                           </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progress, 5)}%` }} />
-                          </div>
+                          {/* Cancel button — opens the cooperative-cancel dialog.
+                              Worker checks cancel_requested_at between section LLM
+                              calls (~10s) and rolls back to REQUIREMENTS. */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCancelDraftDialog(true)}
+                            disabled={isCancellingDraft || Boolean(session?.cancel_requested_at)}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            {session?.cancel_requested_at ? "Cancelling…" : "Cancel draft"}
+                          </Button>
                         </div>
                       </div>
                     </section>
@@ -1428,6 +1473,15 @@ function ContractsContent() {
             </DocumentPanel>
           </div>
         </DocumentWorkspaceShell>
+        {/* Cancel-draft dialog mounted here so the Cancel button in this
+            drafting view can open it. (The review/complete view mounts its
+            own copy after the rollback dialog.) */}
+        <ContractCancelDraftDialog
+          open={showCancelDraftDialog}
+          loading={isCancellingDraft}
+          onConfirm={confirmCancelDraft}
+          onCancel={() => setShowCancelDraftDialog(false)}
+        />
       </TooltipProvider>
     );
   }
@@ -1727,6 +1781,12 @@ function ContractsContent() {
           loading={isRollingBack}
           onConfirm={confirmStageRollback}
           onCancel={() => setStageRollbackTarget(null)}
+        />
+        <ContractCancelDraftDialog
+          open={showCancelDraftDialog}
+          loading={isCancellingDraft}
+          onConfirm={confirmCancelDraft}
+          onCancel={() => setShowCancelDraftDialog(false)}
         />
       </TooltipProvider>
     );

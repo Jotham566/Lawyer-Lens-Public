@@ -82,6 +82,10 @@ export interface ResearchSession {
   // if the EventSource errors mid-stream, callers should re-fetch the
   // session to pick up a fresh token and reconnect.
   stream_token?: string | null;
+  /** Set when the user clicks Cancel on a running research session.
+   * Supervisor checks between subagent invocations and rolls back to
+   * brief_review or clarifying. UI uses non-null for "Cancelling…" state. */
+  cancel_requested_at?: string | null;
 }
 
 export interface CreateResearchRequest {
@@ -487,6 +491,21 @@ export async function resetResearchToStage(
   return apiPost<ResearchSession>(`/research/${sessionId}/reset-to-stage`, {
     target_stage: targetStage,
   });
+}
+
+/**
+ * Cancel an in-flight research session.
+ *
+ * Sets cancel_requested_at on the session. The supervisor checks this
+ * between subagent invocations (cooperative cancellation) and aborts
+ * within ~10-30s depending on which subagent is mid-run. Phase rolls
+ * back to BRIEF_REVIEW (if a brief exists) or CLARIFYING with a
+ * "Cancelled by user" status. Idempotent — calling twice is fine.
+ */
+export async function cancelResearchSession(
+  sessionId: string,
+): Promise<ResearchSession> {
+  return apiPost<ResearchSession>(`/research/${sessionId}/cancel`, {});
 }
 
 /**

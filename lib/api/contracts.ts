@@ -69,6 +69,10 @@ export interface ContractSession {
   updated_at?: string;
   progress_percent?: number;
   error?: string;
+  /** Set when the user clicks Cancel on a running draft. Backend checks
+   * this between section LLM calls and rolls back to REQUIREMENTS. The UI
+   * uses non-null to disable the Cancel button + show "Cancelling…". */
+  cancel_requested_at?: string | null;
 }
 
 export interface ContractRequirements {
@@ -273,6 +277,24 @@ export async function resetContractToStage(
   return apiPost<ContractSession>(`/contracts/${sessionId}/reset-to-stage`, {
     target_stage: targetStage,
   });
+}
+
+/**
+ * Cancel an in-flight contract draft.
+ *
+ * Sets cancel_requested_at on the session. The drafting worker checks
+ * this between section LLM calls (cooperative cancellation) and aborts
+ * within ~10 seconds — phase rolls back to REQUIREMENTS so the user can
+ * edit and resubmit. Idempotent: calling twice is fine; calling on a
+ * non-running session is a no-op (sets the flag, no worker reads it).
+ *
+ * Returns the updated session — the frontend's polling will pick up the
+ * actual phase transition once the worker acks the cancel.
+ */
+export async function cancelContractSession(
+  sessionId: string,
+): Promise<ContractSession> {
+  return apiPost<ContractSession>(`/contracts/${sessionId}/cancel`, {});
 }
 
 /**

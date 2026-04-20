@@ -52,6 +52,7 @@ import {
   getResearchReport,
   getResearchDownloadUrl,
   resetResearchToStage,
+  cancelResearchSession,
   saveResearchReport,
   resumeResearchSession,
   type ResearchSession,
@@ -69,6 +70,7 @@ import { StarterPromptChips } from "@/components/canvas/starter-prompt-chips";
 import { LiveProgressShell, LiveProgressStat } from "@/components/canvas/live-progress-shell";
 import { ResearchStageStepper } from "@/components/research/research-stage-stepper";
 import { StageRollbackDialog } from "@/components/research/stage-rollback-dialog";
+import { CancelResearchDialog } from "@/components/research/cancel-research-dialog";
 import { SaveToCollectionButton } from "@/components/collections/save-to-collection-button";
 import { getToolSuggestedQuestions } from "@/components/chat/tools-dropdown";
 import { ClaimVerificationBadge } from "@/components/research/claim-verification-badge";
@@ -1275,6 +1277,12 @@ function ResearchContent() {
     "clarifying" | "brief_review" | null
   >(null);
   const [isRollingBack, setIsRollingBack] = useState(false);
+  // Cancel-research dialog state. Mounted at page root, opened by the
+  // Cancel button in the researching/writing view. Distinct from stage
+  // rollback (which targets COMPLETED sessions) — cancel targets a
+  // session that's actively running.
+  const [showCancelResearchDialog, setShowCancelResearchDialog] = useState(false);
+  const [isCancellingResearch, setIsCancellingResearch] = useState(false);
   const requestStageRollback = useCallback(
     (target: "clarifying" | "brief_review") => {
       setStageRollbackTarget(target);
@@ -1314,6 +1322,39 @@ function ResearchContent() {
     setSession,
     setReport,
     setError,
+    setEditedReportTitle,
+    setEditedExecutiveSummary,
+    setEditedExecutiveSummaryRich,
+    setEditedReportSections,
+    setEditedReportSectionsRich,
+    setEditedReportSectionTitles,
+  ]);
+
+  const confirmCancelResearch = useCallback(async () => {
+    if (!session?.session_id) return;
+    setIsCancellingResearch(true);
+    try {
+      // Backend sets cancel_requested_at; the supervisor acks it within
+      // ~10-30s and rolls phase back to brief_review or clarifying. The
+      // session GET poll picks up the new state — no optimistic update.
+      await cancelResearchSession(session.session_id);
+      setShowCancelResearchDialog(false);
+      // Drop staged report edits so the next render shows a clean
+      // brief/clarification state once the supervisor acks.
+      setEditedReportTitle("");
+      setEditedExecutiveSummary("");
+      setEditedExecutiveSummaryRich("");
+      setEditedReportSections({});
+      setEditedReportSectionsRich({});
+      setEditedReportSectionTitles({});
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not cancel research";
+      setError(message);
+    } finally {
+      setIsCancellingResearch(false);
+    }
+  }, [
+    session?.session_id,
     setEditedReportTitle,
     setEditedExecutiveSummary,
     setEditedExecutiveSummaryRich,
@@ -2219,14 +2260,28 @@ function ResearchContent() {
                           <div className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">Current Activity</div>
                           <p className="mt-2 text-sm font-medium text-foreground">{progressMessage}</p>
                         </div>
-                        <div className="min-w-[140px]">
-                          <div className="mb-2 flex justify-between text-xs text-muted-foreground">
-                            <span>Overall progress</span>
-                            <span>{progressPercent}%</span>
+                        <div className="flex items-center gap-4">
+                          <div className="min-w-[140px]">
+                            <div className="mb-2 flex justify-between text-xs text-muted-foreground">
+                              <span>Overall progress</span>
+                              <span>{progressPercent}%</span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-muted">
+                              <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progressPercent, 5)}%` }} />
+                            </div>
                           </div>
-                          <div className="h-1.5 overflow-hidden rounded-full bg-muted">
-                            <div className="h-full bg-primary transition-all duration-500 ease-out" style={{ width: `${Math.max(progressPercent, 5)}%` }} />
-                          </div>
+                          {/* Cancel button — opens cooperative-cancel dialog.
+                              Supervisor checks cancel_requested_at between
+                              subagent calls (~10-30s) and rolls back. */}
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setShowCancelResearchDialog(true)}
+                            disabled={isCancellingResearch || Boolean(session?.cancel_requested_at)}
+                            className="text-destructive hover:bg-destructive/10 hover:text-destructive"
+                          >
+                            {session?.cancel_requested_at ? "Cancelling…" : "Cancel research"}
+                          </Button>
                         </div>
                       </div>
                     </section>
@@ -2278,6 +2333,15 @@ function ResearchContent() {
             </DocumentPanel>
           </div>
         </DocumentWorkspaceShell>
+        {/* Cancel-research dialog mounted in this view's TooltipProvider so
+            the Cancel button in the Current Activity section can open it.
+            Other views mount their own copy if they ever need cancel. */}
+        <CancelResearchDialog
+          open={showCancelResearchDialog}
+          loading={isCancellingResearch}
+          onConfirm={confirmCancelResearch}
+          onCancel={() => setShowCancelResearchDialog(false)}
+        />
       </TooltipProvider>
     );
   }
