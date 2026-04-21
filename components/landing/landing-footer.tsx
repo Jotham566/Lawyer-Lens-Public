@@ -101,8 +101,8 @@ export function LandingFooter() {
 
         {/* Bottom bar */}
         <div className="mt-10 flex flex-col items-center justify-between gap-3 border-t border-border/30 pt-6 sm:flex-row">
-          <p className="text-xs text-muted-foreground">
-            © {new Date().getFullYear()} Law Lens. All rights reserved.
+          <p className="text-xs text-muted-foreground text-center sm:text-left">
+            © {new Date().getFullYear()} MagentIQ AI Labs Ltd. Law Lens Uganda is a product of MagentIQ AI Labs.
           </p>
           <div className="flex items-center gap-6">
             <Link href="/privacy" className="inline-flex min-h-[44px] items-center text-xs text-muted-foreground hover:text-foreground">

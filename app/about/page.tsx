@@ -151,8 +151,23 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* Closing — compact */}
+      {/* Who Built It — company attribution */}
       <section className="mt-14 rounded-xl border border-border/40 bg-surface-container-low p-8">
+        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
+          Who Built It
+        </p>
+        <h2 className="mt-3 text-lg font-bold tracking-tight">
+          Developed by MagentIQ AI Labs
+        </h2>
+        <p className="mt-3 max-w-3xl text-sm leading-relaxed text-muted-foreground">
+          Law Lens Uganda is developed by MagentIQ AI Labs Ltd., an AI company
+          based in Kampala building applied AI products for institutional and
+          professional workflows.
+        </p>
+      </section>
+
+      {/* Closing — compact */}
+      <section className="mt-6 rounded-xl border border-border/40 bg-surface-container-low p-8">
         <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-brand-gold">
           Uganda-First
         </p>
