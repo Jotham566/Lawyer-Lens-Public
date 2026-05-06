@@ -84,6 +84,11 @@ export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
     // If the URL param differs from the persisted scope, snap the persisted
     // value to the URL request once on mount. This is what the user asked
     // for by clicking the CTA — they want THIS scope, not their old one.
+    //
+    // Setting state inside an effect is exactly what react-hooks/set-state-in-effect
+    // is designed to flag, but this is the canonical "react to URL param" use
+    // case where the effect IS the right tool: scopeParam can change without
+    // a remount (Next.js client-side nav), and we need to side-effect on it.
     useEffect(() => {
         if (
             scopeParam &&

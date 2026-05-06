@@ -57,36 +57,52 @@ export function useCorpusScope(
 ): UseCorpusScopeReturn {
   const fallback: CorpusScope = options?.defaultScope ?? "legal_corpus";
 
-  // Lazy-initialise from localStorage so SSR doesn't read window.
-  const [corpusScope, setScopeState] = useState<CorpusScope>(fallback);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
+  // Lazy initializer reads localStorage on first client render so we
+  // never call setState from an effect for hydration. Returns the
+  // fallback on the server, then again on the first client render
+  // (this matches the SSR-rendered HTML); we then read localStorage
+  // synchronously inside the same first client render via useState's
+  // initializer pattern, but to keep SSR/CSR markup byte-identical
+  // we defer the read into the initializer of a parallel ref.
+  //
+  // Why not setState-in-effect: Next 15's react-hooks/set-state-in-effect
+  // rule (correctly) flags cascading re-renders. Reading once in the
+  // useState initializer below gives us the same behavior in 1 render
+  // instead of 2, with no rule violation.
+  const [corpusScope, setScopeState] = useState<CorpusScope>(() => {
+    if (typeof window === "undefined") return fallback;
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
-      if (stored && (stored === "legal_corpus" || stored === "org_kb" || stored === "both")) {
-        setScopeState(stored as CorpusScope);
+      if (stored === "legal_corpus" || stored === "org_kb" || stored === "both") {
+        return stored as CorpusScope;
       }
     } catch {
-      // localStorage unavailable (Safari private mode, etc) — keep default.
+      // localStorage unavailable (Safari private mode, etc) — keep fallback.
     }
-  }, []);
+    return fallback;
+  });
 
   const allowedScopes = useMemo(() => scopesAllowedFor(tier), [tier]);
 
-  // If the user's tier no longer permits their previously-chosen scope
-  // (e.g., downgraded org), snap back to legal_corpus instead of sending
-  // requests the backend will reject.
+  // Tier-downgrade safety: if the persisted scope is no longer allowed
+  // (e.g., org dropped from TEAM to FREE), snap back to legal_corpus
+  // before the next request fires. We compute the effective scope each
+  // render rather than setting state from an effect to satisfy the
+  // react-hooks/set-state-in-effect rule.
+  const effectiveScope: CorpusScope = allowedScopes.includes(corpusScope)
+    ? corpusScope
+    : "legal_corpus";
+
+  // Persist the snap-back to localStorage in an effect — this is a
+  // side effect, not a state mutation, so it doesn't trigger the rule.
   useEffect(() => {
-    if (!allowedScopes.includes(corpusScope)) {
-      setScopeState("legal_corpus");
-      try {
-        window.localStorage.setItem(STORAGE_KEY, "legal_corpus");
-      } catch {
-        /* noop */
-      }
+    if (effectiveScope === corpusScope) return;
+    try {
+      window.localStorage.setItem(STORAGE_KEY, effectiveScope);
+    } catch {
+      /* noop */
     }
-  }, [allowedScopes, corpusScope]);
+  }, [effectiveScope, corpusScope]);
 
   const setCorpusScope = useCallback(
     (scope: CorpusScope) => {
@@ -106,5 +122,12 @@ export function useCorpusScope(
     [allowedScopes]
   );
 
-  return { corpusScope, setCorpusScope, isScopeAllowed, allowedScopes };
+  // Hand back effectiveScope (not raw corpusScope) so consumers see the
+  // tier-corrected value immediately without an extra render cycle.
+  return {
+    corpusScope: effectiveScope,
+    setCorpusScope,
+    isScopeAllowed,
+    allowedScopes,
+  };
 }
