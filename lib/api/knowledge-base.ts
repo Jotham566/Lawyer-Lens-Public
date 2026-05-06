@@ -202,6 +202,55 @@ export async function getKnowledgeBaseStats(): Promise<KnowledgeBaseStats> {
   return apiGet<KnowledgeBaseStats>("/knowledge-base/stats");
 }
 
+// =============================================================================
+// Conversational Q&A (chat-style synthesis with citations)
+// =============================================================================
+
+export interface KbChatTurn {
+  role: "user" | "assistant";
+  content: string;
+}
+
+export interface KbChatCitation {
+  document_id: string;
+  document_title: string;
+  chunk_text: string;
+  score: number;
+  page_number?: number | null;
+  section_heading?: string | null;
+}
+
+export interface KbChatResponse {
+  answer: string;
+  citations: KbChatCitation[];
+  chunks_retrieved: number;
+  no_results: boolean;
+  /** 0-1, higher = better grounded in retrieved chunks. From shared
+   * hallucination detector (same one Ask Ben uses). */
+  hallucination_score?: number | null;
+  flagged_claims?: string[];
+  /** Fraction of answer claims with strong source support. */
+  citation_coverage?: number | null;
+  unsupported_claims?: string[];
+}
+
+/**
+ * Ask the Internal KB a natural-language question. Returns a synthesized
+ * answer with inline [Doc Title, p. N] citations + the underlying chunks.
+ *
+ * For follow-up turns, pass the prior conversation in `history`. Do NOT
+ * include the current question in `history`.
+ */
+export async function chatWithKnowledgeBase(
+  question: string,
+  history: KbChatTurn[] = [],
+): Promise<KbChatResponse> {
+  return apiPost<KbChatResponse>("/knowledge-base/chat", {
+    question,
+    conversation_history: history,
+  });
+}
+
 /**
  * Format file size for display.
  */

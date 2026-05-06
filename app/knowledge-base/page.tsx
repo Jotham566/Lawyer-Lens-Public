@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Database,
   FileText,
+  MessageSquare,
   Search,
   Upload,
   BarChart3,
@@ -31,6 +32,7 @@ import { PageLoading } from "@/components/common";
 import { DocumentUpload } from "@/components/knowledge-base/document-upload";
 import { DocumentList } from "@/components/knowledge-base/document-list";
 import { SearchInternal } from "@/components/knowledge-base/search-internal";
+import { KbChatPanel } from "@/components/knowledge-base/chat-internal";
 import {
   getKnowledgeBaseStats,
   listConnectors,
@@ -48,6 +50,7 @@ import {
    ═══════════════════════════════════════════════════════════ */
 
 const tabs = [
+  { id: "ask", label: "Ask", icon: MessageSquare },
   { id: "documents", label: "Documents", icon: FileText },
   { id: "search", label: "Search", icon: Search },
   { id: "upload", label: "Upload", icon: Upload },
@@ -718,6 +721,7 @@ function KnowledgeBaseContent({
             onCategoryFilterChange={setCategoryFilter}
           />
         )}
+        {activeTab === "ask" && <KbChatPanel />}
         {activeTab === "search" && <SearchInternal />}
         {activeTab === "upload" && (
           <DocumentUpload onUploadComplete={handleUploadComplete} />
@@ -734,7 +738,7 @@ function KnowledgeBaseContent({
 
 export default function KnowledgeBasePage() {
   const { canShowContent } = useRequireAuth();
-  const [activeTab, setActiveTab] = useState<TabId>("documents");
+  const [activeTab, setActiveTab] = useState<TabId>("ask");
 
   if (!canShowContent) return <PageLoading />;
 
