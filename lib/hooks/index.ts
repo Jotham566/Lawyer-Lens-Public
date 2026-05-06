@@ -6,6 +6,7 @@ export { useSearch, type SearchMode } from "./use-search";
 export {
   useDocument,
   useDocuments,
+  usePdfStatus,
   useRecentDocuments,
   useRepositoryStats,
   useAllDocumentsByType,

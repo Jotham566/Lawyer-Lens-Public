@@ -5,6 +5,7 @@ import {
   getAllDocumentsByType,
   getDocument,
   getDocuments,
+  getPdfStatus,
   getRecentDocuments,
   getRepositoryStats,
   getDocumentsByType,
@@ -21,6 +22,24 @@ export function useDocument(id: string | null) {
     queryFn: () => getDocument(id!),
     enabled: !!id,
     staleTime: 10 * 60 * 1000, // 10 minutes
+  });
+}
+
+/**
+ * Hook to pre-flight check whether a document's PDF is reachable.
+ *
+ * Used by the document detail page to render a "PDF temporarily
+ * unavailable" banner instead of mounting <PdfReader> against a 404
+ * (the orphan-PDF case from the 2026-05-04 incident). Cached for 60s
+ * so navigating away and back doesn't re-probe the upstream.
+ */
+export function usePdfStatus(id: string | null) {
+  return useQuery({
+    queryKey: ["pdf-status", id],
+    queryFn: () => getPdfStatus(id!),
+    enabled: !!id,
+    staleTime: 60 * 1000, // 1 minute
+    retry: 0,
   });
 }
 

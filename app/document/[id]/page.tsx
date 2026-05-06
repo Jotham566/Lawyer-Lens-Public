@@ -36,7 +36,7 @@ import {
 import { cn } from "@/lib/utils";
 import { safeInternalPath } from "@/lib/utils/safe-redirect";
 import { surfaceClasses } from "@/lib/design-system";
-import { useAllDocumentsByType, useDocument } from "@/lib/hooks";
+import { useAllDocumentsByType, useDocument, usePdfStatus } from "@/lib/hooks";
 import { getDocumentPdfUrl } from "@/lib/api";
 import { HierarchyRenderer } from "@/components/hierarchy-renderer";
 import { TableOfContents } from "@/components/table-of-contents";
@@ -276,6 +276,10 @@ function DocumentContent({ id }: { id: string }) {
   const { isAuthenticated } = useAuth();
   const { openLogin } = useAuthModal();
   const { data: document, isLoading, error } = useDocument(id);
+  // Pre-flight PDF availability so the page can render a friendly banner
+  // instead of mounting <PdfReader> against a 404. Hook MUST be called
+  // unconditionally; rules-of-hooks forbids placing it after early returns.
+  const pdfStatusQuery = usePdfStatus(id);
   const { data: typedDocuments } = useAllDocumentsByType(document?.document_type || "act");
   const searchParams = useSearchParams();
   const from = searchParams.get("from");
@@ -685,6 +689,14 @@ function DocumentContent({ id }: { id: string }) {
 
   const typeConfig = documentTypeConfig[document.document_type];
   const pdfUrl = getDocumentPdfUrl(id);
+  // Derived from pdfStatusQuery hoisted above. Treat unknown / loading as
+  // available so we don't flash the banner on initial render.
+  const pdfAvailable = pdfStatusQuery.data?.available !== false;
+  const pdfUnavailableMessage =
+    pdfStatusQuery.data && !pdfStatusQuery.data.available
+      ? pdfStatusQuery.data.message ??
+        "The PDF for this document is temporarily unavailable."
+      : undefined;
   const browseBackLabel = document.document_type === "act"
     ? "Back to Acts"
     : `Back to ${collectionInfo?.collectionLabel || "Documents"}`;
@@ -1008,11 +1020,26 @@ function DocumentContent({ id }: { id: string }) {
                         )}
                       </div>
                     </div>
-                    <PdfReaderSafe
-                      fileUrl={pdfUrl}
-                      title={document.title}
-                      className="h-[calc(100vh-196px)] min-h-[780px] border-0 shadow-none"
-                    />
+                    {pdfAvailable ? (
+                      <PdfReaderSafe
+                        fileUrl={pdfUrl}
+                        title={document.title}
+                        className="h-[calc(100vh-196px)] min-h-[780px] border-0 shadow-none"
+                      />
+                    ) : (
+                      <div className="mx-auto flex h-[calc(100vh-196px)] min-h-[780px] max-w-2xl flex-col items-center justify-center gap-3 rounded-xl border border-amber-300/50 bg-amber-50/80 p-8 text-center text-sm text-amber-900 dark:border-amber-400/30 dark:bg-amber-900/20 dark:text-amber-200">
+                        <div className="text-base font-semibold">
+                          PDF temporarily unavailable
+                        </div>
+                        <p className="max-w-md leading-relaxed">
+                          {pdfUnavailableMessage}
+                        </p>
+                        <p className="text-xs text-amber-800/80 dark:text-amber-200/70">
+                          The document text below is still available. If this
+                          persists, please <a href="mailto:support@lawlens.io" className="underline">let us know</a>.
+                        </p>
+                      </div>
+                    )}
                   </CardContent>
                 </Card>
               </div>

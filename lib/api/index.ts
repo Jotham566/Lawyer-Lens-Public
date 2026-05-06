@@ -14,6 +14,8 @@ export {
   getDocuments,
   getDocumentContent,
   getDocumentPdfUrl,
+  getPdfStatus,
+  type PdfStatus,
   getRecentDocuments,
   getRepositoryStats,
   getDocumentsByType,

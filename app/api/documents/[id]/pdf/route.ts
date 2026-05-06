@@ -152,6 +152,21 @@ export async function GET(
     // Non-redirect: backend is streaming bytes directly (local MinIO in dev
     // when no S3 bucket is configured). Pass through unchanged.
     if (!upstream.ok || !upstream.body) {
+      // Distinguish "doc exists but PDF is unreachable" (404 from the public
+      // route's storage paths) from generic upstream errors. The frontend
+      // page checks pdf_status === "unavailable" to render the friendly
+      // "PDF temporarily unavailable" banner instead of a broken viewer.
+      if (upstream.status === 404) {
+        return NextResponse.json(
+          {
+            pdf_status: "unavailable",
+            document_id: id,
+            message:
+              "The PDF for this document is temporarily unavailable. We've been notified and are restoring it.",
+          },
+          { status: 404 },
+        );
+      }
       return NextResponse.json(
         { error: "Failed to fetch PDF" },
         { status: upstream.status || 502 }

@@ -74,6 +74,46 @@ export function getDocumentPdfUrl(id: string): string {
 }
 
 /**
+ * Result of the lightweight PDF availability pre-flight check.
+ *
+ * The page calls `getPdfStatus(id)` before mounting `<PdfReader>` so it can
+ * render a friendly "PDF temporarily unavailable" banner instead of a
+ * broken viewer when the storage backend is missing the file (the
+ * 2026-05-04 orphan-PDF incident class). Always resolves — the BFF route
+ * normalizes errors into `{ available: false, message }`.
+ */
+export interface PdfStatus {
+  available: boolean;
+  /** "orphan" (404 from upstream), "upstream_error", or "network_error". */
+  reason?: "orphan" | "upstream_error" | "network_error";
+  upstream_status?: number;
+  /** User-facing message for the banner. */
+  message?: string;
+}
+
+/**
+ * Pre-flight: ask whether the PDF for this document is reachable right now.
+ * Hits the BFF route which does a HEAD against the upstream PDF endpoint
+ * and normalizes the result.
+ */
+export async function getPdfStatus(id: string): Promise<PdfStatus> {
+  const response = await fetch(`/api/documents/${id}/pdf-status`, {
+    cache: "no-store",
+  });
+  // The BFF route always returns 200 with a structured body; if it
+  // somehow fails we treat that as "unavailable" with a network reason.
+  if (!response.ok) {
+    return {
+      available: false,
+      reason: "network_error",
+      upstream_status: response.status,
+      message: "Could not verify PDF availability. Please try again.",
+    };
+  }
+  return (await response.json()) as PdfStatus;
+}
+
+/**
  * Get recent documents (from stats endpoint)
  */
 export async function getRecentDocuments(
