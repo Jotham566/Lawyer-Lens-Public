@@ -7,6 +7,7 @@ import {
   Scale,
   Gavel,
   ScrollText,
+  Lock,
   Copy,
   Check,
   ExternalLink,
@@ -23,7 +24,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { cn } from "@/lib/utils";
-import { getDocumentAccentClass, getDocumentBadgeVariant, getDocumentRailClass, surfaceClasses } from "@/lib/design-system";
+import { getDocumentAccentClass, getDocumentBadgeVariant, getDocumentRailClass, getDocumentTypeLabel, surfaceClasses } from "@/lib/design-system";
 import { HighlightedExcerptCompact } from "./highlighted-excerpt";
 import { useCitationOptional } from "./citation-context";
 import type { ChatSource, DocumentType } from "@/lib/api/types";
@@ -34,6 +35,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   judgment: Gavel,
   regulation: ScrollText,
   constitution: Scale,
+  organization_document: Lock,
 };
 
 // Detect if text contains table data
@@ -189,9 +191,9 @@ export function CitationHoverPreview({
             </div>
             <Badge
               variant={getDocumentBadgeVariant(source.document_type)}
-              className="shrink-0 px-1.5 py-0 text-[10px] capitalize tracking-[0.04em]"
+              className="shrink-0 px-1.5 py-0 text-[10px] tracking-[0.04em]"
             >
-              {source.document_type}
+              {getDocumentTypeLabel(source.document_type)}
             </Badge>
           </div>
         </div>

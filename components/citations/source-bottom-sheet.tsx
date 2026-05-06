@@ -7,6 +7,7 @@ import {
   Scale,
   Gavel,
   ScrollText,
+  Lock,
   Copy,
   Check,
   ExternalLink,
@@ -21,7 +22,7 @@ import {
   SheetDescription,
 } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
-import { surfaceClasses } from "@/lib/design-system";
+import { getDocumentTypeLabel, surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { HighlightedExcerptCompact } from "./highlighted-excerpt";
 import { CitationNavigation } from "./citation-navigation";
@@ -35,6 +36,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   judgment: Gavel,
   regulation: ScrollText,
   constitution: Scale,
+  organization_document: Lock,
 };
 
 function getTypeBadgeColor(type: DocumentType) {
@@ -47,6 +49,8 @@ function getTypeBadgeColor(type: DocumentType) {
       return "bg-muted text-muted-foreground";
     case "constitution":
       return "bg-accent/20 text-primary";
+    case "organization_document":
+      return "bg-blue-500/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
     default:
       return "bg-muted text-muted-foreground";
   }
@@ -142,7 +146,7 @@ export function SourceBottomSheet() {
           Citation Details: {activeSource.title}
         </SheetTitle>
         <SheetDescription className="sr-only">
-          Viewing citation {activeCitationNumber} - {activeSource.document_type} document
+          Viewing citation {activeCitationNumber} - {getDocumentTypeLabel(activeSource.document_type)} document
         </SheetDescription>
 
         {/* Drag handle */}
@@ -180,10 +184,10 @@ export function SourceBottomSheet() {
                   [{activeCitationNumber}]
                 </span>
                 <span className={cn(
-                  "text-[10px] px-1.5 py-0.5 rounded capitalize",
+                  "text-[10px] px-1.5 py-0.5 rounded",
                   getTypeBadgeColor(activeSource.document_type)
                 )}>
-                  {activeSource.document_type}
+                  {getDocumentTypeLabel(activeSource.document_type)}
                 </span>
               </div>
             </div>

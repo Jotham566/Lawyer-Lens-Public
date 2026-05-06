@@ -1,10 +1,10 @@
 "use client";
 
-import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight, type LucideIcon } from "lucide-react";
+import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight, Lock, type LucideIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { surfaceClasses } from "@/lib/design-system";
+import { getDocumentTypeLabel, surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { HighlightedExcerpt } from "./highlighted-excerpt";
 import { useCitation } from "./citation-context";
@@ -16,6 +16,8 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   judgment: Gavel,
   regulation: ScrollText,
   constitution: Scale,
+  // Internal KB docs get Lock to mark "your private corpus".
+  organization_document: Lock,
 };
 
 function getTypeColor(type: DocumentType) {
@@ -47,6 +49,13 @@ function getTypeColor(type: DocumentType) {
         border: "border-border/30",
         text: "text-primary",
         icon: "text-primary",
+      };
+    case "organization_document":
+      return {
+        bg: "bg-blue-500/10 dark:bg-blue-500/15",
+        border: "border-blue-500/30",
+        text: "text-blue-700 dark:text-blue-300",
+        icon: "text-blue-600 dark:text-blue-400",
       };
     default:
       return {
@@ -84,8 +93,8 @@ function ComparisonCard({ source, citationNumber, onRemove }: ComparisonCardProp
                 <span className="flex-shrink-0 w-5 h-5 rounded bg-primary/10 text-primary text-xs font-medium flex items-center justify-center">
                   {citationNumber}
                 </span>
-                <Badge variant="outline" className={cn("capitalize text-xs", colors.bg, colors.border, colors.text)}>
-                  {source.document_type}
+                <Badge variant="outline" className={cn("text-xs", colors.bg, colors.border, colors.text)}>
+                  {getDocumentTypeLabel(source.document_type)}
                 </Badge>
               </div>
               {sectionRef && (

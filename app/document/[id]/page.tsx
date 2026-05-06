@@ -18,6 +18,7 @@ import {
   Gavel,
   ScrollText,
   BookOpen,
+  Lock,
   MessageSquare,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -115,6 +116,17 @@ const documentTypeConfig: Record<
     className: "badge-constitution",
     color: "text-primary",
     bgColor: "bg-primary/10",
+  },
+  // Internal KB docs aren't really browseable through the public-document
+  // page, but we have to satisfy the Record<DocumentType, ...> contract.
+  // Use a neutral palette + Lock icon so if this ever does render it
+  // reads as "your private corpus".
+  organization_document: {
+    label: "Internal",
+    icon: Lock,
+    className: "border border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
   },
 };
 

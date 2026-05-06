@@ -97,6 +97,7 @@ function groupSourcesByType(sources: ChatSource[]): SourcesByType[] {
     act: 0,
     regulation: 0,
     judgment: 0,
+    organization_document: 0,
   };
 
   sources.forEach((source) => {

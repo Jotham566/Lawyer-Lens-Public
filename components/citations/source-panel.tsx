@@ -7,6 +7,7 @@ import {
   Scale,
   Gavel,
   ScrollText,
+  Lock,
   Copy,
   Check,
   ExternalLink,
@@ -21,7 +22,7 @@ import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Skeleton } from "@/components/ui/skeleton";
 import { cn } from "@/lib/utils";
-import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
+import { getDocumentTypeLabel, getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import { HighlightedExcerpt } from "./highlighted-excerpt";
@@ -38,6 +39,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   judgment: Gavel,
   regulation: ScrollText,
   constitution: Scale,
+  organization_document: Lock,
 };
 
 function getTypeColor(type: DocumentType) {
@@ -73,6 +75,14 @@ function getTypeColor(type: DocumentType) {
         borderLeft: "border-l-primary",
         text: "text-primary",
         icon: "text-primary",
+      };
+    case "organization_document":
+      return {
+        bg: "bg-blue-500/10 dark:bg-blue-500/15",
+        border: "border-blue-500/30",
+        borderLeft: "border-l-blue-500",
+        text: "text-blue-700 dark:text-blue-300",
+        icon: "text-blue-600 dark:text-blue-400",
       };
     default:
       return {
@@ -576,8 +586,8 @@ export function SourcePanel() {
           <div className="p-4 space-y-4">
             {/* Metadata */}
             <div className="flex flex-wrap items-center gap-3 text-sm">
-              <Badge variant="outline" className={cn("capitalize", colors.bg, colors.border, colors.text)}>
-                {activeSource.document_type}
+              <Badge variant="outline" className={cn(colors.bg, colors.border, colors.text)}>
+                {getDocumentTypeLabel(activeSource.document_type)}
               </Badge>
               {activeSource.relevance_score > 0 && (
                 <RelevanceIndicator score={activeSource.relevance_score} />

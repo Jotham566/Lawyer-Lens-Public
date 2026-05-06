@@ -5,7 +5,19 @@
  */
 
 // Document types
-export type DocumentType = "act" | "judgment" | "constitution" | "regulation";
+export type DocumentType =
+  | "act"
+  | "judgment"
+  | "constitution"
+  | "regulation"
+  /**
+   * Internal Knowledge Base document. Returned by the KB orchestrator
+   * (corpus_scope=org_kb) and the Both orchestrator alongside legal
+   * citations. The citation renderer differentiates these visually with
+   * a Lock icon + "Internal" label so users can see at a glance which
+   * authority backs each cite.
+   */
+  | "organization_document";
 
 export type DocumentStatus =
   | "ingested"

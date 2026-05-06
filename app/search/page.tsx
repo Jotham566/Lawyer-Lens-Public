@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ChevronRight,
   BookOpen,
+  Lock,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -72,6 +73,17 @@ const documentTypeConfig: Record<
     icon: BookOpen,
     className: "badge-constitution",
     color: "text-primary",
+    bgColor: "bg-card",
+  },
+  // Internal KB docs aren't indexed by the public-corpus search, but the
+  // type contract requires an entry. If this label ever surfaces here it's
+  // a UX bug — kept neutral so it degrades gracefully.
+  organization_document: {
+    label: "Internal",
+    pluralLabel: "Internal Documents",
+    icon: Lock,
+    className: "border border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
+    color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-card",
   },
 };

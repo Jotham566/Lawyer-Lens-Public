@@ -1,7 +1,7 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Scale, Gavel, ScrollText, Table2, type LucideIcon } from "lucide-react";
+import { FileText, Scale, Gavel, ScrollText, Table2, Lock, type LucideIcon } from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import {
   getDocumentAccentClass,
   getDocumentBadgeVariant,
+  getDocumentTypeLabel,
   getRelevanceTheme,
 } from "@/lib/design-system";
 import { SourceDetailDialog } from "./source-detail-dialog";
@@ -32,6 +33,10 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   judgment: Gavel,
   regulation: ScrollText,
   constitution: Scale,
+  // Internal KB docs get a Lock to signal "your private corpus" — the
+  // visual cue is meant to read at a glance: legal authority vs. your
+  // own org's docs. Same metaphor Glean / Notion AI use.
+  organization_document: Lock,
 };
 
 /**
@@ -276,9 +281,9 @@ export function SourceCitation({
               <span className="font-medium text-sm text-foreground truncate">{source.title}</span>
                 <Badge
                   variant={getDocumentBadgeVariant(source.document_type)}
-                  className="px-1.5 py-0 text-[10px] capitalize tracking-[0.04em]"
+                  className="px-1.5 py-0 text-[10px] tracking-[0.04em]"
                 >
-                  {source.document_type}
+                  {getDocumentTypeLabel(source.document_type)}
                 </Badge>
               </span>
             <span className="block text-xs text-muted-foreground mb-1.5">

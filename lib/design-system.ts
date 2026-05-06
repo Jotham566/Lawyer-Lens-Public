@@ -197,7 +197,10 @@ const toneStyles: Record<
 
 const documentThemes: Record<
   DocumentType,
-  { badge: "act" | "judgment" | "regulation" | "constitution"; accent: string }
+  {
+    badge: "act" | "judgment" | "regulation" | "constitution" | "secondary";
+    accent: string;
+  }
 > = {
   act: {
     badge: "act",
@@ -214,6 +217,13 @@ const documentThemes: Record<
   constitution: {
     badge: "constitution",
     accent: "ll-doc-accent-constitution",
+  },
+  // Internal KB docs reuse the neutral "secondary" badge variant — they
+  // don't fit into the Ugandan legal hierarchy color scheme. The Lock
+  // icon + the "Internal" label do the corpus identification.
+  organization_document: {
+    badge: "secondary",
+    accent: "ll-doc-accent-internal",
   },
 };
 
@@ -302,6 +312,10 @@ export function getDocumentAccentClass(type: DocumentType) {
       return "ll-status-text-high";
     case "constitution":
       return "ll-status-text-medium";
+    case "organization_document":
+      // Internal KB docs use a distinct blue accent so they're spottable
+      // at a glance against the legal-corpus icons (act/judgment etc.).
+      return "text-blue-600 dark:text-blue-400";
     default:
       return "text-muted-foreground";
   }
@@ -309,6 +323,28 @@ export function getDocumentAccentClass(type: DocumentType) {
 
 export function getDocumentRailClass(type: DocumentType) {
   return getDocumentTheme(type).accent;
+}
+
+/**
+ * Human-readable label for a document type. Used in citation badges,
+ * source panel headers, hover previews — anywhere we'd otherwise print
+ * the raw enum string and end up with "organization_document" in the UI.
+ */
+export function getDocumentTypeLabel(type: DocumentType): string {
+  switch (type) {
+    case "act":
+      return "Act";
+    case "judgment":
+      return "Judgment";
+    case "regulation":
+      return "Regulation";
+    case "constitution":
+      return "Constitution";
+    case "organization_document":
+      return "Internal";
+    default:
+      return String(type);
+  }
 }
 
 export function getDocumentFileTypeClass(fileType: string) {

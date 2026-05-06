@@ -8,6 +8,7 @@ import {
   Scale,
   Gavel,
   ScrollText,
+  Lock,
   Copy,
   Check,
   BookOpen,
@@ -25,7 +26,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { expandSource, getDocumentSection } from "@/lib/api/documents";
-import { getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
+import { getDocumentTypeLabel, getRelevanceTheme, surfaceClasses } from "@/lib/design-system";
 import { cn } from "@/lib/utils";
 import { sanitizeDocumentHtml } from "@/lib/utils/sanitize";
 import type { ChatSource, DocumentType, ExpandedTable, SectionResponse } from "@/lib/api/types";
@@ -171,6 +172,8 @@ function getDocumentIcon(type: DocumentType) {
       return ScrollText;
     case "constitution":
       return Scale;
+    case "organization_document":
+      return Lock;
     default:
       return FileText;
   }
@@ -208,6 +211,13 @@ function getTypeColor(type: DocumentType) {
         border: "border-border/30",
         text: "text-primary",
         icon: "text-primary",
+      };
+    case "organization_document":
+      return {
+        bg: "bg-blue-500/10 dark:bg-blue-500/15",
+        border: "border-blue-500/30",
+        text: "text-blue-700 dark:text-blue-300",
+        icon: "text-blue-600 dark:text-blue-400",
       };
     default:
       return {
@@ -560,9 +570,9 @@ export function SourceDetailDialog({
                 </div>
                 <Badge
                   variant="outline"
-                  className={`capitalize shrink-0 ${colors.bg} ${colors.border} ${colors.text}`}
+                  className={`shrink-0 ${colors.bg} ${colors.border} ${colors.text}`}
                 >
-                  {source.document_type}
+                  {getDocumentTypeLabel(source.document_type)}
                 </Badge>
               </div>
 
