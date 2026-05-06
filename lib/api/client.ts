@@ -413,10 +413,22 @@ export async function apiFetch<T>(
   const method = options?.method ?? "GET";
   const providedHeaders = (options?.headers as Record<string, string> | undefined) || {};
   const headers: Record<string, string> = { ...providedHeaders };
+  // Detect non-JSON body types that the browser must Content-Type itself
+  // (e.g. FormData needs `multipart/form-data; boundary=...`). If we set
+  // `application/json` on FormData the multipart boundary never lands and
+  // the backend sees an empty body → 422 "field required". Same logic
+  // applies to URLSearchParams + Blob/File. Only auto-add JSON Content-Type
+  // for plain serialized bodies (string/object).
+  const body = options?.body;
+  const isBrowserManagedBody =
+    typeof FormData !== "undefined" && body instanceof FormData ||
+    typeof URLSearchParams !== "undefined" && body instanceof URLSearchParams ||
+    typeof Blob !== "undefined" && body instanceof Blob;
   const hasJsonBody =
-    options?.body !== undefined &&
-    options?.body !== null &&
+    body !== undefined &&
+    body !== null &&
     !("Content-Type" in headers) &&
+    !isBrowserManagedBody &&
     method.toUpperCase() !== "GET" &&
     method.toUpperCase() !== "HEAD";
   if (hasJsonBody) {
