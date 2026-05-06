@@ -71,6 +71,24 @@ export function useCorpusScope(
   // instead of 2, with no rule violation.
   const [corpusScope, setScopeState] = useState<CorpusScope>(() => {
     if (typeof window === "undefined") return fallback;
+    // Explicit defaultScope (typically from a ?scope= URL param the user
+    // just clicked through) wins over the persisted choice — it represents
+    // a fresh user-driven request, not a returning-visitor preference.
+    // Without this precedence, hard-refresh on /chat?scope=org_kb would
+    // re-fire the auto-send against the persisted Law Lens scope and
+    // produce an Ask-Ben-style "no documents provided" response.
+    if (options?.defaultScope) {
+      try {
+        // Sync the persisted store immediately so the rest of the app —
+        // including auto-send fired before the next render — sees the
+        // requested scope, and so the URL strip we do next render doesn't
+        // revert us back to localStorage.
+        window.localStorage.setItem(STORAGE_KEY, options.defaultScope);
+      } catch {
+        /* noop */
+      }
+      return options.defaultScope;
+    }
     try {
       const stored = window.localStorage.getItem(STORAGE_KEY);
       if (stored === "legal_corpus" || stored === "org_kb" || stored === "both") {

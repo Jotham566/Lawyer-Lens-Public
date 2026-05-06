@@ -933,7 +933,30 @@ export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
 
         setInput(initialQuery);
         // Small timeout to ensure state updates propagate
-        setTimeout(() => handleSend(initialQuery, id), 100);
+        setTimeout(() => {
+            handleSend(initialQuery, id);
+            // Strip ?q= and ?scope= from the URL once we've fired the
+            // initial send. Without this, hard-refresh re-sends the same
+            // prompt on every page load AND re-seeds the corpus chip from
+            // the URL, which silently routed reloaded turns to the wrong
+            // corpus when the user had since switched chips.
+            //
+            // We delay slightly past the send so React's batched state
+            // updates (chip → setCorpusScope) commit first.
+            setTimeout(() => {
+                const params = new URLSearchParams(window.location.search);
+                if (params.has("q") || params.has("scope")) {
+                    params.delete("q");
+                    params.delete("scope");
+                    const next = params.toString();
+                    window.history.replaceState(
+                        null,
+                        "",
+                        next ? `${window.location.pathname}?${next}` : window.location.pathname,
+                    );
+                }
+            }, 50);
+        }, 100);
     }, [initialQuery, initialDocumentId, createConversation, handleSend]);
 
     useEffect(() => {
@@ -964,6 +987,13 @@ export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
         }
         if (params.has("q")) {
             params.delete("q");
+            changed = true;
+        }
+        // Strip scope too — without this, hard-refresh re-fires `?q=` AND
+        // re-seeds the chip from the URL, which led to stale conversations
+        // being silently re-sent against the wrong corpus on every reload.
+        if (params.has("scope")) {
+            params.delete("scope");
             changed = true;
         }
 
