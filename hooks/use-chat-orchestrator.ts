@@ -59,7 +59,7 @@ export interface UseChatOrchestratorOptions {
 
 export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
     const { isAuthenticated } = useAuth();
-    const { refresh: refreshEntitlements, entitlements } = useEntitlements();
+    const { refresh: refreshEntitlements, entitlements, hasInitialized: entitlementsLoaded } = useEntitlements();
     const userTier = entitlements?.tier;
     const router = useRouter();
     const pathname = usePathname();
@@ -78,7 +78,7 @@ export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
             : options?.initialCorpusScope;
     const { corpusScope, setCorpusScope, isScopeAllowed, allowedScopes } = useCorpusScope(
         userTier,
-        { defaultScope: seedScope },
+        { defaultScope: seedScope, entitlementsLoaded },
     );
 
     // If the URL param differs from the persisted scope, snap the persisted

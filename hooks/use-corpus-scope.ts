@@ -42,8 +42,22 @@ export interface UseCorpusScopeReturn {
  *
  * `tier` is the org subscription_tier string the backend serves on the
  * user/me payload — keep these in sync.
+ *
+ * `entitlementsKnown=false` means we haven't loaded entitlements yet.
+ * In that window we OPTIMISTICALLY allow all scopes — otherwise the
+ * chip silently snaps to legal_corpus during the load gap, the user
+ * thinks they're chatting against Internal but the request actually
+ * ships with legal_corpus, and they get an Ask-Ben judgments answer
+ * for what looked like an Internal question. The backend re-checks
+ * tier server-side and 403s if the optimistic call was wrong.
  */
-function scopesAllowedFor(tier: string | null | undefined): CorpusScope[] {
+function scopesAllowedFor(
+  tier: string | null | undefined,
+  entitlementsKnown: boolean,
+): CorpusScope[] {
+  if (!entitlementsKnown) {
+    return ["legal_corpus", "org_kb", "both"];
+  }
   const t = (tier || "").toLowerCase();
   if (t === "team" || t === "enterprise") {
     return ["legal_corpus", "org_kb", "both"];
@@ -53,8 +67,9 @@ function scopesAllowedFor(tier: string | null | undefined): CorpusScope[] {
 
 export function useCorpusScope(
   tier: string | null | undefined,
-  options?: { defaultScope?: CorpusScope }
+  options?: { defaultScope?: CorpusScope; entitlementsLoaded?: boolean }
 ): UseCorpusScopeReturn {
+  const entitlementsKnown = options?.entitlementsLoaded ?? false;
   const fallback: CorpusScope = options?.defaultScope ?? "legal_corpus";
 
   // Lazy initializer reads localStorage on first client render so we
@@ -100,7 +115,10 @@ export function useCorpusScope(
     return fallback;
   });
 
-  const allowedScopes = useMemo(() => scopesAllowedFor(tier), [tier]);
+  const allowedScopes = useMemo(
+    () => scopesAllowedFor(tier, entitlementsKnown),
+    [tier, entitlementsKnown],
+  );
 
   // Tier-downgrade safety: if the persisted scope is no longer allowed
   // (e.g., org dropped from TEAM to FREE), snap back to legal_corpus
