@@ -26,6 +26,7 @@ import {
   type ToolMode,
 } from "@/components/chat";
 import { CorpusScopeChips } from "@/components/chat/corpus-scope-chips";
+import { InternalKbNudge } from "@/components/chat/internal-kb-nudge";
 import type { CorpusScope } from "@/lib/api/types";
 import { CitationProvider } from "@/components/citations";
 import { useRequireAuth } from "@/components/providers";
@@ -92,6 +93,15 @@ function EmptyChatSurface({
       onSelectQuestion={onSelectQuestion}
       composer={
         <div className="flex w-full flex-col items-stretch gap-2">
+          {/* Contextual nudge: TEAM/ENTERPRISE users with a populated KB
+              get a one-click "Try Internal" prompt before they type. */}
+          <div className="flex justify-center">
+            <InternalKbNudge
+              tier={userTier}
+              corpusScope={corpusScope}
+              onUseInternal={() => onChangeCorpusScope("org_kb")}
+            />
+          </div>
           <div className="flex justify-center">
             <CorpusScopeChips
               value={corpusScope}

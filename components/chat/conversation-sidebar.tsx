@@ -17,6 +17,9 @@ import {
   ArchiveRestore,
   ChevronDown,
   ChevronRight,
+  Lock,
+  Scale,
+  Sparkles,
 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { useDebouncedValue } from "@/hooks/use-debounced-value";
@@ -549,6 +552,72 @@ interface ConversationSidebarProps {
   onNewConversation: () => void;
 }
 
+/**
+ * CorpusFilterRow — small chip row under the sidebar search box that
+ * lets the user narrow conversation history by which corpus answered
+ * each thread. Counts come from the parent's reduce over conversations.
+ *
+ * Hidden entirely when the user has no Internal/Both threads (FREE/Pro
+ * users only ever see legal_corpus, so the row would be useless noise).
+ */
+type CorpusFilterValue = "all" | "legal_corpus" | "org_kb" | "both";
+
+interface CorpusFilterRowProps {
+  value: CorpusFilterValue;
+  onChange: (next: CorpusFilterValue) => void;
+  counts: { legal_corpus: number; org_kb: number; both: number };
+}
+
+function CorpusFilterRow({ value, onChange, counts }: CorpusFilterRowProps) {
+  const total = counts.legal_corpus + counts.org_kb + counts.both;
+  const items: Array<{
+    key: CorpusFilterValue;
+    label: string;
+    icon: React.ReactNode;
+    count: number;
+  }> = [
+    { key: "all", label: "All", icon: null, count: total },
+    { key: "legal_corpus", label: "Law Lens", icon: <Scale className="h-3 w-3" />, count: counts.legal_corpus },
+    { key: "org_kb", label: "Internal", icon: <Lock className="h-3 w-3" />, count: counts.org_kb },
+  ];
+  if (counts.both > 0) {
+    items.push({ key: "both", label: "Both", icon: <Sparkles className="h-3 w-3" />, count: counts.both });
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1 px-3 pb-3">
+      {items.map((item) => {
+        const isActive = value === item.key;
+        return (
+          <button
+            key={item.key}
+            type="button"
+            onClick={() => onChange(item.key)}
+            disabled={item.count === 0 && item.key !== "all"}
+            aria-pressed={isActive}
+            className={cn(
+              "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium transition-colors",
+              isActive
+                ? "bg-foreground text-background"
+                : "bg-muted/60 text-muted-foreground hover:bg-muted",
+              item.count === 0 && item.key !== "all" && "opacity-40 cursor-not-allowed",
+            )}
+          >
+            {item.icon}
+            <span>{item.label}</span>
+            <span className={cn(
+              "rounded-full px-1 text-[9px] tabular-nums",
+              isActive ? "bg-background/20" : "bg-foreground/10",
+            )}>
+              {item.count}
+            </span>
+          </button>
+        );
+      })}
+    </div>
+  );
+}
+
 export function ConversationSidebar({
   conversations,
   archivedConversations,
@@ -565,17 +634,49 @@ export function ConversationSidebar({
 }: ConversationSidebarProps) {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
+  const [corpusFilter, setCorpusFilter] = useState<"all" | "legal_corpus" | "org_kb" | "both">("all");
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
 
-  // Filter conversations based on search query
+  // Derive each conversation's "primary" corpus from its messages.
+  // We use the first user message's corpus_scope tag — that's what the
+  // user picked when starting the thread. Conversations from before
+  // corpus tagging shipped have undefined → treated as legal_corpus
+  // (the original Ask Ben default), which matches user expectation.
+  const inferConvScope = (conv: Conversation): "legal_corpus" | "org_kb" | "both" => {
+    for (const msg of conv.messages) {
+      if (msg.role === "user" && msg.corpus_scope) {
+        return msg.corpus_scope;
+      }
+    }
+    return "legal_corpus";
+  };
+
+  // Filter pipeline: search query first, then corpus filter.
   const filteredConversations = useMemo(() => {
-    if (!debouncedQuery.trim()) return conversations;
-    const query = debouncedQuery.toLowerCase();
-    return conversations.filter(conv =>
-      stripMarkdownFromTitle(conv.title).toLowerCase().includes(query) ||
-      conv.messages.some(m => m.content.toLowerCase().includes(query))
-    );
-  }, [conversations, debouncedQuery]);
+    let out = conversations;
+    if (debouncedQuery.trim()) {
+      const query = debouncedQuery.toLowerCase();
+      out = out.filter(conv =>
+        stripMarkdownFromTitle(conv.title).toLowerCase().includes(query) ||
+        conv.messages.some(m => m.content.toLowerCase().includes(query))
+      );
+    }
+    if (corpusFilter !== "all") {
+      out = out.filter(conv => inferConvScope(conv) === corpusFilter);
+    }
+    return out;
+  }, [conversations, debouncedQuery, corpusFilter]);
+
+  // Counts per corpus drive the filter chip badges so users can see
+  // at a glance how many threads each corpus has.
+  const corpusCounts = useMemo(() => {
+    const c = { legal_corpus: 0, org_kb: 0, both: 0 };
+    for (const conv of conversations) {
+      const scope = inferConvScope(conv);
+      c[scope]++;
+    }
+    return c;
+  }, [conversations]);
 
   return (
     <div
@@ -622,7 +723,7 @@ export function ConversationSidebar({
 
       {/* Search Input */}
       {!isCollapsed && (
-        <div className="px-3 pb-3">
+        <div className="px-3 pb-2">
           <div className="relative">
             <Search className="absolute left-2.5 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
             <Input
@@ -644,6 +745,17 @@ export function ConversationSidebar({
             )}
           </div>
         </div>
+      )}
+
+      {/* Corpus filter chips — render only when there's at least one
+          non-default-corpus thread, so FREE/Pro users without Internal
+          history don't see clutter. */}
+      {!isCollapsed && (corpusCounts.org_kb > 0 || corpusCounts.both > 0) && (
+        <CorpusFilterRow
+          value={corpusFilter}
+          onChange={setCorpusFilter}
+          counts={corpusCounts}
+        />
       )}
 
       {/* List */}
@@ -708,17 +820,41 @@ export function MobileHistorySheet({
   onUnarchiveConversation,
 }: MobileHistorySheetProps) {
   const [searchQuery, setSearchQuery] = useState("");
+  const [corpusFilter, setCorpusFilter] = useState<CorpusFilterValue>("all");
   const debouncedQuery = useDebouncedValue(searchQuery, 300);
 
-  // Filter conversations based on search query
+  // Same scope-inference logic as the desktop sidebar.
+  const inferConvScope = (conv: Conversation): "legal_corpus" | "org_kb" | "both" => {
+    for (const msg of conv.messages) {
+      if (msg.role === "user" && msg.corpus_scope) {
+        return msg.corpus_scope;
+      }
+    }
+    return "legal_corpus";
+  };
+
   const filteredConversations = useMemo(() => {
-    if (!debouncedQuery.trim()) return conversations;
-    const query = debouncedQuery.toLowerCase();
-    return conversations.filter(conv =>
-      stripMarkdownFromTitle(conv.title).toLowerCase().includes(query) ||
-      conv.messages.some(m => m.content.toLowerCase().includes(query))
-    );
-  }, [conversations, debouncedQuery]);
+    let out = conversations;
+    if (debouncedQuery.trim()) {
+      const query = debouncedQuery.toLowerCase();
+      out = out.filter(conv =>
+        stripMarkdownFromTitle(conv.title).toLowerCase().includes(query) ||
+        conv.messages.some(m => m.content.toLowerCase().includes(query))
+      );
+    }
+    if (corpusFilter !== "all") {
+      out = out.filter(conv => inferConvScope(conv) === corpusFilter);
+    }
+    return out;
+  }, [conversations, debouncedQuery, corpusFilter]);
+
+  const corpusCounts = useMemo(() => {
+    const c = { legal_corpus: 0, org_kb: 0, both: 0 };
+    for (const conv of conversations) {
+      c[inferConvScope(conv)]++;
+    }
+    return c;
+  }, [conversations]);
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -769,6 +905,19 @@ export function MobileHistorySheet({
             )}
           </div>
         </div>
+
+        {/* Same corpus filter as desktop sidebar — only renders when
+            the user has at least one Internal/Both thread. */}
+        {(corpusCounts.org_kb > 0 || corpusCounts.both > 0) && (
+          <div className="px-1">
+            <CorpusFilterRow
+              value={corpusFilter}
+              onChange={setCorpusFilter}
+              counts={corpusCounts}
+            />
+          </div>
+        )}
+
         <div className="flex-1 overflow-y-auto px-4 pb-4">
           {isFetchingHistory && filteredConversations.length === 0 ? (
             <div className="space-y-2 py-1">
