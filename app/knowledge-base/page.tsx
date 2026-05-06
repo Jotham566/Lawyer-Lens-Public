@@ -23,6 +23,8 @@ import {
   Zap,
   X,
   Loader2,
+  ArrowRight,
+  Sparkles,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -32,7 +34,10 @@ import { PageLoading } from "@/components/common";
 import { DocumentUpload } from "@/components/knowledge-base/document-upload";
 import { DocumentList } from "@/components/knowledge-base/document-list";
 import { SearchInternal } from "@/components/knowledge-base/search-internal";
-import { KbChatPanel } from "@/components/knowledge-base/chat-internal";
+// KbChatPanel was the V1 standalone KB chat. Phase 1 of corpus-scope
+// unification consolidates everything onto /chat (one chat surface, scope
+// chip selects which corpus). The Ask tab now hands off to /chat with
+// scope=org_kb pre-selected via URL param.
 import {
   getKnowledgeBaseStats,
   listConnectors,
@@ -124,6 +129,69 @@ const SYNC_INTERVALS = [
   { label: "Every 12 hours", value: 720 },
   { label: "Daily", value: 1440 },
 ] as const;
+
+/**
+ * AskInternalKbCta — replaces the old standalone KbChatPanel on the Ask tab.
+ *
+ * Architecture decision: Phase 1 of corpus-scope unification consolidates
+ * all conversational surfaces onto /chat. The Ask tab here exists for
+ * discovery (users land in Knowledge Base, want to chat with their docs)
+ * but the actual chat happens on /chat with scope=org_kb pre-selected.
+ *
+ * Why not embed /chat in this tab: ChatContent owns conversation history,
+ * sidebar, citation panel, etc. — heavy state that belongs on its own
+ * route. Embedding would duplicate it and create state-sync bugs. A clean
+ * handoff respects single-source-of-truth.
+ *
+ * The CTA highlights three example questions to seed the conversation,
+ * each pre-passing the question via ?q= so the user lands directly in
+ * the streaming response.
+ */
+function AskInternalKbCta() {
+  const seedQuestions = [
+    "Summarize the main themes across our documents",
+    "What are the key findings in our reports?",
+    "Find documents about wearable technology",
+  ];
+  return (
+    <div className="mx-auto flex max-w-3xl flex-col items-center gap-8 py-12 text-center">
+      <div className="rounded-full bg-brand-gold/10 p-5">
+        <Sparkles className="h-8 w-8 text-brand-gold" />
+      </div>
+      <div className="space-y-3">
+        <h2 className="text-2xl font-semibold tracking-tight">
+          Ask Law Lens about your Knowledge Base
+        </h2>
+        <p className="max-w-xl text-sm text-muted-foreground">
+          Chat with your organization&apos;s documents in the same workspace
+          you use for legal research. Every answer cites the source doc and
+          page. Switch corpora mid-conversation with the scope selector.
+        </p>
+      </div>
+      <Link
+        href="/chat?scope=org_kb"
+        className="inline-flex items-center gap-2 rounded-full bg-foreground px-6 py-3 text-sm font-semibold text-background shadow-sm transition hover:opacity-90"
+      >
+        Open chat
+        <ArrowRight className="h-4 w-4" />
+      </Link>
+      <div className="grid w-full grid-cols-1 gap-2 sm:grid-cols-3">
+        {seedQuestions.map((q) => (
+          <Link
+            key={q}
+            href={`/chat?scope=org_kb&q=${encodeURIComponent(q)}`}
+            className="rounded-lg border border-border/60 bg-card p-4 text-left text-sm text-foreground/80 transition hover:border-brand-gold hover:bg-brand-gold/5"
+          >
+            <span className="line-clamp-3">{q}</span>
+          </Link>
+        ))}
+      </div>
+      <p className="text-xs text-muted-foreground">
+        Tip: Internal KB chat is available on Team and Enterprise plans.
+      </p>
+    </div>
+  );
+}
 
 function StatusDot({ status }: { status: string }) {
   const color =
@@ -721,7 +789,7 @@ function KnowledgeBaseContent({
             onCategoryFilterChange={setCategoryFilter}
           />
         )}
-        {activeTab === "ask" && <KbChatPanel />}
+        {activeTab === "ask" && <AskInternalKbCta />}
         {activeTab === "search" && <SearchInternal />}
         {activeTab === "upload" && (
           <DocumentUpload onUploadComplete={handleUploadComplete} />

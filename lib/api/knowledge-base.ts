@@ -204,52 +204,14 @@ export async function getKnowledgeBaseStats(): Promise<KnowledgeBaseStats> {
 
 // =============================================================================
 // Conversational Q&A (chat-style synthesis with citations)
+//
+// REMOVED in Phase 1 of corpus-scope unification. The dedicated
+// /knowledge-base/chat endpoint + chatWithKnowledgeBase() helper have been
+// replaced by /chat with corpus_scope="org_kb". See:
+//   - frontend-public/hooks/use-corpus-scope.ts
+//   - frontend-public/components/chat/corpus-scope-chips.tsx
+//   - backend/services/admin/api/routes/ai/chat.py::_build_chat_orchestrator
 // =============================================================================
-
-export interface KbChatTurn {
-  role: "user" | "assistant";
-  content: string;
-}
-
-export interface KbChatCitation {
-  document_id: string;
-  document_title: string;
-  chunk_text: string;
-  score: number;
-  page_number?: number | null;
-  section_heading?: string | null;
-}
-
-export interface KbChatResponse {
-  answer: string;
-  citations: KbChatCitation[];
-  chunks_retrieved: number;
-  no_results: boolean;
-  /** 0-1, higher = better grounded in retrieved chunks. From shared
-   * hallucination detector (same one Ask Ben uses). */
-  hallucination_score?: number | null;
-  flagged_claims?: string[];
-  /** Fraction of answer claims with strong source support. */
-  citation_coverage?: number | null;
-  unsupported_claims?: string[];
-}
-
-/**
- * Ask the Internal KB a natural-language question. Returns a synthesized
- * answer with inline [Doc Title, p. N] citations + the underlying chunks.
- *
- * For follow-up turns, pass the prior conversation in `history`. Do NOT
- * include the current question in `history`.
- */
-export async function chatWithKnowledgeBase(
-  question: string,
-  history: KbChatTurn[] = [],
-): Promise<KbChatResponse> {
-  return apiPost<KbChatResponse>("/knowledge-base/chat", {
-    question,
-    conversation_history: history,
-  });
-}
 
 /**
  * Format file size for display.

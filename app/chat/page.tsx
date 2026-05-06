@@ -25,6 +25,8 @@ import {
   EmptyState,
   type ToolMode,
 } from "@/components/chat";
+import { CorpusScopeChips } from "@/components/chat/corpus-scope-chips";
+import type { CorpusScope } from "@/lib/api/types";
 import { CitationProvider } from "@/components/citations";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
@@ -67,6 +69,9 @@ function EmptyChatSurface({
   onSubmit,
   onStop,
   setInputRef,
+  corpusScope,
+  onChangeCorpusScope,
+  userTier,
 }: {
   input: string;
   isLoading: boolean;
@@ -75,6 +80,9 @@ function EmptyChatSurface({
   onSubmit: (value: string, tool: ToolMode) => void;
   onStop: (() => void) | undefined;
   setInputRef: (node: HTMLTextAreaElement | null) => void;
+  corpusScope: CorpusScope;
+  onChangeCorpusScope: (next: CorpusScope) => void;
+  userTier: string | null | undefined;
 }) {
   const [tool, setTool] = useState<ToolMode>("chat");
 
@@ -83,16 +91,26 @@ function EmptyChatSurface({
       selectedTool={tool}
       onSelectQuestion={onSelectQuestion}
       composer={
-        <ChatInput
-          ref={setInputRef}
-          value={input}
-          selectedTool={tool}
-          onSelectTool={setTool}
-          onSubmit={onSubmit}
-          isLoading={isLoading}
-          isGenerating={isGenerating}
-          onStop={onStop}
-        />
+        <div className="flex w-full flex-col items-stretch gap-2">
+          <div className="flex justify-center">
+            <CorpusScopeChips
+              value={corpusScope}
+              onChange={onChangeCorpusScope}
+              tier={userTier}
+              disabled={isLoading || isGenerating}
+            />
+          </div>
+          <ChatInput
+            ref={setInputRef}
+            value={input}
+            selectedTool={tool}
+            onSelectTool={setTool}
+            onSubmit={onSubmit}
+            isLoading={isLoading}
+            isGenerating={isGenerating}
+            onStop={onStop}
+          />
+        </div>
       }
     />
   );
@@ -104,6 +122,7 @@ function ChatContent() {
   const { canShowContent } = useRequireAuth();
   const { state, actions } = useChatOrchestrator();
   const {
+    setCorpusScope,
     handleSelectConversation,
     handleRenameConversation,
     handleStarConversation,
@@ -218,6 +237,9 @@ function ChatContent() {
                       onSubmit={(value, tool) => handleSend(value, undefined, undefined, tool)}
                       onStop={handleStop}
                       setInputRef={setInputRef}
+                      corpusScope={state.corpusScope}
+                      onChangeCorpusScope={setCorpusScope}
+                      userTier={state.userTier}
                     />
                   </div>
                 </div>
@@ -244,14 +266,24 @@ function ChatContent() {
 
             {/* Input Area */}
             {state.currentConversation && state.currentConversation.messages.length > 0 && (
-              <ChatInput
-                ref={setInputRef}
-                value={state.input}
-                onSubmit={(value, tool) => handleSend(value, undefined, undefined, tool)}
-                isLoading={state.isLoading}
-                isGenerating={state.isGenerating}
-                onStop={handleStop}
-              />
+              <div className="flex flex-col items-stretch gap-2 px-3 pb-2 md:px-0">
+                <div className="flex justify-center">
+                  <CorpusScopeChips
+                    value={state.corpusScope}
+                    onChange={setCorpusScope}
+                    tier={state.userTier}
+                    disabled={state.isLoading || state.isGenerating}
+                  />
+                </div>
+                <ChatInput
+                  ref={setInputRef}
+                  value={state.input}
+                  onSubmit={(value, tool) => handleSend(value, undefined, undefined, tool)}
+                  isLoading={state.isLoading}
+                  isGenerating={state.isGenerating}
+                  onStop={handleStop}
+                />
+              </div>
             )}
           </div>
 

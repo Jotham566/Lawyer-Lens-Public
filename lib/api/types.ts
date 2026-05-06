@@ -254,6 +254,13 @@ export interface ChatMessage {
   confidence_info?: ConfidenceInfo;
   provider?: string;
   tokens_used?: number;
+  /**
+   * Which corpus answered this turn. Set on user messages (the scope
+   * they CHOSE to query) and copied to the assistant reply for badge
+   * rendering. Optional for backward compat with messages persisted
+   * before scope tracking shipped.
+   */
+  corpus_scope?: CorpusScope;
 }
 
 export interface ChatSource {
@@ -275,6 +282,17 @@ export interface DocumentScope {
   mode: "strict" | "document_plus_related";
 }
 
+/**
+ * Which corpus to retrieve from for this turn.
+ * - legal_corpus = Uganda Acts/Judgments (default, all tiers)
+ * - org_kb       = the user's Internal Knowledge Base only (TEAM/ENTERPRISE)
+ * - both         = parallel retrieval across both, merged and synthesized
+ *                  (TEAM/ENTERPRISE; Phase 2 — currently returns 501)
+ *
+ * Mirrors `CorpusScope` in backend/services/admin/api/routes/ai/chat.py.
+ */
+export type CorpusScope = "legal_corpus" | "org_kb" | "both";
+
 export interface ChatRequest {
   message: string;
   conversation_id?: string;
@@ -285,6 +303,8 @@ export interface ChatRequest {
   temperature?: number;
   /** For regeneration: 0-based message index to truncate from in backend DB */
   truncate_from?: number;
+  /** Corpus to query. Default = legal_corpus (backward compat). */
+  corpus_scope?: CorpusScope;
 }
 
 /**

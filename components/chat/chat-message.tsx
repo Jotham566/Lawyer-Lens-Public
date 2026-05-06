@@ -10,6 +10,8 @@ import {
   X,
   Send,
   Download,
+  Lock,
+  Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import {
@@ -25,7 +27,43 @@ import { SourceBadgeList } from "./source-badge";
 import { MessageFeedback } from "./message-feedback";
 import { SourceTransparencyInline } from "./source-transparency";
 import { formatRelativeTime } from "./conversation-sidebar";
-import type { ChatFeedbackType, ChatMessage as ChatMessageType } from "@/lib/api/types";
+import type { ChatFeedbackType, ChatMessage as ChatMessageType, CorpusScope } from "@/lib/api/types";
+
+/**
+ * Tiny pill on user messages telling the user (and anyone reading the
+ * thread) which corpus they queried for that turn. Hidden when corpus_scope
+ * is missing (older messages) or "legal_corpus" (default — no signal needed).
+ *
+ * Why only badge non-default: badging every user message clutters the
+ * thread. The default case is implied. Internal / Both deviate from the
+ * default and warrant the visual cue.
+ */
+function CorpusScopeMessageBadge({ scope }: { scope?: CorpusScope }) {
+  if (!scope || scope === "legal_corpus") return null;
+  if (scope === "org_kb") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-blue-500/15 px-2 py-0.5 text-[10px] font-semibold text-blue-700 dark:text-blue-300"
+        title="Asked of your Internal Knowledge Base"
+      >
+        <Lock className="h-2.5 w-2.5" />
+        Internal
+      </span>
+    );
+  }
+  if (scope === "both") {
+    return (
+      <span
+        className="inline-flex items-center gap-1 rounded-full bg-purple-500/15 px-2 py-0.5 text-[10px] font-semibold text-purple-700 dark:text-purple-300"
+        title="Asked across Law Lens + your Internal Knowledge Base"
+      >
+        <Sparkles className="h-2.5 w-2.5" />
+        Both
+      </span>
+    );
+  }
+  return null;
+}
 
 /**
  * MessageTimestamp - Displays relative timestamp for messages
@@ -307,6 +345,7 @@ function ChatMessageComponent({
           {/* User Message Actions & Timestamp */}
           {!isEditing && message.content && (
             <div className="flex items-center justify-end gap-2 px-2">
+              <CorpusScopeMessageBadge scope={message.corpus_scope} />
               <MessageTimestamp timestamp={message.timestamp} align="right" />
               <div className="flex gap-1 opacity-50 transition-opacity hover:opacity-100 group-hover:opacity-100">
                 <UserMessageActions

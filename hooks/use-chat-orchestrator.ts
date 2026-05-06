@@ -7,6 +7,7 @@ import { useAuth } from "@/components/providers";
 import { useEntitlements } from "@/hooks/use-entitlements";
 import { useUpgradeModal } from "@/components/entitlements/upgrade-required-modal";
 import { useCitationOptional } from "@/components/citations";
+import { useCorpusScope } from "@/hooks/use-corpus-scope";
 import {
     streamChatWithTypewriter,
     getSuggestedQuestions,
@@ -47,15 +48,52 @@ function inferContractType(text: string): string {
     return "general";
 }
 
-export function useChatOrchestrator() {
+/**
+ * Initial corpus scope hook options. Pass `defaultScope: "org_kb"` from
+ * the dedicated KB Ask tab so it opens with Internal selected even on a
+ * brand-new device (no localStorage yet).
+ */
+export interface UseChatOrchestratorOptions {
+    initialCorpusScope?: "legal_corpus" | "org_kb" | "both";
+}
+
+export function useChatOrchestrator(options?: UseChatOrchestratorOptions) {
     const { isAuthenticated } = useAuth();
-    const { refresh: refreshEntitlements } = useEntitlements();
+    const { refresh: refreshEntitlements, entitlements } = useEntitlements();
+    const userTier = entitlements?.tier;
     const router = useRouter();
     const pathname = usePathname();
     const searchParams = useSearchParams();
     const initialQuery = searchParams.get("q");
     const initialConversationId = searchParams.get("conversation");
     const initialDocumentId = searchParams.get("doc");
+    // ?scope=org_kb seeds the chip on first load (e.g., the "Ask Internal KB"
+    // CTA on /knowledge-base links here with this param). Valid values mirror
+    // CorpusScope. Persisted scope (localStorage) wins on subsequent visits
+    // unless the URL param is present and explicit.
+    const scopeParam = searchParams.get("scope");
+    const seedScope =
+        scopeParam === "legal_corpus" || scopeParam === "org_kb" || scopeParam === "both"
+            ? (scopeParam as "legal_corpus" | "org_kb" | "both")
+            : options?.initialCorpusScope;
+    const { corpusScope, setCorpusScope, isScopeAllowed, allowedScopes } = useCorpusScope(
+        userTier,
+        { defaultScope: seedScope },
+    );
+
+    // If the URL param differs from the persisted scope, snap the persisted
+    // value to the URL request once on mount. This is what the user asked
+    // for by clicking the CTA — they want THIS scope, not their old one.
+    useEffect(() => {
+        if (
+            scopeParam &&
+            (scopeParam === "legal_corpus" || scopeParam === "org_kb" || scopeParam === "both") &&
+            corpusScope !== scopeParam
+        ) {
+            setCorpusScope(scopeParam as "legal_corpus" | "org_kb" | "both");
+        }
+        // run once per scope-param change
+    }, [scopeParam]); // eslint-disable-line react-hooks/exhaustive-deps
 
     // Global Chat Store
     const {
@@ -376,7 +414,13 @@ export function useChatOrchestrator() {
 
     // 1. Core Streaming Logic
     const streamResponse = useCallback(
-        async (text: string, activeConvId: string, conversationHistory: { role: string; content: string }[], truncateFrom?: number) => {
+        async (
+            text: string,
+            activeConvId: string,
+            conversationHistory: { role: string; content: string }[],
+            truncateFrom?: number,
+            scopeForTurn?: "legal_corpus" | "org_kb" | "both",
+        ) => {
             setLoading(true);
             setError(null);
             setIsGenerating(true);
@@ -405,6 +449,11 @@ export function useChatOrchestrator() {
                 let followups: string[] = [];
                 let assistantMessageId: string | undefined;
 
+                // Snap the scope at request-build time. Reading from a ref
+                // so a setCorpusScope mid-stream doesn't tag the in-flight
+                // turn with the new scope.
+                const turnScope = scopeForTurn ?? corpusScope;
+
                 const stream = streamChatWithTypewriter(
                     {
                         message: text,
@@ -419,6 +468,7 @@ export function useChatOrchestrator() {
                         max_context_chunks: 10,
                         temperature: 0.3,
                         truncate_from: truncateFrom,
+                        corpus_scope: turnScope,
                     },
                     {},
                     controller.signal
@@ -513,6 +563,7 @@ export function useChatOrchestrator() {
             refreshEntitlements,
             replaceConversationId,
             fetchConversations,
+            corpusScope,
         ]
     );
 
@@ -536,10 +587,16 @@ export function useChatOrchestrator() {
     // 2. Regular Chat Handler
     const handleRegularChat = useCallback(
         async (text: string, activeConvId: string, messagesForHistory?: ChatMessageType[]) => {
+            // Snapshot scope at submit time so the chip render and the
+            // request travel together. Future scope changes during the
+            // in-flight stream don't retroactively re-tag this message.
+            const scopeForTurn = corpusScope;
+
             const userMessage: ChatMessageType = {
                 role: "user",
                 content: text,
                 timestamp: new Date().toISOString(),
+                corpus_scope: scopeForTurn,
             };
             addMessage(activeConvId, userMessage);
 
@@ -552,9 +609,9 @@ export function useChatOrchestrator() {
                 { role: "user", content: text },
             ];
 
-            await streamResponse(text, activeConvId, conversationHistory);
+            await streamResponse(text, activeConvId, conversationHistory, undefined, scopeForTurn);
         },
-        [currentConversation?.messages, addMessage, streamResponse]
+        [currentConversation?.messages, addMessage, streamResponse, corpusScope]
     );
 
     // 3. Main Send Handler
@@ -1106,9 +1163,14 @@ export function useChatOrchestrator() {
             exportDialogOpen,
             upgradeModalOpen,
             upgradeDetails,
+            corpusScope,
+            allowedCorpusScopes: allowedScopes,
+            userTier,
         },
         actions: {
             setInput,
+            setCorpusScope,
+            isCorpusScopeAllowed: isScopeAllowed,
             setInputRef,
             setEditInputRef,
             handleInputChange,
