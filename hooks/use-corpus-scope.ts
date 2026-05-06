@@ -40,25 +40,29 @@ export interface UseCorpusScopeReturn {
  * - FREE/PROFESSIONAL: legal_corpus only (no Internal KB on these tiers)
  * - TEAM/ENTERPRISE:   all three (Internal KB is unlocked at Team)
  *
- * `tier` is the org subscription_tier string the backend serves on the
- * user/me payload — keep these in sync.
+ * `tier` is the org subscription_tier string from /me; missing means
+ * "we don't know yet" (entitlements still loading, refreshing after an
+ * auth change, etc — entitlements gets transiently reset to null many
+ * times in the app's lifecycle).
  *
- * `entitlementsKnown=false` means we haven't loaded entitlements yet.
- * In that window we OPTIMISTICALLY allow all scopes — otherwise the
- * chip silently snaps to legal_corpus during the load gap, the user
- * thinks they're chatting against Internal but the request actually
- * ships with legal_corpus, and they get an Ask-Ben judgments answer
- * for what looked like an Internal question. The backend re-checks
- * tier server-side and 403s if the optimistic call was wrong.
+ * Critical: when tier is null/undefined we OPTIMISTICALLY allow all
+ * scopes. Earlier code treated "tier missing" as "FREE confirmed" which
+ * silently snapped the chip to legal_corpus during refresh windows —
+ * users saw the Internal chip selected but their request shipped with
+ * legal_corpus, returning Ask-Ben legal results for what looked like an
+ * Internal question. The backend re-checks tier and 403s if the
+ * optimistic call was wrong, so this is safe.
+ *
+ * A FREE user ALWAYS has tier === "free" once entitlements load — never
+ * undefined. So treating undefined as "unknown" can never bypass a real
+ * tier gate.
  */
-function scopesAllowedFor(
-  tier: string | null | undefined,
-  entitlementsKnown: boolean,
-): CorpusScope[] {
-  if (!entitlementsKnown) {
+function scopesAllowedFor(tier: string | null | undefined): CorpusScope[] {
+  if (!tier) {
+    // Tier unknown — allow all, backend re-checks.
     return ["legal_corpus", "org_kb", "both"];
   }
-  const t = (tier || "").toLowerCase();
+  const t = tier.toLowerCase();
   if (t === "team" || t === "enterprise") {
     return ["legal_corpus", "org_kb", "both"];
   }
@@ -69,7 +73,10 @@ export function useCorpusScope(
   tier: string | null | undefined,
   options?: { defaultScope?: CorpusScope; entitlementsLoaded?: boolean }
 ): UseCorpusScopeReturn {
-  const entitlementsKnown = options?.entitlementsLoaded ?? false;
+  // Note: entitlementsLoaded is no longer used to gate scopesAllowedFor —
+  // we now derive the gating purely from whether `tier` is known. Kept in
+  // the API for backward compat with callers that already pass it.
+  void options?.entitlementsLoaded;
   const fallback: CorpusScope = options?.defaultScope ?? "legal_corpus";
 
   // Lazy initializer reads localStorage on first client render so we
@@ -115,10 +122,7 @@ export function useCorpusScope(
     return fallback;
   });
 
-  const allowedScopes = useMemo(
-    () => scopesAllowedFor(tier, entitlementsKnown),
-    [tier, entitlementsKnown],
-  );
+  const allowedScopes = useMemo(() => scopesAllowedFor(tier), [tier]);
 
   // Tier-downgrade safety: if the persisted scope is no longer allowed
   // (e.g., org dropped from TEAM to FREE), snap back to legal_corpus
