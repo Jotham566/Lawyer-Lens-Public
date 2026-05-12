@@ -698,8 +698,16 @@ export function SourcePanel() {
                 )}>
                   <HighlightedExcerpt
                     excerpt={parsedExcerpt.bodyText || displayExcerpt}
+                    // B2 (2026-05-12): when the response came through
+                    // the native Citations API path, `cited_text` is
+                    // the EXACT passage the model cited. Pass it as
+                    // highlightText so the user sees the precise span
+                    // that supports the claim, not just the chunk
+                    // excerpt. Null on legacy regex-citations path
+                    // (HighlightedExcerpt handles undefined cleanly).
+                    highlightText={activeSource.cited_text ?? undefined}
                     showQuotes={true}
-                    scrollToHighlight={false}
+                    scrollToHighlight={Boolean(activeSource.cited_text)}
                   />
                 </div>
               )}

@@ -287,6 +287,15 @@ export interface ChatSource {
   legal_reference?: string;  // Formatted legal reference like "Part II, Section 9(2)"
   hierarchy_path?: HierarchyPathItem[]; // Full hierarchy path for richer citation breadcrumbs
   chunk_id?: string;  // Chunk ID for precise expand-source lookup
+  // B2 (2026-05-12) — native Anthropic Citations API fields. Populated only
+  // when synthesis ran through the Citations API path (CHAT_USE_CITATIONS_API=true).
+  // cited_text is the EXACT passage from the source that supports the cite;
+  // start/end offsets locate it inside `excerpt` / chunk text. Use for
+  // hover-passage previews ("show me the exact source language") instead of
+  // dumping the whole chunk. Null on the legacy regex-citations path.
+  cited_text?: string | null;
+  cited_text_start?: number | null;
+  cited_text_end?: number | null;
 }
 
 export interface DocumentScope {

@@ -307,7 +307,14 @@ export function SourceCitation({
               </span>
             ) : (
               <span className="block text-xs leading-relaxed text-foreground/80 line-clamp-3">
-                &quot;{truncate(source.excerpt, 150)}&quot;
+                {/* B2 (2026-05-12): when the model cited a specific
+                    passage via the Citations API, show THAT passage
+                    in the hover preview, not the generic chunk
+                    excerpt. The cited_text is the EXACT span the
+                    model referenced — far more useful than 150
+                    chars of arbitrary chunk text. Falls back to
+                    excerpt on the legacy regex-citations path. */}
+                &quot;{truncate(source.cited_text || source.excerpt, 150)}&quot;
               </span>
             )}
 

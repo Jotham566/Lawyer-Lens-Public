@@ -120,8 +120,9 @@ function ComparisonCard({ source, citationNumber, onRemove }: ComparisonCardProp
         <div className="rounded-lg border border-border/30 bg-muted/30 p-3">
           <HighlightedExcerpt
             excerpt={source.excerpt}
+            highlightText={source.cited_text ?? undefined}
             showQuotes={true}
-            scrollToHighlight={false}
+            scrollToHighlight={Boolean(source.cited_text)}
           />
         </div>
       </ScrollArea>
