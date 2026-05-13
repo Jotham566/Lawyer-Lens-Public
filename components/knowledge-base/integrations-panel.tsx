@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Cloud,
@@ -10,18 +10,33 @@ import {
   CheckCircle2,
   Clock,
   Loader2,
-  ExternalLink,
   HardDrive,
+  Plus,
+  Unlink,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { Skeleton } from "@/components/ui/skeleton";
 import {
+  authorizeIntegration,
+  disconnectDataSource,
   listDataSources,
   syncDataSource,
   type DataSourceItem,
   type DataSourceStatus,
   type DataSourceType,
+  type IntegrationProvider,
 } from "@/lib/api/knowledge-base";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from "@/components/ui/alert-dialog";
 import { toast } from "sonner";
 
 /**
@@ -42,6 +57,8 @@ import { toast } from "sonner";
 
 type SourceMeta = {
   type: DataSourceType;
+  /** Provider slug used in OAuth routes. null for sources without browser OAuth yet. */
+  provider: IntegrationProvider | null;
   label: string;
   blurb: string;
   status: "live" | "preview" | "soon";
@@ -50,24 +67,27 @@ type SourceMeta = {
 const SOURCES: SourceMeta[] = [
   {
     type: "microsoft_onedrive",
+    provider: "onedrive",
     label: "Microsoft OneDrive",
     blurb:
-      "Sync a folder from OneDrive — Files.Read.All scope, incremental via Graph Delta.",
+      "Sync your OneDrive root folder. Browser OAuth, refresh tokens, incremental via Graph Delta.",
+    status: "live",
+  },
+  {
+    type: "google_drive",
+    provider: "google-drive",
+    label: "Google Drive",
+    blurb:
+      "Connect via Google OAuth (drive.file scope — only files you pick are visible). Delta via Changes feed.",
     status: "live",
   },
   {
     type: "microsoft_sharepoint",
+    provider: null,
     label: "Microsoft SharePoint",
     blurb:
-      "Sync from a SharePoint document library. Same Graph plumbing as OneDrive.",
+      "Sync from a SharePoint document library. Same Graph plumbing as OneDrive; landing next.",
     status: "preview",
-  },
-  {
-    type: "google_drive",
-    label: "Google Drive",
-    blurb:
-      "Sync a Drive folder via the Drive v3 API. OAuth consent + delta token.",
-    status: "soon",
   },
 ];
 
@@ -103,6 +123,55 @@ const STATUS_TONE: Record<
   },
 };
 
+/**
+ * Reads ?connected=<provider> or ?error=<code> from the URL exactly
+ * once and toasts the outcome. Strips both params after to prevent
+ * duplicate toasts on refresh. Uses a ref guard so React Strict Mode
+ * doesn't double-fire the effect.
+ */
+function useOAuthCallbackToast(onSuccess: () => void) {
+  const firedRef = useRef(false);
+
+  useEffect(() => {
+    if (firedRef.current) return;
+    if (typeof window === "undefined") return;
+
+    const url = new URL(window.location.href);
+    const connected = url.searchParams.get("connected");
+    const error = url.searchParams.get("error");
+    if (!connected && !error) return;
+
+    firedRef.current = true;
+    url.searchParams.delete("connected");
+    url.searchParams.delete("error");
+    window.history.replaceState({}, "", url.toString());
+
+    if (connected) {
+      const label =
+        connected === "onedrive"
+          ? "OneDrive"
+          : connected === "google-drive"
+            ? "Google Drive"
+            : connected;
+      toast.success(`${label} connected`, {
+        description:
+          "Your account is linked. The first sync runs in the background — refresh in a minute to see synced files.",
+      });
+      onSuccess();
+    } else if (error) {
+      const human =
+        error === "invalid_state"
+          ? "OAuth state expired or already used. Try connecting again."
+          : error === "token_exchange_failed"
+            ? "The provider rejected the authorization code. Try again, or check the redirect URI is registered."
+            : error === "access_denied"
+              ? "Consent was denied. No data was shared."
+              : `Connection failed: ${error}`;
+      toast.error("Couldn't complete connection", { description: human });
+    }
+  }, [onSuccess]);
+}
+
 function formatRelative(iso: string | null): string {
   if (!iso) return "never";
   const then = new Date(iso).getTime();
@@ -120,12 +189,60 @@ function formatRelative(iso: string | null): string {
 export function IntegrationsPanel() {
   const queryClient = useQueryClient();
   const [syncingId, setSyncingId] = useState<string | null>(null);
+  const [connectingProvider, setConnectingProvider] =
+    useState<IntegrationProvider | null>(null);
+  const [disconnectingId, setDisconnectingId] = useState<string | null>(null);
 
   const { data, isLoading } = useQuery({
     queryKey: ["kb-data-sources"],
     queryFn: listDataSources,
     staleTime: 30_000,
   });
+
+  // Surface the result of the OAuth round-trip. The callback route on
+  // the API redirects to /knowledge-base?connected=<provider> or
+  // ?error=<code>; we read those once and toast accordingly. URL is
+  // cleaned up after so a refresh doesn't re-fire the toast.
+  useOAuthCallbackToast(() => {
+    void queryClient.invalidateQueries({ queryKey: ["kb-data-sources"] });
+  });
+
+  const connectMutation = useMutation({
+    mutationFn: (provider: IntegrationProvider) =>
+      authorizeIntegration(provider),
+    onSuccess: (res) => {
+      // Send the browser to the provider's consent page. We do NOT
+      // setState first — the navigation unmounts the whole tree.
+      window.location.href = res.authorization_url;
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Couldn't start connect";
+      toast.error("Connection failed to start", { description: msg });
+      setConnectingProvider(null);
+    },
+  });
+
+  const disconnectMutation = useMutation({
+    mutationFn: (id: string) => disconnectDataSource(id),
+    onSuccess: () => {
+      toast.success("Integration disconnected", {
+        description:
+          "Already-ingested files remain in the KB. The sync pipe is severed.",
+      });
+      void queryClient.invalidateQueries({ queryKey: ["kb-data-sources"] });
+      setDisconnectingId(null);
+    },
+    onError: (err: unknown) => {
+      const msg = err instanceof Error ? err.message : "Disconnect failed";
+      toast.error("Disconnect failed", { description: msg });
+      setDisconnectingId(null);
+    },
+  });
+
+  const startConnect = (provider: IntegrationProvider) => {
+    setConnectingProvider(provider);
+    connectMutation.mutate(provider);
+  };
 
   const syncMutation = useMutation({
     mutationFn: (id: string) => syncDataSource(id),
@@ -200,12 +317,9 @@ export function IntegrationsPanel() {
         <div className="rounded-lg border border-dashed border-border/60 bg-muted/30 px-4 py-5 text-center">
           <p className="text-sm font-medium">No integrations connected yet</p>
           <p className="mt-1 text-xs text-muted-foreground">
-            Pick an integration below to set one up. OneDrive currently
-            requires an admin-side OAuth wizard — ask ops to run{" "}
-            <code className="rounded bg-muted px-1 py-0.5 text-[11px]">
-              connect_onedrive.py
-            </code>{" "}
-            for your account.
+            Pick an integration below and click Connect. You&apos;ll be sent
+            to your provider to authorize Law Lens, then bounced back here
+            once it&apos;s set up.
           </p>
         </div>
       ) : (
@@ -315,6 +429,52 @@ export function IntegrationsPanel() {
                         </>
                       )}
                     </button>
+
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <button
+                          type="button"
+                          disabled={
+                            disconnectingId === conn.id ||
+                            disconnectMutation.isPending
+                          }
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-border/60 px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:bg-red-500/10 hover:text-red-700 disabled:cursor-not-allowed disabled:opacity-50 dark:hover:text-red-400"
+                          title="Disconnect this integration"
+                        >
+                          {disconnectingId === conn.id ? (
+                            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          ) : (
+                            <Unlink className="h-3.5 w-3.5" />
+                          )}
+                          Disconnect
+                        </button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Disconnect this integration?</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            We&apos;ll delete the stored OAuth tokens and stop syncing
+                            from{" "}
+                            <span className="font-medium">{conn.account_email}</span>.
+                            Files already ingested into your Internal KB stay
+                            put — you can remove individual documents on the
+                            Documents tab. To reconnect later, click Connect
+                            again and re-authorize.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Cancel</AlertDialogCancel>
+                          <AlertDialogAction
+                            onClick={() => {
+                              setDisconnectingId(conn.id);
+                              disconnectMutation.mutate(conn.id);
+                            }}
+                          >
+                            Disconnect
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </div>
@@ -360,23 +520,60 @@ export function IntegrationsPanel() {
                 <p className="mt-1 text-xs text-muted-foreground">
                   {src.blurb}
                 </p>
-                {connected > 0 ? (
+                {/* Action row: Connect (or +Add) for live providers,
+                    informational copy otherwise. */}
+                <div className="mt-3">
+                  {src.status === "live" && src.provider ? (
+                    <button
+                      type="button"
+                      onClick={() => startConnect(src.provider!)}
+                      disabled={
+                        connectMutation.isPending &&
+                        connectingProvider === src.provider
+                      }
+                      className={cn(
+                        "inline-flex w-full items-center justify-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-semibold transition-colors",
+                        connected > 0
+                          ? "border border-border/60 text-foreground hover:bg-muted"
+                          : "bg-foreground text-background hover:opacity-90",
+                        connectMutation.isPending &&
+                          connectingProvider === src.provider &&
+                          "cursor-wait opacity-70",
+                      )}
+                    >
+                      {connectMutation.isPending &&
+                      connectingProvider === src.provider ? (
+                        <>
+                          <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                          Redirecting…
+                        </>
+                      ) : connected > 0 ? (
+                        <>
+                          <Plus className="h-3.5 w-3.5" />
+                          Add another account
+                        </>
+                      ) : (
+                        <>
+                          <Cloud className="h-3.5 w-3.5" />
+                          Connect
+                        </>
+                      )}
+                    </button>
+                  ) : src.status === "preview" ? (
+                    <p className="flex items-center gap-1 text-[11px] text-muted-foreground">
+                      <CloudOff className="h-3 w-3" />
+                      Schema ready, syncer landing next
+                    </p>
+                  ) : (
+                    <p className="text-[11px] text-muted-foreground">
+                      On the roadmap
+                    </p>
+                  )}
+                </div>
+
+                {connected > 0 && (
                   <p className="mt-2 text-[11px] font-medium text-foreground">
-                    {connected} connection{connected === 1 ? "" : "s"}
-                  </p>
-                ) : src.status === "live" ? (
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <ExternalLink className="h-3 w-3" />
-                    Connect via ops OAuth wizard
-                  </p>
-                ) : src.status === "preview" ? (
-                  <p className="mt-2 flex items-center gap-1 text-[11px] text-muted-foreground">
-                    <CloudOff className="h-3 w-3" />
-                    Schema ready, syncer landing next
-                  </p>
-                ) : (
-                  <p className="mt-2 text-[11px] text-muted-foreground">
-                    On the roadmap
+                    {connected} connection{connected === 1 ? "" : "s"} active
                   </p>
                 )}
               </div>

@@ -268,6 +268,44 @@ export async function syncDataSource(
   );
 }
 
+/* ─────────────────────────────────────────────────────
+   Integration OAuth flow (browser, auth-code)
+   ───────────────────────────────────────────────────── */
+
+export type IntegrationProvider = "onedrive" | "google-drive";
+
+export interface AuthorizeIntegrationResponse {
+  authorization_url: string;
+  state: string;
+}
+
+/**
+ * Begin the browser OAuth flow. Backend mints a state, registers it,
+ * and returns the provider's authorize URL. Caller is expected to
+ * redirect the browser there immediately.
+ */
+export async function authorizeIntegration(
+  provider: IntegrationProvider,
+): Promise<AuthorizeIntegrationResponse> {
+  return apiFetch<AuthorizeIntegrationResponse>(
+    `/knowledge-base/integrations/${provider}/authorize`,
+    { method: "POST" },
+  );
+}
+
+/**
+ * Disconnect a previously-authorized data source. Documents already
+ * ingested stay in the KB; only the sync pipe is severed.
+ */
+export async function disconnectDataSource(
+  connectionId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/knowledge-base/data-sources/${connectionId}`,
+    { method: "DELETE" },
+  );
+}
+
 /**
  * Delete a document from the knowledge base.
  */
