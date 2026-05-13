@@ -239,10 +239,13 @@ function CardShell({ children, className }: { children: React.ReactNode; classNa
   );
 }
 
-function LoadingSpinner() {
+function LoadingSpinner({ label = "Loading…" }: { label?: string } = {}) {
   return (
-    <div className="flex items-center justify-center py-16">
+    <div className="flex flex-col items-center justify-center py-16 gap-3">
       <Loader2 className="h-8 w-8 animate-spin text-muted-foreground/40" />
+      <span className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+        {label}
+      </span>
     </div>
   );
 }
@@ -489,6 +492,18 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
     retry: false,
   });
 
+  // P5: only show the "Getting Started" guide when the org doesn't
+  // have a compliance profile yet. Once setup is done, the panel is
+  // visual clutter on what should be an attention dashboard. Failure
+  // path keeps showing it so first-time users see the right hint.
+  const { data: profile } = useQuery({
+    queryKey: ["compliance-profile"],
+    queryFn: () => complianceApi.getProfile().catch(() => null),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+  const hasProfile = Boolean(profile);
+
   if (isLoading) return <LoadingSpinner />;
   if (error && isFeatureGated(error)) return <UpgradePrompt />;
   if (error) return <ErrorState message="Could not load dashboard summary. Please try again later." />;
@@ -653,7 +668,10 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
         </div>
       </div>
 
-      {/* Getting Started */}
+      {/* Getting Started — only when the org hasn't configured a
+          compliance profile yet. Once setup is done, this panel is
+          clutter; hide it. */}
+      {!hasProfile && (
       <div className="rounded-xl border border-brand-gold/20 bg-brand-gold/5 p-6">
         <h2 className="text-lg font-bold tracking-tight">
           Getting Started with Compliance Intelligence
@@ -689,6 +707,7 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
