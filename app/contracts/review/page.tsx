@@ -106,29 +106,31 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB — matches backend cap
 // ----------------------------------------------------------------------------
 
 function severityClasses(severity: ContractReviewSeverity) {
+  // text-*-700 in light, text-*-300 in dark. Border + bg use /10 alpha
+  // so they read well against both cream and slate surfaces.
   switch (severity) {
     case "critical":
-      return "border-rose-500/40 bg-rose-500/10 text-rose-300";
+      return "border-rose-500/40 bg-rose-500/10 text-rose-700 dark:text-rose-300";
     case "high":
-      return "border-orange-500/40 bg-orange-500/10 text-orange-300";
+      return "border-orange-500/40 bg-orange-500/10 text-orange-700 dark:text-orange-300";
     case "medium":
-      return "border-amber-500/40 bg-amber-500/10 text-amber-300";
+      return "border-amber-500/40 bg-amber-500/10 text-amber-700 dark:text-amber-300";
     case "low":
     default:
-      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-300";
+      return "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300";
   }
 }
 
 function statusColor(status: string) {
   switch (status) {
     case "approved":
-      return "text-emerald-300";
+      return "text-emerald-700 dark:text-emerald-300";
     case "needs_revision":
-      return "text-amber-300";
+      return "text-amber-700 dark:text-amber-300";
     case "major_issues":
-      return "text-orange-300";
+      return "text-orange-700 dark:text-orange-300";
     case "rejected":
-      return "text-rose-300";
+      return "text-rose-700 dark:text-rose-300";
     default:
       return "text-foreground/85";
   }
@@ -139,10 +141,10 @@ function statusLabel(status: string) {
 }
 
 function scoreTone(score: number) {
-  if (score >= 85) return "text-emerald-300";
-  if (score >= 70) return "text-amber-300";
-  if (score >= 50) return "text-orange-300";
-  return "text-rose-300";
+  if (score >= 85) return "text-emerald-700 dark:text-emerald-300";
+  if (score >= 70) return "text-amber-700 dark:text-amber-300";
+  if (score >= 50) return "text-orange-700 dark:text-orange-300";
+  return "text-rose-700 dark:text-rose-300";
 }
 
 // ----------------------------------------------------------------------------
@@ -474,7 +476,7 @@ function UploadCard(props: UploadCardProps) {
         </div>
 
         {error && (
-          <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
+          <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-800 dark:text-rose-200">
             <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
             <div>{error}</div>
           </div>
@@ -745,7 +747,7 @@ function ResultView({
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-amber-400" />
               <div>
-                <div className={cn(typographyClasses.headingSm, "text-amber-200")}>
+                <div className={cn(typographyClasses.headingSm, "text-amber-800 dark:text-amber-200")}>
                   {result.references_unverified.length} statute reference
                   {result.references_unverified.length === 1 ? "" : "s"}{" "}
                   could not be verified
@@ -753,20 +755,20 @@ function ResultView({
                 <p
                   className={cn(
                     typographyClasses.bodySm,
-                    "mt-1 text-amber-100/80",
+                    "mt-1 text-amber-900/80 dark:text-amber-100/80",
                   )}
                 >
                   These citations don&apos;t appear in the retrieved evidence
                   and may be hallucinated. Verify them against the source
                   before relying on the recommendation.
                 </p>
-                <ul className="mt-3 space-y-1 text-sm text-amber-100/90">
+                <ul className="mt-3 space-y-1 text-sm text-amber-900/90 dark:text-amber-100/90">
                   {result.references_unverified.map((r, i) => (
                     <li key={`unv-${i}`} className="flex gap-2">
                       <span className="text-amber-400">•</span>
                       <span>
                         <span className="font-medium">{r.raw}</span>{" "}
-                        <span className="text-amber-200/70">
+                        <span className="text-amber-800/80 dark:text-amber-200/70">
                           ({r.statute}
                           {r.section ? `, section ${r.section}` : ""})
                         </span>
@@ -1073,7 +1075,7 @@ function ObligationsTab({
       </Card>
 
       {trackError && (
-        <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
+        <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-800 dark:text-rose-200">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
           <div>{trackError}</div>
         </div>
@@ -1122,7 +1124,7 @@ function ObligationCard({
               {obligation.recurrence_pattern.replace(/_/g, " ")}
             </Badge>
             {tracked && (
-              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+              <Badge className="bg-emerald-500/15 text-emerald-700 dark:text-emerald-300 border-emerald-500/30">
                 <CheckCircle2 className="mr-1 h-3 w-3" />
                 Tracking
               </Badge>
@@ -1170,7 +1172,7 @@ function EvidenceCard({
               href={evidence.source_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="shrink-0 text-emerald-400 hover:text-emerald-300"
+              className="shrink-0 text-emerald-700 hover:text-emerald-800 dark:text-emerald-400 dark:hover:text-emerald-300"
             >
               <ExternalLink className="h-4 w-4" />
             </a>

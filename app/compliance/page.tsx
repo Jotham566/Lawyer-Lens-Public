@@ -378,10 +378,29 @@ function UpcomingAndOverdueObligations({
   const thisWeek = obligations.filter(
     (o) => bucketObligation(o) === "this_week",
   );
-  if (overdue.length === 0 && thisWeek.length === 0) return null;
+  const thisMonth = obligations
+    .filter((o) => obligationFilterBucket(o, new Date()) === "this_month")
+    // Sort by next_due_date ascending so the most-urgent shows first.
+    .sort((a, b) => {
+      const ad = a.next_due_date ?? "";
+      const bd = b.next_due_date ?? "";
+      return ad.localeCompare(bd);
+    });
+
+  // Three render modes:
+  //   1. Something Overdue OR Due-this-week → show both stacks (the
+  //      "attention" view UDB legal would expect first thing).
+  //   2. Nothing in either bucket but plenty within 30 days → show a
+  //      single "Coming up this month" stack so the Overview tab
+  //      still surfaces deadlines instead of going empty.
+  //   3. Nothing in either bucket and nothing within 30 days → bail.
+  const showUrgentView = overdue.length > 0 || thisWeek.length > 0;
+  const showMonthView = !showUrgentView && thisMonth.length > 0;
+  if (!showUrgentView && !showMonthView) return null;
 
   return (
     <>
+      {showUrgentView && (
       <div className="grid gap-4 md:grid-cols-2">
         <ObligationStack
           title="Overdue"
@@ -400,6 +419,17 @@ function UpcomingAndOverdueObligations({
           onSelect={setSelected}
         />
       </div>
+      )}
+      {showMonthView && (
+        <ObligationStack
+          title="Coming up this month"
+          items={thisMonth}
+          emptyLabel=""
+          tone="upcoming"
+          onSeeAll={onNavigateObligations}
+          onSelect={setSelected}
+        />
+      )}
       <ObligationDetailDialog
         obligation={selected}
         onOpenChange={(open) => !open && setSelected(null)}
