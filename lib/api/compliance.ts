@@ -255,4 +255,20 @@ export const complianceApi = {
   /** Get count of unacknowledged alerts. */
   getUnacknowledgedCount: () =>
     apiGet<{ count: number }>("/compliance/alerts/unacknowledged-count"),
+
+  /**
+   * Persist obligations extracted from a contract into the compliance
+   * tracker. Called by the Contract Review result page after the user
+   * clicks "Add to tracker". `contract_session_id` is a synthetic UUID
+   * — the contract-review flow is stateless (no ContractSession) and
+   * the backend only uses this for bookkeeping in event_metadata.
+   */
+  createContractObligations: (request: {
+    contract_session_id: string;
+    obligations_data: Array<Record<string, unknown>>;
+  }) =>
+    apiPost<{ obligations_created: number; obligation_ids: string[] }>(
+      "/compliance/integrations/contracts/create-obligations",
+      request,
+    ),
 };

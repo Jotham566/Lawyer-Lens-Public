@@ -24,9 +24,11 @@ import {
   AlertCircle,
   AlertTriangle,
   BookOpen,
+  CalendarClock,
   CheckCircle2,
   ExternalLink,
   FileText,
+  ListChecks,
   Loader2,
   ShieldAlert,
   Sparkles,
@@ -54,7 +56,9 @@ import {
   typographyClasses,
 } from "@/lib/design-system";
 import { APIError, getUserFriendlyError } from "@/lib/api/client";
+import { complianceApi } from "@/lib/api/compliance";
 import {
+  type ContractReviewExtractedObligation,
   type ContractReviewResult,
   type ContractReviewSeverity,
   uploadContractForReview,
@@ -448,6 +452,7 @@ function ResultView({
   const improvementCount = result.improvements.length;
   const missingCount =
     result.missing_sections.length + result.missing_clauses.length;
+  const obligationCount = result.extracted_obligations?.length ?? 0;
 
   return (
     <div className="space-y-6">
@@ -539,6 +544,10 @@ function ResultView({
           <TabsTrigger value="improvements">
             Improvements{" "}
             <Badge variant="secondary" className="ml-2">{improvementCount}</Badge>
+          </TabsTrigger>
+          <TabsTrigger value="obligations">
+            Obligations{" "}
+            <Badge variant="secondary" className="ml-2">{obligationCount}</Badge>
           </TabsTrigger>
           <TabsTrigger value="evidence">
             Evidence{" "}
@@ -632,6 +641,13 @@ function ResultView({
               ))}
             </div>
           )}
+        </TabsContent>
+
+        <TabsContent value="obligations" className="mt-4">
+          <ObligationsTab
+            obligations={result.extracted_obligations ?? []}
+            contractType={result.contract_type}
+          />
         </TabsContent>
 
         <TabsContent value="evidence" className="mt-4">
@@ -796,6 +812,201 @@ function MissingBlock({
             </li>
           ))}
         </ul>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ObligationsTab({
+  obligations,
+  contractType,
+}: {
+  obligations: ContractReviewExtractedObligation[];
+  contractType: string;
+}) {
+  const [tracking, setTracking] = useState(false);
+  const [trackedIds, setTrackedIds] = useState<string[] | null>(null);
+  const [trackError, setTrackError] = useState<string | null>(null);
+
+  const onTrack = useCallback(async () => {
+    if (obligations.length === 0) return;
+    setTracking(true);
+    setTrackError(null);
+    try {
+      // contract_session_id is a synthetic UUID — the contract-review
+      // flow is stateless (no ContractSession row), and the backend
+      // only uses this for bookkeeping inside event_metadata.
+      const sessionId =
+        typeof crypto !== "undefined" && "randomUUID" in crypto
+          ? crypto.randomUUID()
+          : `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+      const resp = await complianceApi.createContractObligations({
+        contract_session_id: sessionId,
+        obligations_data: obligations as unknown as Array<
+          Record<string, unknown>
+        >,
+      });
+      setTrackedIds(resp.obligation_ids);
+    } catch (err) {
+      if (err instanceof APIError && err.status === 403) {
+        setTrackError(
+          "Compliance tracking requires an Enterprise plan.",
+        );
+      } else {
+        setTrackError(
+          getUserFriendlyError(
+            err,
+            "Couldn't add to tracker. Please try again.",
+          ),
+        );
+      }
+    } finally {
+      setTracking(false);
+    }
+  }, [obligations]);
+
+  if (obligations.length === 0) {
+    return (
+      <EmptyState>
+        No recurring obligations detected in this {contractType} contract.
+      </EmptyState>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      {/* Track-all banner */}
+      <Card
+        className={cn(
+          "border-emerald-500/30 bg-emerald-500/5",
+          trackedIds && "border-emerald-500/50 bg-emerald-500/10",
+        )}
+      >
+        <CardContent className="flex flex-wrap items-center justify-between gap-3 p-4">
+          <div className="flex items-start gap-3">
+            <ListChecks className="mt-0.5 h-5 w-5 shrink-0 text-emerald-400" />
+            <div>
+              <div
+                className={cn(
+                  typographyClasses.bodyMd,
+                  "text-foreground",
+                )}
+              >
+                {trackedIds
+                  ? `${trackedIds.length} obligation${trackedIds.length === 1 ? "" : "s"} added to your compliance tracker.`
+                  : `${obligations.length} recurring obligation${obligations.length === 1 ? "" : "s"} found in this contract.`}
+              </div>
+              <p
+                className={cn(
+                  typographyClasses.bodySm,
+                  "mt-1 text-muted-foreground",
+                )}
+              >
+                {trackedIds
+                  ? "Deadlines, alerts, and recurrence are now active in Regulatory Compliance."
+                  : "Click to add them to Regulatory Compliance — deadlines, alerts, and recurrence handled automatically."}
+              </p>
+            </div>
+          </div>
+          {trackedIds ? (
+            <Link href="/compliance#obligations">
+              <Button variant="outline" size="sm">
+                <ShieldAlert className="mr-2 h-3.5 w-3.5" />
+                View in compliance
+              </Button>
+            </Link>
+          ) : (
+            <Button
+              onClick={onTrack}
+              disabled={tracking}
+              size="sm"
+              className={surfaceClasses.brandButton}
+            >
+              {tracking ? (
+                <>
+                  <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
+                  Adding…
+                </>
+              ) : (
+                <>
+                  <ListChecks className="mr-2 h-3.5 w-3.5" />
+                  Add all to tracker
+                </>
+              )}
+            </Button>
+          )}
+        </CardContent>
+      </Card>
+
+      {trackError && (
+        <div className="flex items-start gap-2 rounded-md border border-rose-500/40 bg-rose-500/10 p-3 text-sm text-rose-200">
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" />
+          <div>{trackError}</div>
+        </div>
+      )}
+
+      {/* Per-obligation cards */}
+      <div className="space-y-3">
+        {obligations.map((ob, i) => (
+          <ObligationCard
+            key={`ob-${i}`}
+            obligation={ob}
+            tracked={trackedIds !== null}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function ObligationCard({
+  obligation,
+  tracked,
+}: {
+  obligation: ContractReviewExtractedObligation;
+  tracked: boolean;
+}) {
+  const dueLabel = obligation.next_due_date
+    ? new Date(obligation.next_due_date).toLocaleDateString("en-UG", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+      })
+    : "Date not detected";
+  return (
+    <Card className={surfaceClasses.pagePanel}>
+      <CardContent className="space-y-2 p-4">
+        <div className="flex items-start justify-between gap-3">
+          <div className={cn(typographyClasses.bodyMd, "text-foreground")}>
+            {obligation.title.replace(/^\[Contract\]\s*/, "")}
+          </div>
+          <div className="flex shrink-0 gap-2">
+            <Badge variant="outline" className="border-border capitalize">
+              {obligation.obligation_type.replace(/_/g, " ")}
+            </Badge>
+            <Badge variant="outline" className="border-border capitalize">
+              {obligation.recurrence_pattern.replace(/_/g, " ")}
+            </Badge>
+            {tracked && (
+              <Badge className="bg-emerald-500/15 text-emerald-300 border-emerald-500/30">
+                <CheckCircle2 className="mr-1 h-3 w-3" />
+                Tracking
+              </Badge>
+            )}
+          </div>
+        </div>
+        <div className="flex flex-wrap items-center gap-3 text-xs text-muted-foreground">
+          <span className="flex items-center gap-1">
+            <CalendarClock className="h-3 w-3" />
+            Next due: {dueLabel}
+          </span>
+          <span>·</span>
+          <span>Warn {obligation.advance_warning_days}d ahead</span>
+          <span>·</span>
+          <span className="capitalize">
+            Owner: {obligation.assigned_owner_role.replace(/_/g, " ")}
+          </span>
+        </div>
       </CardContent>
     </Card>
   );

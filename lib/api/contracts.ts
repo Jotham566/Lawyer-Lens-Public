@@ -400,6 +400,24 @@ export interface ContractReviewEvidence {
   source_document_ids?: string[];
 }
 
+/**
+ * Obligation extracted from a contract by the compliance integration's
+ * pattern matcher. Shape matches what
+ * /compliance/integrations/contracts/create-obligations consumes, so
+ * the "Add to tracker" flow can POST these dicts verbatim.
+ */
+export interface ContractReviewExtractedObligation {
+  title: string;
+  description: string;
+  obligation_type: string;       // "filing" | "reporting" | "renewal" | "certification" | "payment"
+  recurrence_pattern: string;    // "one_time" | "monthly" | "quarterly" | "annual" | "bi_annual"
+  next_due_date: string | null;  // ISO date string or null when not detected
+  advance_warning_days: number;
+  assigned_owner_role: string;
+  source: string;
+  contract_type: string;
+}
+
 export interface ContractReviewResult {
   review_id: string;
   filename: string;
@@ -419,6 +437,10 @@ export interface ContractReviewResult {
   references_verified: number;
   references_unverified: ContractReviewUnverifiedReference[];
   evidence: ContractReviewEvidence[];
+  // P1 — obligations the compliance integration pulled out of the
+  // contract body. Frontend renders these on the result view and
+  // lets the user one-click them into the compliance tracker.
+  extracted_obligations: ContractReviewExtractedObligation[];
   processing_time_ms: number;
   reviewed_at: string | null;
 }
