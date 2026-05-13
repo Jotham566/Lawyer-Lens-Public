@@ -31,6 +31,9 @@ import {
   Lock,
   Settings,
   RefreshCw,
+  Wrench,
+  AlertOctagon,
+  ArrowRight,
 } from "lucide-react";
 import {
   Dialog,
@@ -1232,8 +1235,13 @@ function WatchTab() {
 /* ─────────────────────────────────────────────────────
    Findings Tab
    ───────────────────────────────────────────────────── */
-const FINDING_STATUSES = [
-  { value: "", label: "All Statuses" },
+type FindingStatusOption = {
+  value: string;
+  label: string;
+};
+
+const FINDING_STATUSES: FindingStatusOption[] = [
+  { value: "", label: "All" },
   { value: "identified", label: "Identified" },
   { value: "under_review", label: "Under Review" },
   { value: "confirmed", label: "Confirmed" },
@@ -1241,6 +1249,89 @@ const FINDING_STATUSES = [
   { value: "accepted", label: "Accepted" },
   { value: "dismissed", label: "Dismissed" },
 ];
+
+// Visual treatment per severity. The accent strip on the left edge of
+// each card is the primary "this is how bad it is" signal — Tailwind
+// classes here drive both the strip color and the headline tone so
+// they stay in sync.
+const SEVERITY_TONE: Record<
+  string,
+  {
+    strip: string;
+    label: string;
+    tile: string;
+    tileText: string;
+    headline: string;
+    rank: number;
+  }
+> = {
+  critical: {
+    strip: "bg-red-500",
+    label: "Critical",
+    tile: "bg-red-500/10 border-red-500/30",
+    tileText: "text-red-700 dark:text-red-300",
+    headline: "text-red-700 dark:text-red-300",
+    rank: 4,
+  },
+  high: {
+    strip: "bg-orange-500",
+    label: "High",
+    tile: "bg-orange-500/10 border-orange-500/30",
+    tileText: "text-orange-700 dark:text-orange-300",
+    headline: "text-orange-700 dark:text-orange-300",
+    rank: 3,
+  },
+  medium: {
+    strip: "bg-amber-500",
+    label: "Medium",
+    tile: "bg-amber-500/10 border-amber-500/30",
+    tileText: "text-amber-700 dark:text-amber-300",
+    headline: "text-amber-700 dark:text-amber-300",
+    rank: 2,
+  },
+  low: {
+    strip: "bg-blue-500",
+    label: "Low",
+    tile: "bg-blue-500/10 border-blue-500/30",
+    tileText: "text-blue-700 dark:text-blue-300",
+    headline: "text-blue-700 dark:text-blue-300",
+    rank: 1,
+  },
+  informational: {
+    strip: "bg-slate-400",
+    label: "Info",
+    tile: "bg-slate-500/10 border-slate-500/30",
+    tileText: "text-slate-700 dark:text-slate-300",
+    headline: "text-foreground",
+    rank: 0,
+  },
+};
+
+function severityTone(sev: string | undefined) {
+  return SEVERITY_TONE[(sev || "").toLowerCase()] ?? SEVERITY_TONE.informational;
+}
+
+/** Extract a tight headline from the explanation markdown body. */
+function findingHeadline(text: string | null | undefined): string | null {
+  if (!text) return null;
+  // Prefer a leading `#`/`##`/`###` heading if the LLM gave us one.
+  const headingMatch = text.match(/^\s*#{1,3}\s+(.+?)\s*$/m);
+  if (headingMatch) return headingMatch[1].trim();
+  // Otherwise grab the first non-empty line and strip markdown noise.
+  const firstLine = text
+    .split("\n")
+    .map((l) => l.trim())
+    .find((l) => l.length > 0);
+  if (!firstLine) return null;
+  // 110 chars is roughly two short lines at this column width — long
+  // enough to be informative, short enough that the card title doesn't
+  // become its own paragraph.
+  const cleaned = firstLine
+    .replace(/^[-*•]+\s*/, "")
+    .replace(/\*\*(.+?)\*\*/g, "$1")
+    .replace(/\*(.+?)\*/g, "$1");
+  return cleaned.length > 110 ? `${cleaned.slice(0, 109).trimEnd()}…` : cleaned;
+}
 
 function FindingsTab() {
   const [statusFilter, setStatusFilter] = useState("");
@@ -1256,78 +1347,263 @@ function FindingsTab() {
     retry: false,
   });
 
+  // Severity rollup ignores the status filter — operators expect the
+  // top tiles to reflect the org's full exposure, not whatever they're
+  // currently slicing on.
+  const { data: rollupData } = useQuery({
+    queryKey: ["compliance-findings", "rollup"],
+    queryFn: () => complianceApi.listFindings({ limit: 200 }),
+    staleTime: 60_000,
+    retry: false,
+  });
+
   if (isLoading) return <LoadingSpinner />;
   if (error && isFeatureGated(error)) return <UpgradePrompt />;
   if (error) return <ErrorState message="Could not load findings." />;
 
   const findings = data?.items ?? [];
+  const rollup = rollupData?.items ?? [];
+
+  const severityCounts: Record<string, number> = {
+    critical: 0,
+    high: 0,
+    medium: 0,
+    low: 0,
+  };
+  for (const f of rollup) {
+    const key = (f.severity || "").toLowerCase();
+    if (key in severityCounts) severityCounts[key] += 1;
+  }
+  const totalOpen = rollup.filter(
+    (f) => !["mitigated", "dismissed", "accepted"].includes(f.status),
+  ).length;
+
+  // Sort the visible list by severity descending so the most-urgent
+  // items land at the top of the card stack. Same created_at break.
+  const sorted = [...findings].sort((a, b) => {
+    const sevDiff = severityTone(b.severity).rank - severityTone(a.severity).rank;
+    if (sevDiff !== 0) return sevDiff;
+    return new Date(b.created_at).getTime() - new Date(a.created_at).getTime();
+  });
 
   return (
-    <div className="space-y-4">
-      {/* Status Filter */}
-      <div className="flex items-center gap-2">
-        <label htmlFor="finding-status-filter" className="text-xs font-semibold text-muted-foreground">
-          Status:
-        </label>
-        <select
-          id="finding-status-filter"
-          value={statusFilter}
-          onChange={(e) => setStatusFilter(e.target.value)}
-          className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-primary/30"
+    <div className="space-y-5">
+      {/* Severity rollup tiles */}
+      {rollup.length > 0 && (
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {(["critical", "high", "medium", "low"] as const).map((sev) => {
+            const tone = severityTone(sev);
+            return (
+              <div
+                key={sev}
+                className={cn(
+                  "rounded-xl border p-4 transition-shadow",
+                  tone.tile,
+                  "hover:shadow-soft",
+                )}
+              >
+                <p
+                  className={cn(
+                    "text-[11px] font-semibold uppercase tracking-wide",
+                    tone.tileText,
+                  )}
+                >
+                  {tone.label}
+                </p>
+                <p className="mt-1 text-3xl font-bold tabular-nums text-foreground">
+                  {severityCounts[sev]}
+                </p>
+                <p className="mt-0.5 text-[11px] text-muted-foreground">
+                  finding{severityCounts[sev] === 1 ? "" : "s"}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Filter chips + total count */}
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div
+          role="group"
+          aria-label="Filter findings by status"
+          className="flex flex-wrap items-center gap-1.5"
         >
-          {FINDING_STATUSES.map((s) => (
-            <option key={s.value} value={s.value}>
-              {s.label}
-            </option>
-          ))}
-        </select>
-        {data && (
-          <span className="text-xs text-muted-foreground">
-            {data.total} total
-          </span>
-        )}
+          {FINDING_STATUSES.map((s) => {
+            const active = statusFilter === s.value;
+            return (
+              <button
+                key={s.value || "all"}
+                type="button"
+                onClick={() => setStatusFilter(s.value)}
+                className={cn(
+                  "inline-flex items-center rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+                  active
+                    ? "border-primary bg-primary text-primary-foreground"
+                    : "border-border bg-card text-muted-foreground hover:bg-muted hover:text-foreground",
+                )}
+              >
+                {s.label}
+              </button>
+            );
+          })}
+        </div>
+        <div className="text-xs text-muted-foreground">
+          {data ? (
+            <>
+              <span className="font-semibold text-foreground">
+                {data.total}
+              </span>{" "}
+              showing
+              {totalOpen > 0 && (
+                <>
+                  {" "}·{" "}
+                  <span className="font-semibold text-foreground">
+                    {totalOpen}
+                  </span>{" "}
+                  open
+                </>
+              )}
+            </>
+          ) : null}
+        </div>
       </div>
 
-      {findings.length === 0 ? (
+      {sorted.length === 0 ? (
         <EmptySection
-          title="No Findings"
-          description="No exposure findings match the current filter. Findings are generated from automated regulatory assessments."
-          icon={AlertTriangle}
+          title={
+            statusFilter
+              ? "No findings match this filter"
+              : "Nothing exposed right now"
+          }
+          description={
+            statusFilter
+              ? "Try the All filter — or your team has cleared this status bucket."
+              : "Automated regulatory assessments will surface findings here as they detect exposure on your operations."
+          }
+          icon={CheckCircle2}
         />
       ) : (
         <div className="space-y-3">
-          {findings.map((f: FindingResponse) => (
-            <CardShell key={f.id} className="p-5">
-              <div className="flex flex-wrap items-center gap-2">
-                <Badge label={f.severity} colorMap={SEVERITY_COLORS} />
-                <Badge label={f.status} colorMap={STATUS_COLORS} />
-                {f.impacted_document_ref && (
-                  <span className="flex items-center gap-1 text-xs text-muted-foreground">
-                    <FileText className="h-3 w-3" />
-                    {f.impacted_document_ref}
-                  </span>
-                )}
-              </div>
-              {f.explanation && (
-                <div className="mt-3 prose prose-sm dark:prose-invert max-w-none text-muted-foreground [&_p]:leading-relaxed [&_ul]:mt-1 [&_li]:mt-0.5 [&_strong]:text-foreground [&_h1]:text-base [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-bold [&_h2]:font-bold [&_h3]:font-semibold">
-                  <ReactMarkdown>{f.explanation}</ReactMarkdown>
+          {sorted.map((f: FindingResponse) => {
+            const tone = severityTone(f.severity);
+            const headline = findingHeadline(f.explanation);
+            // The body shouldn't repeat the headline. Strip the first
+            // heading-or-line when we lifted it into the title.
+            const body = (() => {
+              if (!f.explanation) return null;
+              if (!headline) return f.explanation;
+              const lines = f.explanation.split("\n");
+              const firstNonEmpty = lines.findIndex((l) => l.trim().length > 0);
+              if (firstNonEmpty < 0) return f.explanation;
+              return lines.slice(firstNonEmpty + 1).join("\n").trimStart();
+            })();
+            const evidenceCount =
+              (f.evidence_passages?.length ?? 0) +
+              (f.evidence_references?.length ?? 0);
+            return (
+              <article
+                key={f.id}
+                className="group relative overflow-hidden rounded-xl border border-border/60 bg-card shadow-soft transition-shadow hover:shadow-floating"
+              >
+                {/* Severity accent strip — the primary visual signal */}
+                <div
+                  aria-hidden
+                  className={cn(
+                    "absolute inset-y-0 left-0 w-1",
+                    tone.strip,
+                  )}
+                />
+
+                <div className="pl-5 pr-5 py-5">
+                  {/* Top row: severity badge + status + impacted doc */}
+                  <div className="flex flex-wrap items-center gap-2">
+                    <span
+                      className={cn(
+                        "inline-flex items-center gap-1 rounded-full border px-2.5 py-0.5 text-[11px] font-semibold uppercase tracking-wide",
+                        tone.tile,
+                        tone.tileText,
+                      )}
+                    >
+                      <AlertOctagon className="h-3 w-3" />
+                      {tone.label}
+                    </span>
+                    <Badge label={f.status} colorMap={STATUS_COLORS} />
+                    {f.impacted_document_ref && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        <FileText className="h-3 w-3" />
+                        <span className="max-w-[200px] truncate">
+                          {f.impacted_document_ref}
+                        </span>
+                      </span>
+                    )}
+                    {evidenceCount > 0 && (
+                      <span className="inline-flex items-center gap-1 rounded-full bg-muted/70 px-2 py-0.5 text-[11px] font-medium text-muted-foreground">
+                        <ClipboardList className="h-3 w-3" />
+                        {evidenceCount} evidence
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Headline */}
+                  {headline && (
+                    <h3
+                      className={cn(
+                        "mt-3 text-base font-semibold leading-snug",
+                        tone.headline,
+                      )}
+                    >
+                      {headline}
+                    </h3>
+                  )}
+
+                  {/* Body explanation */}
+                  {body && (
+                    <div className="mt-2 prose prose-sm dark:prose-invert max-w-none text-foreground/85 [&_p]:leading-relaxed [&_p:first-child]:mt-0 [&_ul]:mt-1.5 [&_li]:mt-0.5 [&_strong]:text-foreground [&_h1]:text-sm [&_h2]:text-sm [&_h3]:text-sm [&_h1]:font-semibold [&_h2]:font-semibold [&_h3]:font-semibold">
+                      <ReactMarkdown>{body}</ReactMarkdown>
+                    </div>
+                  )}
+
+                  {/* Remediation block — action-forward, not a grey afterthought */}
+                  {f.remediation_guidance && (
+                    <div className="mt-4 flex items-start gap-3 rounded-lg border border-emerald-500/30 bg-emerald-500/5 p-3 dark:bg-emerald-500/10">
+                      <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-emerald-500/15 text-emerald-700 dark:text-emerald-300">
+                        <Wrench className="h-3.5 w-3.5" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700 dark:text-emerald-300">
+                          What to do
+                        </p>
+                        <p className="mt-1 text-sm leading-relaxed text-foreground/90">
+                          {f.remediation_guidance}
+                        </p>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Footer: date + action */}
+                  <div className="mt-4 flex items-center justify-between gap-3 border-t border-border/50 pt-3">
+                    <p className="text-[11px] text-muted-foreground">
+                      Surfaced {formatDate(f.created_at)}
+                    </p>
+                    {f.assigned_to_user_id ? (
+                      <span className="text-[11px] text-muted-foreground">
+                        Assigned
+                      </span>
+                    ) : (
+                      <button
+                        type="button"
+                        className="inline-flex items-center gap-1 text-[11px] font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100"
+                      >
+                        Review
+                        <ArrowRight className="h-3 w-3" />
+                      </button>
+                    )}
+                  </div>
                 </div>
-              )}
-              {f.remediation_guidance && (
-                <div className="mt-3 rounded-lg bg-muted/50 p-3">
-                  <p className="text-xs font-semibold text-muted-foreground mb-1">
-                    Remediation Guidance
-                  </p>
-                  <p className="text-sm text-muted-foreground">
-                    {f.remediation_guidance}
-                  </p>
-                </div>
-              )}
-              <div className="mt-3 text-xs text-muted-foreground">
-                Created {formatDate(f.created_at)}
-              </div>
-            </CardShell>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
     </div>
