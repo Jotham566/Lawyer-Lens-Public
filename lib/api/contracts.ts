@@ -346,3 +346,132 @@ export async function saveContractAsTemplate(
 ): Promise<ContractTemplate> {
   return apiPost<ContractTemplate>(`/contracts/${sessionId}/save-as-template`, request);
 }
+
+// =============================================================================
+// Contract review (upload → automated review)
+// =============================================================================
+
+export type ContractReviewSeverity = "low" | "medium" | "high" | "critical";
+
+export type ContractReviewStatus =
+  | "approved"
+  | "needs_revision"
+  | "major_issues"
+  | "rejected";
+
+export interface ContractReviewLegalIssue {
+  severity: ContractReviewSeverity;
+  section: string;
+  issue: string;
+  recommendation: string;
+  law_reference: string;
+}
+
+export interface ContractReviewRisk {
+  severity: ContractReviewSeverity;
+  description: string;
+  mitigation: string;
+  affected_party?: string;
+}
+
+export interface ContractReviewImprovement {
+  section: string;
+  suggestion: string;
+  priority: ContractReviewSeverity;
+}
+
+export interface ContractReviewUnverifiedReference {
+  raw: string;
+  statute: string;
+  section: string;
+  context: string;
+}
+
+export interface ContractReviewEvidence {
+  id: string;
+  title: string;
+  legal_reference: string;
+  source_url: string;
+  source_type: string;
+  snippet: string;
+}
+
+export interface ContractReviewResult {
+  review_id: string;
+  filename: string;
+  contract_type: string;
+  text_length: number;
+  overall_score: number;
+  status: ContractReviewStatus;
+  summary: string;
+  completeness_score: number;
+  compliance_score: number;
+  consistency_score: number;
+  missing_sections: string[];
+  missing_clauses: string[];
+  legal_issues: ContractReviewLegalIssue[];
+  risks: ContractReviewRisk[];
+  improvements: ContractReviewImprovement[];
+  references_verified: number;
+  references_unverified: ContractReviewUnverifiedReference[];
+  evidence: ContractReviewEvidence[];
+  processing_time_ms: number;
+  reviewed_at: string | null;
+}
+
+/**
+ * Upload a contract file and run automated review.
+ *
+ * Pipeline (server-side):
+ *   1. Parse the document (PDF/DOCX/TXT via Docling)
+ *   2. Auto-detect contract type if not provided
+ *   3. Legal research against LawLens corpus + Tavily fallback (Ulii)
+ *   4. ReviewAgent: structured risks, legal issues, missing clauses,
+ *      improvements, statute-reference verification
+ *
+ * Sync request — typical 30-60s for a 20-page contract. Show a
+ * loading state with stage labels.
+ */
+export async function uploadContractForReview(
+  file: File,
+  options?: { contractType?: string; skipLegalResearch?: boolean }
+): Promise<ContractReviewResult> {
+  const formData = new FormData();
+  formData.append("file", file);
+  if (options?.contractType) formData.append("contract_type", options.contractType);
+  if (options?.skipLegalResearch) formData.append("skip_legal_research", "true");
+
+  // Same headers / credentials policy as apiUpload but we need extra
+  // form fields, so we bypass that helper and call the proxy directly.
+  const { ensureHttps } = await import("./ensure-https");
+  const url = ensureHttps(`${getApiBaseUrl()}/contracts/review/upload`);
+
+  const headers: Record<string, string> = {};
+  // CSRF: read the same cookie apiUpload reads.
+  if (typeof document !== "undefined") {
+    const match = document.cookie.match(/(?:^|;\s*)csrf_token=([^;]+)/);
+    if (match) headers["X-CSRF-Token"] = decodeURIComponent(match[1]);
+  }
+
+  const response = await fetch(url, {
+    method: "POST",
+    headers,
+    body: formData,
+    credentials: "include",
+  });
+
+  if (!response.ok) {
+    let detail: unknown;
+    try {
+      detail = await response.json();
+    } catch {
+      detail = await response.text();
+    }
+    // Re-use the project APIError so callers get consistent error
+    // shape (status code + parsed body).
+    const { APIError } = await import("./client");
+    throw new APIError(response.status, response.statusText, detail);
+  }
+
+  return (await response.json()) as ContractReviewResult;
+}
