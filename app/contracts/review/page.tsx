@@ -469,9 +469,9 @@ function UploadCard(props: UploadCardProps) {
             </SelectContent>
           </Select>
           <p className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
-            Auto-detect scans the document body; pick a specific type for
-            tighter compliance checks (e.g., Employment Act for employment
-            contracts).
+            Auto-detect reads the file name and the first page of the
+            document. Pick a specific type to anchor the review against a
+            particular statute (e.g. Employment Act for employment contracts).
           </p>
         </div>
 
@@ -724,11 +724,9 @@ function ResultView({
         <TabsContent value="evidence" className="mt-4">
           {result.evidence.length === 0 ? (
             <EmptyState>
-              No evidence captured. Try re-running with{" "}
-              <code className="rounded bg-muted px-1 text-xs">
-                skip_legal_research=false
-              </code>
-              .
+              No supporting legal authority was retrieved for this
+              review. Re-run with legal research enabled to attach
+              statute and case citations.
             </EmptyState>
           ) : (
             <div className="space-y-3">
@@ -834,8 +832,8 @@ function interpretCompleteness(result: ContractReviewResult): string {
   const missing =
     result.missing_sections.length + result.missing_clauses.length;
   if (missing === 0) return "All expected sections and clauses present.";
-  if (missing <= 3) return `${missing} expected section${missing === 1 ? "" : "s"}/clause${missing === 1 ? "" : "s"} missing.`;
-  return `${missing} expected items missing — see Missing tab.`;
+  if (missing <= 3) return `${missing} expected item${missing === 1 ? "" : "s"} missing.`;
+  return `${missing} expected items missing — see the Missing tab.`;
 }
 
 function interpretCompliance(result: ContractReviewResult): string {
@@ -1040,7 +1038,7 @@ function ObligationsTab({
               >
                 {trackedIds
                   ? "Deadlines, alerts, and recurrence are now active in Regulatory Compliance."
-                  : "Click to add them to Regulatory Compliance — deadlines, alerts, and recurrence handled automatically."}
+                  : "Add to your tracker and the system handles deadlines, alerts, and recurrence."}
               </p>
             </div>
           </div>

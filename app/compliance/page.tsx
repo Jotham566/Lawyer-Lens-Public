@@ -1151,8 +1151,7 @@ function WatchTab() {
                       title="Number of your tracked obligations this event affects"
                     >
                       <AlertTriangle className="h-3 w-3" />
-                      Affects {linkedObligations.length} of your obligation
-                      {linkedObligations.length === 1 ? "" : "s"}
+                      Affects {linkedObligations.length} of your obligations
                     </span>
                   )}
                 </div>
