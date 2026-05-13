@@ -535,13 +535,7 @@ function ResultView({
             <span>·</span>
             <span>{result.text_length.toLocaleString()} characters parsed</span>
             <span>·</span>
-            <span>
-              {result.references_verified} statute reference
-              {result.references_verified === 1 ? "" : "s"} verified
-              {result.references_unverified.length > 0
-                ? `, ${result.references_unverified.length} unverified`
-                : ""}
-            </span>
+            <span>{describeStatuteCheck(result)}</span>
           </div>
 
           <div className="mt-5 flex justify-end">
@@ -807,6 +801,22 @@ function interpretConsistency(score: number): string {
   if (score >= 85) return "Internal references and definitions check out.";
   if (score >= 70) return "Minor consistency gaps; verify cross-references.";
   return "Significant internal inconsistencies detected.";
+}
+
+function describeStatuteCheck(result: ContractReviewResult): string {
+  const verified = result.references_verified;
+  const unverified = result.references_unverified.length;
+  const total = verified + unverified;
+  if (total === 0) {
+    return "Document doesn't cite any statutes";
+  }
+  if (unverified === 0) {
+    return `${verified} statute reference${verified === 1 ? "" : "s"} verified`;
+  }
+  if (verified === 0) {
+    return `${unverified} statute reference${unverified === 1 ? "" : "s"} flagged for review`;
+  }
+  return `${verified} of ${total} statute references verified, ${unverified} flagged`;
 }
 
 function FindingCard({
