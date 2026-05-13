@@ -79,14 +79,25 @@ const CONTRACT_TYPES: Array<{ value: string; label: string }> = [
 ];
 
 // Cycle through these client-side so the user sees progress through
-// the (synchronous) backend pipeline. Each tick is ~6s.
+// the (synchronous) backend pipeline. Real reviews take 60-100s
+// (Mistral OCR + corpus research + LLM review + statute verification).
+// Tick interval timed so the cycle ends near the typical lower bound;
+// after the last stage we sit on it with a "still working" hint
+// (handled by the renderer) until the actual response arrives.
 const PROCESSING_STAGES = [
-  "Parsing the document…",
-  "Researching applicable law (LawLens corpus + Ulii)…",
-  "Identifying risks and missing clauses…",
-  "Verifying statute references…",
-  "Finalising review…",
+  "Reading the document…",
+  "Extracting text and structure (OCR if needed)…",
+  "Researching applicable Ugandan law (LawLens + Ulii)…",
+  "Identifying risks, missing clauses, and exposure…",
+  "Verifying statute references against retrieved evidence…",
+  "Extracting recurring obligations…",
+  "Compiling the final review…",
 ];
+
+// 10s per stage × 7 stages ≈ 70s — matches the typical full-pipeline
+// wall clock (corpus + Tavily + ReviewAgent). The renderer holds on
+// the last stage past that with a "still working" hint.
+const PROCESSING_STAGE_INTERVAL_MS = 10_000;
 
 const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10 MB — matches backend cap
 
@@ -148,7 +159,10 @@ export default function ContractReviewPage() {
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  // Cycle stage labels during processing.
+  // Cycle stage labels during processing. Tick interval is chosen so
+  // the cycle finishes near the typical pipeline runtime — after the
+  // last stage we hold there with a hint so the user doesn't think we
+  // hung.
   useEffect(() => {
     if (!isReviewing) {
       setStageIndex(0);
@@ -156,7 +170,7 @@ export default function ContractReviewPage() {
     }
     const id = setInterval(() => {
       setStageIndex((i) => Math.min(i + 1, PROCESSING_STAGES.length - 1));
-    }, 6000);
+    }, PROCESSING_STAGE_INTERVAL_MS);
     return () => clearInterval(id);
   }, [isReviewing]);
 
@@ -374,7 +388,9 @@ function UploadCard(props: UploadCardProps) {
                 {PROCESSING_STAGES[stageIndex]}
               </div>
               <div className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
-                This usually takes 30-60 seconds.
+                {stageIndex < PROCESSING_STAGES.length - 1
+                  ? "This usually takes about 60-90 seconds."
+                  : "Still working — final synthesis can take an extra moment."}
               </div>
             </div>
           )}
@@ -477,16 +493,26 @@ function ResultView({
                 {statusLabel(result.status)}
               </div>
             </div>
-            <div className="flex items-center gap-6">
-              <ScoreTile label="Overall" value={result.overall_score} />
+            <div className="flex flex-wrap items-start gap-6">
+              <ScoreTile
+                label="Overall"
+                value={result.overall_score}
+                hint={interpretOverall(result.overall_score)}
+              />
               <ScoreTile
                 label="Completeness"
                 value={result.completeness_score}
+                hint={interpretCompleteness(result)}
               />
-              <ScoreTile label="Compliance" value={result.compliance_score} />
+              <ScoreTile
+                label="Compliance"
+                value={result.compliance_score}
+                hint={interpretCompliance(result)}
+              />
               <ScoreTile
                 label="Consistency"
                 value={result.consistency_score}
+                hint={interpretConsistency(result.consistency_score)}
               />
             </div>
           </div>
@@ -720,9 +746,17 @@ function ResultView({
   );
 }
 
-function ScoreTile({ label, value }: { label: string; value: number }) {
+function ScoreTile({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: number;
+  hint?: string;
+}) {
   return (
-    <div className="text-right">
+    <div className="min-w-[7rem] text-right">
       <div className={cn("text-2xl font-semibold", scoreTone(value))}>
         {value}
         <span className="ml-0.5 text-xs text-muted-foreground">/100</span>
@@ -730,8 +764,49 @@ function ScoreTile({ label, value }: { label: string; value: number }) {
       <div className={cn(typographyClasses.labelXs, "text-muted-foreground")}>
         {label}
       </div>
+      {hint && (
+        <div className="mt-1 max-w-[12rem] text-[11px] leading-tight text-muted-foreground/80">
+          {hint}
+        </div>
+      )}
     </div>
   );
+}
+
+// ----------------------------------------------------------------------------
+// Score interpretation — one short sentence under each tile so UDB legal
+// can read the result panel at a glance instead of decoding a number.
+// ----------------------------------------------------------------------------
+
+function interpretOverall(score: number): string {
+  if (score >= 85) return "Ready to execute; minor edits at most.";
+  if (score >= 70) return "Workable with targeted revisions.";
+  if (score >= 50) return "Needs significant revision before signing.";
+  return "Major issues — substantial rework required.";
+}
+
+function interpretCompleteness(result: ContractReviewResult): string {
+  const missing =
+    result.missing_sections.length + result.missing_clauses.length;
+  if (missing === 0) return "All expected sections and clauses present.";
+  if (missing <= 3) return `${missing} expected section${missing === 1 ? "" : "s"}/clause${missing === 1 ? "" : "s"} missing.`;
+  return `${missing} expected items missing — see Missing tab.`;
+}
+
+function interpretCompliance(result: ContractReviewResult): string {
+  const issues = result.legal_issues.length;
+  const high = result.legal_issues.filter(
+    (i) => i.severity === "critical" || i.severity === "high",
+  ).length;
+  if (issues === 0) return "No Ugandan-law compliance issues flagged.";
+  if (high === 0) return `${issues} minor legal concern${issues === 1 ? "" : "s"} flagged.`;
+  return `${high} high-severity legal issue${high === 1 ? "" : "s"} — review carefully.`;
+}
+
+function interpretConsistency(score: number): string {
+  if (score >= 85) return "Internal references and definitions check out.";
+  if (score >= 70) return "Minor consistency gaps; verify cross-references.";
+  return "Significant internal inconsistencies detected.";
 }
 
 function FindingCard({

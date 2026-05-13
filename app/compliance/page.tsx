@@ -1,7 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import dynamic from "next/dynamic";
 
 // react-markdown is only rendered inside expanded Finding detail
@@ -1079,7 +1080,36 @@ function obligationFilterBucket(
 
 function ObligationsTab() {
   const queryClient = useQueryClient();
-  const [filter, setFilter] = useState<ObligationFilter>("all");
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+  // Read initial filter from URL so a refresh / shared link preserves
+  // the chosen view. Falls back to "all" when the param is missing or
+  // unrecognised.
+  const initialFilter = ((): ObligationFilter => {
+    const f = searchParams.get("filter");
+    const allowed: ObligationFilter[] = [
+      "all", "overdue", "this_week", "this_month", "later",
+    ];
+    return allowed.includes(f as ObligationFilter)
+      ? (f as ObligationFilter)
+      : "all";
+  })();
+  const [filter, setFilter] = useState<ObligationFilter>(initialFilter);
+
+  // Mirror filter changes into the URL so reload / share preserves
+  // the state. Use `replace` so we don't pile up history entries.
+  useEffect(() => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (filter === "all") {
+      params.delete("filter");
+    } else {
+      params.set("filter", filter);
+    }
+    const next = params.toString();
+    router.replace(`${pathname}${next ? `?${next}` : ""}`, { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only run on filter change
+  }, [filter]);
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["compliance-obligations"],
