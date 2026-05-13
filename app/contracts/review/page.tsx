@@ -115,7 +115,7 @@ function statusColor(status: string) {
     case "rejected":
       return "text-rose-300";
     default:
-      return "text-zinc-300";
+      return "text-foreground/85";
   }
 }
 
@@ -254,21 +254,21 @@ function Header() {
       <h1 className={cn(typographyClasses.headingXl, "mt-1")}>
         Contract Review
       </h1>
-      <p className={cn(typographyClasses.bodyMd, "mt-2 text-zinc-400")}>
+      <p className={cn(typographyClasses.bodyMd, "mt-2 text-muted-foreground")}>
         Upload a contract. The reviewer parses the document, researches
         applicable Ugandan law, and returns a structured assessment with
         risks, missing clauses, and statute-grounded recommendations.
       </p>
       <div className="mt-4 flex gap-2 text-xs">
-        <Badge variant="outline" className="border-zinc-700 text-zinc-300">
+        <Badge variant="outline" className="border-border text-foreground/85">
           <FileText className="mr-1 h-3 w-3" />
           PDF · DOCX · TXT
         </Badge>
-        <Badge variant="outline" className="border-zinc-700 text-zinc-300">
+        <Badge variant="outline" className="border-border text-foreground/85">
           <BookOpen className="mr-1 h-3 w-3" />
           LawLens corpus + Ulii
         </Badge>
-        <Badge variant="outline" className="border-zinc-700 text-zinc-300">
+        <Badge variant="outline" className="border-border text-foreground/85">
           <ShieldAlert className="mr-1 h-3 w-3" />
           Statute references verified
         </Badge>
@@ -322,11 +322,11 @@ function UploadCard(props: UploadCardProps) {
           className={cn(
             "flex flex-col items-center justify-center rounded-lg border-2 border-dashed p-12 text-center transition-colors",
             isReviewing
-              ? "cursor-default border-zinc-700 bg-zinc-900/40"
-              : "cursor-pointer hover:border-zinc-500",
+              ? "cursor-default border-border bg-muted/40"
+              : "cursor-pointer hover:border-foreground/40",
             isDragOver
               ? "border-emerald-500 bg-emerald-500/5"
-              : "border-zinc-700",
+              : "border-border",
           )}
         >
           <input
@@ -339,12 +339,12 @@ function UploadCard(props: UploadCardProps) {
           />
           {!isReviewing && (
             <>
-              <Upload className="mb-3 h-8 w-8 text-zinc-500" />
+              <Upload className="mb-3 h-8 w-8 text-muted-foreground" aria-hidden />
               <div className={typographyClasses.bodyMd}>
                 {file ? (
                   <>
-                    <span className="text-zinc-100">{file.name}</span>
-                    <span className="ml-2 text-zinc-500">
+                    <span className="text-foreground">{file.name}</span>
+                    <span className="ml-2 text-muted-foreground">
                       ({(file.size / 1024).toFixed(0)} KB)
                     </span>
                   </>
@@ -357,7 +357,7 @@ function UploadCard(props: UploadCardProps) {
                   </>
                 )}
               </div>
-              <div className={cn(typographyClasses.bodySm, "mt-1 text-zinc-500")}>
+              <div className={cn(typographyClasses.bodySm, "mt-1 text-muted-foreground")}>
                 PDF, DOCX, or TXT, up to 10 MB
               </div>
             </>
@@ -369,7 +369,7 @@ function UploadCard(props: UploadCardProps) {
               <div className={typographyClasses.bodyMd}>
                 {PROCESSING_STAGES[stageIndex]}
               </div>
-              <div className={cn(typographyClasses.bodySm, "text-zinc-500")}>
+              <div className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
                 This usually takes 30-60 seconds.
               </div>
             </div>
@@ -397,7 +397,7 @@ function UploadCard(props: UploadCardProps) {
               ))}
             </SelectContent>
           </Select>
-          <p className={cn(typographyClasses.bodySm, "text-zinc-500")}>
+          <p className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
             Auto-detect scans the document body; pick a specific type for
             tighter compliance checks (e.g., Employment Act for employment
             contracts).
@@ -490,14 +490,14 @@ function ResultView({
             <p
               className={cn(
                 typographyClasses.bodyMd,
-                "mt-4 text-zinc-300",
+                "mt-4 text-foreground/85",
               )}
             >
               {result.summary}
             </p>
           )}
 
-          <div className="mt-4 flex flex-wrap gap-3 text-xs text-zinc-400">
+          <div className="mt-4 flex flex-wrap gap-3 text-xs text-muted-foreground">
             <span>
               Processed in {(result.processing_time_ms / 1000).toFixed(1)}s
             </span>
@@ -638,7 +638,7 @@ function ResultView({
           {result.evidence.length === 0 ? (
             <EmptyState>
               No evidence captured. Try re-running with{" "}
-              <code className="rounded bg-zinc-800 px-1 text-xs">
+              <code className="rounded bg-muted px-1 text-xs">
                 skip_legal_research=false
               </code>
               .
@@ -695,8 +695,8 @@ function ResultView({
         </Card>
       )}
 
-      <div className="pt-4 text-center text-xs text-zinc-500">
-        <Link href="/contracts" className="hover:text-zinc-300">
+      <div className="pt-4 text-center text-xs text-muted-foreground">
+        <Link href="/contracts" className="hover:text-foreground/85">
           ← Back to Contracts
         </Link>
       </div>
@@ -709,9 +709,9 @@ function ScoreTile({ label, value }: { label: string; value: number }) {
     <div className="text-right">
       <div className={cn("text-2xl font-semibold", scoreTone(value))}>
         {value}
-        <span className="ml-0.5 text-xs text-zinc-500">/100</span>
+        <span className="ml-0.5 text-xs text-muted-foreground">/100</span>
       </div>
-      <div className={cn(typographyClasses.labelXs, "text-zinc-500")}>
+      <div className={cn(typographyClasses.labelXs, "text-muted-foreground")}>
         {label}
       </div>
     </div>
@@ -740,7 +740,7 @@ function FindingCard({
     >
       <CardContent className="space-y-2 p-4">
         <div className="flex items-start justify-between gap-3">
-          <div className={cn(typographyClasses.bodyMd, "text-zinc-100")}>
+          <div className={cn(typographyClasses.bodyMd, "text-foreground")}>
             {title}
           </div>
           <Badge
@@ -754,14 +754,14 @@ function FindingCard({
           </Badge>
         </div>
         {detail && (
-          <div className={cn(typographyClasses.bodySm, "text-zinc-400")}>
-            <span className="font-medium text-zinc-300">{detailLabel}: </span>
+          <div className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
+            <span className="font-medium text-foreground/85">{detailLabel}: </span>
             {detail}
           </div>
         )}
         {meta && (
           <div
-            className={cn(typographyClasses.labelXs, "text-zinc-500")}
+            className={cn(typographyClasses.labelXs, "text-muted-foreground")}
           >
             {meta}
           </div>
@@ -783,10 +783,10 @@ function MissingBlock({
   return (
     <Card className={surfaceClasses.pagePanel}>
       <CardContent className="p-4">
-        <div className={cn(typographyClasses.headingSm, "mb-2 text-zinc-100")}>
+        <div className={cn(typographyClasses.headingSm, "mb-2 text-foreground")}>
           {title}
         </div>
-        <ul className="space-y-1.5 text-sm text-zinc-300">
+        <ul className="space-y-1.5 text-sm text-foreground/85">
           {items.map((item, i) => (
             <li key={`${title}-${i}`} className="flex items-start gap-2">
               <span className="mt-0.5 shrink-0">{icon}</span>
@@ -811,11 +811,11 @@ function EvidenceCard({
       <CardContent className="space-y-2 p-4">
         <div className="flex items-start justify-between gap-3">
           <div>
-            <div className={cn(typographyClasses.bodyMd, "text-zinc-100")}>
+            <div className={cn(typographyClasses.bodyMd, "text-foreground")}>
               {evidence.title || evidence.legal_reference || "Evidence"}
             </div>
             {evidence.legal_reference && evidence.title !== evidence.legal_reference && (
-              <div className={cn(typographyClasses.labelXs, "mt-0.5 text-zinc-500")}>
+              <div className={cn(typographyClasses.labelXs, "mt-0.5 text-muted-foreground")}>
                 {evidence.legal_reference}
               </div>
             )}
@@ -832,12 +832,12 @@ function EvidenceCard({
           )}
         </div>
         {evidence.snippet && (
-          <div className={cn(typographyClasses.bodySm, "text-zinc-400")}>
+          <div className={cn(typographyClasses.bodySm, "text-muted-foreground")}>
             {evidence.snippet}
             {evidence.snippet.length === 400 && "…"}
           </div>
         )}
-        <Badge variant="outline" className="border-zinc-700 text-zinc-400">
+        <Badge variant="outline" className="border-border text-muted-foreground">
           {evidence.source_type || "unknown source"}
         </Badge>
       </CardContent>
@@ -848,7 +848,7 @@ function EvidenceCard({
 function EmptyState({ children }: { children: React.ReactNode }) {
   return (
     <Card className={surfaceClasses.pagePanel}>
-      <CardContent className="flex items-center gap-3 p-6 text-zinc-400">
+      <CardContent className="flex items-center gap-3 p-6 text-muted-foreground">
         <CheckCircle2 className="h-5 w-5 text-emerald-400" />
         <span>{children}</span>
       </CardContent>

@@ -394,6 +394,10 @@ export interface ContractReviewEvidence {
   source_url: string;
   source_type: string;
   snippet: string;
+  // Populated for corpus-sourced evidence; empty for external/Tavily results.
+  // Frontend can use these to deep-link into the LawLens chunk viewer.
+  source_chunk_ids?: string[];
+  source_document_ids?: string[];
 }
 
 export interface ContractReviewResult {
