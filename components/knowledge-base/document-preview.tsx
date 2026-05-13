@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import {
   Eye,
   FileText,
@@ -17,7 +17,6 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import {
   getDocumentPreview,
-  type DocumentPreviewResponse,
   type OrgDocument,
 } from "@/lib/api/knowledge-base";
 
@@ -26,7 +25,7 @@ import {
  *
  * Shows the exact chunk text the system embedded, grouped by chunk
  * with section/page headers when present. Surfaces "Showing first N
- * of M chunks" + a "Truncated at X characters" notice if the doc was
+ * of M chunks" + a "Truncated at N characters" notice if the doc was
  * too large to return in one shot. Renders inside a right-side Sheet
  * so the underlying document list stays visible behind it.
  *
@@ -35,6 +34,11 @@ import {
  * doc?" — and the chunks ARE that view. A raw-file viewer would need
  * S3 presigning, MIME-aware rendering, and would not match what the
  * retriever actually sees post-OCR + post-cleanup.
+ *
+ * Uses useQuery instead of an effect + local state — Next 16's
+ * react-hooks/set-state-in-effect rule flags synchronous setState in
+ * effects, and React Query handles the same fetch/cache/cancel
+ * lifecycle without tripping it.
  */
 export function DocumentPreviewSheet({
   document,
@@ -45,44 +49,27 @@ export function DocumentPreviewSheet({
   open: boolean;
   onOpenChange: (open: boolean) => void;
 }) {
-  const [preview, setPreview] = useState<DocumentPreviewResponse | null>(null);
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const documentId = document?.id ?? null;
 
-  useEffect(() => {
-    if (!open || !document) {
-      setPreview(null);
-      setError(null);
-      return;
-    }
-
-    let cancelled = false;
-    setLoading(true);
-    setError(null);
-    setPreview(null);
-
-    getDocumentPreview(document.id)
-      .then((res) => {
-        if (!cancelled) setPreview(res);
-      })
-      .catch((err) => {
-        if (cancelled) return;
-        const msg =
-          err instanceof Error
-            ? err.message
-            : "We couldn't load this document's preview.";
-        setError(msg);
-      })
-      .finally(() => {
-        if (!cancelled) setLoading(false);
-      });
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, document]);
+  const { data: preview, isLoading, error } = useQuery({
+    queryKey: ["kb-document-preview", documentId],
+    queryFn: () => getDocumentPreview(documentId as string),
+    enabled: open && documentId !== null,
+    // The chunks rarely change between opens (reprocessing produces a
+    // new chunk_count, which invalidates implicitly via the list
+    // refresh). 60s is plenty for the demo flow.
+    staleTime: 60_000,
+    retry: false,
+  });
 
   if (!document) return null;
+
+  const errorMessage =
+    error instanceof Error
+      ? error.message
+      : error
+        ? "We couldn't load this document's preview."
+        : null;
 
   return (
     <Sheet open={open} onOpenChange={onOpenChange}>
@@ -126,19 +113,19 @@ export function DocumentPreviewSheet({
         </SheetHeader>
 
         <div className="flex-1 overflow-y-auto px-6 py-4">
-          {loading && <PreviewSkeleton />}
+          {isLoading && <PreviewSkeleton />}
 
-          {error && !loading && (
+          {errorMessage && !isLoading && (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-destructive/10">
                 <AlertCircle className="h-6 w-6 text-destructive" />
               </div>
               <p className="text-sm font-medium">Preview unavailable</p>
-              <p className="max-w-sm text-xs text-muted-foreground">{error}</p>
+              <p className="max-w-sm text-xs text-muted-foreground">{errorMessage}</p>
             </div>
           )}
 
-          {preview && !loading && preview.sections.length === 0 && (
+          {preview && !isLoading && preview.sections.length === 0 && (
             <div className="flex flex-col items-center justify-center gap-2 py-12 text-center">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-muted">
                 <Eye className="h-6 w-6 text-muted-foreground" />
