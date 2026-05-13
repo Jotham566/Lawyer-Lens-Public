@@ -202,6 +202,72 @@ export async function getDocumentPreview(
   );
 }
 
+/* ─────────────────────────────────────────────────────
+   Data source connections (OneDrive, SharePoint, Google Drive)
+   ───────────────────────────────────────────────────── */
+
+export type DataSourceType =
+  | "microsoft_onedrive"
+  | "microsoft_sharepoint"
+  | "google_drive";
+
+export type DataSourceStatus =
+  | "active"
+  | "paused"
+  | "error"
+  | "expired";
+
+export interface DataSourceItem {
+  id: string;
+  source_type: DataSourceType;
+  account_email: string;
+  account_display_name: string | null;
+  folder_id: string | null;
+  folder_path: string | null;
+  status: DataSourceStatus;
+  last_synced_at: string | null;
+  last_error: string | null;
+  last_error_at: string | null;
+  sync_interval_seconds: number;
+  files_synced_total: number;
+  files_failed_total: number;
+  created_at: string;
+}
+
+export interface DataSourceListResponse {
+  items: DataSourceItem[];
+  total: number;
+}
+
+export interface SyncDataSourceResponse {
+  connection_id: string;
+  synced: number;
+  skipped_duplicate: number;
+  skipped_unsupported: number;
+  failed: number;
+  errors: string[];
+  last_synced_at: string | null;
+  status: DataSourceStatus;
+}
+
+/** List connected OneDrive/SharePoint/Google Drive integrations. */
+export async function listDataSources(): Promise<DataSourceListResponse> {
+  return apiGet<DataSourceListResponse>("/knowledge-base/data-sources");
+}
+
+/**
+ * Trigger a one-off sync run for the given connection. Returns the
+ * outcome counts plus updated last_synced_at + status.
+ */
+export async function syncDataSource(
+  connectionId: string,
+): Promise<SyncDataSourceResponse> {
+  return apiFetch<SyncDataSourceResponse>(
+    `/knowledge-base/data-sources/${connectionId}/sync`,
+    { method: "POST" },
+  );
+}
+
 /**
  * Delete a document from the knowledge base.
  */

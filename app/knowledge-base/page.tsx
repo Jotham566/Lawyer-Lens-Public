@@ -49,6 +49,7 @@ import {
   type KnowledgeBaseStats,
   type Connector,
 } from "@/lib/api/knowledge-base";
+import { IntegrationsPanel } from "@/components/knowledge-base/integrations-panel";
 
 /* ═══════════════════════════════════════════════════════════
    Knowledge Base Dashboard
@@ -91,12 +92,17 @@ function CardShell({
    Settings Tab
    ───────────────────────────────────────────────────── */
 
+// Generic connector types — the catch-all path for sources that
+// don't have a first-party OAuth integration yet (OneDrive lives in
+// the IntegrationsPanel above this form). Anything here is a config
+// blob the operator owns; first-party live syncers should be added
+// to data_source_connections instead.
 const CONNECTOR_TYPES = [
   {
     value: "sharepoint",
-    label: "Microsoft SharePoint",
+    label: "Microsoft SharePoint (URL)",
     description:
-      "Sync documents from your SharePoint document libraries",
+      "Sync documents from your SharePoint document libraries by URL",
   },
   {
     value: "s3",
@@ -347,6 +353,12 @@ function SettingsTab() {
 
   return (
     <div className="space-y-6">
+      {/* First-party integrations (OneDrive / SharePoint / Google Drive).
+          Surfaces the data_source_connections table with status + manual
+          sync trigger. Shown above the generic Source Connectors list
+          because these are the supported-out-of-the-box options. */}
+      <IntegrationsPanel />
+
       {/* Connector List Header */}
       <CardShell className="p-6">
         <div className="flex items-center justify-between mb-4">
