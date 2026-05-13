@@ -171,6 +171,37 @@ export async function getDocumentStatus(
   );
 }
 
+export interface DocumentPreviewSection {
+  chunk_index: number;
+  section_heading: string | null;
+  page_number: number | null;
+  text: string;
+}
+
+export interface DocumentPreviewResponse {
+  document_id: string;
+  title: string;
+  total_chunks: number;
+  returned_chunks: number;
+  total_chars: number;
+  truncated: boolean;
+  sections: DocumentPreviewSection[];
+}
+
+/**
+ * Get the extracted-text preview for a document. Returns the chunks
+ * the indexer stored, in `chunk_index` order, capped at ~50k chars.
+ * Used by the KB Documents list's "View" affordance to show the
+ * operator exactly what Ben retrieves from this doc.
+ */
+export async function getDocumentPreview(
+  documentId: string
+): Promise<DocumentPreviewResponse> {
+  return apiGet<DocumentPreviewResponse>(
+    `/knowledge-base/documents/${documentId}/preview`
+  );
+}
+
 /**
  * Delete a document from the knowledge base.
  */

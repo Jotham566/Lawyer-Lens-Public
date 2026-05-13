@@ -45,6 +45,7 @@ import {
   type OrgDocument,
   type DocumentStatus,
 } from "@/lib/api/knowledge-base";
+import { DocumentPreviewSheet } from "./document-preview";
 import { toast } from "sonner";
 
 /* ─────────────────────────────────────────────────────
@@ -168,6 +169,7 @@ export function DocumentList({
   const [searchQuery, setSearchQuery] = useState("");
   const [deleting, setDeleting] = useState<string | null>(null);
   const [classifying, setClassifying] = useState<string | null>(null);
+  const [previewing, setPreviewing] = useState<OrgDocument | null>(null);
 
   const pageSize = 10;
 
@@ -418,11 +420,17 @@ export function DocumentList({
 
                     {/* Actions */}
                     <div className="flex items-center gap-1 shrink-0">
-                      {/* View */}
+                      {/* View — opens extracted-text preview drawer */}
                       <button
                         type="button"
-                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground"
-                        title="View document"
+                        onClick={() => setPreviewing(doc)}
+                        disabled={doc.status !== "ready"}
+                        className="inline-flex h-8 w-8 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-muted hover:text-foreground disabled:cursor-not-allowed disabled:opacity-40 disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
+                        title={
+                          doc.status === "ready"
+                            ? "Preview extracted text"
+                            : "Preview available once processing finishes"
+                        }
                       >
                         <Eye className="h-4 w-4" />
                       </button>
@@ -525,6 +533,12 @@ export function DocumentList({
           )}
         </>
       )}
+
+      <DocumentPreviewSheet
+        document={previewing}
+        open={previewing !== null}
+        onOpenChange={(open) => !open && setPreviewing(null)}
+      />
     </div>
   );
 }
