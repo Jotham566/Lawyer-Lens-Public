@@ -149,12 +149,56 @@ function scoreTone(score: number) {
 // Page
 // ----------------------------------------------------------------------------
 
+/**
+ * localStorage key for the most recent review result. We persist the
+ * last successful review so a page refresh mid-demo doesn't blow it
+ * away — the user can re-share the URL, navigate away and back, etc.
+ * Stored under a versioned key so we can invalidate cleanly if the
+ * response shape ever changes.
+ */
+const LAST_REVIEW_KEY = "lawlens.contract_review.last_v1";
+
+function loadPersistedReview(): ContractReviewResult | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(LAST_REVIEW_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as ContractReviewResult;
+    // Sanity check: must look like a review result.
+    if (!parsed || typeof parsed.overall_score !== "number") return null;
+    return parsed;
+  } catch {
+    return null;
+  }
+}
+
+function persistReview(r: ContractReviewResult | null): void {
+  if (typeof window === "undefined") return;
+  try {
+    if (r) {
+      window.localStorage.setItem(LAST_REVIEW_KEY, JSON.stringify(r));
+    } else {
+      window.localStorage.removeItem(LAST_REVIEW_KEY);
+    }
+  } catch {
+    // Quota exceeded / private mode — silently drop. Re-hydration just
+    // returns null on next mount.
+  }
+}
+
 export default function ContractReviewPage() {
   const [file, setFile] = useState<File | null>(null);
   const [contractType, setContractType] = useState<string>("general");
   const [isReviewing, setIsReviewing] = useState(false);
   const [stageIndex, setStageIndex] = useState(0);
+  // Re-hydrate the last review on mount so a refresh doesn't lose it.
+  // useEffect (not initial state) because localStorage isn't available
+  // during SSR — initial render must match the server-rendered HTML.
   const [result, setResult] = useState<ContractReviewResult | null>(null);
+  useEffect(() => {
+    const persisted = loadPersistedReview();
+    if (persisted) setResult(persisted);
+  }, []);
   const [error, setError] = useState<string | null>(null);
   const [isDragOver, setIsDragOver] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -207,6 +251,7 @@ export default function ContractReviewPage() {
         contractType: contractType === "general" ? undefined : contractType,
       });
       setResult(review);
+      persistReview(review);
     } catch (err) {
       if (err instanceof APIError && err.status === 403) {
         setError(
@@ -226,6 +271,10 @@ export default function ContractReviewPage() {
     setContractType("general");
     setResult(null);
     setError(null);
+    // Clear the persisted last review too — the user explicitly asked
+    // for a fresh upload, so re-hydrating the old result on refresh
+    // would be confusing.
+    persistReview(null);
     if (inputRef.current) inputRef.current.value = "";
   }, []);
 

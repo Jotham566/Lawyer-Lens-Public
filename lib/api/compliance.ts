@@ -257,6 +257,18 @@ export const complianceApi = {
     apiGet<{ count: number }>("/compliance/alerts/unacknowledged-count"),
 
   /**
+   * Server-side correlation: obligations affected by a regulatory
+   * event. Backed by ObligationTrackingService.link_event_to_obligations
+   * — matches on sector/domain tag overlap, governing regulator, and
+   * legislation reference. Replaces the earlier client-side substring
+   * heuristic on the Watch tab.
+   */
+  getLinkedObligationsForEvent: (eventId: string) =>
+    apiGet<ObligationListResponse>(
+      `/compliance/events/${eventId}/linked-obligations`,
+    ),
+
+  /**
    * Persist obligations extracted from a contract into the compliance
    * tracker. Called by the Contract Review result page after the user
    * clicks "Add to tracker". `contract_session_id` is a synthetic UUID

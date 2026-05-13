@@ -30,7 +30,16 @@ import {
   Loader2,
   Lock,
   Settings,
+  RefreshCw,
 } from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { cn } from "@/lib/utils";
 import { useRequireAuth } from "@/components/providers";
 import { PageLoading } from "@/components/common";
@@ -339,11 +348,23 @@ function UpcomingAndOverdueObligations({
 }: {
   onNavigateObligations: () => void;
 }) {
+  const queryClient = useQueryClient();
+  const [selected, setSelected] = useState<ObligationResponse | null>(null);
+
   const { data, isLoading, error } = useQuery({
     queryKey: ["compliance-obligations"],
     queryFn: () => complianceApi.listObligations({ is_active: true, limit: 20 }),
     staleTime: 60_000,
     retry: false,
+  });
+
+  const completeMutation = useMutation({
+    mutationFn: (id: string) => complianceApi.completeObligation(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["compliance-obligations"] });
+      queryClient.invalidateQueries({ queryKey: ["compliance-dashboard-summary"] });
+      setSelected(null);
+    },
   });
 
   // Silently swallow 403 / errors on the Overview tab — the main
@@ -360,22 +381,32 @@ function UpcomingAndOverdueObligations({
   if (overdue.length === 0 && thisWeek.length === 0) return null;
 
   return (
-    <div className="grid gap-4 md:grid-cols-2">
-      <ObligationStack
-        title="Overdue"
-        items={overdue}
-        emptyLabel="Nothing slipped — keep it up."
-        tone="overdue"
-        onSeeAll={onNavigateObligations}
+    <>
+      <div className="grid gap-4 md:grid-cols-2">
+        <ObligationStack
+          title="Overdue"
+          items={overdue}
+          emptyLabel="Nothing slipped — keep it up."
+          tone="overdue"
+          onSeeAll={onNavigateObligations}
+          onSelect={setSelected}
+        />
+        <ObligationStack
+          title="Due this week"
+          items={thisWeek}
+          emptyLabel="No deadlines in the next 7 days."
+          tone="upcoming"
+          onSeeAll={onNavigateObligations}
+          onSelect={setSelected}
+        />
+      </div>
+      <ObligationDetailDialog
+        obligation={selected}
+        onOpenChange={(open) => !open && setSelected(null)}
+        onComplete={(id) => completeMutation.mutate(id)}
+        completing={completeMutation.isPending}
       />
-      <ObligationStack
-        title="Due this week"
-        items={thisWeek}
-        emptyLabel="No deadlines in the next 7 days."
-        tone="upcoming"
-        onSeeAll={onNavigateObligations}
-      />
-    </div>
+    </>
   );
 }
 
@@ -385,12 +416,14 @@ function ObligationStack({
   emptyLabel,
   tone,
   onSeeAll,
+  onSelect,
 }: {
   title: string;
   items: ObligationResponse[];
   emptyLabel: string;
   tone: "overdue" | "upcoming";
   onSeeAll: () => void;
+  onSelect: (ob: ObligationResponse) => void;
 }) {
   const accent =
     tone === "overdue"
@@ -425,40 +458,44 @@ function ObligationStack({
       ) : (
         <ul className="mt-3 space-y-2.5">
           {items.slice(0, 4).map((ob) => (
-            <li
-              key={ob.id}
-              className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/40 p-3"
-            >
-              <div className="min-w-0 flex-1">
-                <div className="truncate text-sm font-semibold">
-                  {ob.title}
+            <li key={ob.id}>
+              <button
+                type="button"
+                onClick={() => onSelect(ob)}
+                className="flex w-full items-start gap-3 rounded-lg border border-border/50 bg-background/40 p-3 text-left transition-colors hover:border-border hover:bg-background/70 focus:outline-none focus:ring-2 focus:ring-primary/40"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm font-semibold">
+                    {ob.title}
+                  </div>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                    <span className="capitalize">
+                      {ob.recurrence_pattern?.replace(/_/g, " ") ?? "one-time"}
+                    </span>
+                    {ob.next_due_date && (
+                      <>
+                        <span>·</span>
+                        <span>
+                          {tone === "overdue" ? "Was due " : "Due "}
+                          {new Date(ob.next_due_date).toLocaleDateString(
+                            "en-UG",
+                            { month: "short", day: "numeric" },
+                          )}
+                        </span>
+                      </>
+                    )}
+                    {ob.assigned_owner_role && (
+                      <>
+                        <span>·</span>
+                        <span className="capitalize">
+                          {ob.assigned_owner_role.replace(/_/g, " ")}
+                        </span>
+                      </>
+                    )}
+                  </div>
                 </div>
-                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
-                  <span className="capitalize">
-                    {ob.recurrence_pattern?.replace(/_/g, " ") ?? "one-time"}
-                  </span>
-                  {ob.next_due_date && (
-                    <>
-                      <span>·</span>
-                      <span>
-                        {tone === "overdue" ? "Was due " : "Due "}
-                        {new Date(ob.next_due_date).toLocaleDateString(
-                          "en-UG",
-                          { month: "short", day: "numeric" },
-                        )}
-                      </span>
-                    </>
-                  )}
-                  {ob.assigned_owner_role && (
-                    <>
-                      <span>·</span>
-                      <span className="capitalize">
-                        {ob.assigned_owner_role.replace(/_/g, " ")}
-                      </span>
-                    </>
-                  )}
-                </div>
-              </div>
+                <ChevronRight className="mt-1 h-3.5 w-3.5 shrink-0 text-muted-foreground/40" />
+              </button>
             </li>
           ))}
           {items.length > 4 && (
@@ -475,6 +512,150 @@ function ObligationStack({
         </ul>
       )}
     </CardShell>
+  );
+}
+
+/**
+ * Full-detail dialog for an obligation. Opened from the Overview
+ * tab's overdue/upcoming cards. Includes a "Mark complete" button
+ * that calls the same endpoint the Obligations tab uses.
+ */
+function ObligationDetailDialog({
+  obligation,
+  onOpenChange,
+  onComplete,
+  completing,
+}: {
+  obligation: ObligationResponse | null;
+  onOpenChange: (open: boolean) => void;
+  onComplete: (id: string) => void;
+  completing: boolean;
+}) {
+  const open = obligation !== null;
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        {obligation && (
+          <>
+            <DialogHeader>
+              <DialogTitle className="pr-8">{obligation.title}</DialogTitle>
+              <DialogDescription className="capitalize">
+                {obligation.obligation_type.replace(/_/g, " ")} ·{" "}
+                {obligation.recurrence_pattern.replace(/_/g, " ")}
+              </DialogDescription>
+            </DialogHeader>
+
+            {obligation.description && (
+              <p className="text-sm text-muted-foreground">
+                {obligation.description}
+              </p>
+            )}
+
+            <dl className="grid grid-cols-2 gap-x-4 gap-y-3 text-sm">
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Next due
+                </dt>
+                <dd className={cn("mt-1 font-semibold", dueDateColor(obligation.next_due_date))}>
+                  {obligation.next_due_date
+                    ? formatDate(obligation.next_due_date)
+                    : "No due date set"}
+                </dd>
+              </div>
+              <div>
+                <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                  Advance warning
+                </dt>
+                <dd className="mt-1 font-semibold">
+                  {obligation.advance_warning_days} day
+                  {obligation.advance_warning_days === 1 ? "" : "s"}
+                </dd>
+              </div>
+              {obligation.governing_regulator && (
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Regulator
+                  </dt>
+                  <dd className="mt-1 font-semibold">
+                    {obligation.governing_regulator}
+                  </dd>
+                </div>
+              )}
+              {obligation.assigned_owner_role && (
+                <div>
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Owner
+                  </dt>
+                  <dd className="mt-1 font-semibold capitalize">
+                    {obligation.assigned_owner_role.replace(/_/g, " ")}
+                  </dd>
+                </div>
+              )}
+              {obligation.legislation_reference && (
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Legislation
+                  </dt>
+                  <dd className="mt-1 text-sm">
+                    {obligation.legislation_reference}
+                  </dd>
+                </div>
+              )}
+              {obligation.evidence_requirements?.length > 0 && (
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Evidence required
+                  </dt>
+                  <dd className="mt-1 text-sm">
+                    <ul className="space-y-0.5">
+                      {obligation.evidence_requirements.map((e, i) => (
+                        <li key={`${obligation.id}-ev-${i}`} className="flex gap-2">
+                          <span className="text-muted-foreground">•</span>
+                          <span>{e}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </dd>
+                </div>
+              )}
+              {obligation.last_completed_date && (
+                <div className="col-span-2">
+                  <dt className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">
+                    Last completed
+                  </dt>
+                  <dd className="mt-1 text-sm">
+                    {formatDate(obligation.last_completed_date)}
+                  </dd>
+                </div>
+              )}
+            </dl>
+
+            <DialogFooter>
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                className="rounded-lg border border-border bg-card px-3 py-1.5 text-sm font-semibold transition-colors hover:bg-muted/40"
+              >
+                Close
+              </button>
+              <button
+                type="button"
+                disabled={completing}
+                onClick={() => onComplete(obligation.id)}
+                className="flex items-center gap-1.5 rounded-lg bg-green-600 px-3 py-1.5 text-sm font-semibold text-white transition-colors hover:bg-green-700 disabled:opacity-50"
+              >
+                {completing ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                )}
+                Mark complete
+              </button>
+            </DialogFooter>
+          </>
+        )}
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -718,18 +899,16 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
    ───────────────────────────────────────────────────── */
 
 /**
- * P4: correlate a regulatory event with the user's tracked
- * obligations. Pure client-side substring + token overlap — no
- * backend call. Trades some precision for "works against today's
- * data without new endpoints." Returns obligations whose
- * governing_regulator, legislation_reference, title, or description
- * substring-matches one of the event's sector/domain tags, or
- * whose governing_regulator appears in the event title.
- *
- * Post-demo we'll swap this for a real
- * /compliance/events/{id}/linked-obligations endpoint backed by
- * ObligationTrackingService.link_event_to_obligations() (already
- * exists server-side).
+ * P4 fallback: client-side substring + token overlap correlation
+ * between a regulatory event and the user's tracked obligations.
+ * Used only when the server endpoint
+ * /compliance/events/{id}/linked-obligations is unavailable or fails
+ * — primary path is the server-side
+ * ObligationTrackingService.link_event_to_obligations() backing that
+ * endpoint, which matches on sector tag overlap, governing
+ * regulator, and legislation reference. The client-side path here
+ * is kept as a safety net so the Watch tab still shows a count
+ * during transient API issues.
  */
 function linkedObligationsForEvent(
   evt: RegulatoryEventResponse,
@@ -760,13 +939,105 @@ function linkedObligationsForEvent(
   });
 }
 
+/**
+ * Renders the "Your obligations affected by this event" block inside
+ * an expanded WatchTab card.
+ *
+ * Strategy:
+ *   1. On mount (expand), call /compliance/events/{id}/linked-obligations
+ *      — server-side ObligationTrackingService.link_event_to_obligations()
+ *      gives us the authoritative match list.
+ *   2. While loading or on error, fall back to the client-side
+ *      heuristic the parent already computed (avoids a "no
+ *      obligations" flash when the API is slow).
+ *   3. If both server + fallback are empty, render nothing.
+ */
+function LinkedObligationsPanel({
+  eventId,
+  fallback,
+}: {
+  eventId: string;
+  fallback: ObligationResponse[];
+}) {
+  const { data, isLoading, isError } = useQuery({
+    queryKey: ["compliance-event-linked-obligations", eventId],
+    queryFn: () => complianceApi.getLinkedObligationsForEvent(eventId),
+    staleTime: 5 * 60_000,
+    retry: false,
+  });
+
+  const serverItems = data?.items ?? null;
+  // Authoritative when the server returned something; otherwise use
+  // the parent's client-side heuristic so the panel still shows
+  // useful content.
+  const items =
+    serverItems !== null && !isError ? serverItems : fallback;
+  const source = serverItems !== null && !isError ? "server" : "heuristic";
+
+  if (items.length === 0) return null;
+  return (
+    <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+      <div className="flex items-center justify-between text-xs font-semibold text-amber-700 dark:text-amber-300">
+        <span className="flex items-center gap-2">
+          <AlertTriangle className="h-3.5 w-3.5" />
+          Your obligations affected by this event
+        </span>
+        {isLoading && source === "heuristic" && (
+          <span className="text-[10px] text-muted-foreground italic">
+            refining…
+          </span>
+        )}
+      </div>
+      <ul className="mt-2 space-y-1.5">
+        {items.slice(0, 5).map((ob) => (
+          <li
+            key={ob.id}
+            className="flex items-start gap-2 text-xs"
+          >
+            <span className="mt-0.5 text-amber-500">•</span>
+            <div className="min-w-0 flex-1">
+              <span className="font-semibold text-foreground">
+                {ob.title}
+              </span>
+              {(ob.governing_regulator || ob.next_due_date) && (
+                <span className="ml-2 text-muted-foreground">
+                  {[
+                    ob.governing_regulator,
+                    ob.next_due_date && `due ${formatDate(ob.next_due_date)}`,
+                  ]
+                    .filter(Boolean)
+                    .join(" · ")}
+                </span>
+              )}
+            </div>
+          </li>
+        ))}
+        {items.length > 5 && (
+          <li className="text-[11px] text-muted-foreground">
+            + {items.length - 5} more — see the Obligations tab.
+          </li>
+        )}
+      </ul>
+    </div>
+  );
+}
+
 function WatchTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
-  const { data, isLoading, error } = useQuery({
+  // P8 (2026-05-13): auto-refresh the events list every 5 minutes so
+  // the Watch tab actually behaves like a monitoring surface. React
+  // Query handles the polling — refetchInterval respects the browser
+  // tab focus (RQ pauses when the tab is hidden), so no battery hit
+  // when the user isn't looking. `dataUpdatedAt` powers the "last
+  // updated …" label.
+  const AUTO_REFRESH_MS = 5 * 60_000;
+  const { data, isLoading, error, isFetching, dataUpdatedAt, refetch } = useQuery({
     queryKey: ["compliance-events"],
     queryFn: () => complianceApi.listEvents({ limit: 20, offset: 0 }),
     staleTime: 2 * 60_000,
+    refetchInterval: AUTO_REFRESH_MS,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 
@@ -800,6 +1071,31 @@ function WatchTab() {
 
   return (
     <div className="space-y-3">
+      {/* Live-updates strip — confirms to the user that this is a
+          real-time surface, not a stale list. Manual refresh button
+          for impatient demos. */}
+      <div className="flex items-center justify-between text-xs text-muted-foreground">
+        <span className="flex items-center gap-2">
+          <span className="relative inline-flex h-2 w-2">
+            <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-500/60 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+          </span>
+          Live updates ·{" "}
+          {dataUpdatedAt
+            ? `last refreshed ${new Date(dataUpdatedAt).toLocaleTimeString("en-UG", { hour: "numeric", minute: "2-digit" })}`
+            : "loading"}
+        </span>
+        <button
+          type="button"
+          onClick={() => refetch()}
+          disabled={isFetching}
+          className="flex items-center gap-1.5 rounded-full border border-border px-2.5 py-1 text-xs hover:bg-muted/40 disabled:opacity-50"
+          aria-label="Refresh events"
+        >
+          <RefreshCw className={cn("h-3 w-3", isFetching && "animate-spin")} />
+          Refresh
+        </button>
+      </div>
       {events.map((evt: RegulatoryEventResponse) => {
         const isExpanded = expandedId === evt.id;
         const linkedObligations = linkedObligationsForEvent(evt, obligations);
@@ -870,47 +1166,11 @@ function WatchTab() {
                     View source <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
-                {linkedObligations.length > 0 && (
-                  <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
-                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-300">
-                      <AlertTriangle className="h-3.5 w-3.5" />
-                      Your obligations possibly affected by this event
-                    </div>
-                    <ul className="mt-2 space-y-1.5">
-                      {linkedObligations.slice(0, 5).map((ob) => (
-                        <li
-                          key={ob.id}
-                          className="flex items-start gap-2 text-xs"
-                        >
-                          <span className="mt-0.5 text-amber-500">•</span>
-                          <div className="min-w-0 flex-1">
-                            <span className="font-semibold text-foreground">
-                              {ob.title}
-                            </span>
-                            {(ob.governing_regulator ||
-                              ob.next_due_date) && (
-                              <span className="ml-2 text-muted-foreground">
-                                {[
-                                  ob.governing_regulator,
-                                  ob.next_due_date &&
-                                    `due ${formatDate(ob.next_due_date)}`,
-                                ]
-                                  .filter(Boolean)
-                                  .join(" · ")}
-                              </span>
-                            )}
-                          </div>
-                        </li>
-                      ))}
-                      {linkedObligations.length > 5 && (
-                        <li className="text-[11px] text-muted-foreground">
-                          + {linkedObligations.length - 5} more — see the
-                          Obligations tab.
-                        </li>
-                      )}
-                    </ul>
-                  </div>
-                )}
+                <LinkedObligationsPanel
+                  eventId={evt.id}
+                  fallback={linkedObligations}
+                />
+
                 {(evt.sector_tags.length > 0 || evt.domain_tags.length > 0) && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
                     {evt.sector_tags.map((t) => (
