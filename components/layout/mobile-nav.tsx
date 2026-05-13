@@ -46,7 +46,19 @@ export function MobileNav({ open, onOpenChange }: MobileNavProps) {
 
   const isActive = (href: string) => {
     if (href === "/") return pathname === "/";
-    return pathname === href || pathname.startsWith(href + "/");
+    if (pathname === href) return true;
+    if (!pathname.startsWith(href + "/")) return false;
+    // A more specific sibling tool (e.g. /contracts/review) takes
+    // priority over the broader /contracts entry — otherwise both
+    // light up on /contracts/review. Mirror the dashboard-sidebar
+    // exclusion behaviour using the same shared toolsNav config.
+    const moreSpecific = toolsNav.find(
+      (t) => t.href !== href && t.href.startsWith(href + "/"),
+    );
+    if (moreSpecific && (pathname === moreSpecific.href || pathname.startsWith(moreSpecific.href + "/"))) {
+      return false;
+    }
+    return true;
   };
 
   return (

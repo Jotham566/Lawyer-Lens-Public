@@ -26,6 +26,15 @@ interface NavItem {
   /** Match sub-routes (e.g. /legislation/acts matches /legislation) */
   matchPrefix?: boolean;
   /**
+   * Sub-prefixes that should NOT trigger prefix-match activation on
+   * THIS item, because they belong to a more specific sibling nav
+   * entry. Example: "/contracts" should not light up when the user is
+   * on "/contracts/review" — that path has its own nav item. Without
+   * this, both Contract Drafting and Contract Review would render as
+   * active on /contracts/review (visually broken).
+   */
+  excludePrefixes?: string[];
+  /**
    * Optional entitlement key. Typed as the analytics ``ToolKey`` union
    * (not plain string) so a typo at the config site fails to compile —
    * silently emitting a bogus ``tool`` value to analytics would corrupt
@@ -47,13 +56,25 @@ const primaryNav: NavItem[] = [
 // mobile drawer never drift. Sidebar always wants prefix-matching for
 // active state (e.g. /research/history highlights "Deep Research"), so
 // we set matchPrefix=true here at the consumer site.
-const sidebarToolsNav: NavItem[] = toolsNav.map((tool) => ({
-  label: tool.label,
-  href: tool.href,
-  icon: tool.icon,
-  matchPrefix: true,
-  featureKey: tool.featureKey,
-}));
+//
+// When a tool's href is a strict prefix of another tool's href
+// (e.g. /contracts is a prefix of /contracts/review), the broader
+// item gets excludePrefixes auto-populated with the more specific
+// siblings so isActive() doesn't light up both. Calculated once at
+// module load — cheap (handful of nav items).
+const sidebarToolsNav: NavItem[] = toolsNav.map((tool) => {
+  const excludePrefixes = toolsNav
+    .filter((other) => other !== tool && other.href.startsWith(tool.href + "/"))
+    .map((other) => other.href);
+  return {
+    label: tool.label,
+    href: tool.href,
+    icon: tool.icon,
+    matchPrefix: true,
+    featureKey: tool.featureKey,
+    excludePrefixes: excludePrefixes.length > 0 ? excludePrefixes : undefined,
+  };
+});
 
 const secondaryNav: NavItem[] = [
   { label: "Settings", href: "/settings", icon: Settings, matchPrefix: true },
@@ -62,7 +83,19 @@ const secondaryNav: NavItem[] = [
 
 function isActive(pathname: string, item: NavItem): boolean {
   if (pathname === item.href) return true;
-  if (item.matchPrefix && pathname.startsWith(item.href + "/")) return true;
+  if (item.matchPrefix && pathname.startsWith(item.href + "/")) {
+    // A more specific sibling (e.g. /contracts/review) takes priority
+    // over this broader item (/contracts) when both could match. Bail
+    // out so the active highlight lives on exactly one nav row.
+    if (item.excludePrefixes) {
+      for (const excl of item.excludePrefixes) {
+        if (pathname === excl || pathname.startsWith(excl + "/")) {
+          return false;
+        }
+      }
+    }
+    return true;
+  }
   return false;
 }
 

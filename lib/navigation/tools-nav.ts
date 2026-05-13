@@ -1,4 +1,4 @@
-import { FlaskConical, PenTool } from "lucide-react";
+import { FileCheck2, FlaskConical, PenTool } from "lucide-react";
 import type { ComponentType } from "react";
 
 import type { ToolKey } from "@/lib/analytics/track";
@@ -46,5 +46,17 @@ export const toolsNav: ToolNavItem[] = [
     href: "/contracts",
     icon: PenTool,
     description: "Generate contracts from templates",
+  },
+  {
+    // Same entitlement gate as Contract Drafting — the backend feature
+    // flag is `contract_drafting` and both surfaces share it. A separate
+    // analytics key isn't necessary for the UDB rollout; we can split
+    // later if discoverability data shows people use review without
+    // drafting.
+    featureKey: "contract_drafting",
+    label: "Contract Review",
+    href: "/contracts/review",
+    icon: FileCheck2,
+    description: "Upload a contract, get a risk-scored review",
   },
 ];
