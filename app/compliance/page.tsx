@@ -696,6 +696,50 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
 /* ─────────────────────────────────────────────────────
    Regulatory Watch Tab
    ───────────────────────────────────────────────────── */
+
+/**
+ * P4: correlate a regulatory event with the user's tracked
+ * obligations. Pure client-side substring + token overlap — no
+ * backend call. Trades some precision for "works against today's
+ * data without new endpoints." Returns obligations whose
+ * governing_regulator, legislation_reference, title, or description
+ * substring-matches one of the event's sector/domain tags, or
+ * whose governing_regulator appears in the event title.
+ *
+ * Post-demo we'll swap this for a real
+ * /compliance/events/{id}/linked-obligations endpoint backed by
+ * ObligationTrackingService.link_event_to_obligations() (already
+ * exists server-side).
+ */
+function linkedObligationsForEvent(
+  evt: RegulatoryEventResponse,
+  obligations: ObligationResponse[],
+): ObligationResponse[] {
+  const tags = [
+    ...(evt.sector_tags ?? []),
+    ...(evt.domain_tags ?? []),
+  ]
+    .map((t) => t.toLowerCase())
+    .filter(Boolean);
+  const eventTitleLower = evt.title.toLowerCase();
+  return obligations.filter((ob) => {
+    const haystack = [
+      ob.title,
+      ob.description ?? "",
+      ob.governing_regulator ?? "",
+      ob.legislation_reference ?? "",
+    ]
+      .join(" ")
+      .toLowerCase();
+    // Tag-based: any event tag substring-matches any obligation field.
+    if (tags.some((tag) => haystack.includes(tag))) return true;
+    // Regulator-based: obligation's regulator name appears in event title.
+    const reg = (ob.governing_regulator ?? "").toLowerCase().trim();
+    if (reg.length >= 3 && eventTitleLower.includes(reg)) return true;
+    return false;
+  });
+}
+
 function WatchTab() {
   const [expandedId, setExpandedId] = useState<string | null>(null);
 
@@ -706,11 +750,23 @@ function WatchTab() {
     retry: false,
   });
 
+  // Pull obligations once for the correlation. The same key
+  // ("compliance-obligations") is shared with ObligationsTab and the
+  // Overview callout, so React Query dedupes the request.
+  const { data: obligationsData } = useQuery({
+    queryKey: ["compliance-obligations"],
+    queryFn: () =>
+      complianceApi.listObligations({ is_active: true, limit: 20 }),
+    staleTime: 60_000,
+    retry: false,
+  });
+
   if (isLoading) return <LoadingSpinner />;
   if (error && isFeatureGated(error)) return <UpgradePrompt />;
   if (error) return <ErrorState message="Could not load regulatory events." />;
 
   const events = data?.items ?? [];
+  const obligations = obligationsData?.items ?? [];
 
   if (events.length === 0) {
     return (
@@ -726,6 +782,7 @@ function WatchTab() {
     <div className="space-y-3">
       {events.map((evt: RegulatoryEventResponse) => {
         const isExpanded = expandedId === evt.id;
+        const linkedObligations = linkedObligationsForEvent(evt, obligations);
         return (
           <CardShell key={evt.id} className="overflow-hidden">
             <button
@@ -742,6 +799,16 @@ function WatchTab() {
                   <span className="text-xs text-muted-foreground">
                     {evt.source_class.replace(/_/g, " ")}
                   </span>
+                  {linkedObligations.length > 0 && (
+                    <span
+                      className="inline-flex items-center gap-1 rounded-full border border-amber-500/40 bg-amber-500/10 px-2 py-0.5 text-[10px] font-semibold text-amber-700 dark:text-amber-300"
+                      title="Number of your tracked obligations this event affects"
+                    >
+                      <AlertTriangle className="h-3 w-3" />
+                      Affects {linkedObligations.length} of your obligation
+                      {linkedObligations.length === 1 ? "" : "s"}
+                    </span>
+                  )}
                 </div>
                 <h3 className="mt-2 text-sm font-bold leading-snug">
                   {evt.title}
@@ -782,6 +849,47 @@ function WatchTab() {
                   >
                     View source <ExternalLink className="h-3 w-3" />
                   </a>
+                )}
+                {linkedObligations.length > 0 && (
+                  <div className="mt-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3">
+                    <div className="flex items-center gap-2 text-xs font-semibold text-amber-700 dark:text-amber-300">
+                      <AlertTriangle className="h-3.5 w-3.5" />
+                      Your obligations possibly affected by this event
+                    </div>
+                    <ul className="mt-2 space-y-1.5">
+                      {linkedObligations.slice(0, 5).map((ob) => (
+                        <li
+                          key={ob.id}
+                          className="flex items-start gap-2 text-xs"
+                        >
+                          <span className="mt-0.5 text-amber-500">•</span>
+                          <div className="min-w-0 flex-1">
+                            <span className="font-semibold text-foreground">
+                              {ob.title}
+                            </span>
+                            {(ob.governing_regulator ||
+                              ob.next_due_date) && (
+                              <span className="ml-2 text-muted-foreground">
+                                {[
+                                  ob.governing_regulator,
+                                  ob.next_due_date &&
+                                    `due ${formatDate(ob.next_due_date)}`,
+                                ]
+                                  .filter(Boolean)
+                                  .join(" · ")}
+                              </span>
+                            )}
+                          </div>
+                        </li>
+                      ))}
+                      {linkedObligations.length > 5 && (
+                        <li className="text-[11px] text-muted-foreground">
+                          + {linkedObligations.length - 5} more — see the
+                          Obligations tab.
+                        </li>
+                      )}
+                    </ul>
+                  </div>
                 )}
                 {(evt.sector_tags.length > 0 || evt.domain_tags.length > 0) && (
                   <div className="mt-3 flex flex-wrap gap-1.5">
