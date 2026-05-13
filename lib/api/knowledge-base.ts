@@ -306,6 +306,51 @@ export async function disconnectDataSource(
   );
 }
 
+export interface UpdateDataSourceRequest {
+  folder_id?: string;
+  folder_path?: string;
+  sync_interval_seconds?: number;
+}
+
+/**
+ * Patch a data source connection. Used by the Google Drive Picker
+ * flow to set folder_id + folder_path after the user picks a folder.
+ */
+export async function updateDataSource(
+  connectionId: string,
+  body: UpdateDataSourceRequest,
+): Promise<DataSourceItem> {
+  return apiFetch<DataSourceItem>(
+    `/knowledge-base/data-sources/${connectionId}`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    },
+  );
+}
+
+export interface PickerConfigResponse {
+  access_token: string;
+  expires_at: string;
+  api_key: string | null;
+  app_id: string | null;
+  client_id: string;
+  scope: string;
+}
+
+/**
+ * Fetch short-lived credentials for the Google Drive Picker.
+ * Backend refreshes the OAuth access token if it's close to expiry
+ * before returning. Google-Drive-only.
+ */
+export async function getDataSourcePickerConfig(
+  connectionId: string,
+): Promise<PickerConfigResponse> {
+  return apiGet<PickerConfigResponse>(
+    `/knowledge-base/data-sources/${connectionId}/picker-config`,
+  );
+}
+
 /**
  * Delete a document from the knowledge base.
  */

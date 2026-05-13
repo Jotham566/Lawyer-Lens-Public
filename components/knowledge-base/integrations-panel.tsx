@@ -37,6 +37,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
+import { SelectFolderButton } from "./google-drive-picker";
 import { toast } from "sonner";
 
 /**
@@ -327,9 +328,14 @@ export function IntegrationsPanel() {
           {items.map((conn) => {
             const tone = STATUS_TONE[conn.status];
             const isSyncing = syncingId === conn.id;
+            const isGoogleDrive = conn.source_type === "google_drive";
+            const needsFolderPick =
+              isGoogleDrive && !conn.folder_id;
             const canSync =
-              conn.source_type === "microsoft_onedrive" &&
-              conn.status !== "expired";
+              conn.status !== "expired" &&
+              !needsFolderPick &&
+              (conn.source_type === "microsoft_onedrive" ||
+                conn.source_type === "google_drive");
             return (
               <div
                 key={conn.id}
@@ -396,13 +402,33 @@ export function IntegrationsPanel() {
 
                     {conn.status === "expired" && (
                       <p className="mt-2 rounded-md bg-amber-500/10 px-2 py-1 text-[11px] text-amber-800 dark:text-amber-200">
-                        Refresh token rejected — reconnect via the
-                        ops-side OAuth wizard to resume sync.
+                        Refresh token rejected — click Connect again to re-authorize.
                       </p>
+                    )}
+
+                    {needsFolderPick && (
+                      <div className="mt-2 flex flex-wrap items-center gap-2 rounded-md bg-blue-500/10 px-2 py-1.5 text-[11px] text-blue-900 dark:text-blue-100">
+                        <span>
+                          Google Drive uses the <code>drive.file</code> scope —
+                          pick a folder so we can sync it.
+                        </span>
+                        <SelectFolderButton
+                          connection={conn}
+                          variant="primary"
+                          label="Pick folder"
+                        />
+                      </div>
                     )}
                   </div>
 
                   <div className="flex shrink-0 items-center gap-2">
+                    {isGoogleDrive && !needsFolderPick && (
+                      <SelectFolderButton
+                        connection={conn}
+                        variant="secondary"
+                      />
+                    )}
+
                     <button
                       type="button"
                       onClick={() => {
@@ -414,7 +440,9 @@ export function IntegrationsPanel() {
                       title={
                         canSync
                           ? "Run one sync cycle right now"
-                          : "Sync not available for this source / status"
+                          : needsFolderPick
+                            ? "Pick a folder first to enable sync"
+                            : "Sync not available for this source / status"
                       }
                     >
                       {isSyncing ? (
