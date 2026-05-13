@@ -303,6 +303,178 @@ function isFeatureGated(error: unknown): boolean {
 }
 
 /* ─────────────────────────────────────────────────────
+   Overview Tab — supporting components
+   ───────────────────────────────────────────────────── */
+
+/**
+ * Returns the bucket for an obligation by its next_due_date relative
+ * to now: "overdue" | "this_week" | "later" | "no_date".
+ */
+function bucketObligation(
+  ob: ObligationResponse,
+): "overdue" | "this_week" | "later" | "no_date" {
+  if (!ob.next_due_date) return "no_date";
+  const due = new Date(ob.next_due_date);
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const week = new Date(today);
+  week.setDate(week.getDate() + 7);
+  if (due.getTime() < today.getTime()) return "overdue";
+  if (due.getTime() <= week.getTime()) return "this_week";
+  return "later";
+}
+
+/**
+ * P2: "Due this week" + "Overdue" obligation stacks on the Overview
+ * tab. Pulls the same list ObligationsTab uses (active obligations,
+ * limit 20) and partitions client-side. Renders compact cards with
+ * a CTA to the Obligations tab.
+ */
+function UpcomingAndOverdueObligations({
+  onNavigateObligations,
+}: {
+  onNavigateObligations: () => void;
+}) {
+  const { data, isLoading, error } = useQuery({
+    queryKey: ["compliance-obligations"],
+    queryFn: () => complianceApi.listObligations({ is_active: true, limit: 20 }),
+    staleTime: 60_000,
+    retry: false,
+  });
+
+  // Silently swallow 403 / errors on the Overview tab — the main
+  // Obligations tab is the source of truth for error states. The
+  // Overview callout is best-effort context.
+  if (isLoading || error) return null;
+  const obligations = data?.items ?? [];
+  if (obligations.length === 0) return null;
+
+  const overdue = obligations.filter((o) => bucketObligation(o) === "overdue");
+  const thisWeek = obligations.filter(
+    (o) => bucketObligation(o) === "this_week",
+  );
+  if (overdue.length === 0 && thisWeek.length === 0) return null;
+
+  return (
+    <div className="grid gap-4 md:grid-cols-2">
+      <ObligationStack
+        title="Overdue"
+        items={overdue}
+        emptyLabel="Nothing slipped — keep it up."
+        tone="overdue"
+        onSeeAll={onNavigateObligations}
+      />
+      <ObligationStack
+        title="Due this week"
+        items={thisWeek}
+        emptyLabel="No deadlines in the next 7 days."
+        tone="upcoming"
+        onSeeAll={onNavigateObligations}
+      />
+    </div>
+  );
+}
+
+function ObligationStack({
+  title,
+  items,
+  emptyLabel,
+  tone,
+  onSeeAll,
+}: {
+  title: string;
+  items: ObligationResponse[];
+  emptyLabel: string;
+  tone: "overdue" | "upcoming";
+  onSeeAll: () => void;
+}) {
+  const accent =
+    tone === "overdue"
+      ? "border-rose-500/30 bg-rose-500/5"
+      : "border-amber-500/30 bg-amber-500/5";
+  const iconColor =
+    tone === "overdue" ? "text-rose-500" : "text-amber-500";
+  const Icon = tone === "overdue" ? AlertTriangle : Clock;
+
+  return (
+    <CardShell className={cn("p-5", accent)}>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Icon className={cn("h-4 w-4", iconColor)} />
+          <h3 className="text-sm font-bold tracking-tight">{title}</h3>
+          <span className="rounded-full bg-foreground/10 px-2 py-0.5 text-xs font-semibold tabular-nums">
+            {items.length}
+          </span>
+        </div>
+        {items.length > 0 && (
+          <button
+            type="button"
+            onClick={onSeeAll}
+            className="text-xs text-muted-foreground hover:text-foreground"
+          >
+            See all →
+          </button>
+        )}
+      </div>
+      {items.length === 0 ? (
+        <p className="mt-3 text-xs text-muted-foreground">{emptyLabel}</p>
+      ) : (
+        <ul className="mt-3 space-y-2.5">
+          {items.slice(0, 4).map((ob) => (
+            <li
+              key={ob.id}
+              className="flex items-start gap-3 rounded-lg border border-border/50 bg-background/40 p-3"
+            >
+              <div className="min-w-0 flex-1">
+                <div className="truncate text-sm font-semibold">
+                  {ob.title}
+                </div>
+                <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
+                  <span className="capitalize">
+                    {ob.recurrence_pattern?.replace(/_/g, " ") ?? "one-time"}
+                  </span>
+                  {ob.next_due_date && (
+                    <>
+                      <span>·</span>
+                      <span>
+                        {tone === "overdue" ? "Was due " : "Due "}
+                        {new Date(ob.next_due_date).toLocaleDateString(
+                          "en-UG",
+                          { month: "short", day: "numeric" },
+                        )}
+                      </span>
+                    </>
+                  )}
+                  {ob.assigned_owner_role && (
+                    <>
+                      <span>·</span>
+                      <span className="capitalize">
+                        {ob.assigned_owner_role.replace(/_/g, " ")}
+                      </span>
+                    </>
+                  )}
+                </div>
+              </div>
+            </li>
+          ))}
+          {items.length > 4 && (
+            <li className="pt-1">
+              <button
+                type="button"
+                onClick={onSeeAll}
+                className="w-full text-center text-xs text-muted-foreground hover:text-foreground"
+              >
+                + {items.length - 4} more
+              </button>
+            </li>
+          )}
+        </ul>
+      )}
+    </CardShell>
+  );
+}
+
+/* ─────────────────────────────────────────────────────
    Overview Tab
    ───────────────────────────────────────────────────── */
 function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
@@ -379,6 +551,14 @@ function OverviewTab({ onNavigate }: { onNavigate: (tab: TabId) => void }) {
           </button>
         ))}
       </div>
+
+      {/* P2 (2026-05-13): Upcoming + Overdue obligations.
+          Surfaces the two stacks legal teams check first thing in the
+          morning — "what's due this week" + "what's slipped". Each
+          card is a one-click drilldown to the Obligations tab. */}
+      <UpcomingAndOverdueObligations
+        onNavigateObligations={() => onNavigate("obligations")}
+      />
 
       {/* At-a-glance severity strip + overdue callouts.
           Previously two separate card grids (5-card severity grid +
