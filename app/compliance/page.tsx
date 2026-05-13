@@ -920,8 +920,39 @@ function FindingsTab() {
 /* ─────────────────────────────────────────────────────
    Obligations Tab
    ───────────────────────────────────────────────────── */
+
+type ObligationFilter = "all" | "overdue" | "this_week" | "this_month" | "later";
+
+const OBLIGATION_FILTERS: Array<{ id: ObligationFilter; label: string }> = [
+  { id: "all", label: "All" },
+  { id: "overdue", label: "Overdue" },
+  { id: "this_week", label: "This week" },
+  { id: "this_month", label: "This month" },
+  { id: "later", label: "Later" },
+];
+
+/** Wider buckets than the Overview helper: includes "this_month". */
+function obligationFilterBucket(
+  ob: ObligationResponse,
+  now: Date,
+): "overdue" | "this_week" | "this_month" | "later" | "no_date" {
+  if (!ob.next_due_date) return "no_date";
+  const due = new Date(ob.next_due_date);
+  const today = new Date(now);
+  today.setHours(0, 0, 0, 0);
+  const week = new Date(today);
+  week.setDate(week.getDate() + 7);
+  const month = new Date(today);
+  month.setDate(month.getDate() + 30);
+  if (due.getTime() < today.getTime()) return "overdue";
+  if (due.getTime() <= week.getTime()) return "this_week";
+  if (due.getTime() <= month.getTime()) return "this_month";
+  return "later";
+}
+
 function ObligationsTab() {
   const queryClient = useQueryClient();
+  const [filter, setFilter] = useState<ObligationFilter>("all");
 
   const { data, isLoading, error } = useQuery({
     queryKey: ["compliance-obligations"],
@@ -943,9 +974,30 @@ function ObligationsTab() {
   if (error && isFeatureGated(error)) return <UpgradePrompt />;
   if (error) return <ErrorState message="Could not load obligations." />;
 
-  const obligations = data?.items ?? [];
+  const allObligations = data?.items ?? [];
+  const now = new Date();
+  // Count per bucket so filter chips can show inline counts and the
+  // user knows what they'd see before clicking. Cheap — runs once per
+  // render against a list capped at 20.
+  const bucketCounts = {
+    all: allObligations.length,
+    overdue: 0,
+    this_week: 0,
+    this_month: 0,
+    later: 0,
+  };
+  for (const ob of allObligations) {
+    const b = obligationFilterBucket(ob, now);
+    if (b !== "no_date") bucketCounts[b] += 1;
+  }
+  const obligations =
+    filter === "all"
+      ? allObligations
+      : allObligations.filter(
+          (ob) => obligationFilterBucket(ob, now) === filter,
+        );
 
-  if (obligations.length === 0) {
+  if (allObligations.length === 0) {
     return (
       <EmptySection
         title="No Active Obligations"
@@ -957,6 +1009,48 @@ function ObligationsTab() {
 
   return (
     <div className="space-y-3">
+      {/* P3: filter chips */}
+      <div className="flex flex-wrap gap-2">
+        {OBLIGATION_FILTERS.map((f) => {
+          const count = bucketCounts[f.id];
+          const active = filter === f.id;
+          const dim = !active && count === 0;
+          return (
+            <button
+              key={f.id}
+              type="button"
+              onClick={() => setFilter(f.id)}
+              className={cn(
+                "rounded-full border px-3 py-1 text-xs font-semibold transition-colors",
+                active
+                  ? "border-brand-gold/60 bg-brand-gold/15 text-brand-gold"
+                  : "border-border bg-card text-muted-foreground hover:text-foreground hover:bg-muted/40",
+                dim && "opacity-50",
+              )}
+              aria-pressed={active}
+            >
+              {f.label}
+              <span
+                className={cn(
+                  "ml-2 inline-flex items-center justify-center rounded-full px-1.5 py-0.5 text-[10px] tabular-nums",
+                  active ? "bg-brand-gold/30" : "bg-foreground/10",
+                )}
+              >
+                {count}
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {obligations.length === 0 && (
+        <CardShell className="p-6">
+          <p className="text-sm text-muted-foreground">
+            No obligations match this filter. Try widening the range.
+          </p>
+        </CardShell>
+      )}
+
       {obligations.map((ob: ObligationResponse) => (
         <CardShell key={ob.id} className="p-5">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
