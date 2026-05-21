@@ -79,6 +79,22 @@ export interface HierarchicalNode {
   hierarchy_path?: HierarchyPathItem[];
 }
 
+/**
+ * Source metadata recorded at upload time by the ingestion service.
+ * Tells the UI what format the original was and whether the file
+ * was auto-converted to PDF.
+ */
+export interface SourceMetadata {
+  original_filename?: string | null;
+  /** "pdf" | "docx" | "doc" | "rtf". */
+  original_format?: string | null;
+  /** True if LibreOffice converted the file to PDF server-side. */
+  was_converted?: boolean;
+  original_size_bytes?: number | null;
+  converted_size_bytes?: number | null;
+  [key: string]: unknown;
+}
+
 // Main document interface
 export interface Document {
   id: string;
@@ -108,6 +124,7 @@ export interface Document {
   validation_score?: number;
   minio_original_path: string;
   minio_outputs_path?: string;
+  source_metadata?: SourceMetadata | null;
   created_at: string;
   updated_at: string;
   validated_at?: string;

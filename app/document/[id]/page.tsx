@@ -924,6 +924,20 @@ function DocumentContent({ id }: { id: string }) {
                     {document.act_number && (
                       <Badge variant="outline">Act No. {document.act_number}</Badge>
                     )}
+                    {/* Original-format badge for non-PDF sources that
+                        got auto-converted to PDF at ingestion. Lets
+                        the public reader see the document's true
+                        provenance (a Word judgment ingested from
+                        ULII archive). */}
+                    {document.source_metadata?.was_converted && document.source_metadata?.original_format && (
+                      <Badge
+                        variant="outline"
+                        title={`Original format: ${document.source_metadata.original_format.toUpperCase()} (auto-converted to PDF)`}
+                        className="uppercase"
+                      >
+                        {document.source_metadata.original_format} → PDF
+                      </Badge>
+                    )}
                   </div>
                   <h1 className="mt-0.5 text-[1.35rem] font-semibold leading-tight">
                     {document.title}
