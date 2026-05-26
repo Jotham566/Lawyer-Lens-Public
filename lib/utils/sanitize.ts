@@ -50,6 +50,10 @@ export function sanitizeDocumentHtml(dirty: string): string {
       "class", "id", "title", "datetime", "lang",
       // Table attributes
       "colspan", "rowspan", "scope", "headers",
+      // Ordered-list numbering. Keep these so judgment markdown like
+      // "1. foo\n\nexplanation\n\n2. bar" renders 1, 2 (marked emits
+      // <ol start="2">) instead of 1, 1. Mirrors the admin sanitizer.
+      "start", "type", "value",
       // Accessibility
       "role", "aria-label", "aria-labelledby", "aria-describedby",
     ],
