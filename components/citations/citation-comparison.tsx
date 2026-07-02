@@ -1,6 +1,16 @@
 "use client";
 
-import { X, FileText, Scale, Gavel, ScrollText, ArrowLeftRight, Lock, type LucideIcon } from "lucide-react";
+import {
+  X,
+  FileText,
+  Scale,
+  Gavel,
+  ScrollText,
+  ArrowLeftRight,
+  Lock,
+  ExternalLink,
+  type LucideIcon,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -18,6 +28,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   constitution: Scale,
   // Internal KB docs get Lock to mark "your private corpus".
   organization_document: Lock,
+  web: ExternalLink,
 };
 
 function getTypeColor(type: DocumentType) {
@@ -56,6 +67,13 @@ function getTypeColor(type: DocumentType) {
         border: "border-blue-500/30",
         text: "text-blue-700 dark:text-blue-300",
         icon: "text-blue-600 dark:text-blue-400",
+      };
+    case "web":
+      return {
+        bg: "bg-emerald-500/10 dark:bg-emerald-500/15",
+        border: "border-emerald-500/30",
+        text: "text-emerald-700 dark:text-emerald-300",
+        icon: "text-emerald-600 dark:text-emerald-400",
       };
     default:
       return {

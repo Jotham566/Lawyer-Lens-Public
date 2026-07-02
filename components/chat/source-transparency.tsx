@@ -7,6 +7,7 @@ import {
   Scale,
   Gavel,
   ScrollText,
+  ExternalLink,
   ChevronDown,
   Info,
   Search,
@@ -79,6 +80,12 @@ function getDocTypeInfo(type: DocumentType): {
         label: "Judgments",
         color: getDocumentAccentClass(type),
       };
+    case "web":
+      return {
+        icon: ExternalLink,
+        label: "Web",
+        color: getDocumentAccentClass(type),
+      };
     default:
       return {
         icon: FileText,
@@ -98,6 +105,7 @@ function groupSourcesByType(sources: ChatSource[]): SourcesByType[] {
     regulation: 0,
     judgment: 0,
     organization_document: 0,
+    web: 0,
   };
 
   sources.forEach((source) => {
@@ -107,7 +115,14 @@ function groupSourcesByType(sources: ChatSource[]): SourcesByType[] {
   });
 
   // Return in authority order (Constitution > Acts > Regulations > Judgments)
-  const order: DocumentType[] = ["constitution", "act", "regulation", "judgment"];
+  const order: DocumentType[] = [
+    "constitution",
+    "act",
+    "regulation",
+    "judgment",
+    "organization_document",
+    "web",
+  ];
 
   return order
     .filter((type) => counts[type] > 0)

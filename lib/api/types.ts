@@ -17,7 +17,9 @@ export type DocumentType =
    * a Lock icon + "Internal" label so users can see at a glance which
    * authority backs each cite.
    */
-  | "organization_document";
+  | "organization_document"
+  /** External web source retrieved for live/current supporting evidence. */
+  | "web";
 
 export type DocumentStatus =
   | "ingested"
@@ -304,6 +306,12 @@ export interface ChatSource {
   legal_reference?: string;  // Formatted legal reference like "Part II, Section 9(2)"
   hierarchy_path?: HierarchyPathItem[]; // Full hierarchy path for richer citation breadcrumbs
   chunk_id?: string;  // Chunk ID for precise expand-source lookup
+  external_url?: string | null; // External web URL when document_type === "web"
+  source_domain?: string | null;
+  source_quality_score?: number | null;
+  source_quality_label?: string | null;
+  source_class?: string | null;
+  source_tier?: number | null;
   // B2 (2026-05-12) — native Anthropic Citations API fields. Populated only
   // when synthesis ran through the Citations API path (CHAT_USE_CITATIONS_API=true).
   // cited_text is the EXACT passage from the source that supports the cite;

@@ -225,6 +225,10 @@ const documentThemes: Record<
     badge: "secondary",
     accent: "ll-doc-accent-internal",
   },
+  web: {
+    badge: "secondary",
+    accent: "ll-doc-accent-web",
+  },
 };
 
 const verificationThemes = {
@@ -316,6 +320,8 @@ export function getDocumentAccentClass(type: DocumentType) {
       // Internal KB docs use a distinct blue accent so they're spottable
       // at a glance against the legal-corpus icons (act/judgment etc.).
       return "text-blue-600 dark:text-blue-400";
+    case "web":
+      return "text-emerald-600 dark:text-emerald-400";
     default:
       return "text-muted-foreground";
   }
@@ -342,6 +348,8 @@ export function getDocumentTypeLabel(type: DocumentType): string {
       return "Constitution";
     case "organization_document":
       return "Internal";
+    case "web":
+      return "Web";
     default:
       return String(type);
   }

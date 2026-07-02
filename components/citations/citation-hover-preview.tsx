@@ -36,6 +36,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   regulation: ScrollText,
   constitution: Scale,
   organization_document: Lock,
+  web: ExternalLink,
 };
 
 // Detect if text contains table data

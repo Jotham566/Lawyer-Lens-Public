@@ -1,7 +1,16 @@
 "use client";
 
 import * as React from "react";
-import { FileText, Scale, Gavel, ScrollText, Table2, Lock, type LucideIcon } from "lucide-react";
+import {
+  ExternalLink,
+  FileText,
+  Scale,
+  Gavel,
+  ScrollText,
+  Table2,
+  Lock,
+  type LucideIcon,
+} from "lucide-react";
 import {
   Tooltip,
   TooltipContent,
@@ -37,6 +46,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   // visual cue is meant to read at a glance: legal authority vs. your
   // own org's docs. Same metaphor Glean / Notion AI use.
   organization_document: Lock,
+  web: ExternalLink,
 };
 
 /**
@@ -287,7 +297,9 @@ export function SourceCitation({
                 </Badge>
               </span>
             <span className="block text-xs text-muted-foreground mb-1.5">
-              {source.human_readable_id}
+              {source.document_type === "web"
+                ? source.source_domain || source.human_readable_id
+                : source.human_readable_id}
             </span>
 
             {tableInfo.isTable ? (

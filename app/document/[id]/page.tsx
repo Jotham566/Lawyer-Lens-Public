@@ -128,6 +128,13 @@ const documentTypeConfig: Record<
     color: "text-blue-600 dark:text-blue-400",
     bgColor: "bg-blue-500/10 dark:bg-blue-500/15",
   },
+  web: {
+    label: "Web",
+    icon: ExternalLink,
+    className: "border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    color: "text-emerald-600 dark:text-emerald-400",
+    bgColor: "bg-emerald-500/10 dark:bg-emerald-500/15",
+  },
 };
 
 interface PageProps {

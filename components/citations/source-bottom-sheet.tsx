@@ -37,6 +37,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   regulation: ScrollText,
   constitution: Scale,
   organization_document: Lock,
+  web: ExternalLink,
 };
 
 function getTypeBadgeColor(type: DocumentType) {
@@ -51,6 +52,8 @@ function getTypeBadgeColor(type: DocumentType) {
       return "bg-accent/20 text-primary";
     case "organization_document":
       return "bg-blue-500/10 text-blue-700 dark:bg-blue-500/15 dark:text-blue-300";
+    case "web":
+      return "bg-emerald-500/10 text-emerald-700 dark:bg-emerald-500/15 dark:text-emerald-300";
     default:
       return "bg-muted text-muted-foreground";
   }

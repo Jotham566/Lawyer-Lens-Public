@@ -174,6 +174,8 @@ function getDocumentIcon(type: DocumentType) {
       return Scale;
     case "organization_document":
       return Lock;
+    case "web":
+      return ExternalLink;
     default:
       return FileText;
   }
@@ -218,6 +220,13 @@ function getTypeColor(type: DocumentType) {
         border: "border-blue-500/30",
         text: "text-blue-700 dark:text-blue-300",
         icon: "text-blue-600 dark:text-blue-400",
+      };
+    case "web":
+      return {
+        bg: "bg-emerald-500/10 dark:bg-emerald-500/15",
+        border: "border-emerald-500/30",
+        text: "text-emerald-700 dark:text-emerald-300",
+        icon: "text-emerald-600 dark:text-emerald-400",
       };
     default:
       return {
@@ -454,6 +463,14 @@ export function SourceDetailDialog({
 
     const fetchContent = async () => {
       try {
+        if (source.document_type === "web") {
+          clearTimeout(timeoutId);
+          setExpandedContent(source.excerpt);
+          setIsExpanding(false);
+          fetchStateRef.current = 'done';
+          return;
+        }
+
         // Strategy 1: If we have a section_id that looks like a full AKN eId (not ambiguous),
         // use the section endpoint for richer metadata
         const isFullEId = source.section_id && (
@@ -511,7 +528,14 @@ export function SourceDetailDialog({
     };
 
     fetchContent();
-  }, [open, source.document_id, source.section_id, source.excerpt, source.section]);
+  }, [
+    open,
+    source.document_id,
+    source.document_type,
+    source.section_id,
+    source.excerpt,
+    source.section,
+  ]);
 
   // Reset state when dialog closes
   React.useEffect(() => {
@@ -580,8 +604,21 @@ export function SourceDetailDialog({
               <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-3 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1.5">
                   <Hash className="h-3.5 w-3.5" />
-                  {source.human_readable_id}
+                  {source.document_type === "web"
+                    ? source.source_domain || source.human_readable_id
+                    : source.human_readable_id}
                 </span>
+                {source.document_type === "web" && source.external_url && (
+                  <Button asChild variant="outline" size="sm" className="h-7 px-2 text-xs">
+                    <Link
+                      href={source.external_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      Open source <ExternalLink className="ml-1 h-3 w-3" />
+                    </Link>
+                  </Button>
+                )}
                 {/* Show section heading if available */}
                 {sectionData?.heading && (
                   <span className="flex items-center gap-1.5">

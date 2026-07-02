@@ -40,6 +40,7 @@ const documentIconMap: Record<DocumentType, LucideIcon> = {
   regulation: ScrollText,
   constitution: Scale,
   organization_document: Lock,
+  web: ExternalLink,
 };
 
 function getTypeColor(type: DocumentType) {
@@ -83,6 +84,14 @@ function getTypeColor(type: DocumentType) {
         borderLeft: "border-l-blue-500",
         text: "text-blue-700 dark:text-blue-300",
         icon: "text-blue-600 dark:text-blue-400",
+      };
+    case "web":
+      return {
+        bg: "bg-emerald-500/10 dark:bg-emerald-500/15",
+        border: "border-emerald-500/30",
+        borderLeft: "border-l-emerald-500",
+        text: "text-emerald-700 dark:text-emerald-300",
+        icon: "text-emerald-600 dark:text-emerald-400",
       };
     default:
       return {
@@ -334,6 +343,19 @@ export function SourcePanel() {
 
     const fetchContent = async () => {
       try {
+        if (activeSource.document_type === "web") {
+          setContentCache({
+            sourceKey,
+            expandedContent: activeSource.excerpt,
+            expandedTables: [],
+            sectionData: null,
+            htmlContent: null,
+            sectionId: null,
+          });
+          setIsExpanding(false);
+          return;
+        }
+
         let newExpandedContent: string | null = null;
         let newExpandedTables: ExpandedTable[] = [];
         let newSectionData: SectionResponse | null = null;
@@ -560,7 +582,10 @@ export function SourcePanel() {
                 {sectionData?.heading || activeSource.title}
               </h2>
               <p className="mt-1 text-xs text-muted-foreground">
-                Citation [{activeCitationNumber}] - {activeSource.human_readable_id}
+                Citation [{activeCitationNumber}] -{" "}
+                {activeSource.document_type === "web"
+                  ? activeSource.source_domain || activeSource.human_readable_id
+                  : activeSource.human_readable_id}
               </p>
             </div>
           </div>
@@ -591,6 +616,17 @@ export function SourcePanel() {
               </Badge>
               {activeSource.relevance_score > 0 && (
                 <RelevanceIndicator score={activeSource.relevance_score} />
+              )}
+              {activeSource.document_type === "web" && activeSource.external_url && (
+                <Button asChild variant="outline" size="sm" className="h-7 px-2 text-xs">
+                  <Link
+                    href={activeSource.external_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open source <ExternalLink className="ml-1 h-3 w-3" />
+                  </Link>
+                </Button>
               )}
             </div>
 

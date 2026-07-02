@@ -15,6 +15,7 @@ import {
   ChevronRight,
   BookOpen,
   Lock,
+  ExternalLink,
   Sparkles,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -84,6 +85,14 @@ const documentTypeConfig: Record<
     icon: Lock,
     className: "border border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300",
     color: "text-blue-600 dark:text-blue-400",
+    bgColor: "bg-card",
+  },
+  web: {
+    label: "Web",
+    pluralLabel: "Web Sources",
+    icon: ExternalLink,
+    className: "border border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
+    color: "text-emerald-600 dark:text-emerald-400",
     bgColor: "bg-card",
   },
 };
